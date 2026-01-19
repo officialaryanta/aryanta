@@ -4,315 +4,168 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ARYANTA | World Class Systems</title>
-    <!-- FAVICON -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="icon" href="/favicon.ico">
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="manifest" href="/site.webmanifest">
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
     <style>
         /* =========================================
-           ARYANTA PRIME: FINAL EDITION (v7.0)
+           ARYANTA: CORE STYLES
            ========================================= */
-
-        :root {
-            --bg-void: #000000;
-            --accent-primary: #3b82f6; /* Electric Blue */
-            --accent-secondary: #8b5cf6; /* Royal Purple */
-            --glass-surface: rgba(15, 15, 15, 0.85);
-            --glass-border: rgba(255, 255, 255, 0.12);
-            
-            --text-bright: #ffffff;
-            --text-dim: #94a3b8;
-            --max-width: 1300px;
-        }
-
-        /* 1. GLOBAL RESET */
+        :root { --bg-void: #000000; --accent-primary: #3b82f6; --accent-secondary: #8b5cf6; --glass-border: rgba(255, 255, 255, 0.12); --text-dim: #94a3b8; --max-width: 1300px; }
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
         html { scroll-behavior: smooth; font-size: 16px; }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-void);
-            color: var(--text-bright);
-            line-height: 1.6;
-            overflow-x: hidden;
-            width: 100%;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-void); color: #ffffff; line-height: 1.6; overflow-x: hidden; width: 100%; }
 
-        /* 2. "VIDEO" BACKGROUND (CANVAS ENGINE) */
-        #video-canvas {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -2; opacity: 0.6; pointer-events: none;
-        }
-        
-        .vignette {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, transparent 0%, #000 120%);
-            z-index: -1; pointer-events: none;
-        }
+        /* BACKGROUND ENGINE */
+        #video-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; opacity: 0.6; pointer-events: none; }
+        .vignette { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, transparent 0%, #000 120%); z-index: -1; pointer-events: none; }
+        .noise-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('https://grainy-gradients.vercel.app/noise.svg'); opacity: 0.05; z-index: -1; pointer-events: none; }
 
-        .noise-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: url('https://grainy-gradients.vercel.app/noise.svg');
-            opacity: 0.05; z-index: -1; pointer-events: none;
-        }
-
-        /* Utilities */
-        .hidden { display: none !important; }
         .container { max-width: var(--max-width); margin: 0 auto; padding: 0 24px; }
-        
-        /* Typography */
         h1, h2, h3 { font-family: 'Playfair Display', serif; }
 
-        /* 3. NAVIGATION */
-        nav {
-            position: fixed; top: 0; left: 0; width: 100%; height: 80px;
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0 5%; z-index: 1000;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(15px);
-            border-bottom: 1px solid var(--glass-border);
-        }
-
+        /* NAVIGATION */
+        nav { position: fixed; top: 0; left: 0; width: 100%; height: 80px; display: flex; justify-content: space-between; align-items: center; padding: 0 5%; z-index: 1000; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(15px); border-bottom: 1px solid var(--glass-border); }
         .logo-container { display: flex; align-items: center; gap: 12px; cursor: pointer; }
         .logo-symbol img { width: 32px; height: auto; }
-        .logo-text { font-weight: 800; letter-spacing: 2px; font-size: 1.2rem; color: white; font-family: 'Inter', sans-serif;}
-
+        .logo-text { font-weight: 800; letter-spacing: 2px; font-size: 1.2rem; color: white; }
         .nav-menu { display: flex; align-items: center; gap: 30px; list-style: none; }
-        .nav-item { 
-            font-size: 0.95rem; font-weight: 500; color: var(--text-dim); 
-            cursor: pointer; transition: color 0.3s; position: relative;
-        }
+        .nav-item { font-size: 0.95rem; font-weight: 500; color: var(--text-dim); text-decoration: none; cursor: pointer; transition: color 0.3s; }
         .nav-item:hover { color: white; }
-        
-        .btn-prime {
-            padding: 12px 28px; background: white; color: black; border-radius: 50px;
-            font-weight: 700; border: none; cursor: pointer; transition: all 0.3s ease;
-            display: inline-flex; align-items: center; gap: 8px; font-size: 0.95rem;
-        }
+
+        /* HERO & SECTIONS */
+        .hero-section { min-height: 90vh; display: flex; align-items: center; justify-content: center; text-align: center; padding: 140px 20px 80px; }
+        .hero-content h1 { font-family: 'Inter', sans-serif; font-weight: 800; font-size: clamp(2.5rem, 6vw, 5.5rem); line-height: 1.1; margin-bottom: 25px; background: linear-gradient(135deg, #fff 20%, #64748b 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero-content p { font-size: clamp(1rem, 2vw, 1.25rem); color: var(--text-dim); max-width: 700px; margin: 0 auto 40px auto; }
+        .btn-prime { padding: 12px 28px; background: white; color: black; border-radius: 50px; font-weight: 700; border: none; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 8px; font-size: 0.95rem; text-decoration: none; }
         .btn-prime:hover { transform: translateY(-2px); box-shadow: 0 0 25px rgba(255,255,255,0.3); }
-
-        /* Mobile Toggle */
-        .mobile-toggle { display: none; cursor: pointer; padding: 10px; }
-        .bar { width: 24px; height: 2px; background: white; margin: 6px 0; transition: 0.3s; }
-
-        /* Mobile Menu */
-        .mobile-menu-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100dvh;
-            background: rgba(0,0,0,0.98); z-index: 2000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            opacity: 0; visibility: hidden; pointer-events: none; transition: 0.4s ease;
-        }
-        .mobile-menu-overlay.active { opacity: 1; visibility: visible; pointer-events: all; }
-        .m-nav-item { font-size: 1.5rem; color: #ccc; margin: 15px 0; cursor: pointer; font-weight: 600; }
-
-        /* 4. HERO SECTION */
-        .hero-section {
-            min-height: 100dvh; display: flex; align-items: center; justify-content: center;
-            text-align: center; padding: 140px 20px 80px; position: relative;
-        }
-        .hero-content h1 {
-            font-family: 'Inter', sans-serif; font-weight: 800;
-            font-size: clamp(2.5rem, 6vw, 5.5rem); line-height: 1.1; margin-bottom: 25px;
-            background: linear-gradient(135deg, #fff 20%, #64748b 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .hero-content p {
-            font-size: clamp(1rem, 2vw, 1.25rem); color: var(--text-dim);
-            max-width: 700px; margin: 0 auto 40px auto;
-        }
-        .btn-glass {
-            padding: 12px 30px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
-            color: white; border-radius: 50px; font-weight: 600; cursor: pointer; transition: 0.3s; margin: 5px;
-        }
+        .btn-glass { padding: 12px 30px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; border-radius: 50px; font-weight: 600; cursor: pointer; transition: 0.3s; margin: 5px; text-decoration: none; display: inline-block; }
         .btn-glass:hover { background: rgba(255,255,255,0.15); border-color: white; }
 
-        /* 5. CARDS & GRID */
         .section-pad { padding: 100px 0; }
         .section-head { text-align: center; margin-bottom: 60px; }
         .section-head h2 { font-size: 2.5rem; margin-bottom: 10px; color: white; }
-        
         .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px; align-items: center; }
         
-        .prime-card {
-            background: linear-gradient(180deg, rgba(20,20,20,0.6) 0%, rgba(10,10,10,0.3) 100%);
-            border: 1px solid var(--glass-border); border-radius: 24px;
-            padding: 40px 30px; transition: 0.4s; backdrop-filter: blur(10px); height: 100%;
-        }
+        .prime-card { background: linear-gradient(180deg, rgba(20,20,20,0.6) 0%, rgba(10,10,10,0.3) 100%); border: 1px solid var(--glass-border); border-radius: 24px; padding: 40px 30px; transition: 0.4s; backdrop-filter: blur(10px); height: 100%; }
         .prime-card:hover { transform: translateY(-8px); border-color: rgba(255,255,255,0.2); }
         .prime-card i { font-size: 2rem; color: var(--accent-primary); margin-bottom: 25px; display: inline-block; }
         .prime-card h3 { font-size: 1.4rem; margin-bottom: 15px; color: white; }
         .prime-card p { color: var(--text-dim); margin-bottom: 15px; font-size: 0.95rem; }
-        
         .mission-list li { margin-bottom: 12px; color: var(--text-dim); display: flex; gap: 12px; align-items: flex-start; }
         .mission-list i { font-size: 1rem; color: var(--accent-secondary); margin-top: 4px; }
+        
+        .roadmap-container { display: flex; flex-direction: column; gap: 20px; max-width: 800px; margin: 0 auto; }
+        .roadmap-item { display: flex; gap: 20px; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 25px; border-radius: 15px; transition: 0.3s; }
+        .year-badge { background: var(--accent-primary); color: white; padding: 5px 15px; border-radius: 8px; font-weight: 800; font-size: 1.2rem; min-width: 100px; text-align: center; }
+        
+        .founder-msg { background: linear-gradient(45deg, #111, #0a0a0a); border-left: 4px solid var(--accent-secondary); padding: 40px; margin-top: 20px; border-radius: 0 20px 20px 0; }
+        .proof-list li { list-style: none; display: flex; align-items: center; gap: 15px; font-size: 1.1rem; margin-bottom: 15px; color: #ddd; }
+        .proof-list i { color: #22c55e; font-size: 1.2rem; }
+        .cta-box { background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(0,0,0,0)); border: 1px solid var(--accent-primary); border-radius: 30px; padding: 60px; text-align: center; max-width: 900px; margin: 0 auto; }
+        
+        .footer-dark { border-top: 1px solid #111; padding: 60px 20px; text-align: center; color: #555; }
+        
+        /* UPDATED SOCIAL LINKS (FOOTER) */
+        .footer-socials { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin: 20px 0; }
+        .social-link { color: #888; font-size: 1.2rem; transition: 0.3s; }
+        .social-link:hover { color: white; transform: scale(1.2); }
 
-        /* 6. TEAM PROFILES */
-        .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 25px; }
-        .team-profile {
-            border-radius: 20px; overflow: hidden; border: 1px solid var(--glass-border);
-            background: #0a0a0a; transition: 0.3s;
+        /* =========================================
+           MOBILE SIDEBAR
+           ========================================= */
+        .mobile-toggle { display: none; cursor: pointer; padding: 10px; z-index: 1001; }
+        .bar { width: 24px; height: 2px; background: white; margin: 6px 0; transition: 0.3s; }
+        
+        .mobile-sidebar {
+            position: fixed; top: 0; right: -100%; width: 85%; max-width: 350px; height: 100vh;
+            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px);
+            border-left: 1px solid var(--glass-border); z-index: 2000;
+            transition: 0.5s cubic-bezier(0.77, 0, 0.175, 1);
+            display: flex; flex-direction: column; padding: 40px 30px;
         }
-        .team-profile:hover { transform: translateY(-5px); border-color: #444; }
-        .profile-img { height: 280px; width: 100%; background-size: cover; background-position: center; }
-        .bg-1 { background: linear-gradient(45deg, #1a1a1a, #444); }
-        .bg-2 { background: linear-gradient(45deg, #0f172a, #334155); }
-        .bg-3 { background: linear-gradient(45deg, #312e81, #1e1b4b); }
-        .bg-4 { background: linear-gradient(45deg, #111, #222); }
-        .profile-info { padding: 20px; text-align: center; background: #080808; border-top: 1px solid var(--glass-border); }
-        .profile-info h3 { font-size: 1.1rem; color: white; margin-bottom: 4px; }
-        .profile-info span { font-size: 0.75rem; color: var(--accent-primary); letter-spacing: 1px; font-weight: 600; }
-
-        /* 7. QUICK ACCESS - CURVED BOX EDITION */
-        .qa-container {
-            position: fixed; bottom: 35px; right: 35px; z-index: 5000;
+        .mobile-sidebar.active { right: 0; }
+        
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 60px; }
+        .sidebar-logo { width: 40px; }
+        .sidebar-close { background: none; border: none; color: white; font-size: 2rem; cursor: pointer; }
+        
+        .sidebar-menu { display: flex; flex-direction: column; gap: 25px; }
+        .m-link { 
+            font-size: 1.5rem; color: #888; text-decoration: none; font-weight: 500; 
+            transition: 0.3s; display: flex; align-items: center; gap: 15px;
         }
+        .m-link span { font-size: 0.9rem; color: #333; font-weight: 700; margin-right: 10px; }
+        .m-link:hover, .m-link.active { color: white; padding-left: 10px; }
+        .m-link i { font-size: 1.2rem; width: 30px; text-align: center; }
 
-        /* The Box Itself */
+        .sidebar-footer { margin-top: auto; border-top: 1px solid #222; padding-top: 30px; }
+        
+        /* UPDATED SIDEBAR SOCIALS */
+        .sidebar-socials { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .sidebar-socials a { color: #666; font-size: 1.2rem; transition: 0.3s; width: 30px; text-align: center; }
+        .sidebar-socials a:hover { color: white; transform: scale(1.2); }
+
+        /* OVERLAY BACKDROP */
+        .sidebar-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 1999;
+            opacity: 0; visibility: hidden; transition: 0.5s;
+        }
+        .sidebar-backdrop.active { opacity: 1; visibility: visible; }
+
+        /* =========================================
+           QUICK ACCESS BUTTON
+           ========================================= */
+        .qa-container { position: fixed; bottom: 30px; right: 30px; z-index: 5000; transition: 0.3s; }
+        .qa-container.hidden { display: none !important; opacity: 0 !important; pointer-events: none; }
+
         .qa-box {
-            background: var(--glass-surface);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 50px;
-            padding: 8px;
-            display: flex; flex-direction: column-reverse; /* Button at bottom */
-            align-items: center;
-            gap: 15px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            background: rgba(20,20,20,0.8); backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 50px;
+            padding: 8px; display: flex; flex-direction: column-reverse; 
+            align-items: center; gap: 15px; width: 60px; height: 60px; overflow: hidden;
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            
-            /* Closed State */
-            height: 65px; width: 65px; overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
-
-        /* Open State */
-        .qa-container.active .qa-box {
-            height: auto; /* Expands automatically */
-            border-color: var(--accent-primary);
-            padding: 15px 8px;
-        }
-
-        /* Main Toggle Button */
+        .qa-container.active .qa-box { height: auto; padding: 15px 8px; border-color: var(--accent-primary); }
+        
         .qa-toggle {
-            width: 50px; height: 50px; border-radius: 50%;
-            background: white; color: black; border: none;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; flex-shrink: 0; z-index: 5002;
+            width: 44px; height: 44px; border-radius: 50%; background: white; border: none;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
             transition: 0.3s;
         }
-        .qa-toggle img { width: 28px; height: auto; transition: 0.3s; }
-        .qa-toggle i { display: none; font-size: 1.5rem; transition: 0.3s; }
-
-        .qa-container.active .qa-toggle { background: #333; color: white; transform: rotate(180deg); }
+        .qa-toggle img { width: 24px; transition: 0.3s; }
+        .qa-toggle i { display: none; font-size: 1.2rem; color: black; }
+        .qa-container.active .qa-toggle { background: #333; transform: rotate(180deg); }
         .qa-container.active .qa-toggle img { display: none; }
-        .qa-container.active .qa-toggle i { display: block; }
+        .qa-container.active .qa-toggle i { display: block; color: white; }
 
-        /* The Options List (Hidden initially) */
-        .qa-options {
+        .qa-options { 
             display: flex; flex-direction: column; gap: 15px; align-items: center;
-            opacity: 0; transform: translateY(20px); transition: 0.3s;
-            pointer-events: none; margin-bottom: 5px;
+            opacity: 0; transform: translateY(20px); transition: 0.3s; pointer-events: none;
         }
         .qa-container.active .qa-options { opacity: 1; transform: translateY(0); pointer-events: all; }
-
         .qa-item {
-            width: 45px; height: 45px; border-radius: 50%;
-            background: rgba(255,255,255,0.08); border: 1px solid transparent;
-            display: flex; align-items: center; justify-content: center;
-            color: white; text-decoration: none; font-size: 1.2rem;
-            transition: 0.2s; position: relative;
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;
+            color: white; text-decoration: none; font-size: 1.1rem; transition: 0.2s;
         }
-        .qa-item:hover { background: white; color: black; transform: scale(1.15); }
-        
-        /* Tooltip */
-        .qa-item::before {
-            content: attr(data-label);
-            position: absolute; right: 55px; top: 50%; transform: translateY(-50%);
-            background: #111; color: white; padding: 4px 10px; border-radius: 6px;
-            font-size: 0.8rem; white-space: nowrap; opacity: 0; pointer-events: none; transition: 0.2s;
-            border: 1px solid #333;
-        }
-        .qa-item:hover::before { opacity: 1; right: 60px; }
+        .qa-item:hover { background: white; color: black; transform: scale(1.1); }
 
-        /* 8. MODALS (Unified Prime Glass) */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); z-index: 6000;
-            display: flex; justify-content: center; align-items: center; padding: 20px;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
-        }
-        .modal-overlay.active { opacity: 1; pointer-events: all; }
-
-        .modal-glass {
-            width: 900px; max-width: 100%; 
-            background: #050505; border: 1px solid rgba(255, 255, 255, 0.1); 
-            border-radius: 24px; display: flex; overflow: hidden; 
-            box-shadow: 0 20px 80px rgba(0,0,0,0.8);
-            max-height: 90vh;
-        }
-
-        .modal-left { 
-            width: 35%; background: linear-gradient(160deg, #0a0a0a 0%, #000 100%); 
-            padding: 40px; display: flex; flex-direction: column; justify-content: center;
-            border-right: 1px solid var(--glass-border);
-        }
-        .modal-right { width: 65%; padding: 40px; background: #080808; overflow-y: auto; }
-
-        .input-group { margin-bottom: 25px; position: relative; }
-        .input-row { display: flex; gap: 20px; }
-        .input-row .input-group { flex: 1; }
-        
-        .input-group input, .input-group textarea {
-            width: 100%; padding: 12px 0; background: transparent; border: none;
-            border-bottom: 1px solid #333; color: white; font-size: 1rem; outline: none;
-        }
-        .input-group label {
-            position: absolute; top: 12px; left: 0; color: #666; pointer-events: none;
-            transition: 0.3s; font-size: 0.95rem;
-        }
-        .input-group input:focus ~ label, .input-group input:valid ~ label,
-        .input-group textarea:focus ~ label, .input-group textarea:valid ~ label {
-            top: -15px; font-size: 0.75rem; color: var(--accent-primary);
-        }
-        .checkbox-group { margin: 20px 0; font-size: 0.85rem; color: #888; }
-        .btn-submit {
-            width: 100%; padding: 16px; background: white; color: black; border: none;
-            border-radius: 12px; font-weight: 800; cursor: pointer; margin-top: 10px;
-        }
-
-        /* Footer */
-        .footer-dark { border-top: 1px solid #111; padding: 60px 20px; text-align: center; color: #555; }
-        .social-link { color: #888; margin: 0 10px; font-size: 1.2rem; transition: 0.3s; }
-        .social-link:hover { color: white; }
-
-        /* Responsive */
         @media (max-width: 1024px) {
             .nav-menu { display: none; }
             .mobile-toggle { display: block; }
-            .modal-glass { flex-direction: column; height: 100%; max-height: 100dvh; border-radius: 0; }
-            .modal-left { width: 100%; padding: 20px; border-right: none; border-bottom: 1px solid #222; height: auto; flex-direction: row; justify-content: space-between; align-items: center; }
-            .modal-left h3, .modal-left p, .modal-left div { display: none; }
-            .modal-left img { margin: 0; width: 30px; }
-            .modal-left::after { content: 'Go Back'; color: white; font-weight: bold; }
-            .modal-right { width: 100%; padding: 20px; padding-bottom: 100px; }
-            .input-row { flex-direction: column; gap: 0; }
         }
         @media (max-width: 480px) {
             .hero-content h1 { font-size: 2.8rem; }
             .qa-container { bottom: 20px; right: 20px; }
-            .grid-3 { grid-template-columns: 1fr; }
         }
-
     </style>
 </head>
 <body>
@@ -322,72 +175,75 @@
     <div class="noise-overlay"></div>
 
     <nav>
-        <div class="logo-container" onclick="showHome()">
+        <div class="logo-container" onclick="window.location.href='index.html'">
             <div class="logo-symbol">
                 <img src="https://user-gen-media-assets.s3.amazonaws.com/gpt4o_images/405ba96c-ee6d-452d-a99a-38ae2fd6b74b.png" alt="Aryanta Logo">
             </div>
             <div class="logo-text">ARYANTA</div>
         </div>
-
         <ul class="nav-menu">
-            <li class="nav-item" onclick="showHome()">Home</li>
-            <li class="nav-item" onclick="showTeam()">Our Team</li>
-            <li class="nav-item" onclick="showWork()">Careers</li>
-            <li class="nav-item" onclick="toggleContact()">Contact Us</li>
+            <li><a class="nav-item" href="index.html">Home</a></li>
+            <li><a class="nav-item" href="https://example.com">Our Team</a></li>
+            <li><a class="nav-item" href="https://example.com">Rules</a></li>
+            <li><a class="nav-item" href="contact.html" style="color: var(--accent-primary);">Contact Us</a></li>
         </ul>
-
-        <div class="mobile-toggle" onclick="toggleMobileMenu()">
+        <div class="mobile-toggle" onclick="toggleSidebar()">
             <div class="bar"></div>
             <div class="bar"></div>
         </div>
     </nav>
 
-    <div id="mobile-menu" class="mobile-menu-overlay">
-        <button class="close-btn" style="position:absolute; top:30px; right:30px; background:none; border:none; color:white; font-size:2rem;" onclick="toggleMobileMenu()">&times;</button>
-        <div style="text-align: center;">
-            <div onclick="showHome(); toggleMobileMenu()" class="m-nav-item">Home</div>
-            <div onclick="showTeam(); toggleMobileMenu()" class="m-nav-item">Our Team</div>
-            <div onclick="showWork(); toggleMobileMenu()" class="m-nav-item">Careers</div>
-            <div onclick="toggleContact(); toggleMobileMenu()" class="m-nav-item" style="color: var(--accent-primary);">Contact Us</div>
+    <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar()"></div>
+    <div class="mobile-sidebar" id="mobile-sidebar">
+        <div class="sidebar-header">
+            <img src="https://user-gen-media-assets.s3.amazonaws.com/gpt4o_images/405ba96c-ee6d-452d-a99a-38ae2fd6b74b.png" class="sidebar-logo" alt="Logo">
+            <button class="sidebar-close" onclick="toggleSidebar()">&times;</button>
+        </div>
+        <div class="sidebar-menu">
+            <a href="index.html" class="m-link active"><span>01</span> Home</a>
+            <a href="#overview" class="m-link" onclick="toggleSidebar()"><span>02</span> Overview</a>
+            <a href="https://example.com" class="m-link"><span>03</span> Our Team</a>
+            <a href="https://example.com" class="m-link"><span>04</span> Rules</a>
+            <a href="contact.html" class="m-link" style="color: var(--accent-primary);"><span>05</span> Contact Us</a>
+        </div>
+        <div class="sidebar-footer">
+            <p style="color:#555; font-size:0.8rem; margin-bottom:15px;">FOLLOW US</p>
+            <div class="sidebar-socials">
+                <a href="https://www.instagram.com/official.aryanta?igsh=MWMwbHZkdndmeWZtMw=="><i class="fab fa-instagram"></i></a>
+                <a href="https://www.facebook.com/share/1WKmq2yTGL/"><i class="fab fa-facebook"></i></a>
+                <a href="https://youtube.com/@official.aryanta?si=OfakfdctRRkFg00v"><i class="fab fa-youtube"></i></a>
+                <a href="#"><i class="fab fa-twitter"></i></a>
+                <a href="#"><i class="fab fa-telegram"></i></a>
+                <a href="#"><i class="fab fa-linkedin"></i></a>
+            </div>
+            <p style="color:#444; font-size:0.7rem;">© 2026 ARYANTA SYSTEM</p>
         </div>
     </div>
 
     <main>
-        
-        <div id="home-view">
-            <header class="hero-section">
-                <div class="hero-content">
-                    <h1 class="anim-hero">We Build for Today.<br>We Prepare for Tomorrow.</h1>
-                    <p class="anim-hero">Aryanta is a growing ecosystem built to support everyday life through trust, technology, and responsible growth.</p>
-                <div class="hero-btns anim-hero">
-                    <div class="hero-btns anim-hero" style="display: flex; justify-content: center; flex-wrap: wrap; gap: 15px;">
-                        <button class="btn-prime" onclick="document.getElementById('mission').scrollIntoView()">Read Overview</button>
-                        <button class="btn-glass" onclick="showTeam()">Meet The Team</button>
-                    </div>
+        <header class="hero-section">
+            <div class="hero-content">
+                <h1 class="anim-hero">We Build for Today.<br>We Prepare for Tomorrow.</h1>
+                <p class="anim-hero">Aryanta is a growing ecosystem built to support everyday life through trust, technology, and responsible growth.</p>
+                <div class="hero-btns anim-hero" style="display: flex; justify-content: center; gap: 15px;">
+                    <a href="#overview" class="btn-prime">Read Overview</a>
+                    <a href="#roadmap" class="btn-glass">See Roadmap</a>
                 </div>
-            </header>
+            </div>
+        </header>
 
-            <section id="mission" class="section-pad">
-                <div class="container">
-                    <div class="section-head reveal">
-                        <h2>Our Purpose</h2>
-                        <p style="color: var(--accent-primary); letter-spacing: 2px; font-size: 0.8rem; font-weight: 700;">FROM DAILY NEEDS TO FUTURE SOLUTIONS</p>
-                    </div>
-                    <div class="grid-3">
-                        <div class="prime-card reveal">
-                            <i class="fas fa-layer-group"></i>
-                            <h3>Overview</h3>
-                             <p>
-                    Aryanta is being built as a long-term, purpose-driven brand.
-                    We are not limited to one business or one industry.
-                </p>
-
-                <p>
-                    Aryanta is a growing ecosystem designed to support everyday life
-                    through smart systems, technology, and reliable services.
-                </p>
-
-                <p>
+        <section id="overview" class="section-pad">
+            <div class="container">
+                <div class="section-head reveal">
+                    <h2>Our Purpose</h2>
+                    <p style="color: var(--accent-primary); letter-spacing: 2px; font-size: 0.8rem; font-weight: 700;">FROM DAILY NEEDS TO FUTURE SOLUTIONS</p>
+                </div>
+                <div class="grid-3">
+                    <div class="prime-card reveal">
+                        <i class="fas fa-layer-group"></i>
+                        <h3>Overview</h3>
+                        <p>Aryanta is a growing ecosystem designed to support everyday life through smart systems, technology, and reliable services.</p>
+                        <p>
                     We are starting step by step — with daily-use solutions and digital platforms.
                     Over time, Aryanta will responsibly expand into multiple sectors
                     that matter to people’s daily lives.
@@ -396,133 +252,106 @@
                 <p>
                     Our focus is not fast expansion, but meaningful and trusted growth.
                 </p>
-                        </div>
-                        <div class="prime-card reveal">
-                            <i class="fas fa-bullseye"></i>
-                            <h3>Our Mission</h3>
-                            <ul class="mission-list">
-                                <li><i class="fas fa-check-circle"></i> Create systems that people can trust</li>
-                                <li><i class="fas fa-check-circle"></i> Build technology that is easy to use for everyone</li>
-                                <li><i class="fas fa-check-circle"></i> Grow step by step into multiple sectors with responsibility</li>
-                                 <li><i class="fas fa-check-circle"></i> Work as a team with respect, ownership, and discipline</li>
-                            </ul>
-                        </div>
-                        <div class="prime-card reveal">
-                            <i class="fas fa-fingerprint"></i>
-                            <h3>Why Aryanta?</h3>
-                            <ul class="mission-list">
-                                <li><i class="fas fa-shield-alt"></i> Aryanta is different because we believe in long-term thinking.</li>
-                                <li><i class="fas fa-cubes"></i> SysWe build systems, not shortcuts</li>
-                                <li><i class="fas fa-users"></i> We work as a team, not a boss-driven company</li>
-                                <li><i class="fas fa-check"></i> We grow one sector at a time, only when we are ready</li>
-                            </ul>
-                        </div>
+                <p>
+                    Aryanta is being built as a long-term, purpose-driven brand.
+                    We are not limited to one business or one industry.
+                </p>
                     </div>
-                </div>
-            </section>
-        </div>
+                    <div class="prime-card reveal">
+                        <i class="fas fa-bullseye"></i>
+                        <h3>Our Mission</h3>
+                        <ul class="mission-list">
+    <li><i class="fas fa-check-circle"></i>Create systems that people can trust and rely on every day.</li>
+    <li><i class="fas fa-check-circle"></i>Build technology that is simple, accessible, and easy to use for everyone.</li>
+    <li><i class="fas fa-check-circle"></i>Grow step by step, expanding responsibly only when foundations are strong.</li>
+    <li><i class="fas fa-check-circle"></i>Operate with discipline, clarity, and long-term thinking in every decision.</li>
+    <li><i class="fas fa-check-circle"></i>Work as a unified team built on respect, ownership, and accountability.</li>
+    <li><i class="fas fa-check-circle"></i>Focus on quality over speed in everything we design and deliver.</li>
+    <li><i class="fas fa-check-circle"></i>Build systems that create lasting value for people and the future.</li>
+</ul>
 
-        <div id="work-view" class="hidden">
-            <header class="hero-section">
-                <div class="hero-content">
-                    <h1 class="anim-work">Join the <span style="color: var(--accent-secondary);">Revolution.</span></h1>
-                    <p class="anim-work">We value honesty, discipline, and long-term thinking.</p>
-                    <div class="hero-btns anim-work">
-                        <button onclick="showHome()" class="btn-glass"><i class="fas fa-arrow-left"></i> Back</button>
-                        <button onclick="toggleAppForm()" class="btn-prime">Apply Now <i class="fas fa-arrow-right"></i></button>
                     </div>
-                </div>
-            </header>
+                    <div class="prime-card reveal">
+                        <i class="fas fa-fingerprint"></i>
+                        <h3>Why Aryanta?</h3>
+                        <ul class="mission-list">
+    <li><i class="fas fa-shield-alt"></i>We think long-term, focusing on sustainable growth instead of short-term wins or hype.</li>
+    <li><i class="fas fa-cubes"></i>We build strong systems that last, not shortcuts that fail when real-world challenges appear.</li>
+    <li><i class="fas fa-users"></i>Our technology is designed to be simple, reliable, and useful for everyday people.</li>
+    <li><i class="fas fa-route"></i>We grow step by step, expanding only when our foundation is strong and ready.</li>
+    <li><i class="fas fa-handshake"></i>Our culture is team-driven, built on trust, ownership, and shared responsibility.</li>
+    <li><i class="fas fa-award"></i>We prioritize quality, discipline, and clarity in every system we create.</li>
+    <li><i class="fas fa-seedling"></i>Aryanta is built with purpose, patience, and responsibility for the future.</li>
+</ul>
 
-            <section class="section-pad">
-                <div class="container">
-                    <div class="grid-3">
-                        <div class="prime-card reveal">
-                            <i class="fas fa-users"></i>
-                            <h3>Team Culture</h3>
-                            <p>
-        At Aryanta, we work as a team, not as a boss-driven company.
-        Every member is treated with respect and trusted with responsibility.
-        We believe that ownership, honesty, and discipline create stronger systems than hierarchy.
-    </p>
-    <p>
-        Our culture encourages clear communication, continuous learning, and accountability in everything we do.
-        Freedom at Aryanta comes with responsibility — each person owns their role and their results.
-    </p>
-    <p>
-        We maintain high standards to protect trust within the team.
-        As Aryanta grows across sectors over time, our team grows together —
-        in skills, responsibility, and long-term opportunities.
-    </p>
-                        </div>
-                        <div class="prime-card reveal">
-                            <i class="fas fa-rocket"></i>
-                            <h3>Careers</h3>
-                            <p>
-        Careers at Aryanta are about building with purpose, not just holding a job.
-        We work as a team, not as a boss-driven organization, and every individual
-        is trusted with responsibility and ownership.
-    </p>
-    <p>
-        We value honesty, discipline, and long-term thinking. Freedom at Aryanta
-        comes with accountability, and high standards exist to protect our culture
-        and the trust we build together.
-    </p>
-    <p>
-        If you enjoy creating meaningful systems, learning continuously, and growing
-        with a brand over time, Aryanta offers a place where your work can truly matter.
-    </p>
-                        </div>
-                        <div class="prime-card reveal">
-                            <i class="fas fa-gavel"></i>
-                            <h3>Rules</h3>
-                            <ul class="mission-list">
-                                <li><i class="fas fa-check"></i> Be honest and respectful in all work and communication.</li>
-                                <li><i class="fas fa-check"></i> Do your work responsibly and on time.</li>
-                                <li><i class="fas fa-check"></i> Respect team members, company systems, and shared decisions.</li>
-                                <li><i class="fas fa-check"></i> Do not misuse company data, tools, or information.</li>
-                                <li><i class="fas fa-check"></i> Follow agreed work processes and team guidelines.</li>
-                                <li><i class="fas fa-check"></i> If a rule is broken, a final warning will be given.</li>
-                                <li><i class="fas fa-check"></i> Repeating the same mistake after warning may lead to removal from the team.</li>
-                                <li><i class="fas fa-check"></i> Very serious issues may lead to direct removal without warning</li>
-                            </ul>
-                        </div>
                     </div>
                 </div>
-            </section>
-        </div>
+            </div>
+        </section>
 
-        <div id="team-only-view" class="hidden">
-            <section class="section-pad" style="padding-top: 150px;">
-                <div class="container">
-                    <div style="margin-bottom: 40px;">
-                        <button onclick="showHome()" class="btn-glass"><i class="fas fa-arrow-left"></i> Back Home</button>
+        <section id="roadmap" class="section-pad" style="background: rgba(255,255,255,0.02);">
+            <div class="container">
+                <div class="section-head reveal">
+                    <h2>Our Roadmap</h2>
+                    <p>THE PATH FORWARD</p>
+                </div>
+                <div class="roadmap-container reveal">
+                    <div class="roadmap-item">
+                        <div class="year-badge">2026</div>
+                        <div><h3>Foundation</h3><p style="color:#aaa; font-size:0.9rem;">Establishing core systems, brand identity, and initial team structure.</p></div>
                     </div>
-                    <div class="section-head">
-                        <h2>Our Team Members</h2>
-                        <p>The minds behind the magic.</p>
+                    
+                </div>
+            </div>
+        </section>
+
+        <section class="section-pad">
+            <div class="container">
+                <div class="grid-2">
+                    <div class="reveal">
+                        <h2 style="font-size: 2rem; margin-bottom:20px;">Message from the Founder</h2>
+                        <div class="founder-msg">
+                            <p>"Aryanta is being built with patience, discipline, and responsibility. This is not a shortcut journey. We are creating something that lasts."</p>
+                            <div style="margin-top:20px; font-weight:bold; color:white;">— Founder, Aryanta</div>
+                        </div>
                     </div>
-                    <div class="team-grid">
-                        <div class="team-profile"><div class="profile-img bg-1"></div><div class="profile-info"><h3>Mr. A</h3><span>CEO/CO-FOUNDER</span></div></div>
-                        <div class="team-profile"><div class="profile-img bg-2"></div><div class="profile-info"><h3>Ms. B</h3><span>CORE MEMBER</span></div></div>
-                        <div class="team-profile"><div class="profile-img bg-3"></div><div class="profile-info"><h3>Mr. C</h3><span>CORE MEMBER</span></div></div>
-                        <div class="team-profile"><div class="profile-img bg-4"></div><div class="profile-info"><h3>Mr. D</h3><span>CORE MEMBER</span></div></div>
+                    <div class="prime-card reveal" style="border-color: var(--accent-primary);">
+                        <h3 style="margin-bottom: 25px;">Why Aryanta is Real</h3>
+                        <ul class="proof-list">
+                            <li><i class="fas fa-check-circle"></i> Official Domain Registered</li>
+                            <li><i class="fas fa-check-circle"></i> Google Indexed</li>
+                            <li><i class="fas fa-check-circle"></i> Public Brand Identity</li>
+                            <li><i class="fas fa-check-circle"></i> Built in Public</li>
+                        </ul>
                     </div>
                 </div>
-            </section>
-        </div>
+            </div>
+        </section>
+
+        <section class="section-pad">
+            <div class="container">
+                <div class="cta-box reveal">
+                    <h2 style="margin-bottom: 15px;">Join the Journey</h2>
+                    <p style="margin-bottom: 30px; color: #ccc;">Be part of the foundation of tomorrow.</p>
+                    <a href="contact.html" class="btn-prime">Message Us</a>
+                </div>
+            </div>
+        </section>
 
         <footer class="footer-dark reveal">
             <h2 style="font-family: 'Playfair Display'; margin-bottom: 10px;">ARYANTA</h2>
             <p>Building trusted systems for everyday life.</p>
-            <div style="margin: 20px 0;">
-                <a href="https://www.instagram.com/official.aryanta?igsh=MWMwbHZkdndmeWZtMw==" class="social-link"><i class="fab fa-instagram"></i></a>
-                <a href="https://www.facebook.com/share/1WKmq2yTGL/" class="social-link"><i class="fab fa-facebook"></i></a>
-                <a href="https://youtube.com/@official.aryanta?si=MvP7DBCoP6_XEbW5" class="social-link"><i class="fab fa-youtube"></i></a>
+            <p>Follow us on</p>
+            <div class="footer-socials">
+                <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                <a href="#" class="social-link"><i class="fab fa-facebook"></i></a>
+                <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
+                <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                <a href="#" class="social-link"><i class="fab fa-telegram"></i></a>
+                <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
             </div>
             <p style="font-size: 0.8rem;">© 2026 Aryanta. All rights reserved.</p>
         </footer>
-
     </main>
 
     <div class="qa-container" id="prime-qa">
@@ -531,277 +360,15 @@
                 <img src="https://user-gen-media-assets.s3.amazonaws.com/gpt4o_images/405ba96c-ee6d-452d-a99a-38ae2fd6b74b.png" alt="Aryanta">
                 <i class="fas fa-times"></i>
             </button>
-            
             <div class="qa-options">
-                <a href="employe.html" class="qa-item" data-label="Employee" style="border-color: #3b82f6; color: #3b82f6;">
-                    <i class="fas fa-id-card-alt"></i>
-                </a>
-                <a href="https://wa.me/918603467878" target="_blank" class="qa-item" data-label="WhatsApp" style="border-color: #25D366; color: #25D366;">
-                    <i class="fab fa-whatsapp"></i>
-                </a>
-                <a href="tel:+918603467878" class="qa-item" data-label="Call Us" style="border-color: #fca5a5; color: #fca5a5;">
-                    <i class="fas fa-phone-alt"></i>
-                </a>
-                <a href="mailto:official.aryanta@gmail.com" class="qa-item" data-label="Email" style="border-color: #fbbf24; color: #fbbf24;">
-                    <i class="fas fa-envelope"></i>
-                </a>
-                <button onclick="toggleContact(); toggleQA()" class="qa-item" data-label="Contact Form" style="border-color: #8b5cf6; color: #8b5cf6;">
-                    <i class="fas fa-comment-dots"></i>
-                </button>
+                <a href="https://wa.me/918603467878" target="_blank" class="qa-item" style="border-color: #25D366; color: #25D366;"><i class="fab fa-whatsapp"></i></a>
+                <a href="tel:+918603467878" class="qa-item" style="border-color: #fca5a5; color: #fca5a5;"><i class="fas fa-phone-alt"></i></a>
+                <a href="mailto:official.aryanta@gmail.com" class="qa-item" style="border-color: #fbbf24; color: #fbbf24;"><i class="fas fa-envelope"></i></a>
+                <a href="https://example.com" class="qa-item" style="border-color: #3b82f6; color: #3b82f6;"><i class="fas fa-users"></i></a>
             </div>
         </div>
     </div>
 
-    <div id="contact-modal" class="modal-overlay">
-        <div class="modal-glass">
-            <button class="close-btn" onclick="toggleContact()" style="position: absolute; top: 20px; right: 25px; background: none; border: none; font-size: 1.5rem; color: #666; cursor: pointer; z-index:100;">&times;</button>
-            <div class="modal-left">
-                <img src="https://user-gen-media-assets.s3.amazonaws.com/gpt4o_images/405ba96c-ee6d-452d-a99a-38ae2fd6b74b.png" alt="Logo" style="width: 50px; margin-bottom: 20px;">
-                <h3 style="font-size: 2rem; margin-bottom: 10px; line-height: 1.1; color: white;">Contact<br>Aryanta.</h3>
-                <p style="color: #888; font-size: 0.9rem; margin-top: 10px;">We are always open to discussing new projects.</p>
-            </div>
-            <div class="modal-right">
-                <form id="contact-form">
-                    <input type="hidden" name="subject" value="Website Inquiry">
-                    <div class="input-group">
-                        <input type="text" name="from_name" id="contact_name" required placeholder=" ">
-                        <label>Your Name</label>
-                    </div>
-                    <div class="input-group">
-                        <input type="email" name="from_email" id="contact_email" required placeholder=" ">
-                        <label>Email Address</label>
-                    </div>
-                    <div class="input-group">
-                        <textarea name="message" rows="4" required placeholder=" "></textarea>
-                        <label>How can we help?</label>
-                    </div>
-                    <button type="submit" id="submit-btn" class="btn-submit">Send Message</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <div id="app-modal" class="modal-overlay">
-        <div class="modal-glass">
-            <button class="close-btn" onclick="toggleAppForm()" style="position: absolute; top: 20px; right: 25px; background: none; border: none; font-size: 1.5rem; color: #666; cursor: pointer; z-index:100;">&times;</button>
-            <div class="modal-left">
-                <img src="https://user-gen-media-assets.s3.amazonaws.com/gpt4o_images/405ba96c-ee6d-452d-a99a-38ae2fd6b74b.png" alt="Logo" style="width: 50px; margin-bottom: 20px;">
-                <h3 style="font-size: 2rem; margin-bottom: 10px; line-height: 1.1; color: white;">Join The<br>Mission.</h3>
-                <p style="color: #888; font-size: 0.9rem; margin-top: 10px;">Fill out the details to apply for a position.</p>
-            </div>
-            <div class="modal-right">
-                <form id="application-form">
-                    <div class="input-group">
-                        <input type="text" id="app_name" required placeholder=" ">
-                        <label>Full Name</label>
-                    </div>
-                    <div class="input-row">
-                        <div class="input-group">
-                            <input type="tel" id="app_phone" required placeholder=" ">
-                            <label>Phone</label>
-                        </div>
-                        <div class="input-group">
-                            <input type="email" id="app_email" required placeholder=" ">
-                            <label>Email</label>
-                        </div>
-                    </div>
-                    <div class="input-row">
-                        <div class="input-group">
-                            <input type="text" id="app_city" required placeholder=" ">
-                            <label>City</label>
-                        </div>
-                        <div class="input-group">
-                            <input type="text" id="app_country" required placeholder=" ">
-                            <label>Country</label>
-                        </div>
-                    </div>
-                    <div class="input-row">
-                        <div class="input-group">
-                            <input type="text" id="app_edu" required placeholder=" ">
-                            <label>Education</label>
-                        </div>
-                        <div class="input-group">
-                            <input type="number" id="app_exp" required placeholder=" ">
-                            <label>Years Exp.</label>
-                        </div>
-                    </div>
-                    <div class="input-group">
-                        <input type="text" id="app_occ" required placeholder=" ">
-                        <label>Current Occupation</label>
-                    </div>
-                    <div class="input-group">
-                        <textarea id="app_why" rows="2" required placeholder=" "></textarea>
-                        <label>Why do you want to join Aryanta?</label>
-                    </div>
-                    <div class="checkbox-group">
-                        <label><input type="checkbox" required> I confirm all details are correct.</label><p>
-                        <label><input type="checkbox" required> I agree to Aryanta’s policies.</label>
-                    </div>
-                    <textarea name="message" id="app_compiled_message" style="display:none;"></textarea>
-                    <input type="hidden" name="from_name" id="hidden_name">
-                    <input type="hidden" name="from_email" id="hidden_email">
-                    <button type="submit" id="app-submit-btn" class="btn-submit">Submit Application</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // --- 1. VIEW & UX ---
-        const views = { home: document.getElementById('home-view'), work: document.getElementById('work-view'), team: document.getElementById('team-only-view') };
-        const qa = document.getElementById('prime-qa');
-
-        function switchView(viewName) {
-            Object.values(views).forEach(el => el.classList.add('hidden'));
-            views[viewName].classList.remove('hidden');
-            window.scrollTo(0,0);
-            ScrollTrigger.refresh();
-            if(viewName === 'work') gsap.from(".anim-work", { duration: 1, y: 30, opacity: 0, stagger: 0.1, ease: "power2.out" });
-        }
-        function showHome() { switchView('home'); }
-        function showWork() { switchView('work'); }
-        function showTeam() { switchView('team'); }
-
-        function toggleModal(id) {
-            const modal = document.getElementById(id);
-            modal.classList.toggle('active');
-            if(modal.classList.contains('active')) qa.classList.add('hidden');
-            else qa.classList.remove('hidden');
-        }
-        function toggleContact() { toggleModal('contact-modal'); }
-        function toggleAppForm() { toggleModal('app-modal'); }
-        function toggleMobileMenu() { document.getElementById('mobile-menu').classList.toggle('active'); }
-        function toggleQA() { qa.classList.toggle('active'); }
-
-        // --- 2. CANVAS VIDEO ENGINE (Background) ---
-        const canvas = document.getElementById('video-canvas');
-        const ctx = canvas.getContext('2d');
-        let width, height, particles = [];
-
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
-
-        class Particle {
-            constructor() {
-                this.x = Math.random() * width;
-                this.y = Math.random() * height;
-                this.vx = (Math.random() - 0.5) * 1;
-                this.vy = (Math.random() - 0.5) * 1;
-                this.size = Math.random() * 2 + 1;
-                this.color = Math.random() > 0.5 ? 'rgba(59, 130, 246, ' : 'rgba(139, 92, 246, ';
-            }
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                if(this.x < 0 || this.x > width) this.vx *= -1;
-                if(this.y < 0 || this.y > height) this.vy *= -1;
-            }
-            draw() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = this.color + '0.5)';
-                ctx.fill();
-            }
-        }
-
-        for(let i=0; i<60; i++) particles.push(new Particle());
-
-        function animate() {
-            ctx.clearRect(0, 0, width, height);
-            
-            // Draw connections
-            particles.forEach((p, i) => {
-                p.update();
-                p.draw();
-                for(let j=i; j<particles.length; j++) {
-                    const dx = p.x - particles[j].x;
-                    const dy = p.y - particles[j].y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    if(dist < 150) {
-                        ctx.beginPath();
-                        ctx.strokeStyle = `rgba(100, 100, 255, ${1 - dist/150 * 0.8})`;
-                        ctx.lineWidth = 0.5;
-                        ctx.moveTo(p.x, p.y);
-                        ctx.lineTo(particles[j].x, particles[j].y);
-                        ctx.stroke();
-                    }
-                }
-            });
-            requestAnimationFrame(animate);
-        }
-        animate();
-
-        // --- 3. ANIMATIONS (Scroll) ---
-        gsap.registerPlugin(ScrollTrigger);
-        gsap.from(".anim-hero", { duration: 1.5, y: 60, opacity: 0, stagger: 0.2, ease: "power3.out" });
-        gsap.utils.toArray('.reveal').forEach(el => {
-            gsap.fromTo(el, { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out", scrollTrigger: { trigger: el, start: "top 85%" } });
-        });
-
-        // --- 4. EMAIL SYSTEM (Double Send: Admin + User) ---
-        function sendDoubleEmail(formId, btnId, successMsg) {
-            const form = document.getElementById(formId);
-            const btn = document.getElementById(btnId);
-            const originalText = btn.innerHTML;
-            let userEmail = "";
-            let userName = "";
-
-            // Prepare Data
-            if (formId === 'application-form') {
-                const name = document.getElementById('app_name').value;
-                const email = document.getElementById('app_email').value;
-                userEmail = email; userName = name;
-
-                const compiled = `APPLICATION:\nName: ${name}\nPhone: ${document.getElementById('app_phone').value}\nEmail: ${email}\nLoc: ${document.getElementById('app_city').value}, ${document.getElementById('app_country').value}\nEdu: ${document.getElementById('app_edu').value}\nWhy: ${document.getElementById('app_why').value}`;
-                document.getElementById('app_compiled_message').value = compiled;
-                document.getElementById('hidden_name').value = name;
-                document.getElementById('hidden_email').value = email;
-            } else {
-                userEmail = document.getElementById('contact_email').value;
-                userName = document.getElementById('contact_name').value;
-            }
-
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Processing...';
-            btn.disabled = true;
-
-            // 1. Send to Admin
-            emailjs.sendForm('service_8irxbf9', 'template_f7k5kcm', form, 'YpTJ1xd9wcoebrdeT')
-                .then(() => {
-                    // 2. Send Auto-Reply to User (Simulated by sending a second email to user)
-                    // Note: This uses the SAME template but swaps the 'to_email' effectively if the template is dynamic.
-                    // If template is hardcoded, this attempts to send a copy.
-                    const autoReplyData = {
-                        from_name: "Aryanta System",
-                        from_email: userEmail, // Target the user
-                        message: `Hello ${userName},\n\nWe have received your submission. Our team will review it and contact you shortly.\n\nThank you,\nTeam Aryanta`,
-                        subject: "Confirmation: We received your message"
-                    };
-                    
-                    return emailjs.send('service_8irxbf9', 'template_f7k5kcm', autoReplyData, 'YpTJ1xd9wcoebrdeT');
-                })
-                .then(() => {
-                    alert(successMsg + "\n(A confirmation email has also been sent to you.)");
-                    form.reset();
-                    if(formId === 'contact-modal') toggleContact();
-                    if(formId === 'application-form') toggleAppForm();
-                })
-                .catch((err) => {
-                    console.error(err);
-                    alert('Request processed, but there was an issue sending confirmation.');
-                })
-                .finally(() => {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                });
-        }
-
-        document.getElementById('contact-form').addEventListener('submit', (e) => { e.preventDefault(); sendDoubleEmail('contact-form', 'submit-btn', 'Message Sent!'); });
-        document.getElementById('application-form').addEventListener('submit', (e) => { e.preventDefault(); sendDoubleEmail('application-form', 'app-submit-btn', 'Application Submitted!'); });
-
-    </script>
+    <script src="style.js"></script>
 </body>
 </html>
