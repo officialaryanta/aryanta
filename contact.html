@@ -4,16 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Contact ARYANTA</title>
-    <!-- FAVICON -->
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-<link rel="icon" href="favicon.ico">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="manifest" href="site.webmanifest">
+    
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+    
+    <script type="text/javascript">
+        (function() {
+            emailjs.init("TDgNRO0CEs9rU3ozD");
+        })();
+    </script>
 
     <style>
         :root {
@@ -30,7 +39,6 @@
             background-color: var(--bg-void);
             color: #fff;
             min-height: 100vh;
-            /* Mobile scrolling fixes */
             overflow-x: hidden;
             overflow-y: auto; 
             display: flex;
@@ -110,8 +118,27 @@
             cursor: pointer; transition: 0.3s; margin-top: 10px;
         }
         .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3); }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* MOBILE FIXES */
+        /* SUCCESS POPUP STYLES */
+        .popup-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            z-index: 1000; display: none; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .popup-overlay.active { display: flex; opacity: 1; }
+        .popup-box {
+            background: #111; border: 1px solid var(--accent-primary);
+            padding: 40px; border-radius: 20px; text-align: center;
+            max-width: 400px; transform: scale(0.8); transition: transform 0.3s;
+        }
+        .popup-overlay.active .popup-box { transform: scale(1); }
+        .popup-icon { font-size: 3rem; color: #22c55e; margin-bottom: 20px; }
+        .popup-title { font-size: 1.5rem; font-family: 'Playfair Display'; margin-bottom: 10px; color: white; }
+        .popup-text { color: #94a3b8; margin-bottom: 20px; }
+        .countdown { font-weight: 800; color: var(--accent-primary); font-size: 1.2rem; }
+
         @media (max-width: 900px) {
             body { align-items: flex-start; padding: 0; }
             .contact-wrapper { flex-direction: column; border-radius: 0; border: none; max-width: 100%; margin: 0; box-shadow: none; }
@@ -127,6 +154,16 @@
     <canvas id="video-canvas"></canvas>
     <div class="vignette"></div>
 
+    <div class="popup-overlay" id="successPopup">
+        <div class="popup-box">
+            <i class="fas fa-check-circle popup-icon"></i>
+            <h3 class="popup-title">Message Sent!</h3>
+            <p class="popup-text">We received your request and will contact you shortly.</p>
+            <p style="font-size: 0.9rem; color: #666;">Redirecting to home in</p>
+            <div class="countdown" id="timer">3</div>
+        </div>
+    </div>
+
     <div class="contact-wrapper" id="card">
         <div class="contact-info">
             <div>
@@ -139,47 +176,43 @@
             </div>
 
             <div class="socials">
-                <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
-                <a href="#" class="social-icon"><i class="fab fa-facebook"></i></a>
-                <a href="#" class="social-icon"><i class="fab fa-youtube"></i></a>
-                <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
-                <a href="#" class="social-icon"><i class="fab fa-telegram"></i></a>
-                <a href="#" class="social-icon"><i class="fab fa-linkedin"></i></a>
+                <a href="https://www.instagram.com/official.aryanta?igsh=MWMwbHZkdndmeWZtMw==" target="_blank" class="social-icon"><i class="fab fa-instagram"></i></a>
+                <a href="https://www.facebook.com/share/1WKmq2yTGL/" target="_blank" class="social-icon"><i class="fab fa-facebook"></i></a>
+                <a href="https://youtube.com/@official.aryanta?si=KW1ef4UB7c2Rsjbq" target="_blank" class="social-icon"><i class="fab fa-youtube"></i></a>
+                <a href="https://x.com/officialaryanta" target="_blank" class="social-icon"><i class="fab fa-twitter"></i></a>
             </div>
         </div>
 
         <div class="contact-form-section">
-            <form action="https://formsubmit.co/official.aryanta@gmail.com" method="POST">
-                
-                <input type="hidden" name="_subject" value="New Message from Aryanta Website">
-                <input type="hidden" name="_autoresponse" value="Your form has been submitted successfully. Thank you for contacting Aryanta.">
-                <input type="hidden" name="_template" value="table">
-                <input type="hidden" name="_captcha" value="false">
-
+            <form id="contactForm">
                 <div class="input-group">
-                    <input type="text" name="name" required placeholder=" ">
+                    <input type="text" id="name" required placeholder=" ">
                     <label>Your Name</label>
                 </div>
                 <div class="input-group">
-                    <input type="email" name="email" required placeholder=" ">
+                    <input type="email" id="email" required placeholder=" ">
                     <label>Email Address</label>
                 </div>
+                
                 <div class="input-group">
-                    <input type="text" name="subject" required placeholder=" ">
+                    <input type="tel" id="phone" placeholder=" ">
+                    <label>Phone Number (Optional)</label>
+                </div>
+
+                <div class="input-group">
+                    <input type="text" id="subject" required placeholder=" ">
                     <label>Subject</label>
                 </div>
                 <div class="input-group">
-                    <textarea name="message" rows="4" required placeholder=" "></textarea>
+                    <textarea id="message" rows="4" required placeholder=" "></textarea>
                     <label>Message</label>
                 </div>
-                <button type="submit" class="btn-submit">Send Message</button>
+                <button type="submit" class="btn-submit" id="submitBtn">Send Message</button>
             </form>
         </div>
     </div>
 
-    <script src="style.js"></script>
-    <script>
-        gsap.to("#card", { opacity: 1, y: 0, duration: 1, ease: "power3.out", delay: 0.2 });
-    </script>
+    <script type="module" src="style.js"></script>
+
 </body>
 </html>
