@@ -2,36 +2,34 @@
    ARYANTA: VISUAL ENGINE & LOGIC
    ========================================= */
 
-// 1. MOBILE SIDEBAR LOGIC (With Auto-Hide QA Button)
-function toggleSidebar() {
+/* FRONTEND EMAILJS + FIREBASE BYPASS MODE */
+
+/* =========================================
+   UI LOGIC & ANIMATIONS
+   ========================================= */
+
+// MOBILE SIDEBAR
+window.toggleSidebar = function() {
     const sidebar = document.getElementById('mobile-sidebar');
     const backdrop = document.getElementById('sidebar-backdrop');
-    const qaBtn = document.getElementById('prime-qa'); // Get the QA button
+    const qaBtn = document.getElementById('prime-qa');
 
     if (sidebar && backdrop) {
         sidebar.classList.toggle('active');
         backdrop.classList.toggle('active');
-        
-        // HIDE QUICK ACCESS BUTTON IMMEDIATELY IF SIDEBAR IS OPEN
         if(qaBtn) {
-            if(sidebar.classList.contains('active')) {
-                qaBtn.classList.add('hidden');
-            } else {
-                qaBtn.classList.remove('hidden');
-            }
+            qaBtn.classList.toggle('hidden', sidebar.classList.contains('active'));
         }
     }
-}
+};
 
-// 2. QUICK ACCESS BUTTON LOGIC
-function toggleQA() {
+// QUICK ACCESS BUTTON
+window.toggleQA = function() {
     const qa = document.getElementById('prime-qa');
-    if (qa) {
-        qa.classList.toggle('active');
-    }
-}
+    if (qa) qa.classList.toggle('active');
+};
 
-// 3. CANVAS BACKGROUND ANIMATION
+// BACKGROUND ANIMATION (CANVAS)
 const canvas = document.getElementById('video-canvas');
 if (canvas) {
     const ctx = canvas.getContext('2d');
@@ -93,23 +91,123 @@ if (canvas) {
     animate();
 }
 
-// 4. GSAP ANIMATIONS
-document.addEventListener("DOMContentLoaded", (event) => {
-    gsap.registerPlugin(ScrollTrigger);
+/* =========================================
+   GSAP & FORM SUBMISSION
+   ========================================= */
 
-    if(document.querySelector(".anim-hero")) {
-        gsap.from(".anim-hero", { 
-            duration: 1.5, y: 60, opacity: 0, stagger: 0.2, ease: "power3.out" 
-        });
+document.addEventListener("DOMContentLoaded", (event) => {
+    
+    // SAFE GSAP INIT
+    if (typeof gsap !== 'undefined') {
+        if (typeof ScrollTrigger !== 'undefined') {
+            gsap.registerPlugin(ScrollTrigger);
+        } else {
+            console.warn("ScrollTrigger not found. Animations disabled.");
+        }
+
+        if(document.getElementById("card")) {
+            gsap.to("#card", { opacity: 1, y: 0, duration: 1, ease: "power3.out", delay: 0.2 });
+        }
+
+        if(document.querySelector(".anim-hero")) {
+            gsap.from(".anim-hero", { 
+                duration: 1.5, y: 60, opacity: 0, stagger: 0.2, ease: "power3.out" 
+            });
+        }
+
+        if (typeof ScrollTrigger !== 'undefined') {
+            gsap.utils.toArray('.reveal').forEach(el => {
+                gsap.fromTo(el, 
+                    { opacity: 0, y: 50 }, 
+                    { 
+                        opacity: 1, y: 0, duration: 0.8, ease: "power2.out", 
+                        scrollTrigger: { trigger: el, start: "top 85%" } 
+                    }
+                );
+            });
+        }
     }
 
-    gsap.utils.toArray('.reveal').forEach(el => {
-        gsap.fromTo(el, 
-            { opacity: 0, y: 50 }, 
-            { 
-                opacity: 1, y: 0, duration: 0.8, ease: "power2.out", 
-                scrollTrigger: { trigger: el, start: "top 85%" } 
-            }
-        );
-    });
+    // FORM HANDLING LOGIC
+    const form = document.getElementById('contactForm');
+    if (form) {
+        const submitBtn = document.getElementById('submitBtn');
+        const popup = document.getElementById('successPopup');
+        const timerElement = document.getElementById('timer');
+
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+            submitBtn.disabled = true;
+
+            // Get Input Values
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const message = document.getElementById('message').value;
+
+            const formData = {
+                name: name,
+                email: email,
+                phone: document.getElementById('phone').value || "Not Provided", 
+                subject: document.getElementById('subject').value,
+                message: message,
+                date: new Date().toLocaleString()
+            };
+
+            // 1. EMAILJS SEND (Auto-reply TO User)
+            const emailPromise = emailjs.send(
+                "service_wnqvm4n",
+                "template_5by2ldn",
+                {
+                    to_name: name,    // Maps to {{to_name}} in email
+                    to_email: email,  // Tells EmailJS who to send this email to
+                    message: message  // Optional, if you want it in the email
+                }
+            );
+
+            // 2. FIREBASE SAVE (Direct Database)
+            const firebasePromise = fetch(
+                "https://aryanta-default-rtdb.asia-southeast1.firebasedatabase.app/contacts.json",
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(formData)
+                }
+            );
+
+            // Wait for BOTH to finish
+            Promise.all([emailPromise, firebasePromise])
+            .then(([emailRes, firebaseRes]) => {
+                // Check if Firebase was successful
+                if (firebaseRes.ok) {
+                    console.log("Email Sent & Data Saved!");
+                    
+                    // Show Success Popup
+                    if(popup) {
+                        popup.classList.add('active');
+                        let timeLeft = 3;
+                        const downloadTimer = setInterval(function(){
+                            timeLeft--;
+                            if(timerElement) timerElement.textContent = timeLeft;
+                            
+                            if(timeLeft <= 0){
+                                clearInterval(downloadTimer);
+                                window.location.href = "index.html";
+                            }
+                        }, 1000);
+                    }
+                } else {
+                    throw new Error("Database save failed.");
+                }
+            })
+            .catch(function(error) {
+                console.error('FAILED...', error);
+                alert("Error sending message. Please try again later.");
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+    }
 });
