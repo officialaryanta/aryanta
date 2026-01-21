@@ -1,14 +1,4 @@
-/* =========================================
-   ARYANTA: VISUAL ENGINE & LOGIC
-   ========================================= */
 
-/* FRONTEND EMAILJS + FIREBASE BYPASS MODE */
-
-/* =========================================
-   UI LOGIC & ANIMATIONS
-   ========================================= */
-
-// MOBILE SIDEBAR
 window.toggleSidebar = function() {
     const sidebar = document.getElementById('mobile-sidebar');
     const backdrop = document.getElementById('sidebar-backdrop');
@@ -23,7 +13,7 @@ window.toggleSidebar = function() {
     }
 };
 
-// QUICK ACCESS BUTTON
+
 window.toggleQA = function() {
     const qa = document.getElementById('prime-qa');
     if (qa) qa.classList.toggle('active');
@@ -91,9 +81,6 @@ if (canvas) {
     animate();
 }
 
-/* =========================================
-   GSAP & FORM SUBMISSION
-   ========================================= */
 
 document.addEventListener("DOMContentLoaded", (event) => {
     
@@ -128,21 +115,64 @@ document.addEventListener("DOMContentLoaded", (event) => {
         }
     }
 
+
+    const inputs = document.querySelectorAll('.input-group input, .input-group textarea');
+    
+    function checkInputs() {
+        inputs.forEach(input => {
+            if (input.value.trim() !== "") {
+                input.classList.add('has-value');
+            } else {
+                input.classList.remove('has-value');
+            }
+        });
+    }
+
+    inputs.forEach(input => {
+        input.addEventListener('input', checkInputs);
+        input.addEventListener('blur', checkInputs);
+        checkInputs();
+    });
+    setTimeout(checkInputs, 200);
+
     // FORM HANDLING LOGIC
     const form = document.getElementById('contactForm');
     if (form) {
         const submitBtn = document.getElementById('submitBtn');
         const popup = document.getElementById('successPopup');
         const timerElement = document.getElementById('timer');
+        const cancelBtn = document.getElementById('cancelTimerBtn');
 
         form.addEventListener('submit', function(event) {
-            event.preventDefault();
+            event.preventDefault(); // Stop page reload
             
             const originalText = submitBtn.innerHTML;
+            // Get value and remove any accidental spaces
+            const phoneInput = document.getElementById('phone').value.trim();
+
+            // ============================================================
+            // 🛡️ SECURITY CHECK: STRICT PHONE VALIDATION
+            // ============================================================
+            
+            // 1. Check if user typed anything in the phone box
+            if (phoneInput.length > 0) {
+                
+                // 2. Check if it is NOT numbers (RegEx) OR NOT 10 digits
+                // /^\d{10}$/ means "Start to End must be exactly 10 digits"
+                const isValidPhone = /^\d{10}$/.test(phoneInput);
+
+                if (!isValidPhone) {
+                    alert("Error: Phone number must be exactly 10 digits and numeric.");
+                    document.getElementById('phone').focus(); // Point user to the error
+                    return; // 🛑 STOP HERE. Do not send email. Do not save to Firebase.
+                }
+            }
+            // ============================================================
+
+            // IF WE PASS THE CHECK, CONTINUE...
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
             submitBtn.disabled = true;
 
-            // Get Input Values
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const message = document.getElementById('message').value;
@@ -150,24 +180,22 @@ document.addEventListener("DOMContentLoaded", (event) => {
             const formData = {
                 name: name,
                 email: email,
-                phone: document.getElementById('phone').value || "Not Provided", 
+                phone: phoneInput || "Not Provided", 
                 subject: document.getElementById('subject').value,
                 message: message,
                 date: new Date().toLocaleString()
             };
 
-            // 1. EMAILJS SEND (Auto-reply TO User)
             const emailPromise = emailjs.send(
                 "service_wnqvm4n",
                 "template_5by2ldn",
                 {
-                    to_name: name,    // Maps to {{to_name}} in email
-                    to_email: email,  // Tells EmailJS who to send this email to
-                    message: message  // Optional, if you want it in the email
+                    to_name: name,
+                    to_email: email,
+                    message: message
                 }
             );
 
-            // 2. FIREBASE SAVE (Direct Database)
             const firebasePromise = fetch(
                 "https://aryanta-default-rtdb.asia-southeast1.firebasedatabase.app/contacts.json",
                 {
@@ -177,17 +205,17 @@ document.addEventListener("DOMContentLoaded", (event) => {
                 }
             );
 
-            // Wait for BOTH to finish
             Promise.all([emailPromise, firebasePromise])
             .then(([emailRes, firebaseRes]) => {
-                // Check if Firebase was successful
                 if (firebaseRes.ok) {
                     console.log("Email Sent & Data Saved!");
                     
-                    // Show Success Popup
                     if(popup) {
                         popup.classList.add('active');
-                        let timeLeft = 3;
+                        
+                        let timeLeft = 10;
+                        if(timerElement) timerElement.textContent = timeLeft;
+
                         const downloadTimer = setInterval(function(){
                             timeLeft--;
                             if(timerElement) timerElement.textContent = timeLeft;
@@ -197,6 +225,16 @@ document.addEventListener("DOMContentLoaded", (event) => {
                                 window.location.href = "index.html";
                             }
                         }, 1000);
+
+                        if(cancelBtn) {
+                            cancelBtn.addEventListener('click', function() {
+                                clearInterval(downloadTimer);
+                                popup.classList.remove('active');
+                                submitBtn.innerHTML = "Message Sent";
+                                form.reset();
+                                checkInputs(); // Reset labels
+                            });
+                        }
                     }
                 } else {
                     throw new Error("Database save failed.");
