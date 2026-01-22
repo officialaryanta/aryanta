@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Aryanta | Employee Portal</title>
+    
+     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="site.webmanifest">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Mrs+Saint+Delafield&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+
+    <div id="view-login" class="login-wrapper">
+        <div class="login-card glass">
+            <div class="brand-header">
+                <img src="https://user-gen-media-assets.s3.amazonaws.com/gpt4o_images/405ba96c-ee6d-452d-a99a-38ae2fd6b74b.png" class="login-logo-img" alt="Aryanta Logo">
+                <h2>Aryanta<span>Connect</span></h2>
+            </div>
+
+            <div id="section-role-select">
+                <p style="margin-bottom: 25px; color: #cbd5e1; font-size: 14px;">Select your access level</p>
+                <div class="role-grid">
+                    <div class="role-card" onclick="showLoginSection('Employee')">
+                        <div class="role-icon"><i class="fa-solid fa-user-astronaut"></i></div>
+                        <h3>Employee</h3>
+                        <p>Staff Login</p>
+                    </div>
+                    
+                    <div class="role-card" onclick="window.location.href='manager.html'">
+                        <div class="role-icon admin"><i class="fa-solid fa-user-tie"></i></div>
+                        <h3>Admin</h3>
+                        <p>Manager Login</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="section-credentials" class="hidden">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                    <button class="icon-btn-back" onclick="showRoleSelect()"><i class="fa-solid fa-arrow-left"></i></button>
+                    <p style="color: #cbd5e1; font-size: 14px; margin: 0;"><span id="login-type-text">Employee</span> Login</p>
+                    <div style="width: 30px;"></div> </div>
+
+                <form id="form-login" onsubmit="event.preventDefault();"> 
+                    <div class="input-box">
+                        <i class="fa-solid fa-user-astronaut"></i>
+                        <input type="text" id="in-uid" placeholder="User ID" required>
+                    </div>
+                    <div class="input-box">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="in-pass" placeholder="Password" required>
+                    </div>
+                    <button type="submit" id="btn-login-action" class="btn-prime">
+                        Validate Credentials <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </form>
+                <div class="links-row">
+                    <button class="link-btn" onclick="showForgotPass()">Recover Account?</button>
+                </div>
+            </div>
+
+            <div id="section-otp" class="hidden">
+                <div class="otp-banner">
+                    <i class="fa-solid fa-envelope-circle-check" style="color:var(--accent); font-size:20px;"></i>
+                    <p style="font-size:12px; margin-top:5px;">OTP sent to: <b id="disp-email">...</b></p>
+                </div>
+                <form id="form-otp" onsubmit="event.preventDefault();">
+                    <div class="input-box center-text">
+                        <input type="text" id="in-otp" placeholder="------" maxlength="6" pattern="\d*" autocomplete="off" required oninput="checkAutoOtp(this)">
+                    </div>
+                    <button type="submit" id="btn-otp-action" class="btn-prime">
+                        Verify & Login <i class="fa-solid fa-door-open"></i>
+                    </button>
+                </form>
+                <div style="margin-top: 15px;">
+                    <button id="btn-resend" class="link-btn" disabled onclick="resendOTP()">Resend OTP <span id="timer-text"></span></button>
+                </div>
+                <button class="link-btn" style="margin-top: 10px;" onclick="location.reload()">Wrong ID? Go Back</button>
+            </div>
+
+            <div id="section-forgot" class="hidden" style="text-align: left;">
+               <h3 style="font-size:18px; margin-bottom:10px;">Recover Account</h3>
+               <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Enter your Registered Email and User ID (or Phone Number) to receive credentials.</p>
+               <form id="form-forgot" onsubmit="event.preventDefault(); submitForgot();">
+                   <div class="input-box">
+                       <i class="fa-solid fa-id-card"></i>
+                       <input type="text" id="forgot-id" placeholder="User ID or Phone Number" required>
+                   </div>
+                   <div class="input-box"><i class="fa-solid fa-envelope"></i><input type="email" id="forgot-email" placeholder="Registered Email" required></div>
+                   <button type="submit" class="btn-prime">Send Credentials</button>
+               </form>
+               <button class="link-btn" style="margin-top: 15px; width:100%; text-align:center;" onclick="hideForgotPass()">Cancel</button>
+            </div>
+
+            <div id="loader" class="hidden" style="margin-top:20px;">
+                <div class="spinner"></div>
+                <p id="loader-text" style="font-size:12px; color:var(--text-muted); margin-top:10px;">Securely connecting...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-dashboard" class="dashboard-container hidden">
+        <div class="mobile-nav-overlay" onclick="toggleSidebar()"></div>
+
+        <aside class="sidebar">
+            <div class="brand">
+                <img src="https://user-gen-media-assets.s3.amazonaws.com/gpt4o_images/405ba96c-ee6d-452d-a99a-38ae2fd6b74b.png" style="width: 35px; vertical-align: middle; margin-right: 10px;"> 
+                Aryanta
+            </div>
+            <nav style="flex:1;">
+                <button class="nav-btn active" onclick="switchTab('profile', this)"><i class="fa-solid fa-user"></i> Profile</button>
+                <button class="nav-btn" onclick="switchTab('payments', this)"><i class="fa-solid fa-credit-card"></i> Payments</button>
+                <button class="nav-btn" onclick="switchTab('send-message', this)"><i class="fa-solid fa-paper-plane"></i> Send Message</button>
+                <button class="nav-btn" onclick="switchTab('messages', this)"><i class="fa-solid fa-bell"></i> Notifications <span id="msg-badge" class="badge-dot hidden"></span></button>
+                <button class="nav-btn" onclick="switchTab('attendance', this)"><i class="fa-solid fa-calendar-check"></i> Attendance</button>
+                <button class="nav-btn" onclick="switchTab('incharge', this)"><i class="fa-solid fa-user-tie"></i> Your Incharge</button>
+            </nav>
+            
+            <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                <button class="nav-btn" onclick="switchTab('settings', this)"><i class="fa-solid fa-sliders"></i> Settings</button>
+                <button class="nav-btn" style="color:#ef4444;" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+            </div>
+        </aside>
+
+        <main class="main-panel">
+            <header>
+                <button id="mobile-menu-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+                <h2>Employee Portal</h2>
+                <div class="user-mini"><span id="header-name">User</span><img id="header-img" src="" alt="User"></div>
+            </header>
+
+            <div id="tab-settings" class="content-section hidden">
+                <div style="max-width: 600px; margin: 0 auto;">
+                    <div class="profile-card" style="padding: 0; overflow: hidden; margin-bottom: 25px;">
+                        <div class="settings-header-banner">
+                            <div class="icon-circle"><i class="fa-solid fa-sliders"></i></div>
+                            <div>
+                                <h3>Preferences</h3>
+                                <p>App behavior & notifications</p>
+                            </div>
+                        </div>
+                        <div class="settings-body">
+                            <div class="setting-row">
+                                <div>
+                                    <span class="s-title">Push Notifications</span>
+                                    <span class="s-desc">Get alerts for salary & messages</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-card" style="padding: 0; overflow: hidden;">
+                        <div class="settings-header-banner warning-bg">
+                            <div class="icon-circle warning-color"><i class="fa-solid fa-shield-halved"></i></div>
+                            <div>
+                                <h3>Security</h3>
+                                <p>Password & Account Protection</p>
+                            </div>
+                        </div>
+                        <div class="settings-body">
+                            <div class="input-group-modern">
+                                <label>Current Password</label>
+                                <div class="pass-input-box">
+                                    <input type="password" id="set-curr-pass" placeholder="••••••••">
+                                    <i class="fa-solid fa-eye" onclick="togglePassVisibility('set-curr-pass', this)"></i>
+                                </div>
+                            </div>
+                            <div class="input-group-modern">
+                                <label>New Password</label>
+                                <div class="pass-input-box">
+                                    <input type="password" id="set-new-pass" placeholder="••••••••">
+                                    <i class="fa-solid fa-eye" onclick="togglePassVisibility('set-new-pass', this)"></i>
+                                </div>
+                            </div>
+                            <button class="btn-prime" onclick="changePassword()" style="margin-top: 15px;">
+                                Update Credentials
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-profile" class="content-section">
+                <div class="profile-card">
+                    <div class="profile-header">
+                        <div class="img-container" onclick="viewFullImage()" title="Click to Expand"><img id="p-img" src="" alt="Profile"><div class="overlay"><i class="fa-solid fa-expand"></i></div></div>
+                        <div>
+                            <h3 id="p-name" style="color:#1e293b; font-size:24px;">Loading...</h3>
+                            <p id="p-job" style="color:var(--accent); font-weight:700; font-size:16px; margin-bottom:2px;">--</p>
+                            <p id="p-post" style="color:#64748b; font-size:13px; font-weight:600; margin-bottom:8px; text-transform:uppercase;">--</p>
+                            <span id="p-uid" class="badge">UID: ...</span>
+                        </div>
+                    </div>
+                    <div class="details-grid">
+                        <div class="detail-box"><label>Full Name</label><p id="p-fullname">...</p></div>
+                        <div class="detail-box"><label>Designation</label><p id="p-job-detail">...</p></div>
+                        <div class="detail-box"><label>Role</label><p id="p-post-detail">...</p></div>
+                        <div class="detail-box"><label>Father's Name</label><p id="p-father">...</p></div>
+                        <div class="detail-box"><label>Date of Birth</label><p id="p-dob">...</p></div>
+                        <div class="detail-box"><label>Phone Number</label><p id="p-phone">...</p></div>
+                        <div class="detail-box"><label>Email Address</label><p id="p-email">...</p></div>
+                        <div class="detail-box"><label>Joining Date</label><p id="p-join">...</p></div>
+                        <div class="detail-box full-width"><label>Full Address</label><p id="p-address">...</p></div>
+                        <div class="detail-box"><label>Bank Name</label><p id="p-bank">...</p></div>
+                        <div class="detail-box"><label>Account Number</label><p id="p-acc">...</p></div>
+                        <div class="detail-box"><label>Monthly Salary</label><p id="p-salary" style="color:#10b981;">...</p></div>
+                        <div class="detail-box"><label>Aadhaar Number</label><p id="p-aadhaar">...</p></div>
+                    </div>
+                    <div style="margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 20px;">
+                        <button class="btn-prime" style="background:#475569; width:auto; padding:12px 25px;" onclick="openUpdateModal()"><i class="fa-solid fa-pen-to-square"></i> Request Profile Update</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-send-message" class="content-section hidden">
+                <div class="profile-card">
+                    <h3><i class="fa-solid fa-paper-plane"></i> Send Message</h3>
+                    <p style="font-size:13px; color:#64748b; margin-bottom:25px;">Select a recipient and send a message.</p>
+                    
+                    <form onsubmit="event.preventDefault(); submitUserMessage();">
+                        <div class="modern-input-wrapper" style="margin-bottom: 20px;">
+                            <label class="modern-label">Recipient</label>
+                            
+                            <div class="custom-select-wrapper">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect()">
+                                    <span id="msg-recipient-text">Co-Founder</span>
+                                    <i class="fa-solid fa-chevron-down"></i>
+                                </div>
+                                <div class="custom-options" id="msg-recipient-options">
+                                    <div class="custom-option selected" data-value="Co-Founder" onclick="selectCustomOption(this)">Co-Founder</div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="msg-recipient-value" value="Co-Founder">
+                        </div>
+
+                        <div class="modern-input-wrapper">
+                            <label class="modern-label">Your Message</label>
+                            <textarea id="new-msg-input" class="message-box-styled" rows="6" placeholder="Type your message here..." required></textarea>
+                        </div>
+                        
+                        <div style="margin-top:25px; text-align:right;">
+                            <button type="submit" class="btn-prime" style="background:linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%); width:auto; display:inline-flex; padding: 12px 25px; border-radius: 50px; box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);">
+                                <i class="fa-solid fa-paper-plane"></i> &nbsp; Send Message
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="tab-messages" class="content-section hidden">
+                <div class="chat-wrapper">
+                    <div class="chat-header"><h3><i class="fa-solid fa-bell"></i> Notifications</h3><span class="status-online">System Online</span></div>
+                    <div id="chat-box" class="chat-box"></div>
+                </div>
+            </div>
+
+            <div id="tab-payments" class="content-section hidden">
+                <div class="profile-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #1e293b, #0f172a); color: white;">
+                    <h3><i class="fa-solid fa-coins"></i> This Month's Estimate</h3>
+                    <div style="margin-top: 20px;">
+                        <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8;">YOUR EARNINGS</span>
+                        <h2 id="salary-projection" style="font-size: 36px; color: #10b981; font-weight: 700; margin-top:5px;">₹ 0</h2>
+                    </div>
+                </div>
+                <div id="payments-list-container"></div>
+            </div>
+            
+            <div id="tab-attendance" class="content-section hidden">
+                <div class="profile-card" style="position: relative;">
+                    <div class="att-header">
+                        <h3><i class="fa-solid fa-calendar-check"></i> Attendance Record</h3>
+                        <button id="att-picker-btn" class="custom-picker-btn" onclick="toggleDatePicker()">
+                            <span id="att-display-date">Select Month</span> <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <div id="att-custom-picker" class="custom-date-popup hidden">
+                            <div class="picker-header">
+                                <button onclick="changePickerYear(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                                <span id="picker-year">2023</span>
+                                <button onclick="changePickerYear(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                            </div>
+                            <div class="picker-grid" id="picker-months"></div>
+                        </div>
+                    </div>
+                    <div class="att-circle-wrapper">
+                        <div class="progress-circle" id="att-circle">
+                            <div class="inner-circle"><span id="att-percent">0%</span><small>Presence</small></div>
+                        </div>
+                    </div>
+                    <div class="att-stats-grid">
+                        <div class="att-stat-box"><i class="fa-solid fa-user-check" style="color:var(--accent);"></i><span id="att-present">0</span><label>Days Present</label></div>
+                        <div class="att-stat-box"><i class="fa-solid fa-umbrella-beach" style="color:#8b5cf6;"></i><span id="att-holidays">0</span><label>Holidays</label></div>
+                        <div class="att-stat-box"><i class="fa-solid fa-user-xmark" style="color:var(--danger);"></i><span id="att-leaves">0</span><label>Total Leaves</label></div>
+                        <div class="att-stat-box"><i class="fa-solid fa-clock" style="color:var(--warning);"></i><span id="att-late">0</span><label>Days Late</label></div>
+                        <div class="att-stat-box"><i class="fa-solid fa-circle-xmark" style="color:#ef4444;"></i><span id="att-absent">0</span><label>Total Absent</label></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-incharge" class="content-section hidden">
+                <div id="incharge-list-container" style="display: flex; flex-direction: column; gap: 20px;">
+                    <p style="text-align: center; color: #94a3b8;">Loading Incharge details...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="modal-update" class="modal-overlay hidden">
+        <div class="modal-box modal-box-scrollable">
+            <div class="modal-header"><h3>Request Profile Update</h3><button onclick="closeUpdateModal()" style="border:none; background:none; font-size:24px; cursor:pointer;">&times;</button></div>
+            <div class="modal-body">
+                <form id="form-update" onsubmit="event.preventDefault(); validateAndInitiateUpdate();">
+                    <p class="section-label">Contact Info</p>
+                    <label class="up-label">Phone Number</label><input type="text" id="up-phone">
+                    <label class="up-label">Email Address</label>
+                    <div style="display:flex; gap:5px; margin-bottom:15px;">
+                        <input type="email" id="up-email" oninput="checkEmailChange()" style="flex:1;">
+                        <button type="button" id="btn-verify-email" class="hidden" onclick="initiateEmailVerification()" style="background:var(--warning); border:none; border-radius:8px; color:black; font-weight:bold; padding:0 15px; cursor:pointer; font-size:12px;">Verify</button>
+                    </div>
+                    <p class="section-label">Banking Info</p>
+                    <label class="up-label">Bank Name</label><input type="text" id="up-bank">
+                    <label class="up-label">Bank Branch</label><input type="text" id="up-branch">
+                    <label class="up-label">IFSC Code</label><input type="text" id="up-ifsc">
+                    <label class="up-label">Account Number</label><input type="text" id="up-acc">
+                    <button type="submit" id="btn-submit-update" class="btn-prime" style="margin-top:25px;">Submit Approval Request</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-verify-email" class="modal-overlay hidden" style="z-index: 250;">
+         <div class="modal-box" style="text-align:center;">
+            <div class="modal-header"><h3>Verify New Email</h3><button onclick="document.getElementById('modal-verify-email').classList.add('hidden')" style="border:none; background:none; font-size:24px; cursor:pointer;">&times;</button></div>
+            <input type="text" id="up-email-otp" placeholder="Enter 6-digit OTP" style="text-align:center; letter-spacing:5px; font-weight:bold;">
+            <button class="btn-prime" onclick="verifyUpdateOTP()" style="margin-top:15px;">Verify OTP</button>
+        </div>
+    </div>
+
+    <div id="modal-verify-action" class="modal-overlay hidden" style="z-index: 260;">
+         <div class="modal-box" style="text-align:center;">
+            <div class="modal-header"><h3>Confirm Update</h3><button onclick="document.getElementById('modal-verify-action').classList.add('hidden')" style="border:none; background:none; font-size:24px; cursor:pointer;">&times;</button></div>
+            <p style="font-size:13px; color:#64748b; margin-bottom:15px;">An OTP has been sent to your email to confirm these changes.</p>
+            <input type="text" id="action-otp" placeholder="Enter 6-digit OTP" style="text-align:center; letter-spacing:5px; font-weight:bold;">
+            <button class="btn-prime" onclick="confirmUpdateWithOTP()" style="margin-top:15px;">Verify & Submit Request</button>
+        </div>
+    </div>
+
+    <div id="modal-success" class="modal-overlay hidden" style="z-index: 300;">
+         <div class="modal-box" style="text-align:center; padding: 40px 20px;">
+            <div class="success-checkmark"><i class="fa-solid fa-circle-check"></i></div>
+            <h3 style="font-size:22px; color:#1e293b; margin-top:20px;">Request Sent!</h3>
+            <button class="btn-prime" style="margin-top:25px; background: #10b981;" onclick="document.getElementById('modal-success').classList.add('hidden')">Okay, Got it</button>
+        </div>
+    </div>
+
+    <div id="modal-message-view" class="modal-overlay hidden" style="z-index: 200;">
+         <div class="modal-box" style="text-align: center;">
+            <div class="modal-header"><h3>Message Details</h3><button onclick="document.getElementById('modal-message-view').classList.add('hidden')" style="border:none; background:none; font-size:24px; cursor:pointer;">&times;</button></div>
+            <div class="modal-body" id="msg-popup-content"></div>
+            <button class="btn-prime" style="margin-top:20px;" onclick="document.getElementById('modal-message-view').classList.add('hidden')">Close</button>
+        </div>
+    </div>
+
+    <div id="payslip-preview-modal" class="modal-overlay hidden" style="z-index: 6000;">
+        <div class="modal-box modal-box-scrollable" style="max-width: 800px; background: #f1f5f9; position: relative;">
+            <div class="modal-header sticky-modal-header" style="background: #f1f5f9; z-index: 10;">
+                <h3 style="color:#0f172a;">Official Salary Slip</h3>
+                <button onclick="document.getElementById('payslip-preview-modal').classList.add('hidden')" style="border:none; background:none; font-size:32px; cursor:pointer; color: #ef4444; font-weight:bold;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div id="payslip-paper-content" class="payslip-paper"></div>
+            </div>
+            <div class="modal-footer" style="padding: 15px; text-align: right; background: #f1f5f9; border-top: 1px solid #e2e8f0; display:flex; justify-content:flex-end; gap:10px;">
+                <button class="btn-prime" onclick="downloadPayslipPDF()" style="background: #3b82f6; width: auto; padding: 12px 20px;">
+                    <i class="fa-solid fa-file-pdf"></i> Download Slip
+                </button>
+                <button class="btn-prime" onclick="document.getElementById('payslip-preview-modal').classList.add('hidden')" style="background: #ef4444; width: auto; padding: 12px 20px;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="fs-viewer" class="fs-viewer hidden" onclick="this.classList.add('hidden')"><img id="fs-img" src=""><p>Click anywhere to close</p></div>
+    <div id="toast-box"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
+    <script src="app.js"></script>
+</body>
+</html> 
