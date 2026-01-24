@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Aryanta | Employee Portal</title>
+    <title>Aryanta | Connect</title>
     
      <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
@@ -26,33 +26,15 @@
                 <h2>Aryanta<span>Connect</span></h2>
             </div>
 
-            <div id="section-role-select">
-                <p style="margin-bottom: 25px; color: #cbd5e1; font-size: 14px;">Select your access level</p>
-                <div class="role-grid">
-                    <div class="role-card" onclick="showLoginSection('Employee')">
-                        <div class="role-icon"><i class="fa-solid fa-user-astronaut"></i></div>
-                        <h3>Employee</h3>
-                        <p>Staff Login</p>
-                    </div>
-                    
-                    <div class="role-card" onclick="window.location.href='manager.html'">
-                        <div class="role-icon admin"><i class="fa-solid fa-user-tie"></i></div>
-                        <h3>Admin</h3>
-                        <p>Manager Login</p>
-                    </div>
+            <div id="section-credentials">
+                <div style="text-align:center; margin-bottom: 25px;">
+                    <p style="color: #cbd5e1; font-size: 15px;">Secure Login</p>
                 </div>
-            </div>
-
-            <div id="section-credentials" class="hidden">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-                    <button class="icon-btn-back" onclick="showRoleSelect()"><i class="fa-solid fa-arrow-left"></i></button>
-                    <p style="color: #cbd5e1; font-size: 14px; margin: 0;"><span id="login-type-text">Employee</span> Login</p>
-                    <div style="width: 30px;"></div> </div>
 
                 <form id="form-login" onsubmit="event.preventDefault();"> 
                     <div class="input-box">
-                        <i class="fa-solid fa-user-astronaut"></i>
-                        <input type="text" id="in-uid" placeholder="User ID" required>
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" id="in-uid" placeholder="User ID / Phone / Email" required>
                     </div>
                     <div class="input-box">
                         <i class="fa-solid fa-lock"></i>
@@ -87,17 +69,56 @@
             </div>
 
             <div id="section-forgot" class="hidden" style="text-align: left;">
-               <h3 style="font-size:18px; margin-bottom:10px;">Recover Account</h3>
-               <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Enter your Registered Email and User ID (or Phone Number) to receive credentials.</p>
-               <form id="form-forgot" onsubmit="event.preventDefault(); submitForgot();">
-                   <div class="input-box">
-                       <i class="fa-solid fa-id-card"></i>
-                       <input type="text" id="forgot-id" placeholder="User ID or Phone Number" required>
+               
+               <div id="forgot-step-verify">
+                   <h3 style="font-size:18px; margin-bottom:10px;">Recover Account</h3>
+                   <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Enter details to verify your identity.</p>
+                   
+                   <form id="form-forgot-verify" onsubmit="event.preventDefault(); verifyRecoveryDetails();">
+                       <div class="input-box">
+                           <i class="fa-solid fa-envelope"></i>
+                           <input type="text" id="rec-contact" placeholder="Registered Email or Phone" required>
+                       </div>
+                       <div class="input-box">
+                           <i class="fa-solid fa-fingerprint"></i>
+                           <input type="text" id="rec-aadhaar" placeholder="12-Digit Aadhaar Number" maxlength="12" pattern="\d{12}" required>
+                       </div>
+                       <button type="submit" class="btn-prime">Verify & Recover</button>
+                   </form>
+               </div>
+
+               <div id="forgot-step-manual" class="hidden">
+                   <h3 style="font-size:18px; margin-bottom:10px; color: var(--warning);">Account Not Found</h3>
+                   <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">We couldn't verify those details. Please select an option below.</p>
+                   
+                   <form id="form-forgot-manual" onsubmit="event.preventDefault(); sendManualRecoveryRequest();">
+                       <div class="input-box">
+                           <i class="fa-solid fa-user"></i>
+                           <input type="text" id="req-name" placeholder="Your Full Name" required>
+                       </div>
+                       <div class="input-box">
+                           <i class="fa-solid fa-phone"></i>
+                           <input type="text" id="req-phone" placeholder="Your Mobile Number" required>
+                       </div>
+                       <button type="submit" class="btn-prime">
+                           <i class="fa-solid fa-paper-plane"></i> Send Email Request (App)
+                       </button>
+                   </form>
+
+                   <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; text-align: center;">
+                       <p style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;">— Try Another Way —</p>
+                       
+                       <button onclick="openWhatsAppSupport()" class="btn-prime" style="background: #25D366; margin-bottom: 10px;">
+                           <i class="fa-brands fa-whatsapp"></i> Send Message on WhatsApp
+                       </button>
+                       
+                       <button onclick="alert('Please contact your reporting Manager or HR department directly for manual password reset.')" class="btn-prime" style="background: #475569;">
+                           <i class="fa-solid fa-user-tie"></i> Contact Manager
+                       </button>
                    </div>
-                   <div class="input-box"><i class="fa-solid fa-envelope"></i><input type="email" id="forgot-email" placeholder="Registered Email" required></div>
-                   <button type="submit" class="btn-prime">Send Credentials</button>
-               </form>
-               <button class="link-btn" style="margin-top: 15px; width:100%; text-align:center;" onclick="hideForgotPass()">Cancel</button>
+               </div>
+
+               <button class="link-btn" style="margin-top: 15px; width:100%; text-align:center;" onclick="hideForgotPass()">Cancel & Go Back</button>
             </div>
 
             <div id="loader" class="hidden" style="margin-top:20px;">
@@ -398,4 +419,4 @@
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
     <script src="app.js"></script>
 </body>
-</html> 
+</html>
