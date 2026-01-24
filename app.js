@@ -10,7 +10,7 @@ emailjs.init("TDgNRO0CEs9rU3ozD");
 // --- GLOBAL STATE ---
 let currentUser = null;
 let resendTimer = null;
-let updateResendTimer = null; // ✅ Fix for Update Screen Timer
+let updateResendTimer = null; 
 let currentPickerYear = new Date().getFullYear();
 let currentPickerMonth = new Date().getMonth() + 1;
 let isEmailVerified = true; 
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedData = localStorage.getItem("aryanta_user");
     if(savedData) {
         toggleLoader(true);
-        document.getElementById('section-role-select').classList.add('hidden');
+        // Hide credentials, try to auto-login
         document.getElementById('section-credentials').classList.add('hidden');
         try {
             const tempUser = JSON.parse(savedData);
@@ -41,8 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
             logout(false); 
         }
     } else {
-        document.getElementById('section-role-select').classList.remove('hidden');
-        document.getElementById('section-credentials').classList.add('hidden');
+        // NO AUTO LOGIN: Show Credentials directly
+        // Removed logic regarding Role Select Screen
+        document.getElementById('section-credentials').classList.remove('hidden');
     }
     
     document.getElementById('btn-login-action')?.addEventListener('click', handleLogin);
@@ -71,17 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 // AUTHENTICATION LOGIC
 // ==========================================
-
-window.showLoginSection = (type) => {
-    document.getElementById('section-role-select').classList.add('hidden');
-    document.getElementById('section-credentials').classList.remove('hidden');
-    document.getElementById('login-type-text').innerText = type;
-};
-
-window.showRoleSelect = () => {
-    document.getElementById('section-credentials').classList.add('hidden');
-    document.getElementById('section-role-select').classList.remove('hidden');
-};
 
 window.togglePassVisibility = (id, icon) => {
     const input = document.getElementById(id);
@@ -128,6 +118,7 @@ function checkRoleAndRedirect() {
     if(!currentUser) return;
     const role = (currentUser.personal.post || "").toLowerCase();
     
+    // Automatically redirect managers, everyone else goes to dashboard
     if(role.includes('manager')) {
         window.location.href = "manager.html"; 
     } else {
@@ -162,7 +153,7 @@ async function handleLogin(e) {
     const uid = document.getElementById('in-uid').value.trim();
     const pass = document.getElementById('in-pass').value.trim();
     
-    if(!uid || !pass) { showToast("Enter UID & Password", "danger"); return; }
+    if(!uid || !pass) { showToast("Enter Credentials", "danger"); return; }
     
     toggleLoader(true);
     
@@ -394,7 +385,7 @@ window.submitUserMessage = () => {
         readAt: null
     };
 
-    const btn = document.querySelector('.btn-prime[type="submit"]'); // Target the button in the form
+    const btn = document.querySelector('.btn-prime[type="submit"]'); 
     const originalText = btn ? btn.innerHTML : "Send";
     if(btn) {
         btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Sending`;
@@ -410,7 +401,7 @@ window.submitUserMessage = () => {
         if(d.success) {
             showToast("Message Sent 📤");
             document.getElementById('new-msg-input').value = "";
-            loadNotifications(); // Refresh chat immediately
+            loadNotifications(); 
         } else {
             showToast("Failed to send", "danger");
         }
@@ -611,20 +602,13 @@ window.initiateActionOTP = (targetEmail) => {
     }).then(() => {
         toggleLoader(false); 
         showToast("Confirmation OTP Sent 📧"); 
-        
         document.getElementById('modal-verify-action').classList.remove('hidden');
-        
-        // ✅ START UPDATE TIMER FIX
         startUpdateResendTimer();
-        
     }).catch(err => { toggleLoader(false); console.error(err); showToast("Error sending OTP", "danger"); });
 };
 
-// ✅ TIMER FIX FOR UPDATE SCREEN
 function startUpdateResendTimer() {
-    const btn = document.getElementById('btn-resend-action') || document.getElementById('btn-resend-update'); // Ensure this ID matches your HTML or create button
-    // Note: The provided HTML for 'modal-verify-action' doesn't have a resend button explicitly shown in the snippet.
-    // If you need one, you should add it to your HTML.
+    const btn = document.getElementById('btn-resend-action') || document.getElementById('btn-resend-update'); 
 }
 
 window.confirmUpdateWithOTP = () => {
@@ -663,6 +647,110 @@ function submitFinalUpdate() {
         showToast("Error submitting request", "danger");
     });
 }
+
+// ==========================================
+// FORGOT PASSWORD / RECOVERY LOGIC (UPDATED)
+// ==========================================
+
+window.showForgotPass = () => { 
+    document.getElementById('section-credentials').classList.add('hidden'); 
+    document.getElementById('section-forgot').classList.remove('hidden');
+    
+    // Reset views to Step 1
+    document.getElementById('forgot-step-verify').classList.remove('hidden');
+    document.getElementById('forgot-step-manual').classList.add('hidden');
+    
+    // Clear forms
+    document.getElementById('form-forgot-verify').reset();
+    document.getElementById('form-forgot-manual').reset();
+};
+
+window.hideForgotPass = () => { 
+    document.getElementById('section-forgot').classList.add('hidden'); 
+    document.getElementById('section-credentials').classList.remove('hidden'); 
+};
+
+window.verifyRecoveryDetails = async () => {
+    const contact = document.getElementById('rec-contact').value.trim();
+    const aadhaar = document.getElementById('rec-aadhaar').value.trim();
+
+    if(!contact || aadhaar.length !== 12) {
+        showToast("Enter valid Email/Phone & 12-digit Aadhaar", "danger");
+        return;
+    }
+
+    toggleLoader(true);
+
+    // SIMULATE CHECK (Intentionally fails to show the manual form options)
+    setTimeout(() => {
+        toggleLoader(false);
+        showToast("Account details not found.", "warning");
+        
+        // Hide Step 1, Show Step 2 (Manual Request)
+        document.getElementById('forgot-step-verify').classList.add('hidden');
+        document.getElementById('forgot-step-manual').classList.remove('hidden');
+    }, 1500);
+};
+
+// HELPER: Generate the specific message text
+function getRecoveryMessage(name, phone) {
+    return `Respected Admin Sir,
+
+I hope you are doing well. I am writing this message as an employee of the company. Unfortunately, I have forgotten my UID and password, due to which I am unable to log in to my account. I kindly request you to please help me reset or recover my login credentials at the earliest so I can continue my assigned work smoothly. Please let me know if any verification is required from my side.
+
+My Details:
+Name: ${name}
+Mobile No: ${phone}
+
+Thank you for your support.`;
+}
+
+// OPTION 1: Send via NATIVE EMAIL APP (mailto:) - NO EMAILJS
+window.sendManualRecoveryRequest = () => {
+    const name = document.getElementById('req-name').value.trim();
+    const phone = document.getElementById('req-phone').value.trim();
+
+    if(!name || !phone) {
+        showToast("Please fill in Name and Phone", "danger");
+        return;
+    }
+
+    const msg = getRecoveryMessage(name, phone);
+    const subject = `Account Recovery Request - ${name}`;
+    
+    // Construct Mailto Link with pre-filled fields
+    const mailtoLink = `mailto:official.aryanta@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(msg)}`;
+    
+    // Open default email client
+    window.location.href = mailtoLink;
+    
+    setTimeout(() => {
+         hideForgotPass();
+    }, 1000);
+};
+
+// OPTION 2: Open WhatsApp
+window.openWhatsAppSupport = () => {
+    const name = document.getElementById('req-name').value.trim();
+    const phone = document.getElementById('req-phone').value.trim();
+
+    if(!name || !phone) {
+        showToast("Please enter Name and Phone first", "warning");
+        document.getElementById('req-name').focus();
+        return;
+    }
+
+    const msg = getRecoveryMessage(name, phone);
+    
+    // WhatsApp URL (using the phone number 8603467878 found in your app footer)
+    const waUrl = `https://wa.me/918603467878?text=${encodeURIComponent(msg)}`;
+    
+    window.open(waUrl, '_blank');
+};
+
+// ==========================================
+// UTILITIES
+// ==========================================
 
 window.downloadPayslipPDF = function() {
     const element = document.getElementById('payslip-paper-content');
@@ -753,8 +841,6 @@ window.logout = (reason) => {
     location.reload();
 };
 
-window.showForgotPass = () => { document.getElementById('section-credentials').classList.add('hidden'); document.getElementById('section-forgot').classList.remove('hidden'); };
-window.hideForgotPass = () => { document.getElementById('section-forgot').classList.add('hidden'); document.getElementById('section-credentials').classList.remove('hidden'); };
 function setText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text || "N/A"; }
 function toggleLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); if(show) document.getElementById('section-credentials').classList.add('hidden'); }
 function showToast(m, t='success') { const box = document.getElementById('toast-box'); const d = document.createElement('div'); d.className = `toast ${t}`; d.innerText = m; box.appendChild(d); setTimeout(() => d.remove(), 3000); }
@@ -769,10 +855,6 @@ window.closeUpdateModal = () => document.getElementById('modal-update').classLis
 
 window.changePassword = () => {
    showToast("Password change must be done by Admin.", "warning");
-};
-
-window.submitForgot = () => {
-    showToast("Please contact HR to reset password.", "warning");
 };
 
 function initCustomPicker() {
