@@ -8,8 +8,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
     <link rel="icon" href="favicon.ico">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <link rel="manifest" href="manifest.json">
-
+    <link rel="manifest" href="site.webmanifest">
 
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
@@ -73,20 +72,22 @@
         
         .founder-msg { background: linear-gradient(45deg, #111, #0a0a0a); border-left: 4px solid var(--accent-secondary); padding: 40px; margin-top: 20px; border-radius: 0 20px 20px 0; }
         
+        /* UPDATED PROOF LIST (ALIGNMENT FIX) */
         .proof-list li { 
             list-style: none; display: flex; 
-            align-items: flex-start; 
+            align-items: flex-start; /* Changed from center to flex-start */
             gap: 15px; font-size: 1.1rem; margin-bottom: 15px; color: #ddd; 
         }
         .proof-list i { 
             color: #22c55e; font-size: 1.2rem; 
-            margin-top: 4px; 
+            margin-top: 4px; /* Added margin to push tick down to text level */
         }
         
         .cta-box { background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(0,0,0,0)); border: 1px solid var(--accent-primary); border-radius: 30px; padding: 60px; text-align: center; max-width: 900px; margin: 0 auto; }
         
         .footer-dark { border-top: 1px solid #111; padding: 60px 20px; text-align: center; color: #555; }
         
+        /* UPDATED SOCIAL LINKS (FOOTER) */
         .footer-socials { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin: 20px 0; }
         .social-link { color: #888; font-size: 1.2rem; transition: 0.3s; }
         .social-link:hover { color: white; transform: scale(1.2); }
@@ -121,10 +122,12 @@
 
         .sidebar-footer { margin-top: auto; border-top: 1px solid #222; padding-top: 30px; }
         
+        /* UPDATED SIDEBAR SOCIALS */
         .sidebar-socials { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
         .sidebar-socials a { color: #666; font-size: 1.2rem; transition: 0.3s; width: 30px; text-align: center; }
         .sidebar-socials a:hover { color: white; transform: scale(1.2); }
 
+        /* OVERLAY BACKDROP */
         .sidebar-backdrop {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.8); z-index: 1999;
@@ -171,50 +174,6 @@
         }
         .qa-item:hover { background: white; color: black; transform: scale(1.1); }
 
-        /* =========================================
-           POPUP SYSTEM (NEW)
-           ========================================= */
-        .popup-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
-            z-index: 6000; display: flex; justify-content: center; align-items: center;
-            opacity: 0; visibility: hidden; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .popup-overlay.active { opacity: 1; visibility: visible; }
-        
-        .popup-box {
-            background: linear-gradient(145deg, #111 0%, #0a0a0a 100%);
-            border: 1px solid var(--glass-border);
-            padding: 40px; border-radius: 20px; text-align: center;
-            width: 90%; max-width: 400px; position: relative;
-            transform: scale(0.9) translateY(20px); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-        }
-        .popup-overlay.active .popup-box { transform: scale(1) translateY(0); }
-        
-        .popup-close {
-            position: absolute; top: 15px; right: 20px;
-            background: none; border: none; color: #666; font-size: 1.5rem; cursor: pointer;
-            transition: 0.2s;
-        }
-        .popup-close:hover { color: white; transform: rotate(90deg); }
-        
-        .popup-icon {
-            font-size: 2.5rem; color: var(--accent-primary); margin-bottom: 20px;
-        }
-
-        .popup-btn {
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            width: 100%; padding: 16px; margin: 12px 0;
-            border-radius: 50px; font-weight: 600; cursor: pointer; border: none;
-            transition: 0.2s; font-size: 1rem;
-        }
-        .btn-login { background: var(--accent-primary); color: white; }
-        .btn-login:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3); }
-        
-        .btn-install { background: transparent; color: white; border: 1px solid var(--glass-border); }
-        .btn-install:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.3); }
-
         @media (max-width: 1024px) {
             .nav-menu { display: none; }
             .mobile-toggle { display: block; }
@@ -254,7 +213,7 @@
     <div class="mobile-sidebar" id="mobile-sidebar">
         <div class="sidebar-header">
             <img src="https://user-gen-media-assets.s3.amazonaws.com/gpt4o_images/405ba96c-ee6d-452d-a99a-38ae2fd6b74b.png" class="sidebar-logo" alt="Logo">
-            <button class="sidebar-close" onclick="toggleSidebar()">×</button>
+            <button class="sidebar-close" onclick="toggleSidebar()">&times;</button>
         </div>
         <div class="sidebar-menu">
             <a href="index.html" class="m-link active"><span>01</span> Home</a>
@@ -437,82 +396,11 @@
                 <a href="https://wa.me/918603467878" target="_blank" class="qa-item" style="border-color: #25D366; color: #25D366;"><i class="fab fa-whatsapp"></i></a>
                 <a href="tel:+918603467878" class="qa-item" style="border-color: #fca5a5; color: #fca5a5;"><i class="fas fa-phone-alt"></i></a>
                 <a href="mailto:official.aryanta@gmail.com" class="qa-item" style="border-color: #fbbf24; color: #fbbf24;"><i class="fas fa-envelope"></i></a>
-                <a href="#" onclick="openEmpPopup(event)" class="qa-item" style="border-color: #3b82f6; color: #3b82f6;"><i class="fas fa-users"></i></a>
+                <a href="emply.html" class="qa-item" style="border-color: #3b82f6; color: #3b82f6;"><i class="fas fa-users"></i></a>
             </div>
         </div>
     </div>
 
-    <div class="popup-overlay" id="emp-popup">
-        <div class="popup-box">
-            <button class="popup-close" onclick="closeEmpPopup()">&times;</button>
-            <i class="fas fa-users-cog popup-icon"></i>
-            <h3 style="margin-bottom:10px; color:white; font-family:'Playfair Display', serif;">Employee Access</h3>
-            <p style="color:#aaa; margin-bottom:25px; font-size:0.9rem;">Choose how you want to access the dashboard.</p>
-            
-            <button class="popup-btn btn-login" onclick="window.location.href='emply.html'">
-                <i class="fas fa-globe"></i> Login via Web
-            </button>
-            
-            <button class="popup-btn btn-install" onclick="installPWA()">
-                <i class="fas fa-download"></i> Download App
-            </button>
-        </div>
-    </div>
-
     <script src="style.js"></script>
-
-    <script>
-        // Store the install prompt
-        let deferredPrompt;
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            // Prevent the mini-infobar from appearing on mobile
-            e.preventDefault();
-            // Stash the event so it can be triggered later.
-            deferredPrompt = e;
-            console.log("PWA Install Prompt Captured");
-        });
-
-        // Open Popup
-        function openEmpPopup(e) {
-            if(e) e.preventDefault();
-            document.getElementById('emp-popup').classList.add('active');
-        }
-
-        // Close Popup
-        function closeEmpPopup() {
-            document.getElementById('emp-popup').classList.remove('active');
-        }
-
-        // Close popup if clicking outside the box
-        document.getElementById('emp-popup').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeEmpPopup();
-            }
-        });
-
-        // Trigger PWA Install
-        async function installPWA() {
-            if (deferredPrompt) {
-                // Show the install prompt
-                deferredPrompt.prompt();
-                // Wait for the user to respond to the prompt
-                const { outcome } = await deferredPrompt.userChoice;
-                console.log(`User response to install prompt: ${outcome}`);
-                // We've used the prompt, so clear it
-                deferredPrompt = null;
-            } else {
-                // If prompt is not available (already installed, or not supported)
-                alert("App is already installed or your browser does not support automatic installation. Please use the 'Add to Home Screen' option in your browser menu.");
-            }
-        }
-        
-    </script>
-    <script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js");
-}
-</script>
-
 </body>
 </html>
