@@ -81,16 +81,50 @@
                        </div>
                        <div class="input-box">
                            <i class="fa-solid fa-fingerprint"></i>
-                           <input type="text" id="rec-aadhaar" placeholder="12-Digit Aadhaar Number" maxlength="12" pattern="\d{12}" required>
+                           <input type="text" id="rec-aadhaar" placeholder="12-Digit Aadhaar Number" maxlength="12" pattern="\d{12}" class="input-numeric" required>
                        </div>
-                       <button type="submit" class="btn-prime">Verify & Recover</button>
+                       <button type="submit" class="btn-prime">Verify & Send OTP</button>
+                   </form>
+               </div>
+
+               <div id="forgot-step-otp" class="hidden">
+                   <h3 style="font-size:18px; margin-bottom:10px;">Verify Identity</h3>
+                   <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Enter the 6-digit code sent to your email.</p>
+                   
+                   <form onsubmit="event.preventDefault(); verifyRecoveryOTP();">
+                       <div class="input-box center-text">
+                           <input type="text" id="rec-otp-input" placeholder="------" maxlength="6" pattern="\d*" autocomplete="off" required>
+                       </div>
+                       <button type="submit" class="btn-prime">Verify Code</button>
+                   </form>
+               </div>
+
+               <div id="forgot-step-reset" class="hidden">
+                   <h3 style="font-size:18px; margin-bottom:10px;">Reset Password</h3>
+                   
+                   <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                       <p style="font-size: 12px; color: #94a3b8;">Recovering Account For:</p>
+                       <p style="font-size: 16px; font-weight: bold; color: white; margin-top:2px;" id="rec-disp-name">User Name</p>
+                       <p style="font-size: 12px; color: var(--accent);" id="rec-disp-uid">UID: ...</p>
+                   </div>
+
+                   <form onsubmit="event.preventDefault(); submitNewPassword();">
+                       <div class="input-box">
+                           <i class="fa-solid fa-lock"></i>
+                           <input type="password" id="rec-new-pass" placeholder="New Password" required minlength="6">
+                       </div>
+                       <div class="input-box">
+                           <i class="fa-solid fa-lock"></i>
+                           <input type="password" id="rec-conf-pass" placeholder="Confirm Password" required minlength="6">
+                       </div>
+                       <button type="submit" id="btn-reset-final" class="btn-prime">Update Password</button>
                    </form>
                </div>
 
                <div id="forgot-step-manual" class="hidden">
                    <div id="rec-stage-1">
                        <h3 style="font-size:18px; margin-bottom:10px; color: var(--warning);">Account Not Found</h3>
-                       <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">We couldn't verify those details. Please fill the form below to send a request to system.</p>
+                       <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">We couldn't verify those details. Please fill the form below to send a request.</p>
                        
                        <form id="form-forgot-manual" onsubmit="event.preventDefault(); submitRecoveryToFirebase();">
                            <div class="input-box">
@@ -103,7 +137,7 @@
                            </div>
                            <div class="input-box">
                                <i class="fa-solid fa-phone"></i>
-                               <input type="text" id="req-phone" placeholder="Your Mobile Number" required>
+                               <input type="text" id="req-phone" placeholder="Your Mobile Number" maxlength="10" class="input-numeric" required>
                            </div>
                            <button type="submit" id="btn-submit-rec" class="btn-prime">
                                <i class="fa-solid fa-cloud-arrow-up"></i> Submit Request
@@ -113,19 +147,15 @@
 
                    <div id="rec-stage-2" class="hidden" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; text-align: center;">
                        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">Still waiting? Try these methods:</p>
-                       
                        <button onclick="openWhatsAppSupport()" class="btn-prime" style="background: #25D366; margin-bottom: 10px;">
-                           <i class="fa-brands fa-whatsapp"></i> send request to admin on whatsapp
+                           <i class="fa-brands fa-whatsapp"></i> WhatsApp Admin
                        </button>
-                       
                        <button onclick="sendManualRecoveryRequest()" class="btn-prime" style="background: #EA4335; margin-bottom: 10px;">
-                           <i class="fa-solid fa-envelope"></i> send request to admin on Email 
+                           <i class="fa-solid fa-envelope"></i> Email Admin 
                        </button>
-
                        <button onclick="sendSmsRequest()" class="btn-prime" style="background: #3b82f6; margin-bottom: 10px;">
-                           <i class="fa-solid fa-comment-sms"></i> send request to admin on SMS 
+                           <i class="fa-solid fa-comment-sms"></i> SMS Admin 
                        </button>
-
                        <button onclick="showFinalNoWay()" class="link-btn" style="margin-top: 10px; color: var(--text-muted);">
                            Try another way <i class="fa-solid fa-arrow-right"></i>
                        </button>
@@ -133,9 +163,9 @@
 
                    <div id="rec-stage-3" class="hidden" style="text-align: center; margin-top: 20px; animation: fadeIn 0.5s;">
                        <div style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.3);">
-                           <h4 style="color: var(--danger); margin-bottom: 8px;">couldn't find another way</h4>
+                           <h4 style="color: var(--danger); margin-bottom: 8px;">Couldn't find another way</h4>
                            <p style="font-size: 13px; color: #cbd5e1; line-height: 1.5;">
-                               Please contact your Manager or admine directly for manual password reset or help.
+                               Please contact your Manager directly for manual password reset.
                            </p>
                        </div>
                    </div>
@@ -321,6 +351,11 @@
             </div>
             
             <div id="tab-attendance" class="content-section hidden">
+                <div class="profile-card" style="margin-top:20px;">
+                  <h3>Daily Attendance</h3>
+                  <div id="my-attendance-list">Loading...</div>
+                </div>
+
                 <div class="profile-card" style="position: relative;">
                     <div class="att-header">
                         <h3><i class="fa-solid fa-calendar-check"></i> Attendance Record</h3>
@@ -365,17 +400,28 @@
             <div class="modal-body">
                 <form id="form-update" onsubmit="event.preventDefault(); validateAndInitiateUpdate();">
                     <p class="section-label">Contact Info</p>
-                    <label class="up-label">Phone Number</label><input type="text" id="up-phone">
+                    <label class="up-label">Phone Number</label>
+                    <input type="text" id="up-phone" maxlength="10" class="input-numeric" placeholder="10 Digits Only">
+                    
                     <label class="up-label">Email Address</label>
                     <div style="display:flex; gap:5px; margin-bottom:15px;">
                         <input type="email" id="up-email" oninput="checkEmailChange()" style="flex:1;">
                         <button type="button" id="btn-verify-email" class="hidden" onclick="initiateEmailVerification()" style="background:var(--warning); border:none; border-radius:8px; color:black; font-weight:bold; padding:0 15px; cursor:pointer; font-size:12px;">Verify</button>
                     </div>
+                    
                     <p class="section-label">Banking Info</p>
-                    <label class="up-label">Bank Name</label><input type="text" id="up-bank">
-                    <label class="up-label">Bank Branch</label><input type="text" id="up-branch">
-                    <label class="up-label">IFSC Code</label><input type="text" id="up-ifsc">
-                    <label class="up-label">Account Number</label><input type="text" id="up-acc">
+                    <label class="up-label">Bank Name</label>
+                    <input type="text" id="up-bank">
+                    
+                    <label class="up-label">Bank Branch</label>
+                    <input type="text" id="up-branch">
+                    
+                    <label class="up-label">IFSC Code</label>
+                    <input type="text" id="up-ifsc" class="input-uppercase" maxlength="11" placeholder="Ex: SBIN0001234">
+                    
+                    <label class="up-label">Account Number</label>
+                    <input type="text" id="up-acc" class="input-numeric" maxlength="16" placeholder="Max 16 Digits">
+                    
                     <button type="submit" id="btn-submit-update" class="btn-prime" style="margin-top:25px;">Submit Approval Request</button>
                 </form>
             </div>
