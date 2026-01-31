@@ -1,7 +1,10 @@
-// ==========================================
-// CONFIGURATION
-// ==========================================
-// ✅ Your Secure Cloudflare Worker URL
+// 🔐 Restore login session
+const savedUser = localStorage.getItem("aryanta_user");
+if (savedUser) {
+    window.currentUser = JSON.parse(savedUser);
+}
+
+// ⚠️ IMPORTANT: Ensure this matches your Cloudflare Worker URL exactly
 const API_URL = "https://rough-field-c679.official-aryanta.workers.dev";
 
 // --- EMAILJS CREDENTIALS ---
@@ -9,7 +12,7 @@ const API_URL = "https://rough-field-c679.official-aryanta.workers.dev";
 emailjs.init("TDgNRO0CEs9rU3ozD");
 
 // --- GLOBAL STATE ---
-let currentUser = null;
+let currentUser = window.currentUser || null;
 let resendTimer = null;
 let updateResendTimer = null; 
 let currentPickerYear = new Date().getFullYear();
@@ -20,11 +23,30 @@ let actionOTP = null;
 let pendingUpdateData = null; 
 let refreshInterval = null; 
 
+// --- RECOVERY STATE ---
+let recoveryUser = null;
+let recoveryOTP = null;
+
 // ==========================================
 // INITIALIZATION & AUTO-LOGIN
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. CHECK LOCAL STORAGE: If user data exists, skip login screen entirely
+    
+    // 1. INPUT ENFORCEMENT (Allow only numbers for Phone/Aadhaar)
+    document.querySelectorAll('.input-numeric').forEach(inp => {
+        inp.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    });
+
+    // 2. INPUT ENFORCEMENT (Uppercase for IFSC)
+    document.querySelectorAll('.input-uppercase').forEach(inp => {
+        inp.addEventListener('input', function() {
+            this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        });
+    });
+
+    // 3. CHECK LOCAL STORAGE: If user data exists, skip login screen
     const savedData = localStorage.getItem("aryanta_user");
     
     if(savedData) {
@@ -34,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Go straight to dashboard (Don't ask to login)
             if(currentUser && currentUser.uid) {
-                console.log("Auto-login detected for:", currentUser.uid);
+                // Console log removed for privacy
                 
                 // Hide Login View Immediately
                 document.getElementById('view-login').classList.add('hidden');
@@ -48,11 +70,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error("Invalid stored data");
             }
         } catch(e) { 
-            console.error("Auth Error", e);
+            // console.error("Auth Error", e); // Kept minimal
             logout(false); 
         }
     } else {
-        // 2. NO DATA: Show Login Screen normally
+        // 4. NO DATA: Show Login Screen normally
         document.getElementById('view-login').classList.remove('hidden');
         document.getElementById('section-credentials').classList.remove('hidden');
     }
@@ -108,7 +130,6 @@ window.togglePassVisibility = (id, icon) => {
     }
 };
 
-// ✅ FIX 1: Updated Loader logic so inputs reappear on error
 function toggleLoader(show) {
     const loader = document.getElementById('loader');
     const credSection = document.getElementById('section-credentials');
@@ -118,8 +139,6 @@ function toggleLoader(show) {
         credSection.classList.add('hidden');
     } else {
         loader.classList.add('hidden');
-        // We do NOT automatically unhide credentials here because we might be moving to OTP screen.
-        // We will manually unhide it in handleLogin error block.
     }
 }
 
@@ -143,7 +162,7 @@ async function verifySession(uid, waitPromise) {
         toggleLoader(false);
 
     } catch(e) { 
-        console.error(e);
+        // console.error(e);
         if(waitPromise) await waitPromise; 
         toggleLoader(false); 
         logout(false); 
@@ -181,10 +200,11 @@ async function updateUserActivity(uid, dbKey) {
             body: JSON.stringify({ dbKey, activityData })
         });
 
-    } catch (err) { console.error("Tracking Error:", err); }
+    } catch (err) { 
+        // Tracking error ignored silently
+    }
 }
 
-// ✅ FIX 2: Handle Email/Phone Login & Fix "Hide Input" Bug
 async function handleLogin(e) {
     if(e) e.preventDefault();
     
@@ -202,21 +222,18 @@ async function handleLogin(e) {
     try {
         let finalUid = inputIdentifier;
 
-        // --- NEW LOGIC: Resolve Email/Phone to UID ---
-        // If input looks like email (@) or phone (digits), try to find the real UID first
+        // Resolve Email/Phone to UID logic
         if (inputIdentifier.includes('@') || /^\d{10,}$/.test(inputIdentifier)) {
             try {
-                // We ask the API for the user with this email/phone
-                // Assuming your API returns the user object if 'uid' param matches email/phone
+                // Try to resolve UID using the get-user smart search endpoint
                 const searchRes = await fetch(`${API_URL}/api/get-user?uid=${inputIdentifier}`);
                 const searchData = await searchRes.json();
                 
                 if (searchData && searchData.user && searchData.user.uid) {
-                    finalUid = searchData.user.uid; // Found the real UID!
-                    console.log("Resolved UID:", finalUid);
+                    finalUid = searchData.user.uid;
                 }
             } catch(err) {
-                console.log("Could not resolve UID, trying direct login...");
+                // Silent catch
             }
         }
 
@@ -232,12 +249,11 @@ async function handleLogin(e) {
         // 3. Handle Errors
         if(!response.ok) {
             toggleLoader(false); 
-            // 🛑 BUG FIX: Bring back the login form
             document.getElementById('section-credentials').classList.remove('hidden');
             
             if(response.status === 401 || response.status === 404 || result.error) {
                 showToast("Wrong Password or ID. Please check.", "danger");
-                document.getElementById('in-pass').value = ""; // Clear password only
+                document.getElementById('in-pass').value = ""; 
             } else {
                 showToast(result.error || "Login Failed", "danger");
             }
@@ -264,18 +280,15 @@ async function handleLogin(e) {
     } catch (error) {
         toggleLoader(false);
         document.getElementById('section-credentials').classList.remove('hidden');
-        console.error(error);
+        console.error("Login Error: Connection failed"); // Generic error
         showToast("Connection Error. Check Internet.", "danger");
     }
 }
 
 async function sendOTP(emp) {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    // Hash OTP before storing
     const secureHash = await generateSecureHash(otp);
     sessionStorage.setItem("auth_token_hash", secureHash);
-    
     sessionStorage.removeItem("login_otp");
     
     const messageBody = `Your One-Time Password (OTP) is: ${otp}\n\nThis code is valid for verification purposes only.`;
@@ -285,7 +298,6 @@ async function sendOTP(emp) {
         name: emp.personal.name,     
         message: messageBody         
     }).then(() => {
-        // Hide loader manually because we are switching sections
         document.getElementById('loader').classList.add('hidden');
         document.getElementById('section-credentials').classList.add('hidden');
         document.getElementById('section-otp').classList.remove('hidden');
@@ -302,7 +314,7 @@ async function sendOTP(emp) {
     }).catch(err => { 
         toggleLoader(false); 
         document.getElementById('section-credentials').classList.remove('hidden');
-        console.error("EmailJS Error:", err); 
+        console.error("OTP Error: Email service failed"); // Generic error
         showToast("Failed to send email. Check Console.", "danger"); 
     });
 }
@@ -322,13 +334,12 @@ async function handleOTPVerify(e) {
     
     if (inputHash === storedHash) {
         toggleLoader(true);
-        document.getElementById('section-otp').classList.add('hidden'); // Hide OTP input while verifying
+        document.getElementById('section-otp').classList.add('hidden'); 
         document.getElementById('loader-text').innerText = "Verifying...";
 
         setTimeout(() => {
             showToast("Access Granted 🔓");
             sessionStorage.removeItem("auth_token_hash");
-            
             if(currentUser && currentUser.databaseKey) { 
                 updateUserActivity(currentUser.uid, currentUser.databaseKey); 
             }
@@ -339,6 +350,196 @@ async function handleOTPVerify(e) {
         if(userOTP.length === 6) showToast("Incorrect OTP", "danger"); 
     }
 }
+
+// ==========================================
+// FORGOT PASSWORD / RECOVERY LOGIC (UPDATED)
+// ==========================================
+
+window.showForgotPass = () => { 
+    document.getElementById('section-credentials').classList.add('hidden'); 
+    document.getElementById('section-forgot').classList.remove('hidden');
+    
+    // Reset views to Step 1
+    document.getElementById('forgot-step-verify').classList.remove('hidden');
+    document.getElementById('forgot-step-otp').classList.add('hidden');
+    document.getElementById('forgot-step-reset').classList.add('hidden');
+    document.getElementById('forgot-step-manual').classList.add('hidden');
+    
+    // Clear forms
+    document.getElementById('form-forgot-verify').reset();
+    document.getElementById('rec-otp-input').value = "";
+    document.getElementById('rec-new-pass').value = "";
+    document.getElementById('rec-conf-pass').value = "";
+
+    // Reset recovery state
+    recoveryUser = null;
+    recoveryOTP = null;
+};
+
+window.hideForgotPass = () => { 
+    document.getElementById('section-forgot').classList.add('hidden'); 
+    document.getElementById('section-credentials').classList.remove('hidden'); 
+};
+
+// STEP 1: VERIFY IDENTITY (CLEAN - NO PII LOGS)
+window.verifyRecoveryDetails = async () => {
+    const contact = document.getElementById('rec-contact').value.trim();
+    const aadhaar = document.getElementById('rec-aadhaar').value.trim();
+
+    // STRICT AADHAAR CHECK
+    if(!/^\d{12}$/.test(aadhaar)) {
+        showToast("Aadhaar must be exactly 12 digits", "danger");
+        return;
+    }
+    if(!contact) {
+        showToast("Enter registered Email or Phone", "danger");
+        return;
+    }
+
+    toggleLoader(true);
+    document.getElementById('section-forgot').classList.add('hidden'); 
+
+    try {
+        // Fetch User Data
+        const response = await fetch(`${API_URL}/api/get-user?uid=${contact}`);
+        const data = await response.json();
+
+        // REMOVED DEBUG LOGS HERE TO HIDE IDENTITY
+
+        if (data && data.user) {
+            const user = data.user;
+            // Trim values to avoid invisible space issues
+            const storedAadhaar = user.security ? String(user.security.aadhaar).trim() : "";
+            const storedPhone = user.personal ? String(user.personal.phone).trim() : "";
+            const storedEmail = user.personal ? String(user.personal.email).trim() : "";
+            const storedUid = String(user.uid).trim();
+
+            // Validate Aadhaar AND (Phone OR Email OR UID)
+            const isMatch = (storedAadhaar === aadhaar) && 
+                            (storedPhone === contact || storedEmail === contact || storedUid === contact);
+
+            if (isMatch) {
+                // MATCH FOUND!
+                recoveryUser = user;
+                const otp = Math.floor(100000 + Math.random() * 900000).toString();
+                recoveryOTP = otp;
+
+                const msg = `Use this code to reset your password: ${otp}\n\nIf you didn't request this, ignore this email.`;
+
+                await emailjs.send("service_wnqvm4n", "template_qiyhfbm", { 
+                    to_email: user.personal.email, 
+                    name: user.personal.name,     
+                    message: msg         
+                });
+
+                toggleLoader(false);
+                showToast("Verification Code sent to Email! 📧");
+                
+                document.getElementById('section-forgot').classList.remove('hidden');
+                document.getElementById('forgot-step-verify').classList.add('hidden');
+                document.getElementById('forgot-step-otp').classList.remove('hidden');
+                return;
+            } else {
+                // console.warn("Match Failed."); // Kept generic
+            }
+        } else {
+            // console.warn("User not found via API.");
+        }
+
+        // No Match Found
+        throw new Error("No matching user found");
+
+    } catch(e) { 
+        console.error("Recovery Failed: Invalid Details"); // Only generic error log
+        toggleLoader(false);
+        
+        // Restore Recovery Screen & Show Manual Options
+        document.getElementById('section-forgot').classList.remove('hidden'); 
+        showToast("Details not found. Please try manual request.", "warning");
+        
+        document.getElementById('forgot-step-verify').classList.add('hidden');
+        document.getElementById('forgot-step-manual').classList.remove('hidden');
+    }
+};
+
+// STEP 2: VERIFY OTP
+window.verifyRecoveryOTP = () => {
+    const inputOtp = document.getElementById('rec-otp-input').value.trim();
+    
+    if (inputOtp === recoveryOTP) {
+        showToast("Code Verified ✅");
+        
+        // SWITCH TO STEP 3
+        document.getElementById('forgot-step-otp').classList.add('hidden');
+        document.getElementById('forgot-step-reset').classList.remove('hidden');
+        
+        // Populate User Info (Read-Only)
+        document.getElementById('rec-disp-name').innerText = recoveryUser.personal.name;
+        document.getElementById('rec-disp-uid').innerText = "UID: " + recoveryUser.uid;
+    } else {
+        showToast("Incorrect Code", "danger");
+    }
+};
+
+// STEP 3: SUBMIT NEW PASSWORD
+window.submitNewPassword = async () => {
+    const newPass = document.getElementById('rec-new-pass').value.trim();
+    const confPass = document.getElementById('rec-conf-pass').value.trim();
+
+    if (newPass.length < 6) {
+        showToast("Password must be at least 6 characters", "warning");
+        return;
+    }
+    if (newPass !== confPass) {
+        showToast("Passwords do not match", "danger");
+        return;
+    }
+
+    const btn = document.getElementById('btn-reset-final');
+    const oldText = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Updating...`;
+    btn.disabled = true;
+
+    try {
+        // CALL API TO UPDATE PASSWORD
+        const updateResponse = await fetch(`${API_URL}/api/update-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                uid: recoveryUser.uid, 
+                newPass: newPass 
+            })
+        });
+
+        const resData = await updateResponse.json();
+
+        if (resData.success) {
+            // Send Confirmation Email
+            const msg = `Security Alert: Your password was successfully changed just now.\n\nIf this wasn't you, contact admin immediately.`;
+            await emailjs.send("service_wnqvm4n", "template_qiyhfbm", { 
+                to_email: recoveryUser.personal.email, 
+                name: recoveryUser.personal.name,     
+                message: msg         
+            });
+
+            showToast("Password Changed Successfully! ✅");
+            
+            setTimeout(() => {
+                hideForgotPass(); // Go back to login
+                btn.innerHTML = oldText;
+                btn.disabled = false;
+            }, 2000);
+        } else {
+            throw new Error(resData.error || "Update failed");
+        }
+
+    } catch (e) {
+        console.error("Update Error: Failed to save"); // Generic error
+        showToast("Error updating password. Try again later.", "danger");
+        btn.innerHTML = oldText;
+        btn.disabled = false;
+    }
+};
 
 // ==========================================
 // DASHBOARD & UI
@@ -368,13 +569,16 @@ function refreshAllData() {
         .then(data => {
             if(data.user) {
                 currentUser = data.user;
+                localStorage.setItem("aryanta_user", JSON.stringify(data.user));
+
                 updateUI(currentUser);
             }
         });
 
     loadNotifications();
     loadMyPayslips(); 
-    loadAttendance(); 
+    loadAttendance();
+    loadMyDailyAttendance();
 }
 
 function updateUI(u) {
@@ -408,12 +612,12 @@ function updateUI(u) {
     setText('p-salary', "₹ " + parseFloat(b.salary || 0).toLocaleString('en-IN'));
     setText('p-aadhaar', s.aadhaar);
 
-    document.getElementById('up-phone').placeholder = p.phone || "Phone";
-    document.getElementById('up-email').placeholder = p.email || "Email";
-    document.getElementById('up-bank').placeholder = b.bank || "Bank Name";
-    document.getElementById('up-branch').placeholder = b.branch || "Branch";
-    document.getElementById('up-ifsc').placeholder = b.ifsc || "IFSC";
-    document.getElementById('up-acc').placeholder = b.acc || "Account No";
+    document.getElementById('up-phone').value = p.phone || ""; 
+    document.getElementById('up-email').value = p.email || "";
+    document.getElementById('up-bank').value = b.bank || "";
+    document.getElementById('up-branch').value = b.branch || "";
+    document.getElementById('up-ifsc').value = b.ifsc || "";
+    document.getElementById('up-acc').value = b.acc || "";
 }
 
 // ==========================================
@@ -663,15 +867,63 @@ window.verifyUpdateOTP = () => {
 };
 
 window.validateAndInitiateUpdate = () => {
-    if(!currentUser) return;
-    if(!isEmailVerified) return showToast("Please verify new email first", "danger");
-    const p = currentUser.personal || {}; const b = currentUser.bank || {};
-    const phoneIn = document.getElementById('up-phone').value.trim(); const emailIn = document.getElementById('up-email').value.trim(); const bankIn = document.getElementById('up-bank').value.trim(); const branchIn = document.getElementById('up-branch').value.trim(); const ifscIn = document.getElementById('up-ifsc').value.trim(); const accIn = document.getElementById('up-acc').value.trim();
-    const newPhone = phoneIn !== "" ? phoneIn : p.phone; const newEmail = emailIn !== "" ? emailIn : p.email; const newBank = bankIn !== "" ? bankIn : b.bank; const newBranch = branchIn !== "" ? branchIn : b.branch; const newIfsc = ifscIn !== "" ? ifscIn : b.ifsc; const newAcc = accIn !== "" ? accIn : b.acc;
-    if (newPhone === p.phone && newEmail === p.email && newBank === b.bank && newBranch === b.branch && newIfsc === b.ifsc && newAcc === b.acc) return showToast("No changes detected.", "warning");
-    pendingUpdateData = { phone: newPhone, email: newEmail, bank: newBank, branch: newBranch, ifsc: newIfsc, acc: newAcc, photo: "No Change", message: "Requesting updates to profile details." };
+    if (!currentUser) return;
+    if (!isEmailVerified) return showToast("Please verify new email first", "danger");
+
+    // OLD DATA
+    const p = currentUser.personal || {};
+    const b = currentUser.bank || {};
+
+    // INPUT VALUES
+    const phoneIn  = document.getElementById('up-phone').value.trim();
+    const emailIn  = document.getElementById('up-email').value.trim();
+    const bankIn   = document.getElementById('up-bank').value.trim();
+    const branchIn = document.getElementById('up-branch').value.trim();
+    const ifscIn   = document.getElementById('up-ifsc').value.trim();
+    const accIn    = document.getElementById('up-acc').value.trim();
+
+    // STRICT VALIDATIONS BEFORE SUBMITTING
+    if(phoneIn && phoneIn.length !== 10) return showToast("Phone must be 10 digits", "danger");
+    if(accIn && accIn.length > 16) return showToast("Account No max 16 digits", "danger");
+
+    // FINAL VALUES (fallback to old if empty)
+    const newPhone  = phoneIn  || p.phone;
+    const newEmail  = emailIn  || p.email;
+    const newBank   = bankIn   || b.bank;
+    const newBranch = branchIn || b.branch;
+    const newIfsc   = ifscIn   || b.ifsc;
+    const newAcc    = accIn    || b.acc;
+
+    // CHECK IF ANYTHING CHANGED
+    if (
+        newPhone  === p.phone &&
+        newEmail  === p.email &&
+        newBank   === b.bank &&
+        newBranch === b.branch &&
+        newIfsc   === b.ifsc &&
+        newAcc    === b.acc
+    ) {
+        return showToast("No changes detected.", "warning");
+    }
+
+    // 🔥 SEND ONLY CHANGED DATA
+    pendingUpdateData = {
+        personal: {
+            phone: newPhone !== p.phone ? newPhone : null,
+            email: newEmail !== p.email ? newEmail : null
+        },
+        bank: {
+            bank:   newBank   !== b.bank   ? newBank   : null,
+            branch: newBranch !== b.branch ? newBranch : null,
+            ifsc:   newIfsc   !== b.ifsc   ? newIfsc   : null,
+            acc:    newAcc    !== b.acc    ? newAcc    : null
+        }
+    };
+
+    // SEND OTP FOR CONFIRMATION
     initiateActionOTP(newEmail);
 };
+
 
 window.initiateActionOTP = (targetEmail) => {
     actionOTP = Math.floor(100000 + Math.random() * 900000);
@@ -730,145 +982,6 @@ function submitFinalUpdate() {
         showToast("Error submitting request", "danger");
     });
 }
-
-// ==========================================
-// FORGOT PASSWORD / RECOVERY LOGIC (UPDATED)
-// ==========================================
-
-window.showForgotPass = () => { 
-    document.getElementById('section-credentials').classList.add('hidden'); 
-    document.getElementById('section-forgot').classList.remove('hidden');
-    
-    // Reset views to Step 1
-    document.getElementById('forgot-step-verify').classList.remove('hidden');
-    document.getElementById('forgot-step-manual').classList.add('hidden');
-    
-    // Clear forms
-    document.getElementById('form-forgot-verify').reset();
-    document.getElementById('form-forgot-manual').reset();
-
-    // Reset recovery stages
-    document.getElementById('rec-stage-1').classList.remove('hidden');
-    document.getElementById('rec-stage-2').classList.add('hidden');
-    document.getElementById('rec-stage-3').classList.add('hidden');
-};
-
-window.hideForgotPass = () => { 
-    document.getElementById('section-forgot').classList.add('hidden'); 
-    document.getElementById('section-credentials').classList.remove('hidden'); 
-};
-
-// ✅ FIX 3: Check DB > If Match Found > Send Creds to Email
-window.verifyRecoveryDetails = async () => {
-    // We reuse the 'rec-contact' input for Email/Phone and 'rec-aadhaar' for Aadhaar validation
-    const contact = document.getElementById('rec-contact').value.trim();
-    const aadhaar = document.getElementById('rec-aadhaar').value.trim();
-
-    if(!contact || aadhaar.length !== 12) {
-        showToast("Enter valid Email/Phone & 12-digit Aadhaar", "danger");
-        return;
-    }
-
-    toggleLoader(true);
-    document.getElementById('section-forgot').classList.add('hidden'); 
-
-    try {
-        // 1. Fetch User Data (using the contact as UID or search term)
-        // Try searching by passing contact as UID param first
-        const response = await fetch(`${API_URL}/api/get-user?uid=${contact}`);
-        const data = await response.json();
-
-        if (data && data.user) {
-            const user = data.user;
-            const storedAadhaar = user.security ? user.security.aadhaar : "";
-            const storedPhone = user.personal ? user.personal.phone : "";
-            const storedEmail = user.personal ? user.personal.email : "";
-
-            // 2. Validate Aadhaar & Contact Match
-            const isMatch = (storedAadhaar === aadhaar) && 
-                            (storedPhone === contact || storedEmail === contact || user.uid === contact);
-
-            if (isMatch) {
-                // 3. MATCH FOUND! Send Credentials to Email
-                const userPass = user.pass || "Contact Admin for Reset"; // Assuming API returns 'pass'
-                
-                const msg = `Account Recovery Details:\n\nUser ID: ${user.uid}\nPassword: ${userPass}\n\nPlease keep this secure and change your password after logging in.`;
-
-                await emailjs.send("service_wnqvm4n", "template_qiyhfbm", { 
-                    to_email: user.personal.email, 
-                    name: user.personal.name,     
-                    message: msg         
-                });
-
-                toggleLoader(false);
-                showToast("Credentials sent to your Email! 📧");
-                
-                // Return to login screen
-                hideForgotPass();
-                return;
-            }
-        }
-
-        // 4. No Match Found
-        throw new Error("No matching user found");
-
-    } catch(e) { 
-        console.error("Recovery Failed:", e);
-        toggleLoader(false);
-        
-        // Restore Recovery Screen & Show Manual Options
-        document.getElementById('section-forgot').classList.remove('hidden'); 
-        showToast("Details not found. Please try manual request.", "warning");
-        
-        document.getElementById('forgot-step-verify').classList.add('hidden');
-        document.getElementById('forgot-step-manual').classList.remove('hidden');
-    }
-};
-
-// HELPER: Generate the specific message text
-function getRecoveryMessage(name, phone) {
-    return `Respected Admin Sir,
-
-I hope you are doing well. I am writing this message as an employee of the company. Unfortunately, I have forgotten my UID and password, due to which I am unable to log in to my account. I kindly request you to please help me reset or recover my login credentials at the earliest so I can continue my assigned work smoothly. Please let me know if any verification is required from my side.
-
-My Details:
-Name: ${name}
-Mobile No: ${phone}
-
-Thank you for your support.`;
-}
-
-// OPTION 1: Send via NATIVE EMAIL APP (mailto:)
-window.sendManualRecoveryRequest = () => {
-    const name = document.getElementById('req-name').value.trim();
-    const phone = document.getElementById('req-phone').value.trim();
-
-    if(!name || !phone) {
-        showToast("Please fill in Name and Phone", "danger");
-        return;
-    }
-
-    const msg = getRecoveryMessage(name, phone);
-    const subject = `Account Recovery Request - ${name}`;
-    const mailtoLink = `mailto:official.aryanta@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(msg)}`;
-    window.location.href = mailtoLink;
-};
-
-// OPTION 2: Open WhatsApp
-window.openWhatsAppSupport = () => {
-    const name = document.getElementById('req-name').value.trim();
-    const phone = document.getElementById('req-phone').value.trim();
-
-    if(!name || !phone) {
-        showToast("Please enter Name and Phone first", "warning");
-        document.getElementById('req-name').focus();
-        return;
-    }
-
-    const msg = getRecoveryMessage(name, phone);
-    const waUrl = `https://wa.me/918603467878?text=${encodeURIComponent(msg)}`;
-    window.open(waUrl, '_blank');
-};
 
 // ==========================================
 // UTILITIES
@@ -1002,7 +1115,7 @@ function closeManagerPopup(){
 }
 
 // ==========================================
-// CLOUDFLARE RECOVERY LOGIC (UPDATED)
+// MANUAL RECOVERY (CLOUD FALLBACK)
 // ==========================================
 
 window.submitRecoveryToFirebase = function() {
@@ -1042,13 +1155,13 @@ window.submitRecoveryToFirebase = function() {
         if (data.success) {
             document.getElementById('modal-rec-success').classList.remove('hidden');
         } else {
-            console.error("API Error:", data.error);
+            console.error("API Error: Submission failed"); // Generic error
             showToast(data.error || "Submission failed.", "danger");
             advanceToStage2(); 
         }
     })
     .catch((error) => {
-        console.error("Network Error:", error);
+        console.error("Network Error: Failed to connect"); // Generic error
         btn.innerHTML = originalText;
         btn.disabled = false;
         showToast("Connection Error. Try links below.", "danger");
@@ -1068,8 +1181,77 @@ window.showFinalNoWay = function() {
     document.getElementById('rec-stage-3').classList.remove('hidden');
 };
 
+// HELPER: Generate the specific message text
+function getRecoveryMessage(name, phone) {
+    return `Respected Admin Sir,
+
+I hope you are doing well. I am writing this message as an employee of the company. Unfortunately, I have forgotten my UID and password, due to which I am unable to log in to my account. I kindly request you to please help me reset or recover my login credentials at the earliest so I can continue my assigned work smoothly. Please let me know if any verification is required from my side.
+
+My Details:
+Name: ${name}
+Mobile No: ${phone}
+
+Thank you for your support.`;
+}
+
+// OPTION 1: Send via NATIVE EMAIL APP (mailto:)
+window.sendManualRecoveryRequest = () => {
+    const name = document.getElementById('req-name').value.trim();
+    const phone = document.getElementById('req-phone').value.trim();
+
+    if(!name || !phone) {
+        showToast("Please fill in Name and Phone", "danger");
+        return;
+    }
+
+    const msg = getRecoveryMessage(name, phone);
+    const subject = `Account Recovery Request - ${name}`;
+    const mailtoLink = `mailto:official.aryanta@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(msg)}`;
+    window.location.href = mailtoLink;
+};
+
+// OPTION 2: Open WhatsApp
+window.openWhatsAppSupport = () => {
+    const name = document.getElementById('req-name').value.trim();
+    const phone = document.getElementById('req-phone').value.trim();
+
+    if(!name || !phone) {
+        showToast("Please enter Name and Phone first", "warning");
+        document.getElementById('req-name').focus();
+        return;
+    }
+
+    const msg = getRecoveryMessage(name, phone);
+    const waUrl = `https://wa.me/918603467878?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
+};
+
 window.sendSmsRequest = function() {
     const name = document.getElementById('req-name').value;
     const msg = `Urgent: Password Recovery Request for ${name}. Please assist.`;
     window.location.href = `sms:8603467878?body=${encodeURIComponent(msg)}`;
 };
+window.loadMyDailyAttendance = function() {
+  const box = document.getElementById("my-attendance-list");
+  if (!box) return;
+
+  const allAtt = JSON.parse(localStorage.getItem("aryanta_attendance") || "{}");
+  const uid = currentUser.uid;
+
+  box.innerHTML = "";
+
+  Object.keys(allAtt).sort().reverse().forEach(date => {
+    if (allAtt[date][uid]) {
+      const div = document.createElement("div");
+      div.style.padding = "8px";
+      div.style.borderBottom = "1px solid #ccc";
+      div.innerText = `${date} → ${allAtt[date][uid]}`;
+      box.appendChild(div);
+    }
+  });
+
+  if (!box.innerHTML) box.innerHTML = "No attendance yet";
+};
+if (window.currentUser) {
+    refreshAllData();
+}
