@@ -116,7 +116,7 @@
         }
         .custom-poster.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 
-        /* CONTROL DECK */
+        /* CONTROL DECK (Kept in CSS but not used in HTML for YouTube compatibility) */
         .control-deck {
             display: flex;
             align-items: center;
@@ -287,7 +287,7 @@
     </div>
 
     <nav>
-        <a href="index.html" class="btn-back"><i class="fas fa-arrow-left"></i> Back</a>
+        <a href="#" class="btn-back"><i class="fas fa-arrow-left"></i> Back</a>
         <div class="nav-brand">How To Download</div>
     </nav>
 
@@ -297,30 +297,18 @@
 
         <div class="video-frame-wrapper" id="videoWrapper">
             <div class="video-container">
-                <div class="custom-poster" id="posterOverlay" 
-                     style="background-image: url('thumbnail.png');"
-                     onclick="togglePlay()">
-                </div>
-                <video id="installVideo" playsinline>
-                    <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
-                </video>
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src="https://www.youtube.com/embed/L-JEm74xB-s"
+                  title="YouTube video player"
+                  frameborder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowfullscreen
+                  style="border:0;">
+                </iframe>
             </div>
-
-            <div class="control-deck" id="controlDeck">
-                <button class="deck-btn btn-skip" onclick="skip(-10)" title="Rewind 10s">
-                    <i class="fas fa-arrow-rotate-left"></i> <span>10s</span>
-                </button>
-                <button class="deck-btn btn-hero-play" id="playBtn" onclick="togglePlay()">
-                    <i class="fas fa-play" style="margin-left: 4px;"></i>
-                </button>
-                <button class="deck-btn btn-skip" onclick="skip(10)" title="Forward 10s">
-                    <span>10s</span> <i class="fas fa-arrow-rotate-right"></i>
-                </button>
-                 <button class="deck-btn btn-mute" id="muteBtn" onclick="toggleMute()" title="Mute">
-                    <i class="fas fa-volume-up"></i>
-                </button>
             </div>
-        </div>
 
         <div class="scroll-indicator">
             <span>SCROLL DOWN</span>
@@ -345,7 +333,7 @@ Tap on Settings to continue.</p></div>
         <div class="step-card">
             <div class="step-number">03</div>
             <img src="step 3.jpeg" class="step-img" alt="Step 3" onclick="openLightbox(this.src)">
-            <div class="step-content"><h3>UStep 3: Allow Unknown Apps</h3><p>In settings, enable Allow unknown apps to be installed for Google Drive (or the browser you’re using).</p></div>
+            <div class="step-content"><h3>Step 3: Allow Unknown Apps</h3><p>In settings, enable Allow unknown apps to be installed for Google Drive (or the browser you’re using).</p></div>
         </div>
         <div class="step-card">
             <div class="step-number">04</div>
@@ -377,66 +365,6 @@ Tap the app icon to open and start using the employee dashboard.</p></div>
     </div>
 
     <script>
-        const video = document.getElementById('installVideo');
-        const playBtn = document.getElementById('playBtn');
-        const muteBtn = document.getElementById('muteBtn');
-        const poster = document.getElementById('posterOverlay');
-        const controlDeck = document.getElementById('controlDeck');
-        const videoWrapper = document.getElementById('videoWrapper');
-
-        /* --- VIDEO & CONTROLS --- */
-        function togglePlay() {
-            if (video.paused) {
-                poster.classList.add('hidden');
-                video.play();
-                playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                resetIdleTimer();
-            } else {
-                video.pause();
-                playBtn.innerHTML = '<i class="fas fa-play" style="margin-left:4px;"></i>';
-                showControls(); 
-            }
-        }
-
-        function toggleMute() {
-            video.muted = !video.muted;
-            if (video.muted) {
-                muteBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
-                muteBtn.classList.add('active');
-            } else {
-                muteBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
-                muteBtn.classList.remove('active');
-            }
-        }
-
-        function skip(val) {
-            video.currentTime += val;
-            resetIdleTimer();
-        }
-
-        let idleTimer;
-        function showControls() {
-            controlDeck.classList.remove('deck-hidden');
-            clearTimeout(idleTimer);
-        }
-        function hideControls() {
-            if (!video.paused && window.innerWidth >= 900) {
-                controlDeck.classList.add('deck-hidden');
-            }
-        }
-        function resetIdleTimer() {
-            showControls();
-            if (!video.paused && window.innerWidth >= 900) {
-                idleTimer = setTimeout(hideControls, 3000); 
-            }
-        }
-
-        videoWrapper.addEventListener('mousemove', resetIdleTimer);
-        videoWrapper.addEventListener('mouseenter', showControls);
-        videoWrapper.addEventListener('mouseleave', () => {
-            if (!video.paused && window.innerWidth >= 900) hideControls();
-        });
-
         /* --- LIGHTBOX LOGIC --- */
         const lightbox = document.getElementById('lightbox');
         const lightboxImg = document.getElementById('lightboxImg');
@@ -462,5 +390,4 @@ Tap the app icon to open and start using the employee dashboard.</p></div>
         document.querySelectorAll('.step-card').forEach(card => observer.observe(card));
     </script>
 </body>
-
 </html>
