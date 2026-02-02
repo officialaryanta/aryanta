@@ -59,7 +59,8 @@
             <div id="section-otp" class="hidden">
                 <div class="otp-banner">
                     <i class="fa-solid fa-envelope-circle-check" style="color:var(--accent); font-size:20px;"></i>
-                    <p style="font-size:12px; margin-top:5px;">OTP sent to: <b id="disp-email">...</b></p>
+                    <p style="font-size:12px; margin-top:5px;">Security Check (Suspicious Activity detected)</p>
+                    <p style="font-size:11px; color:#cbd5e1;">OTP sent to: <b id="disp-email">...</b></p>
                 </div>
                 <form id="form-otp" onsubmit="event.preventDefault();">
                     <div class="input-box center-text">
@@ -249,17 +250,17 @@
                         </div>
                         <div class="settings-body">
                             <div class="input-group-modern">
-                                <label>Current Password</label>
-                                <div class="pass-input-box">
-                                    <input type="password" id="set-curr-pass" placeholder="••••••••">
-                                    <i class="fa-solid fa-eye" onclick="togglePassVisibility('set-curr-pass', this)"></i>
-                                </div>
-                            </div>
-                            <div class="input-group-modern">
                                 <label>New Password</label>
                                 <div class="pass-input-box">
                                     <input type="password" id="set-new-pass" placeholder="••••••••">
                                     <i class="fa-solid fa-eye" onclick="togglePassVisibility('set-new-pass', this)"></i>
+                                </div>
+                            </div>
+                            <div class="input-group-modern">
+                                <label>Confirm New Password</label>
+                                <div class="pass-input-box">
+                                    <input type="password" id="set-conf-pass" placeholder="••••••••">
+                                    <i class="fa-solid fa-eye" onclick="togglePassVisibility('set-conf-pass', this)"></i>
                                 </div>
                             </div>
                             <button class="btn-prime" onclick="changePassword()" style="margin-top: 15px;">
@@ -425,18 +426,123 @@
                     <h4 style="margin-bottom: 20px; color: #334155; text-transform: uppercase; font-size: 13px; letter-spacing: 1px;">Connect With Us</h4>
                     
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px;">
-                        <a href="#" class="social-btn instagram"><i class="fa-brands fa-instagram"></i> <span>Instagram</span></a>
-                        <a href="#" class="social-btn twitter"><i class="fa-brands fa-twitter"></i> <span>Twitter</span></a>
-                        <a href="#" class="social-btn linkedin"><i class="fa-brands fa-linkedin-in"></i> <span>LinkedIn</span></a>
-                        <a href="#" class="social-btn facebook"><i class="fa-brands fa-facebook-f"></i> <span>Facebook</span></a>
-                        <a href="#" class="social-btn youtube"><i class="fa-brands fa-youtube"></i> <span>YouTube</span></a>
-                        <a href="#" class="social-btn website"><i class="fa-solid fa-globe"></i> <span>Website</span></a>
-                        <a href="#" class="social-btn x-social"><i class="fa-brands fa-x-twitter"></i> <span>X</span></a>
+                       <a href="https://www.instagram.com/official.aryanta?igsh=MWMwbHZkdndmeWZtMw==" 
+   class="social-btn instagram" target="_blank">
+    <i class="fa-brands fa-instagram"></i> <span>Instagram</span>
+</a>
+
+<a href="#" class="social-btn linkedin">
+    <i class="fa-brands fa-linkedin-in"></i> <span>LinkedIn</span>
+</a>
+
+<a href="https://www.facebook.com/share/1WKmq2yTGL/" 
+   class="social-btn facebook" target="_blank">
+    <i class="fa-brands fa-facebook-f"></i> <span>Facebook</span>
+</a>
+
+<a href="https://youtube.com/@official.aryanta?si=r-Nzkh34RF3F5Grx" 
+   class="social-btn youtube" target="_blank">
+    <i class="fa-brands fa-youtube"></i> <span>YouTube</span>
+</a>
+
+<a href="https://aryanta.in/" 
+   class="social-btn website" target="_blank">
+    <i class="fa-solid fa-globe"></i> <span>Website</span>
+</a>
+
+<a href="https://wa.me/918603467878" 
+   class="social-btn whatsapp" target="_blank">
+    <i class="fa-brands fa-whatsapp"></i> <span>WhatsApp</span>
+</a>
+
+
                     </div>
                 </div>
             </div>
 
         </main>
+    </div>
+
+    <div id="modal-update" class="modal-overlay hidden">
+        <div class="modal-box modal-box-scrollable">
+            <div class="modal-header">
+                <h3>Update Profile</h3>
+                <button onclick="closeUpdateModal()" style="border:none;background:none;font-size:20px;cursor:pointer;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-update" onsubmit="event.preventDefault(); validateAndInitiateUpdate();">
+                    <p class="section-label">Personal Info</p>
+                    <div class="input-group-modern">
+                        <label class="up-label">Phone Number</label>
+                        <input type="text" id="up-phone" class="input-numeric" maxlength="10">
+                    </div>
+                    <div class="input-group-modern">
+                        <label class="up-label">Email Address</label>
+                        <input type="email" id="up-email" oninput="checkEmailChange()">
+                        <button type="button" id="btn-verify-email" class="btn-prime hidden" style="margin-top:10px; font-size:12px; padding:8px;" onclick="initiateEmailVerification()">Verify New Email</button>
+                    </div>
+
+                    <p class="section-label">Bank Details</p>
+                    <div class="input-group-modern">
+                        <label class="up-label">Bank Name</label>
+                        <input type="text" id="up-bank">
+                    </div>
+                    <div class="input-group-modern">
+                        <label class="up-label">Branch Name</label>
+                        <input type="text" id="up-branch">
+                    </div>
+                    <div class="input-group-modern">
+                        <label class="up-label">IFSC Code</label>
+                        <input type="text" id="up-ifsc" class="input-uppercase" maxlength="11">
+                    </div>
+                    <div class="input-group-modern">
+                        <label class="up-label">Account Number</label>
+                        <input type="text" id="up-acc" class="input-numeric" maxlength="18">
+                    </div>
+
+                    <button type="submit" id="btn-submit-update" class="btn-prime" style="margin-top:20px;">Submit Approval Request</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-verify-email" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3>Verify New Email</h3>
+            <p style="font-size:13px; color:#64748b; margin-bottom:15px;">Enter OTP sent to new email.</p>
+            <input type="text" id="up-email-otp" placeholder="6-digit OTP" class="input-numeric" maxlength="6" style="text-align:center; font-size:20px; letter-spacing:5px; margin-bottom:15px;">
+            <button onclick="verifyUpdateOTP()" class="btn-prime">Verify</button>
+            <button onclick="document.getElementById('modal-verify-email').classList.add('hidden')" class="link-btn" style="margin-top:10px; width:100%;">Cancel</button>
+        </div>
+    </div>
+
+    <div id="modal-verify-action" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3>Confirm Request</h3>
+            <p style="font-size:13px; color:#64748b; margin-bottom:15px;">Security Check: Enter OTP sent to your registered email.</p>
+            <input type="text" id="action-otp" placeholder="6-digit OTP" class="input-numeric" maxlength="6" style="text-align:center; font-size:20px; letter-spacing:5px; margin-bottom:15px;">
+            <button onclick="confirmUpdateWithOTP()" class="btn-prime">Confirm & Submit</button>
+            <button id="btn-resend-action" onclick="initiateActionOTP(currentUser.personal.email)" class="link-btn" style="margin-top:10px;">Resend OTP</button>
+        </div>
+    </div>
+
+    <div id="modal-verify-pass-change" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3>Change Password</h3>
+            <p style="font-size:13px; color:#64748b; margin-bottom:15px;">Security Check: Enter OTP sent to your email to confirm password change.</p>
+            <input type="text" id="pass-change-otp" placeholder="6-digit OTP" class="input-numeric" maxlength="6" style="text-align:center; font-size:20px; letter-spacing:5px; margin-bottom:15px;">
+            <button onclick="verifyPasswordChangeOTP()" class="btn-prime">Verify & Update Password</button>
+            <button onclick="document.getElementById('modal-verify-pass-change').classList.add('hidden')" class="link-btn" style="margin-top:10px; width:100%;">Cancel</button>
+        </div>
+    </div>
+
+    <div id="modal-success" class="modal-overlay hidden">
+        <div class="modal-box" style="text-align: center;">
+            <i class="fa-solid fa-circle-check" style="font-size: 50px; color: #10b981; margin-bottom: 20px;"></i>
+            <h3>Request Submitted</h3>
+            <p style="color:#64748b; margin-top:10px;">Your request has been sent to Admin for approval.</p>
+            <button class="btn-prime" onclick="document.getElementById('modal-success').classList.add('hidden')" style="margin-top:20px;">Okay</button>
+        </div>
     </div>
 
     <div id="payslip-preview-modal" class="modal-overlay hidden" style="z-index: 6000;">
