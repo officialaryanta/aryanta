@@ -2,37 +2,25 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-
-    <!-- ✅ Mobile safe area + notch support -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-
-    <!-- ✅ Status bar color (Android / PWA) -->
     <meta name="theme-color" content="#000000">
-
-    <!-- ✅ iOS status bar (force black background, white icons) -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
     <title>Aryanta | Connect</title>
 
-    <!-- ✅ Icons -->
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
     <link rel="icon" href="favicon.ico">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-
-    <!-- ✅ PWA manifest -->
     <link rel="manifest" href="site.webmanifest">
 
-    <!-- ✅ Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Mrs+Saint+Delafield&display=swap" rel="stylesheet">
 
-    <!-- ✅ Icons & CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 
-    <!-- ✅ PDF library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 
@@ -88,11 +76,9 @@
             </div>
 
             <div id="section-forgot" class="hidden" style="text-align: left;">
-               
                <div id="forgot-step-verify">
                    <h3 style="font-size:18px; margin-bottom:10px;">Recover Account</h3>
                    <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Enter details to verify your identity.</p>
-                   
                    <form id="form-forgot-verify" onsubmit="event.preventDefault(); verifyRecoveryDetails();">
                        <div class="input-box">
                            <i class="fa-solid fa-envelope"></i>
@@ -109,7 +95,6 @@
                <div id="forgot-step-otp" class="hidden">
                    <h3 style="font-size:18px; margin-bottom:10px;">Verify Identity</h3>
                    <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Enter the 6-digit code sent to your email.</p>
-                   
                    <form onsubmit="event.preventDefault(); verifyRecoveryOTP();">
                        <div class="input-box center-text">
                            <input type="text" id="rec-otp-input" placeholder="------" maxlength="6" pattern="\d*" autocomplete="off" required>
@@ -120,13 +105,11 @@
 
                <div id="forgot-step-reset" class="hidden">
                    <h3 style="font-size:18px; margin-bottom:10px;">Reset Password</h3>
-                   
                    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1);">
                        <p style="font-size: 12px; color: #94a3b8;">Recovering Account For:</p>
                        <p style="font-size: 16px; font-weight: bold; color: white; margin-top:2px;" id="rec-disp-name">User Name</p>
                        <p style="font-size: 12px; color: var(--accent);" id="rec-disp-uid">UID: ...</p>
                    </div>
-
                    <form onsubmit="event.preventDefault(); submitNewPassword();">
                        <div class="input-box">
                            <i class="fa-solid fa-lock"></i>
@@ -144,7 +127,6 @@
                    <div id="rec-stage-1">
                        <h3 style="font-size:18px; margin-bottom:10px; color: var(--warning);">Account Not Found</h3>
                        <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">We couldn't verify those details. Please fill the form below to send a request.</p>
-                       
                        <form id="form-forgot-manual" onsubmit="event.preventDefault(); submitRecoveryToFirebase();">
                            <div class="input-box">
                                <i class="fa-solid fa-user"></i>
@@ -214,6 +196,7 @@
                 <button class="nav-btn" onclick="switchTab('messages', this)"><i class="fa-solid fa-bell"></i> Notifications <span id="msg-badge" class="badge-dot hidden"></span></button>
                 <button class="nav-btn" onclick="switchTab('attendance', this)"><i class="fa-solid fa-calendar-check"></i> Attendance</button>
                 <button class="nav-btn" onclick="switchTab('incharge', this)"><i class="fa-solid fa-user-tie"></i> Your Incharge</button>
+                <button class="nav-btn" onclick="switchTab('company-details', this)"><i class="fa-solid fa-building"></i> Aryanta Details</button>
             </nav>
             
             <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
@@ -226,7 +209,10 @@
             <header>
                 <button id="mobile-menu-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
                 <h2>E.M.P</h2>
-                <div class="user-mini"><span id="header-name">User</span><img id="header-img" src="" alt="User"></div>
+                <div class="user-mini">
+                    <span id="header-name">User</span>
+                    <img id="header-img" src="" alt="User" onclick="viewFullImage(this.src)" style="cursor: pointer;">
+                </div>
             </header>
 
             <div id="tab-settings" class="content-section hidden">
@@ -320,11 +306,9 @@
                 <div class="profile-card">
                     <h3><i class="fa-solid fa-paper-plane"></i> Send Message</h3>
                     <p style="font-size:13px; color:#64748b; margin-bottom:25px;">Select a recipient and send a message.</p>
-                    
                     <form onsubmit="event.preventDefault(); submitUserMessage();">
                         <div class="modern-input-wrapper" style="margin-bottom: 20px;">
                             <label class="modern-label">Recipient</label>
-                            
                             <div class="custom-select-wrapper">
                                 <div class="custom-select-trigger" onclick="toggleCustomSelect()">
                                     <span id="msg-recipient-text">Co-Founder</span>
@@ -336,12 +320,10 @@
                             </div>
                             <input type="hidden" id="msg-recipient-value" value="Co-Founder">
                         </div>
-
                         <div class="modern-input-wrapper">
                             <label class="modern-label">Your Message</label>
                             <textarea id="new-msg-input" class="message-box-styled" rows="6" placeholder="Type your message here..." required></textarea>
                         </div>
-                        
                         <div style="margin-top:25px; text-align:right;">
                             <button type="submit" class="btn-prime" style="background:linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%); width:auto; display:inline-flex; padding: 12px 25px; border-radius: 50px; box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);">
                                 <i class="fa-solid fa-paper-plane"></i> &nbsp; Send Message
@@ -374,7 +356,6 @@
                   <h3>Daily Attendance</h3>
                   <div id="my-attendance-list">Loading...</div>
                 </div>
-
                 <div class="profile-card" style="position: relative;">
                     <div class="att-header">
                         <h3><i class="fa-solid fa-calendar-check"></i> Attendance Record</h3>
@@ -410,6 +391,80 @@
                     <p style="text-align: center; color: #94a3b8;">Loading Incharge details...</p>
                 </div>
             </div>
+
+            <div id="tab-company-details" class="content-section hidden">
+                <div class="profile-card" style="text-align: center;">
+                    <img src="https://user-gen-media-assets.s3.amazonaws.com/gpt4o_images/405ba96c-ee6d-452d-a99a-38ae2fd6b74b.png" style="width: 100px; margin-bottom: 15px; filter: drop-shadow(0 0 10px rgba(59,130,246,0.3));" alt="Aryanta">
+                    <h2 style="color: #1e293b; font-size: 24px; font-weight: 800;">ARYANTA CONNECT</h2>
+                    <p style="color: #64748b; font-size: 14px; margin-bottom: 30px;">Official Company Contact & Social Channels</p>
+
+                    <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 30px; border: 1px solid #e2e8f0; text-align: left;">
+                        <div style="display:flex; align-items:center; gap: 15px; margin-bottom: 15px;">
+                            <div style="width: 40px; height: 40px; background: #dbeafe; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #3b82f6;"><i class="fa-solid fa-envelope"></i></div>
+                            <div>
+                                <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Official Email</label>
+                                <p style="font-size: 15px; font-weight: 600; color: #1e293b;">official.aryanta@gmail.com</p>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap: 15px;">
+                            <div style="width: 40px; height: 40px; background: #dcfce7; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #10b981;"><i class="fa-solid fa-phone"></i></div>
+                            <div>
+                                <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Official Support Line</label>
+                                <p style="font-size: 15px; font-weight: 600; color: #1e293b;">+91 8603467878</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h4 style="margin-bottom: 20px; color: #334155; text-transform: uppercase; font-size: 13px; letter-spacing: 1px;">Connect With Us</h4>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px;">
+                        
+                        <a href="https://www.instagram.com/official.aryanta?igsh=MWMwbHZkdndmeWZtMw==" 
+   class="social-btn instagram" target="_blank">
+    <i class="fa-brands fa-instagram"></i> <span>Instagram</span>
+</a>
+
+<a href="https://t.me/officialaryanta" 
+   class="social-btn telegram" target="_blank">
+    <i class="fa-brands fa-telegram"></i> <span>Telegram</span>
+</a>
+
+
+<a href="#" class="social-btn linkedin">
+    <i class="fa-brands fa-linkedin-in"></i> <span>LinkedIn</span>
+</a>
+
+<a href="https://www.facebook.com/share/1WKmq2yTGL/" 
+   class="social-btn facebook" target="_blank">
+    <i class="fa-brands fa-facebook-f"></i> <span>Facebook</span>
+</a>
+
+<a href="https://youtube.com/@official.aryanta?si=r-Nzkh34RF3F5Grx" 
+   class="social-btn youtube" target="_blank">
+    <i class="fa-brands fa-youtube"></i> <span>YouTube</span>
+</a>
+
+<a href="https://aryanta.in/" 
+   class="social-btn website" target="_blank">
+    <i class="fa-solid fa-globe"></i> <span>Website</span>
+</a>
+
+<a href="https://x.com/officialaryanta" 
+   class="social-btn x-social" target="_blank">
+    <i class="fa-brands fa-x-twitter"></i> <span>X</span>
+</a>
+
+<a href="https://wa.me/918603467878" 
+   class="social-btn whatsapp" target="_blank">
+    <i class="fa-brands fa-whatsapp"></i> <span>WhatsApp</span>
+</a>
+
+
+
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -421,26 +476,20 @@
                     <p class="section-label">Contact Info</p>
                     <label class="up-label">Phone Number</label>
                     <input type="text" id="up-phone" maxlength="10" class="input-numeric" placeholder="10 Digits Only">
-                    
                     <label class="up-label">Email Address</label>
                     <div style="display:flex; gap:5px; margin-bottom:15px;">
                         <input type="email" id="up-email" oninput="checkEmailChange()" style="flex:1;">
                         <button type="button" id="btn-verify-email" class="hidden" onclick="initiateEmailVerification()" style="background:var(--warning); border:none; border-radius:8px; color:black; font-weight:bold; padding:0 15px; cursor:pointer; font-size:12px;">Verify</button>
                     </div>
-                    
                     <p class="section-label">Banking Info</p>
                     <label class="up-label">Bank Name</label>
                     <input type="text" id="up-bank">
-                    
                     <label class="up-label">Bank Branch</label>
                     <input type="text" id="up-branch">
-                    
                     <label class="up-label">IFSC Code</label>
                     <input type="text" id="up-ifsc" class="input-uppercase" maxlength="11" placeholder="Ex: SBIN0001234">
-                    
                     <label class="up-label">Account Number</label>
                     <input type="text" id="up-acc" class="input-numeric" maxlength="16" placeholder="Max 16 Digits">
-                    
                     <button type="submit" id="btn-submit-update" class="btn-prime" style="margin-top:25px;">Submit Approval Request</button>
                 </form>
             </div>
@@ -490,8 +539,8 @@
                 <div id="payslip-paper-content" class="payslip-paper"></div>
             </div>
             <div class="modal-footer" style="padding: 15px; text-align: right; background: #f1f5f9; border-top: 1px solid #e2e8f0; display:flex; justify-content:flex-end; gap:10px;">
-                <button class="btn-prime" onclick="downloadPayslipPDF()" style="background: #3b82f6; width: auto; padding: 12px 20px;">
-                    <i class="fa-solid fa-file-pdf"></i> Download Slip
+                <button class="btn-prime" onclick="printPayslip()" style="background: #3b82f6; width: auto; padding: 12px 20px;">
+                    <i class="fa-solid fa-print"></i> Print Slip
                 </button>
                 <button class="btn-prime" onclick="document.getElementById('payslip-preview-modal').classList.add('hidden')" style="background: #ef4444; width: auto; padding: 12px 20px;">Close</button>
             </div>
