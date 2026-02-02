@@ -4,6 +4,20 @@ if (savedUser) {
     window.currentUser = JSON.parse(savedUser);
 }
 
+// ==========================================
+// SESSION CONFIGURATION
+// ==========================================
+const AUTO_LOGOUT_TIME = 30 * 60 * 1000; // 30 minutes
+let logoutTimer;
+
+function startAutoLogoutTimer() {
+    clearTimeout(logoutTimer);
+    logoutTimer = setTimeout(() => {
+        alert("Session expired. Please login again.");
+        logout();
+    }, AUTO_LOGOUT_TIME);
+}
+
 // ⚠️ IMPORTANT: Ensure this matches your Cloudflare Worker URL exactly
 const API_URL = "https://rough-field-c679.official-aryanta.workers.dev";
 
@@ -63,6 +77,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Show Dashboard immediately
                 loadDashboard();
+
+                // Start Auto-Logout Timer
+                startAutoLogoutTimer();
                 
                 // Verify session in background & Update Tracking (Silent Security Check)
                 verifySession(currentUser.uid); 
@@ -336,6 +353,11 @@ async function handleOTPVerify(e) {
         toggleLoader(true);
         document.getElementById('section-otp').classList.add('hidden'); 
         document.getElementById('loader-text').innerText = "Verifying...";
+
+        // Set session data
+        localStorage.setItem("aryanta_login", "true");
+        localStorage.setItem("aryanta_user", JSON.stringify(currentUser));
+        startAutoLogoutTimer();
 
         setTimeout(() => {
             showToast("Access Granted 🔓");
@@ -1060,22 +1082,6 @@ window.switchTab = (tabId, btn) => {
     if(window.innerWidth <= 768) { document.querySelector('.sidebar').classList.remove('active'); document.querySelector('.mobile-nav-overlay').classList.remove('active'); }
 };
 
-window.logout = (reason) => {
-    if(currentUser && currentUser.databaseKey) { 
-        fetch(`${API_URL}/api/update-activity`, {
-            method: 'POST', 
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ dbKey: currentUser.databaseKey, activityData: {state: 'Offline'} })
-        });
-    }
-    localStorage.removeItem("aryanta_user"); 
-    sessionStorage.clear();
-    clearInterval(refreshInterval); 
-    currentUser = null; 
-    if(reason) alert(reason); 
-    location.reload();
-};
-
 function setText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text || "N/A"; }
 function showToast(m, t='success') { const box = document.getElementById('toast-box'); const d = document.createElement('div'); d.className = `toast ${t}`; d.innerText = m; box.appendChild(d); setTimeout(() => d.remove(), 3000); }
 
@@ -1231,6 +1237,7 @@ window.sendSmsRequest = function() {
     const msg = `Urgent: Password Recovery Request for ${name}. Please assist.`;
     window.location.href = `sms:8603467878?body=${encodeURIComponent(msg)}`;
 };
+
 window.loadMyDailyAttendance = function() {
   const box = document.getElementById("my-attendance-list");
   if (!box) return;
@@ -1252,6 +1259,35 @@ window.loadMyDailyAttendance = function() {
 
   if (!box.innerHTML) box.innerHTML = "No attendance yet";
 };
+
 if (window.currentUser) {
     refreshAllData();
 }
+
+// ==========================================
+// SESSION MANAGEMENT & LOGOUT
+// ==========================================
+
+function logout(msg) {
+    if (msg) alert(msg);
+  
+    localStorage.removeItem("aryanta_login");
+    localStorage.removeItem("aryanta_user");
+    sessionStorage.clear();
+  
+    if (typeof refreshInterval !== "undefined") {
+      clearInterval(refreshInterval);
+    }
+  
+    currentUser = null;
+    location.reload();
+}
+  
+// Reset the auto-logout timer on user interaction
+["click","mousemove","keydown","scroll","touchstart"].forEach(event => {
+    document.addEventListener(event, () => {
+      if (localStorage.getItem("aryanta_login") === "true") {
+        startAutoLogoutTimer();
+      }
+    });
+});
