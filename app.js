@@ -36,6 +36,7 @@ let updateEmailOTP = null;
 let actionOTP = null; 
 let pendingUpdateData = null; 
 let refreshInterval = null; 
+let pendingNewPassword = null; // Stores password during OTP verification
 
 // --- RECOVERY STATE ---
 let recoveryUser = null;
@@ -277,7 +278,7 @@ async function handleLogin(e) {
             return;
         }
 
-        // 4. Success
+        // 4. Success - But Check Activity/Behavior
         const emp = result.user;
         const key = result.key;
 
@@ -291,8 +292,36 @@ async function handleLogin(e) {
         currentUser = emp;
         currentUser.databaseKey = key;
         
-        // 5. Trigger OTP
-        sendOTP(emp);
+        // --- SUSPICIOUS ACTIVITY & NETWORK CHECK ---
+        
+        // Check 1: Is this a "Known Device"?
+        const trustedDeviceKey = `aryanta_trusted_${emp.uid}`;
+        const isKnownDevice = localStorage.getItem(trustedDeviceKey) === "true";
+
+        // Check 2: Low Network / Changed Network (Simulated via Network API)
+        let isLowNetwork = false;
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        if (connection) {
+            // If effectiveType is 2g or slow-2g or saveData is on, treat as low network/suspicious
+            if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g' || connection.effectiveType === '3g' || connection.saveData) {
+                isLowNetwork = true;
+            }
+        }
+
+        // Decision Logic:
+        // If it's a known device AND network is good -> Login Directly
+        // If it's a NEW device OR Low Network -> Send OTP
+        
+        if (isKnownDevice && !isLowNetwork) {
+            // Normal Behavior: Skip OTP
+            finalizeLogin(emp);
+        } else {
+            // Suspicious Behavior or New Device: Send OTP
+            let msg = "New Device Detected.";
+            if(isLowNetwork) msg = "Network instability detected. Verifying...";
+            showToast(msg, "warning");
+            sendOTP(emp);
+        }
 
     } catch (error) {
         toggleLoader(false);
@@ -308,7 +337,7 @@ async function sendOTP(emp) {
     sessionStorage.setItem("auth_token_hash", secureHash);
     sessionStorage.removeItem("login_otp");
     
-    const messageBody = `Your One-Time Password (OTP) is: ${otp}\n\nThis code is valid for verification purposes only.`;
+    const messageBody = `Security Alert: Suspicious login attempt or New Device.\n\nYour One-Time Password (OTP) is: ${otp}\n\nThis code is valid for verification purposes only.`;
 
     emailjs.send("service_wnqvm4n", "template_qiyhfbm", { 
         to_email: emp.personal.email, 
@@ -350,27 +379,36 @@ async function handleOTPVerify(e) {
     const storedHash = sessionStorage.getItem("auth_token_hash");
     
     if (inputHash === storedHash) {
-        toggleLoader(true);
-        document.getElementById('section-otp').classList.add('hidden'); 
-        document.getElementById('loader-text').innerText = "Verifying...";
-
-        // Set session data
-        localStorage.setItem("aryanta_login", "true");
-        localStorage.setItem("aryanta_user", JSON.stringify(currentUser));
-        startAutoLogoutTimer();
-
-        setTimeout(() => {
-            showToast("Access Granted 🔓");
-            sessionStorage.removeItem("auth_token_hash");
-            if(currentUser && currentUser.databaseKey) { 
-                updateUserActivity(currentUser.uid, currentUser.databaseKey); 
-            }
-            toggleLoader(false);
-            checkRoleAndRedirect(); 
-        }, 1500); 
+        // Mark device as trusted after successful OTP
+        localStorage.setItem(`aryanta_trusted_${currentUser.uid}`, "true");
+        finalizeLogin(currentUser);
     } else { 
         if(userOTP.length === 6) showToast("Incorrect OTP", "danger"); 
     }
+}
+
+// Helper to finalize login (called by direct login or after OTP)
+function finalizeLogin(user) {
+    toggleLoader(true);
+    document.getElementById('section-otp').classList.add('hidden');
+    document.getElementById('section-credentials').classList.add('hidden');
+    document.getElementById('loader').classList.remove('hidden');
+    document.getElementById('loader-text').innerText = "Accessing Dashboard...";
+
+    // Set session data
+    localStorage.setItem("aryanta_login", "true");
+    localStorage.setItem("aryanta_user", JSON.stringify(user));
+    startAutoLogoutTimer();
+
+    setTimeout(() => {
+        showToast("Access Granted 🔓");
+        sessionStorage.removeItem("auth_token_hash");
+        if(user && user.databaseKey) { 
+            updateUserActivity(user.uid, user.databaseKey); 
+        }
+        toggleLoader(false);
+        checkRoleAndRedirect(); 
+    }, 1000); 
 }
 
 // ==========================================
@@ -983,7 +1021,7 @@ window.validateAndInitiateUpdate = () => {
 
 window.initiateActionOTP = (targetEmail) => {
     actionOTP = Math.floor(100000 + Math.random() * 900000);
-    const messageBody = `Confirm your profile update with OTP: ${actionOTP}`;
+    const messageBody = `Confirm your request with OTP: ${actionOTP}`;
     
     toggleLoader(true);
     emailjs.send("service_wnqvm4n", "template_qiyhfbm", { 
@@ -993,7 +1031,14 @@ window.initiateActionOTP = (targetEmail) => {
     }).then(() => {
         toggleLoader(false); 
         showToast("Confirmation OTP Sent 📧"); 
-        document.getElementById('modal-verify-action').classList.remove('hidden');
+        
+        // If we have pending password change, show password modal, else profile update modal
+        if (pendingNewPassword) {
+            document.getElementById('modal-verify-pass-change').classList.remove('hidden');
+        } else {
+            document.getElementById('modal-verify-action').classList.remove('hidden');
+        }
+        
         startUpdateResendTimer();
     }).catch(err => { toggleLoader(false); console.error(err); showToast("Error sending OTP", "danger"); });
 };
@@ -1164,8 +1209,80 @@ window.viewFullImage = (src) => {
 window.openUpdateModal = () => document.getElementById('modal-update').classList.remove('hidden');
 window.closeUpdateModal = () => document.getElementById('modal-update').classList.add('hidden');
 
+// ==========================================
+// PASSWORD CHANGE (SETTINGS) - REWRITTEN
+// ==========================================
+
 window.changePassword = () => {
-   showToast("Password change must be done by Admin.", "warning");
+    const newPass = document.getElementById('set-new-pass').value.trim();
+    const confPass = document.getElementById('set-conf-pass').value.trim();
+
+    if(!newPass || !confPass) return showToast("Please fill all password fields", "warning");
+    if(newPass.length < 6) return showToast("Password must be at least 6 characters", "warning");
+    if(newPass !== confPass) return showToast("Passwords do not match", "danger");
+
+    pendingNewPassword = newPass;
+    
+    // Trigger OTP Flow
+    initiateActionOTP(currentUser.personal.email);
+};
+
+window.verifyPasswordChangeOTP = () => {
+    const entered = document.getElementById('pass-change-otp').value.trim();
+    if(entered == actionOTP) {
+        // OTP Correct, Proceed to update
+        submitPasswordChange();
+    } else {
+        showToast("Incorrect OTP", "danger");
+    }
+};
+
+window.submitPasswordChange = async () => {
+    if(!pendingNewPassword || !currentUser) return;
+    
+    const btn = document.querySelector('#modal-verify-pass-change .btn-prime');
+    const oldText = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Updating...`;
+    btn.disabled = true;
+
+    try {
+        const updateResponse = await fetch(`${API_URL}/api/update-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                uid: currentUser.uid, 
+                newPass: pendingNewPassword 
+            })
+        });
+
+        const resData = await updateResponse.json();
+
+        if (resData.success) {
+            showToast("Password Updated Successfully! ✅");
+            document.getElementById('modal-verify-pass-change').classList.add('hidden');
+            
+            // Clear inputs
+            document.getElementById('set-new-pass').value = "";
+            document.getElementById('set-conf-pass').value = "";
+            document.getElementById('pass-change-otp').value = "";
+            pendingNewPassword = null;
+
+            // Notify User
+            const msg = `Security Alert: Your password was changed via Settings panel.\n\nIf this wasn't you, contact admin immediately.`;
+            emailjs.send("service_wnqvm4n", "template_qiyhfbm", { 
+                to_email: currentUser.personal.email, 
+                name: currentUser.personal.name,     
+                message: msg         
+            });
+        } else {
+            showToast(resData.error || "Update failed", "danger");
+        }
+    } catch (e) {
+        showToast("Update Error. Check Internet.", "danger");
+    } finally {
+        btn.innerHTML = oldText;
+        btn.disabled = false;
+    }
 };
 
 function initCustomPicker() {
