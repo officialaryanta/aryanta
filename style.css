@@ -360,7 +360,19 @@ header h2 { color: var(--text-dark); margin: 0; font-size: 20px; font-weight: 70
 .slip-date { font-size: 12px; color: #64748b; }
 
 /* --- PRIME PAYSLIP DESIGN --- */
-.prime-slip-container { border: 4px double #1e293b; padding: 20px; background: white; font-family: 'Times New Roman', serif; color: #000; position: relative; min-height: 800px; display: flex; flex-direction: column; }
+.prime-slip-container { 
+    border: 4px double #1e293b; 
+    padding: 20px; 
+    background: white; 
+    font-family: 'Times New Roman', serif; 
+    color: #000; 
+    position: relative; 
+    min-height: 800px; 
+    display: flex; 
+    flex-direction: column; 
+    width: 100%;
+    box-sizing: border-box;
+}
 .prime-header-box { border: 2px solid #000; text-align: center; padding: 15px; margin-bottom: 25px; position: relative; background: #fff; }
 .title-strip { background: #000; color: #fff; display: inline-block; padding: 5px 20px; font-weight: bold; font-size: 14px; letter-spacing: 2px; margin-bottom: 10px; border-radius: 4px; }
 .prime-header-box h1 { font-size: 32px; margin: 5px 0; text-transform: uppercase; letter-spacing: 1px; }
@@ -380,18 +392,132 @@ header h2 { color: var(--text-dark); margin: 0; font-size: 20px; font-weight: 70
 .company-logo { text-align: center; opacity: 0.8; }
 .print-timestamp { margin-top: 20px; font-size: 10px; text-align: center; color: #555; border-top: 1px dotted #999; padding-top: 5px; }
 
-/* --- INCHARGE CARD STYLES --- */
-.incharge-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 25px; transition: transform 0.2s; }
-.incharge-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-.incharge-img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #f1f5f9; margin-bottom: 15px; }
-.incharge-name { font-size: 18px; font-weight: 700; color: #1e293b; margin-bottom: 5px; }
-.incharge-role { background: #dbeafe; color: #1e40af; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 15px; }
-.incharge-desc { font-size: 13px; color: #64748b; line-height: 1.5; margin-bottom: 20px; padding: 0 10px; }
-.incharge-contact { width: 100%; border-top: 1px solid #f1f5f9; padding-top: 15px; display: flex; justify-content: space-around; }
-.contact-btn { color: #64748b; font-size: 20px; transition: 0.2s; cursor: pointer; text-decoration: none; }
-.contact-btn:hover { color: var(--accent); transform: scale(1.1); }
+/* --- INCHARGE CARD STYLES (Amazon Item Style) --- */
+.incharge-card { 
+    background: white; 
+    border-radius: 8px; 
+    overflow: hidden; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+    border: 1px solid #e2e8f0; 
+    display: flex; 
+    padding: 15px; 
+    gap: 20px;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    transition: box-shadow 0.2s;
+}
+.incharge-card:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+.incharge-img {
+    width: 100px; 
+    height: 100px; 
+    object-fit: cover; 
+    border-radius: 50%; /* CIRCLE */
+    border: 1px solid #e2e8f0;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+.incharge-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.incharge-name { 
+    font-size: 18px; 
+    font-weight: 700; 
+    color: #0f1111; 
+    margin: 0 0 5px 0;
+}
+.incharge-role { 
+    color: #c45500; 
+    font-size: 13px; 
+    font-weight: 700; 
+    margin-bottom: 8px; 
+}
+.incharge-desc { 
+    font-size: 13px; 
+    color: #565959; 
+    line-height: 1.4; 
+    margin-bottom: 10px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.incharge-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 140px;
+    border-left: 1px solid #e2e8f0;
+    padding-left: 20px;
+    justify-content: center;
+}
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: 0.2s;
+    width: 100%;
+    color: white;
+}
+.btn-call { background: #ffd814; color: #0f1111; border: 1px solid #fcd200; }
+.btn-call:hover { background: #f7ca00; }
+.btn-mail { background: white; color: #0f1111; border: 1px solid #d5d9d9; }
+.btn-mail:hover { background: #f7fafa; }
+.btn-wa { background: #25D366; color: white; border: 1px solid #25D366; }
+.btn-wa:hover { background: #20bd5a; }
+
+/* SOCIAL BUTTONS FOR ARYANTA DETAILS */
+.social-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    transition: transform 0.2s;
+    color: white;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+.social-btn:hover { transform: translateY(-3px); }
+.social-btn i { font-size: 20px; }
+
+.social-btn.instagram { background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); }
+.social-btn.twitter { background: #1DA1F2; }
+.social-btn.linkedin { background: #0077b5; }
+.social-btn.facebook { background: #1877F2; }
+.social-btn.youtube { background: #FF0000; }
+.social-btn.website { background: #334155; }
+.social-btn.x-social { background: #000000; }
+
 
 @media (max-width: 768px) {
+    .incharge-card {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .incharge-actions {
+        border-left: none;
+        padding-left: 0;
+        width: 100%;
+        flex-direction: row;
+        border-top: 1px solid #e2e8f0;
+        padding-top: 15px;
+    }
+    .action-btn { flex: 1; }
+    
     body { padding-bottom: env(safe-area-inset-bottom); }
     .sidebar { position: fixed; left: -280px; top: 0; height: 100%; width: 260px; box-shadow: none; z-index: 100; }
     .sidebar.active { left: 0; box-shadow: 10px 0 50px rgba(0,0,0,0.5); }
@@ -407,144 +533,85 @@ header h2 { color: var(--text-dark); margin: 0; font-size: 20px; font-weight: 70
     .att-header { flex-direction: row; gap: 10px; }
     .att-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
 }
+
 @media print {
-    .sidebar, .top-header, .page-section, .modal-overlay, .login-wrapper, .dashboard-container, #mobile-menu-btn { display: none !important; }
-    body.print-mode-slip #payslip-preview-modal { display: block !important; position: absolute; inset: 0; width: 100%; height: 100%; background: white; z-index: 9999; }
-    body.print-mode-slip .modal-box { position: absolute; top: 0; left: 0; width: 100%; border: none; padding: 0; box-shadow: none; max-width: 100%; }
-    body.print-mode-slip .modal-header, body.print-mode-slip .modal-footer { display: none !important; }
+    /* Hide Everything by Default */
+    body * {
+        visibility: hidden;
+    }
+
+    /* Reset Body Margins/Backgrounds for clean print */
+    body, html {
+        margin: 0;
+        padding: 0;
+        background: white !important;
+        height: 100%;
+        overflow: visible !important;
+    }
+
+    /* Only show the Payslip Modal and its children */
+    #payslip-preview-modal, 
+    #payslip-preview-modal * {
+        visibility: visible;
+    }
+
+    /* Force Modal to be the page */
+    #payslip-preview-modal {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background: white !important;
+        display: block !important;
+        z-index: 9999;
+    }
+
+    /* Hide Modal Header & Footer (Close/Print Buttons) */
+    .modal-header, .modal-footer, .sticky-modal-header {
+        display: none !important;
+    }
+
+    /* Reset Modal Box Styling to fit A4 */
+    .modal-box {
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        position: static !important;
+    }
+
+    .modal-body {
+        padding: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    /* Ensure the Payslip Container draws borders correctly */
+    .prime-slip-container {
+        border: 4px double #000 !important; /* Force black border */
+        width: 100%;
+        min-height: 98vh; /* Full page height */
+        box-sizing: border-box;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
 }
-/* --- FIX: MESSAGE POPUP TEXT VISIBILITY --- */
+
+/* ... (Rest of existing styles) ... */
 #msg-popup-content {
     background: #f8fafc;
     padding: 20px;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
-    color: #1e293b !important; /* Forces dark text */
+    color: #1e293b !important; 
     text-align: left;
 }
-
-#msg-popup-content h4 {
-    color: #0f172a !important;
-    font-size: 18px;
-    margin-bottom: 10px;
-    border-bottom: 1px solid #cbd5e1;
-    padding-bottom: 8px;
-}
-
-#msg-popup-content p {
-    color: #334155 !important;
-    font-size: 15px;
-    line-height: 1.6;
-}
-
-#msg-popup-content .msg-time {
-    display: block;
-    margin-top: 15px;
-    font-size: 12px;
-    color: #64748b;
-    text-align: right;
-    font-style: italic;
-}
-
-/* --- FIX: ATTENDANCE BUTTON VISIBILITY --- */
-/* Makes the active button pop out more visually */
-.st-btn.active {
-    transform: scale(1.15);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    font-weight: bold;
-    border-width: 2px;
-}
-
-/* Ensure the inactive buttons look "off" */
-.st-btn:not(.active) {
-    opacity: 0.6;
-    background: #f1f5f9;
-    border: 1px solid #cbd5e1;
-}
-.st-btn:not(.active):hover {
-    opacity: 1;
-    background: #e2e8f0;
-}
-/* ... (All previous styles) ... */
-
-/* --- ROLE SELECTION STYLES (NEW) --- */
-#section-role-select {
-    animation: fadeIn 0.4s ease;
-}
-
-.role-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-bottom: 10px;
-}
-
-.role-card {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    padding: 20px 10px;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    text-align: center;
-}
-
-.role-card:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: translateY(-5px);
-    border-color: var(--accent);
-}
-
-.role-icon {
-    width: 50px;
-    height: 50px;
-    background: linear-gradient(135deg, #3b82f6, #2563eb);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    color: white;
-    margin: 0 auto 15px;
-    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
-}
-
-.role-icon.admin {
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-    box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);
-}
-
-.role-card h3 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 700;
-    color: white;
-}
-
-.role-card p {
-    margin: 5px 0 0;
-    font-size: 11px;
-    color: #94a3b8;
-}
-
-/* Back button style */
-.icon-btn-back {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: 0.2s;
-}
-.icon-btn-back:hover {
-    background: rgba(255,255,255,0.1);
-}
+/* ... */
 header {
   padding-top: calc(env(safe-area-inset-top) + 12px);
 }
@@ -555,11 +622,9 @@ header {
 header {
   background-color: #38bdf8;
   padding-top: env(safe-area-inset-top);
-  color: #38bdf8; /* sky blue */
+  color: #38bdf8; 
 }
 /* ===== SAFE AREA FIX FOR MOBILE SIDEBAR ===== */
-
-/* Apply to any fixed left sidebar */
 .sidebar,
 .side-bar,
 .mobile-sidebar,
@@ -567,9 +632,15 @@ header {
   top: env(safe-area-inset-top);
   height: calc(100vh - env(safe-area-inset-top));
 }
-
-/* If sidebar is inside body */
 body.logged-in .sidebar,
 body.logged-in .mobile-sidebar {
   padding-top: 12px;
+}
+.social-btn.whatsapp {
+    background: #25D366;
+    color: #fff;
+}
+.social-btn.telegram {
+    background: #229ED9;
+    color: #fff;
 }
