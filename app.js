@@ -613,6 +613,8 @@ function updateUI(u) {
     document.getElementById('p-img').src = s.photo || defImg;
     
     setText('p-name', p.name);
+    // FIX: Set Full Name Display
+    setText('p-fullname', p.name);
     
     const designation = p.job || "Employee";
     const role = p.post || "Staff"; 
@@ -721,43 +723,75 @@ window.submitUserMessage = () => {
     });
 };
 
+// ==========================================
+// INCHARGE PANEL (AMAZON STYLE)
+// ==========================================
 window.loadInchargePanel = function() {
     const container = document.getElementById('incharge-list-container');
     if (!container) return;
     container.innerHTML = `<p style="text-align: center; color: #94a3b8; margin-top:20px;">Loading Incharges...</p>`;
 
-    fetch(`${API_URL}/api/get-incharges`)
-        .then(r => r.json())
-        .then(data => {
-            if(!data || data.length === 0) {
-                 container.innerHTML = `<p style="text-align: center; color: #94a3b8;">No Incharges Assigned</p>`;
-                 return;
-            }
-            container.innerHTML = ""; 
-            
-            data.forEach(inc => {
-                const img = inc.photo || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
-                const card = document.createElement('div');
-                card.className = "incharge-card";
-                card.innerHTML = `
-                    <div style="display:flex; align-items:center; gap:15px; padding:15px; background:rgba(255,255,255,0.05); border-radius:12px; margin-bottom:10px; border:1px solid rgba(255,255,255,0.1);">
-                        <img src="${img}" style="width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid #3b82f6;">
-                        <div style="flex:1;">
-                            <h4 style="color:white; margin:0;">${inc.name}</h4>
-                            <span style="color:#94a3b8; font-size:12px;">${inc.post}</span>
-                        </div>
-                        <div style="display:flex; gap:10px;">
-                            <a href="tel:${inc.phone}" style="background:#3b82f6; width:35px; height:35px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; text-decoration:none;"><i class="fa-solid fa-phone"></i></a>
-                            <a href="mailto:${inc.email}" style="background:#f59e0b; width:35px; height:35px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; text-decoration:none;"><i class="fa-solid fa-envelope"></i></a>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        })
-        .catch(() => {
-            container.innerHTML = `<p style="text-align: center; color: #94a3b8;">Error loading incharges.</p>`;
-        });
+    // Hardcoded profiles for A, B, C, D
+    const mockIncharges = [
+        { 
+            name: "MD.Asad salam", 
+            post: "CO-Founder", 
+            phone: "918603467878", 
+            email: "coaryanta@gmail.com", 
+            desc: "Responsible for overall company operations and strategy.",
+            photo: "https://raw.githubusercontent.com/officialaryanta/aryanta/refs/heads/main/founder.png" 
+        },
+        { 
+            name: "Mr. B Name", 
+            post: "HR Manager", 
+            phone: "910000000002", 
+            email: "b@aryanta.com", 
+            desc: "Handles employee relations, payroll, and recruitment.",
+            photo: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png" 
+        },
+        { 
+            name: "Mr. C Name", 
+            post: "Operations Head", 
+            phone: "910000000003", 
+            email: "c@aryanta.com", 
+            desc: "Oversees daily business activities and logistics.",
+            photo: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png" 
+        },
+        { 
+            name: "Mr. D Name", 
+            post: "Supervisor", 
+            phone: "910000000004", 
+            email: "d@aryanta.com", 
+            desc: "Manages team schedules and on-ground tasks.",
+            photo: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png" 
+        }
+    ];
+
+    container.innerHTML = ""; 
+    
+    mockIncharges.forEach(inc => {
+        const img = inc.photo || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+        const card = document.createElement('div');
+        card.className = "incharge-card"; 
+        
+        // Added onclick to img and style cursor pointer
+        card.innerHTML = `
+            <img src="${img}" class="incharge-img" onclick="viewFullImage(this.src)">
+            <div class="incharge-info">
+                <div>
+                    <h3 class="incharge-name">${inc.name}</h3>
+                    <p class="incharge-role">${inc.post}</p>
+                    <p class="incharge-desc">${inc.desc}</p>
+                </div>
+            </div>
+            <div class="incharge-actions">
+                <a href="tel:${inc.phone}" class="action-btn btn-call"><i class="fa-solid fa-phone"></i> Call Now</a>
+                <a href="mailto:${inc.email}" class="action-btn btn-mail"><i class="fa-solid fa-envelope"></i> Email</a>
+                <a href="https://wa.me/${inc.phone}" target="_blank" class="action-btn btn-wa"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
+            </div>
+        `;
+        container.appendChild(card);
+    });
 };
 
 function loadMyPayslips() {
@@ -1006,7 +1040,7 @@ function submitFinalUpdate() {
 }
 
 // ==========================================
-// UTILITIES
+// UTILITIES (UPDATED: PRINT & INCHARGE)
 // ==========================================
 
 window.downloadPayslipPDF = function() {
@@ -1047,9 +1081,10 @@ function viewPayslipPaper(data) {
         });
     }
     
+    // UPDATED: EMAIL & PHONE NUMBER
     paper.innerHTML = `
     <div class="prime-slip-container">
-        <div class="prime-header-box"><div class="title-strip">PAYROLL SLIP</div><h1>ARYANTA</h1><p><strong>Email:</strong> ${currentUser.personal.email || 'aryanta@support.com'} &nbsp;|&nbsp; <strong>Phone:</strong> 8603467878</p><p>Habibpur, Bhagalpur, Bihar - 813113</p></div>
+        <div class="prime-header-box"><div class="title-strip">PAYROLL SLIP</div><h1>ARYANTA</h1><p><strong>Email:</strong> official.aryanta@gmail.com &nbsp;|&nbsp; <strong>Phone:</strong> +91 8603467878</p><p>Habibpur, Bhagalpur, Bihar - 813113</p></div>
         <div class="prime-info-grid"><div class="info-col"><p><strong>Employee Name:</strong> ${data.name}</p><p><strong>Employee ID:</strong> ${data.uid}</p><p><strong>Father's Name:</strong> ${currentUser.personal.father || 'N/A'}</p><p><strong>Bank A/C:</strong> ${data.acc || 'N/A'}</p><p><strong>Phone:</strong> ${currentUser.personal.phone}</p><p><strong>Email:</strong> ${currentUser.personal.email}</p></div><div class="info-col text-right"><p><strong>Slip Number:</strong> ${data.slipId}</p><p><strong>Date:</strong> ${dateStr}</p><p><strong>Printed Time:</strong> ${timeStr}</p><p><strong>Payroll Period:</strong> ${data.salaryMonth || 'Current Month'}</p></div></div>
         <table class="prime-table"><thead><tr><th width="10%">Sr.No</th><th width="60%">Description</th><th width="30%" class="text-right">Amount</th></tr></thead><tbody>${rowsHtml}<tr><td style="height:20px;"></td><td></td><td></td></tr><tr class="total-row"><td colspan="2" class="text-right"><strong>TOTAL EARNINGS</strong></td><td class="text-right"><strong>₹${finalNetPay.toLocaleString('en-IN')}</strong></td></tr></tbody></table>
         <div class="prime-footer">
@@ -1066,7 +1101,13 @@ function viewPayslipPaper(data) {
     modal.classList.remove('hidden');
 }
 
-window.printPayslip = () => { document.body.classList.add('print-mode-slip'); window.print(); setTimeout(() => { document.body.classList.remove('print-mode-slip'); }, 500); };
+// CHANGED: Use window.print() triggered by class
+window.printPayslip = () => { 
+    document.body.classList.add('print-mode-slip'); 
+    window.print(); 
+    // Remove class after print dialog closes (delay ensures dialog is open)
+    setTimeout(() => { document.body.classList.remove('print-mode-slip'); }, 1000); 
+};
 
 window.toggleSidebar = () => { document.querySelector('.sidebar').classList.toggle('active'); document.querySelector('.mobile-nav-overlay').classList.toggle('active'); };
 window.switchTab = (tabId, btn) => {
@@ -1089,7 +1130,14 @@ function showToast(m, t='success') { const box = document.getElementById('toast-
 function startResendTimer() { const btn = document.getElementById('btn-resend'); const txt = document.getElementById('timer-text'); btn.disabled = true; let t = 30; clearInterval(resendTimer); resendTimer = setInterval(() => { txt.innerText = `(${t}s)`; t--; if(t < 0) { clearInterval(resendTimer); btn.disabled = false; txt.innerText = ""; } }, 1000); }
 
 function resendOTP() { if(currentUser) { toggleLoader(true); sendOTP(currentUser); } }
-window.viewFullImage = () => { document.getElementById('fs-img').src = document.getElementById('p-img').src; document.getElementById('fs-viewer').classList.remove('hidden'); };
+
+// UPDATED: View Full Image accepts source
+window.viewFullImage = (src) => { 
+    const finalSrc = src || document.getElementById('p-img').src;
+    document.getElementById('fs-img').src = finalSrc; 
+    document.getElementById('fs-viewer').classList.remove('hidden'); 
+};
+
 window.openUpdateModal = () => document.getElementById('modal-update').classList.remove('hidden');
 window.closeUpdateModal = () => document.getElementById('modal-update').classList.add('hidden');
 
