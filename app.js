@@ -1060,7 +1060,21 @@ window.downloadPayslipPDF = function() {
 function viewPayslipPaper(data) {
     const modal = document.getElementById('payslip-preview-modal');
     const paper = document.getElementById('payslip-paper-content');
-    const now = new Date(); const dateStr = now.toLocaleDateString('en-GB'); const timeStr = now.toLocaleTimeString('en-US'); const fullTimeStr = now.toLocaleString();
+    
+    // FIX: USE GENERATION TIME, NOT CURRENT TIME
+    // Prefer data.timestamp (number), fallback to data.date (string), finally current date
+    let genDate = new Date();
+    if (data.timestamp) {
+        genDate = new Date(data.timestamp);
+    } else if (data.date) {
+        // If data.date is just YYYY-MM-DD, this will be midnight. Good enough if no timestamp.
+        genDate = new Date(data.date);
+    }
+
+    const dateStr = genDate.toLocaleDateString('en-GB');
+    const timeStr = genDate.toLocaleTimeString('en-US');
+    const fullTimeStr = genDate.toLocaleString();
+
     let rowsHtml = ''; 
     let counter = 1;
     let finalNetPay = parseInt(data.netPay); 
@@ -1081,11 +1095,20 @@ function viewPayslipPaper(data) {
         });
     }
     
-    // UPDATED: EMAIL & PHONE NUMBER
+    // FIX: Payroll Period Logic - Avoid "Current Month"
+    let payrollPeriod = data.salaryMonth;
+    if (!payrollPeriod && data.date) {
+        // Derive purely from date if salaryMonth string missing
+        const d = new Date(data.date);
+        payrollPeriod = d.toLocaleString('default', { month: 'long', year: 'numeric' });
+    }
+    if (!payrollPeriod) payrollPeriod = "N/A"; // Fallback only if absolutely no data
+
+    // UPDATED: EMAIL & PHONE NUMBER & FIXED TIME
     paper.innerHTML = `
     <div class="prime-slip-container">
         <div class="prime-header-box"><div class="title-strip">PAYROLL SLIP</div><h1>ARYANTA</h1><p><strong>Email:</strong> official.aryanta@gmail.com &nbsp;|&nbsp; <strong>Phone:</strong> +91 8603467878</p><p>Habibpur, Bhagalpur, Bihar - 813113</p></div>
-        <div class="prime-info-grid"><div class="info-col"><p><strong>Employee Name:</strong> ${data.name}</p><p><strong>Employee ID:</strong> ${data.uid}</p><p><strong>Father's Name:</strong> ${currentUser.personal.father || 'N/A'}</p><p><strong>Bank A/C:</strong> ${data.acc || 'N/A'}</p><p><strong>Phone:</strong> ${currentUser.personal.phone}</p><p><strong>Email:</strong> ${currentUser.personal.email}</p></div><div class="info-col text-right"><p><strong>Slip Number:</strong> ${data.slipId}</p><p><strong>Date:</strong> ${dateStr}</p><p><strong>Printed Time:</strong> ${timeStr}</p><p><strong>Payroll Period:</strong> ${data.salaryMonth || 'Current Month'}</p></div></div>
+        <div class="prime-info-grid"><div class="info-col"><p><strong>Employee Name:</strong> ${data.name}</p><p><strong>Employee ID:</strong> ${data.uid}</p><p><strong>Father's Name:</strong> ${currentUser.personal.father || 'N/A'}</p><p><strong>Bank A/C:</strong> ${data.acc || 'N/A'}</p><p><strong>Phone:</strong> ${currentUser.personal.phone}</p><p><strong>Email:</strong> ${currentUser.personal.email}</p></div><div class="info-col text-right"><p><strong>Slip Number:</strong> ${data.slipId}</p><p><strong>Date:</strong> ${dateStr}</p><p><strong>Generated Time:</strong> ${timeStr}</p><p><strong>Payroll Period:</strong> ${payrollPeriod}</p></div></div>
         <table class="prime-table"><thead><tr><th width="10%">Sr.No</th><th width="60%">Description</th><th width="30%" class="text-right">Amount</th></tr></thead><tbody>${rowsHtml}<tr><td style="height:20px;"></td><td></td><td></td></tr><tr class="total-row"><td colspan="2" class="text-right"><strong>TOTAL EARNINGS</strong></td><td class="text-right"><strong>₹${finalNetPay.toLocaleString('en-IN')}</strong></td></tr></tbody></table>
         <div class="prime-footer">
             <div class="amount-words"><span>Total in Words:</span><br><strong>Rupees ${finalNetPay.toLocaleString('en-IN')} Only</strong></div>
@@ -1096,7 +1119,7 @@ function viewPayslipPaper(data) {
                 </div>
             </div>
         </div>
-        <div class="print-timestamp">Printed on: ${fullTimeStr}</div>
+        <div class="print-timestamp">Generated on: ${fullTimeStr}</div>
     </div>`;
     modal.classList.remove('hidden');
 }
