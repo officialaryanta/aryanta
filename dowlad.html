@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installation Guide | Premium Tech</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        /* =========================================
+           1. CORE VARIABLES
+           ========================================= */
+        :root { 
+            --bg-void: #020202; 
+            --glass-border: rgba(255, 255, 255, 0.08); 
+            --glass-card: rgba(20, 20, 20, 0.6);
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; scroll-behavior: smooth; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-void); 
+            background-image: radial-gradient(circle at 50% 0%, #11111f 0%, var(--bg-void) 55%);
+            color: var(--text-main); 
+            overflow-x: hidden;
+        }
+
+        /* =========================================
+           2. NAVBAR
+           ========================================= */
+        nav {
+            position: fixed; top: 0; left: 0; width: 100%; height: 70px;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px;
+            background: rgba(2, 2, 2, 0.85);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .nav-brand { font-family: 'Playfair Display'; font-weight: 700; font-size: 1.1rem; letter-spacing: 0.5px;}
+        .btn-back { color: #aaa; text-decoration: none; font-size: 0.9rem; transition: 0.3s; display: flex; align-items: center; gap: 8px;}
+        .btn-back:hover { color: white; }
+
+        /* =========================================
+           3. HERO SECTION
+           ========================================= */
+        .hero-section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 110px 20px 40px 20px;
+            text-align: center;
+        }
+
+        .hero-title {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            background: linear-gradient(180deg, #fff 20%, #666 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+            animation: slideDown 1s ease-out;
+        }
+
+        .hero-subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin-bottom: 50px;
+            letter-spacing: 0.5px;
+            animation: fadeIn 1.5s ease;
+        }
+
+        /* =========================================
+           4. VIDEO PLAYER
+           ========================================= */
+        .video-frame-wrapper {
+            width: 100%;
+            max-width: 900px;
+            position: relative;
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .video-container {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #000;
+            border-radius: 20px; 
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.8);
+            position: relative;
+            z-index: 1;
+        }
+
+        video { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        /* POSTER */
+        .custom-poster {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover;
+            background-position: center;
+            z-index: 2;
+            cursor: pointer;
+            transition: opacity 0.6s ease, visibility 0.6s;
+            background-color: #000;
+        }
+        .custom-poster.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+        /* CONTROL DECK */
+        .control-deck {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 12px 35px;
+            background: rgba(12, 12, 12, 0.75);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 100px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            z-index: 10;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .control-deck.deck-hidden {
+            opacity: 0;
+            transform: translate(-50%, 20px);
+            pointer-events: none;
+        }
+
+        .deck-btn {
+            background: transparent; border: none; cursor: pointer;
+            color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.3s;
+        }
+
+        .btn-skip {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.7);
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 50px;
+        }
+        .btn-skip:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .btn-skip i { font-size: 0.9rem; }
+
+        .btn-hero-play {
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: #ffffff;
+            color: #000;
+            font-size: 1.2rem;
+            margin: 0 10px;
+            box-shadow: 0 0 25px rgba(255,255,255,0.15);
+        }
+        .btn-hero-play:hover { transform: scale(1.05); box-shadow: 0 0 35px rgba(255,255,255,0.5); }
+
+        .btn-mute { width: 40px; height: 40px; color: rgba(255,255,255,0.6); border-radius: 50%; }
+        .btn-mute:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .btn-mute.active { color: #ff5555; }
+
+        /* RESPONSIVE */
+        @media (min-width: 900px) {
+            .control-deck { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); }
+            .control-deck.deck-hidden { transform: translate(-50%, 30px); }
+        }
+
+        @media (max-width: 899px) {
+            .control-deck {
+                position: relative; margin-top: 25px;
+                width: 95%; max-width: 450px; justify-content: space-between; padding: 15px 25px;
+                background: rgba(18, 18, 18, 0.9); backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 24px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                opacity: 1 !important; transform: none !important; pointer-events: auto !important;
+            }
+            .btn-skip { background: rgba(255,255,255,0.05); padding: 10px 14px; font-size: 0.8rem; }
+            .btn-hero-play { width: 55px; height: 55px; margin: 0; }
+        }
+
+        .scroll-indicator {
+            margin-top: 25px; color: var(--text-muted); animation: bounce 2s infinite;
+            display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 0.8rem;
+        }
+
+        /* =========================================
+           5. LIGHTBOX (FULL SCREEN IMAGE)
+           ========================================= */
+        .lightbox {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 2000;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            backdrop-filter: blur(10px);
+        }
+
+        .lightbox.active { opacity: 1; pointer-events: all; }
+
+        .lightbox-img {
+            max-width: 90vw;
+            max-height: 90vh;
+            border-radius: 8px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .lightbox.active .lightbox-img { transform: scale(1); }
+
+        .close-lightbox {
+            position: absolute; top: 20px; right: 30px;
+            color: white; font-size: 2rem; cursor: pointer;
+            background: rgba(255,255,255,0.1);
+            width: 50px; height: 50px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.3s;
+        }
+        .close-lightbox:hover { background: rgba(255,255,255,0.3); transform: rotate(90deg); }
+
+        /* =========================================
+           6. STEPS SECTION (4:5 Aspect Ratio)
+           ========================================= */
+        .steps-container { max-width: 1000px; margin: 0 auto 100px auto; padding: 0 20px; position: relative; }
+        .center-line { position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: #333; transform: translateX(-50%); display: none; z-index: -1; }
+        
+        .step-card { 
+            background: var(--glass-card); border: 1px solid var(--glass-border); border-radius: 20px; 
+            overflow: hidden; margin-bottom: 60px; box-shadow: 0 15px 40px -10px rgba(0,0,0,0.6); 
+            opacity: 0; transform: translateY(40px); transition: all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); 
+        }
+        .step-card.visible { opacity: 1; transform: translateY(0); }
+        
+        /* NEW IMAGE STYLES FOR 4:5 RATIO */
+        .step-img { 
+            width: 100%; 
+            aspect-ratio: 4 / 5; /* Forces Portrait Aspect Ratio */
+            object-fit: cover; 
+            filter: grayscale(0.5) brightness(0.8); 
+            transition: 0.5s; 
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: zoom-in; /* Indicates clickable */
+        }
+        .step-card:hover .step-img { filter: grayscale(0) brightness(1); }
+        
+        .step-content { padding: 30px; }
+        .step-content h3 { font-family: 'Playfair Display'; font-size: 1.5rem; margin-bottom: 12px; color: #fff; }
+        .step-content p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; }
+        .step-number { position: absolute; top: 20px; left: 20px; width: 45px; height: 45px; background: rgba(10,10,10,0.8); border: 1px solid rgba(255,255,255,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; z-index: 5; backdrop-filter: blur(8px); }
+
+        @media (min-width: 900px) {
+            .center-line { display: block; }
+            .steps-container { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; }
+            .step-card { margin-bottom: 0; }
+            .step-card:nth-child(even) { margin-top: 150px; }
+            .step-card:nth-child(odd)::before { content: ''; position: absolute; top: 100px; right: -40px; width: 40px; height: 1px; background: #333; }
+            .step-card:nth-child(even)::before { content: ''; position: absolute; top: 100px; left: -40px; width: 40px; height: 1px; background: #333; }
+            .step-card:nth-child(odd) .step-number { left: auto; right: 20px; }
+        }
+        @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+        @keyframes slideDown { from {opacity:0; transform: translateY(-30px);} to {opacity:1; transform: translateY(0);} }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-8px);} 60% {transform: translateY(-4px);} }
+    </style>
+</head>
+<body>
+
+    <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+        <div class="close-lightbox" onclick="closeLightbox(event)">
+            <i class="fas fa-times"></i>
+        </div>
+        <img src="" alt="Full Screen" class="lightbox-img" id="lightboxImg">
+    </div>
+
+    <nav>
+        <a href="#" class="btn-back"><i class="fas fa-arrow-left"></i> Back</a>
+        <div class="nav-brand">How To Download</div>
+    </nav>
+
+    <section class="hero-section">
+        <h1 class="hero-title">Installation Guide</h1>
+        <p class="hero-subtitle">Follow these 8 steps for a secure setup</p>
+
+        <div class="video-frame-wrapper" id="videoWrapper">
+            <div class="video-container">
+                <div class="custom-poster" id="posterOverlay" 
+                     style="background-image: url('thumbnail.png');"
+                     onclick="togglePlay()">
+                </div>
+                <video id="installVideo" playsinline>
+                    <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
+                </video>
+            </div>
+
+            <div class="control-deck" id="controlDeck">
+                <button class="deck-btn btn-skip" onclick="skip(-10)" title="Rewind 10s">
+                    <i class="fas fa-arrow-rotate-left"></i> <span>10s</span>
+                </button>
+                <button class="deck-btn btn-hero-play" id="playBtn" onclick="togglePlay()">
+                    <i class="fas fa-play" style="margin-left: 4px;"></i>
+                </button>
+                <button class="deck-btn btn-skip" onclick="skip(10)" title="Forward 10s">
+                    <span>10s</span> <i class="fas fa-arrow-rotate-right"></i>
+                </button>
+                 <button class="deck-btn btn-mute" id="muteBtn" onclick="toggleMute()" title="Mute">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="scroll-indicator">
+            <span>SCROLL DOWN</span>
+            <i class="fas fa-chevron-down"></i>
+        </div>
+    </section>
+
+    <div class="container steps-container" id="steps">
+        <div class="center-line"></div>
+        
+        <div class="step-card">
+            <div class="step-number">01</div>
+            <img src="step 1.jpeg" class="step-img" alt="Step 1" onclick="openLightbox(this.src)">
+            <div class="step-content"><h3>Step 1: Open Employee Access</h3><p>Open Employee Access screen and tap on Download App option to start the process.</p></div>
+        </div>
+        <div class="step-card">
+            <div class="step-number">02</div>
+            <img src="step 2.jpeg" class="step-img" alt="Step 2" onclick="openLightbox(this.src)">
+            <div class="step-content"><h3>Step 2: Security Warning Appears</h3><p>A Google security message may appear saying installation from this source is not allowed.
+Tap on Settings to continue.</p></div>
+        </div>
+        <div class="step-card">
+            <div class="step-number">03</div>
+            <img src="step 3.jpeg" class="step-img" alt="Step 3" onclick="openLightbox(this.src)">
+            <div class="step-content"><h3>UStep 3: Allow Unknown Apps</h3><p>In settings, enable Allow unknown apps to be installed for Google Drive (or the browser you’re using).</p></div>
+        </div>
+        <div class="step-card">
+            <div class="step-number">04</div>
+            <img src="step 4.jpeg" class="step-img" alt="Step 4" onclick="openLightbox(this.src)">
+            <div class="step-content"><h3>Step 4: Confirm Installation</h3><p>Return back and tap Install when prompted to install Aryanta E.M.P.</p></div>
+        </div>
+        <div class="step-card">
+            <div class="step-number">05</div>
+            <img src="step 5.jpeg" class="step-img" alt="Step 5" onclick="openLightbox(this.src)">
+            <div class="step-content"><h3>Step 5: App Installing</h3><p>Wait a few seconds while the application is installing on your device.</p></div>
+        </div>
+        <div class="step-card">
+            <div class="step-number">06</div>
+            <img src="step 6.jpeg" class="step-img" alt="Step 6" onclick="openLightbox(this.src)">
+            <div class="step-content"><h3>Step 6: Installation Completed</h3><p>Once installed, you will see App installed confirmation.</p></div>
+        </div>
+        <div class="step-card">
+            <div class="step-number">07</div>
+            <img src="step 7.jpeg" class="step-img" alt="Step 7" onclick="openLightbox(this.src)">
+            <div class="step-content"><h3>Step 7: Open the App</h3><p>Tap Open to launch Aryanta E.M.P and start using the employee dashboard.</p></div>
+        </div>
+        <div class="step-card">
+            <div class="step-number">08</div>
+            <img src="step 8.jpeg" class="step-img" alt="Step 8" onclick="openLightbox(this.src)">
+            <div class="step-content"><h3>Step 8: App Ready to Use</h3><p>Your app is now successfully installed.<p>
+You can find Aryanta E.M.P on your mobile home screen.<p>
+Tap the app icon to open and start using the employee dashboard.</p></div>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('installVideo');
+        const playBtn = document.getElementById('playBtn');
+        const muteBtn = document.getElementById('muteBtn');
+        const poster = document.getElementById('posterOverlay');
+        const controlDeck = document.getElementById('controlDeck');
+        const videoWrapper = document.getElementById('videoWrapper');
+
+        /* --- VIDEO & CONTROLS --- */
+        function togglePlay() {
+            if (video.paused) {
+                poster.classList.add('hidden');
+                video.play();
+                playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                resetIdleTimer();
+            } else {
+                video.pause();
+                playBtn.innerHTML = '<i class="fas fa-play" style="margin-left:4px;"></i>';
+                showControls(); 
+            }
+        }
+
+        function toggleMute() {
+            video.muted = !video.muted;
+            if (video.muted) {
+                muteBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+                muteBtn.classList.add('active');
+            } else {
+                muteBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+                muteBtn.classList.remove('active');
+            }
+        }
+
+        function skip(val) {
+            video.currentTime += val;
+            resetIdleTimer();
+        }
+
+        let idleTimer;
+        function showControls() {
+            controlDeck.classList.remove('deck-hidden');
+            clearTimeout(idleTimer);
+        }
+        function hideControls() {
+            if (!video.paused && window.innerWidth >= 900) {
+                controlDeck.classList.add('deck-hidden');
+            }
+        }
+        function resetIdleTimer() {
+            showControls();
+            if (!video.paused && window.innerWidth >= 900) {
+                idleTimer = setTimeout(hideControls, 3000); 
+            }
+        }
+
+        videoWrapper.addEventListener('mousemove', resetIdleTimer);
+        videoWrapper.addEventListener('mouseenter', showControls);
+        videoWrapper.addEventListener('mouseleave', () => {
+            if (!video.paused && window.innerWidth >= 900) hideControls();
+        });
+
+        /* --- LIGHTBOX LOGIC --- */
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = document.getElementById('lightboxImg');
+
+        function openLightbox(src) {
+            lightboxImg.src = src;
+            lightbox.classList.add('active');
+        }
+
+        function closeLightbox(e) {
+            // Close if clicking the background OR the close button
+            if (e.target !== lightboxImg) {
+                lightbox.classList.remove('active');
+            }
+        }
+
+        /* --- SCROLL ANIMATION --- */
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.12 });
+        document.querySelectorAll('.step-card').forEach(card => observer.observe(card));
+    </script>
+</body>
+</html>
