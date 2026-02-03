@@ -2,265 +2,50 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Contact ARYANTA</title>
-    
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-    <link rel="icon" href="favicon.ico">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
-
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Form</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     
     <script type="text/javascript">
         (function() {
-            emailjs.init("TDgNRO0CEs9rU3ozD");
+            emailjs.init("VKtRMaLwTDl-sNoU1"); // <--- UPDATED PUBLIC KEY HERE
         })();
     </script>
-
-    <style>
-        :root {
-            --bg-void: #000000;
-            --accent-primary: #3b82f6;
-            --glass-surface: rgba(20, 20, 20, 0.85);
-            --glass-border: rgba(255, 255, 255, 0.1);
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-void);
-            color: #fff;
-            min-height: 100vh;
-            overflow-x: hidden;
-            overflow-y: auto; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        /* BACKGROUND ENGINE */
-        #video-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; opacity: 0.6; pointer-events: none; }
-        .vignette { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, transparent 0%, #000 120%); z-index: -1; pointer-events: none; }
-
-        /* MAIN CARD */
-        .contact-wrapper {
-            width: 100%; max-width: 1100px;
-            background: var(--glass-surface); backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: 30px;
-            display: flex; overflow: hidden;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
-            opacity: 0; transform: translateY(30px);
-            position: relative; z-index: 10;
-        }
-
-        /* LEFT SIDE */
-        .contact-info {
-            width: 40%; background: linear-gradient(135deg, #0f172a 0%, #000 100%);
-            padding: 60px 40px; display: flex; flex-direction: column; justify-content: space-between;
-            border-right: 1px solid var(--glass-border);
-        }
-
-        /* RIGHT SIDE */
-        .contact-form-section { width: 60%; padding: 60px 50px; background: rgba(0,0,0,0.4); }
-
-        h2 { font-family: 'Playfair Display', serif; font-size: 2.5rem; margin-bottom: 15px; line-height: 1.1; }
-        .sub-text { color: #94a3b8; margin-bottom: 40px; font-size: 1rem; line-height: 1.6; }
-
-        .detail-item { margin-bottom: 25px; display: flex; gap: 15px; align-items: center; }
-        .detail-item i { color: var(--accent-primary); font-size: 1.2rem; width: 20px; text-align: center; }
-        .detail-item span { font-size: 0.95rem; color: #e2e8f0; }
-
-        .back-btn { 
-            display: inline-flex; align-items: center; gap: 10px; 
-            color: #64748b; text-decoration: none; font-size: 0.9rem; 
-            font-weight: 600; transition: 0.3s; margin-bottom: 40px;
-        }
-        .back-btn:hover { color: white; transform: translateX(-5px); }
-
-        .socials { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 30px; }
-        .social-icon { 
-            width: 42px; height: 42px; border-radius: 50%; 
-            border: 1px solid #333; display: flex; align-items: center; justify-content: center; 
-            color: #94a3b8; text-decoration: none; transition: 0.3s; background: rgba(255,255,255,0.02);
-            font-size: 1.1rem; /* Adjusted for better visibility */
-        }
-        .social-icon:hover { background: white; color: black; border-color: white; transform: translateY(-3px); }
-
-        /* FORM INPUTS */
-        .input-group { position: relative; margin-bottom: 35px; }
-        
-        /* Input Styling */
-        .input-group input, .input-group textarea {
-            width: 100%; padding: 12px 0; background: transparent; 
-            border: none; border-bottom: 1px solid #333; 
-            color: white; font-size: 1rem; outline: none; 
-            transition: 0.3s; font-family: 'Inter', sans-serif; border-radius: 0;
-            z-index: 2; position: relative; /* Ensures input is on top of hacks */
-        }
-
-        /* Label Styling - Initial State */
-        .input-group label {
-            position: absolute; top: 12px; left: 0; color: #64748b; 
-            pointer-events: none; transition: 0.3s; font-size: 1rem;
-            z-index: 5; /* Ensures label floats ABOVE autofill background */
-        }
-        
-        /* Highlight Border on Focus */
-        .input-group input:focus, .input-group textarea:focus { 
-            border-bottom-color: var(--accent-primary);
-            background: transparent !important;
-        }
-
-        /* --- FLOATING LABEL LOGIC (ROBUST) --- */
-        /* 1. When Focused */
-        .input-group input:focus ~ label,
-        .input-group textarea:focus ~ label,
-        /* 2. When placeholder is NOT shown (user typed something) */
-        .input-group input:not(:placeholder-shown) ~ label,
-        .input-group textarea:not(:placeholder-shown) ~ label,
-        /* 3. When Autofilled by Browser */
-        .input-group input:-webkit-autofill ~ label,
-        .input-group textarea:-webkit-autofill ~ label,
-        /* 4. When JS detects value (The Fix for Phone Number) */
-        .input-group input.has-value ~ label,
-        .input-group textarea.has-value ~ label {
-            top: -20px; font-size: 0.8rem; color: var(--accent-primary); font-weight: 600;
-        }
-
-        /* --- AUTOFILL BACKGROUND FIX --- */
-        /* Prevents white background on Chrome/Safari autofill */
-        input:-webkit-autofill,
-        input:-webkit-autofill:hover, 
-        input:-webkit-autofill:focus, 
-        textarea:-webkit-autofill,
-        textarea:-webkit-autofill:hover,
-        textarea:-webkit-autofill:focus {
-            -webkit-text-fill-color: #ffffff;
-            -webkit-box-shadow: 0 0 0px 1000px #000 inset !important;
-            transition: background-color 5000s ease-in-out 0s;
-            caret-color: white;
-        }
-
-        .btn-submit {
-            width: 100%; padding: 16px; background: white; color: black; 
-            border: none; border-radius: 12px; font-weight: 700; font-size: 1rem;
-            cursor: pointer; transition: 0.3s; margin-top: 10px;
-        }
-        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3); }
-        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        /* SUCCESS POPUP STYLES */
-        .popup-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
-            z-index: 1000; display: none; align-items: center; justify-content: center;
-            opacity: 0; transition: opacity 0.3s;
-        }
-        .popup-overlay.active { display: flex; opacity: 1; }
-        .popup-box {
-            background: #111; border: 1px solid var(--accent-primary);
-            padding: 40px; border-radius: 20px; text-align: center;
-            max-width: 400px; transform: scale(0.8); transition: transform 0.3s;
-        }
-        .popup-overlay.active .popup-box { transform: scale(1); }
-        .popup-icon { font-size: 3rem; color: #22c55e; margin-bottom: 20px; }
-        .popup-title { font-size: 1.5rem; font-family: 'Playfair Display'; margin-bottom: 10px; color: white; }
-        .popup-text { color: #94a3b8; margin-bottom: 20px; }
-        .countdown { font-weight: 800; color: var(--accent-primary); font-size: 1.2rem; display: block; margin-bottom: 15px; }
-        
-        .btn-stay {
-            padding: 8px 16px; background: transparent; border: 1px solid #333;
-            color: #888; border-radius: 6px; cursor: pointer; transition: 0.3s;
-            font-size: 0.85rem;
-        }
-        .btn-stay:hover { border-color: white; color: white; }
-
-        @media (max-width: 900px) {
-            body { align-items: flex-start; padding: 0; }
-            .contact-wrapper { flex-direction: column; border-radius: 0; border: none; max-width: 100%; margin: 0; box-shadow: none; }
-            .contact-info { width: 100%; border-right: none; border-bottom: 1px solid var(--glass-border); padding: 40px 25px; }
-            .contact-info h2 { font-size: 2rem; }
-            .contact-form-section { width: 100%; padding: 40px 25px 80px 25px; }
-            .back-btn { margin-bottom: 20px; }
-        }
-    </style>
 </head>
 <body>
 
-    <canvas id="video-canvas"></canvas>
-    <div class="vignette"></div>
+    <h2>Contact Us</h2>
+    
+    <form id="contact-form">
+        <label>Name</label>
+        <input type="text" name="user_name" required><br><br>
+        
+        <label>Email</label>
+        <input type="email" name="user_email" required><br><br>
+        
+        <label>Message</label>
+        <textarea name="message" required></textarea><br><br>
+        
+        <input type="submit" value="Send">
+    </form>
 
-    <div class="popup-overlay" id="successPopup">
-        <div class="popup-box">
-            <i class="fas fa-check-circle popup-icon"></i>
-            <h3 class="popup-title">Message Sent!</h3>
-            <p class="popup-text">We received your request and will contact you shortly.</p>
-            <p style="font-size: 0.9rem; color: #666;">Redirecting to home in</p>
-            <div class="countdown" id="timer">10</div>
-            <button class="btn-stay" id="cancelTimerBtn">Stay Here</button>
-        </div>
-    </div>
+    <script type="text/javascript">
+        window.onload = function() {
+            document.getElementById('contact-form').addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent page reload
 
-    <div class="contact-wrapper" id="card">
-        <div class="contact-info">
-            <div>
-                <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back Home</a>
-                <h2>Let's Talk.</h2>
-                <p class="sub-text">We are building the future. Have a question, suggestion, or complaint? Tell us — your message helps us get better.</p>
-                
-                <div class="detail-item"><i class="fas fa-envelope"></i><span>official.aryanta@gmail.com</span></div>
-                <div class="detail-item"><i class="fas fa-phone-alt"></i><span>+91 8603467878</span></div>
-            </div>
-
-            <div class="socials">
-                <a href="https://www.instagram.com/official.aryanta?igsh=MWMwbHZkdndmeWZtMw==" target="_blank" class="social-icon"><i class="fab fa-instagram"></i></a>
-                <a href="https://www.facebook.com/share/1WKmq2yTGL/" target="_blank" class="social-icon"><i class="fab fa-facebook"></i></a>
-                <a href="https://youtube.com/@official.aryanta?si=KW1ef4UB7c2Rsjbq" target="_blank" class="social-icon"><i class="fab fa-youtube"></i></a>
-                <a href="https://x.com/officialaryanta" target="_blank" class="social-icon"><i class="fa-brands fa-x-twitter"></i></a>
-            </div>
-        </div>
-
-        <div class="contact-form-section">
-            <form id="contactForm">
-                <div class="input-group">
-                    <input type="text" id="name" required placeholder=" ">
-                    <label>Your Name</label>
-                </div>
-                <div class="input-group">
-                    <input type="email" id="email" required placeholder=" ">
-                    <label>Email Address</label>
-                </div>
-                
-                <div class="input-group">
-                    <input type="tel" id="phone" placeholder=" " maxlength="10" 
-                           oninput="this.value = this.value.replace(/[^0-9]/g, '');">
-                    <label>Phone Number (Optional)</label>
-                </div>
-
-                <div class="input-group">
-                    <input type="text" id="subject" required placeholder=" ">
-                    <label>Subject</label>
-                </div>
-                <div class="input-group">
-                    <textarea id="message" rows="4" required placeholder=" "></textarea>
-                    <label>Message</label>
-                </div>
-                <button type="submit" class="btn-submit" id="submitBtn">Send Message</button>
-            </form>
-        </div>
-    </div>
-
-    <script type="module" src="style.js"></script>
-
+                // emailjs.sendForm('SERVICE_ID', 'TEMPLATE_ID', this)
+                // <--- UPDATED SERVICE ID AND TEMPLATE ID BELOW --->
+                emailjs.sendForm('service_k7rqgqq', 'template_g6a0dhh', this)
+                    .then(function() {
+                        console.log('SUCCESS!');
+                        alert("Message sent successfully!");
+                    }, function(error) {
+                        console.log('FAILED...', error);
+                        alert("Failed to send message.");
+                    });
+            });
+        }
+    </script>
 </body>
 </html>
