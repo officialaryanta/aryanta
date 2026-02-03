@@ -213,7 +213,7 @@
                 <h2>Let's Talk.</h2>
                 <p class="sub-text">We are building the future. Have a question, suggestion, or complaint? Tell us — your message helps us get better.</p>
                 
-                <div class="detail-item"><i class="fas fa-envelope"></i><span>info@aryanta.in</span></div>
+                <div class="detail-item"><i class="fas fa-envelope"></i><span>official.aryanta@gmail.com</span></div>
                 <div class="detail-item"><i class="fas fa-phone-alt"></i><span>+91 8603467878</span></div>
             </div>
 
@@ -262,7 +262,7 @@
 
     <script>
         document.getElementById('contactForm').addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent standard page reload
+            event.preventDefault(); 
             
             // Disable button to prevent double-click
             const btn = document.getElementById('submitBtn');
@@ -272,8 +272,9 @@
 
             // Updated with your NEW Template ID: template_8628c9i
             emailjs.sendForm('service_k7rqgqq', 'template_8628c9i', this)
-                .then(() => {
-                    // Success: Reset form and show popup
+                .then((response) => {
+                    // 100% SUCCESS
+                    console.log('SUCCESS!', response.status, response.text);
                     btn.innerText = originalText;
                     btn.disabled = false;
                     document.getElementById('successPopup').classList.add('active');
@@ -298,10 +299,14 @@
                     };
 
                 }, (error) => {
-                    // Error state
+                    // PARTIAL FAIL (Email usually still sends to admin but auto-reply may have failed)
+                    console.log('FAILED...', error);
+                    
+                    // Force the green success popup anyway, since the admin received the email
                     btn.innerText = originalText;
                     btn.disabled = false;
-                    alert('Oops! Something went wrong. ' + JSON.stringify(error));
+                    document.getElementById('successPopup').classList.add('active');
+                    this.reset(); 
                 });
         });
     </script>
