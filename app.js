@@ -23,7 +23,7 @@ const API_URL = "https://rough-field-c679.official-aryanta.workers.dev";
 
 // --- EMAILJS CREDENTIALS ---
 // Used for OTP emails and notifications
-emailjs.init("TDgNRO0CEs9rU3ozD");
+emailjs.init("VKtRMaLwTDl-sNoU1");
 
 // --- GLOBAL STATE ---
 let currentUser = window.currentUser || null;
@@ -339,7 +339,7 @@ async function sendOTP(emp) {
     
     const messageBody = `Security Alert: Suspicious login attempt or New Device.\n\nYour One-Time Password (OTP) is: ${otp}\n\nThis code is valid for verification purposes only.`;
 
-    emailjs.send("service_k7rqgqq", "template_qiyhfbm", { 
+    emailjs.send("service_k7rqgqq", "template_2ohbmld", { 
         to_email: emp.personal.email, 
         name: emp.personal.name,     
         message: messageBody         
@@ -486,7 +486,7 @@ window.verifyRecoveryDetails = async () => {
 
                 const msg = `Use this code to reset your password: ${otp}\n\nIf you didn't request this, ignore this email.`;
 
-                await emailjs.send("service_k7rqgqq", "template_qiyhfbm", { 
+                await emailjs.send("service_k7rqgqq", "template_2ohbmld", { 
                     to_email: user.personal.email, 
                     name: user.personal.name,     
                     message: msg         
@@ -576,7 +576,7 @@ window.submitNewPassword = async () => {
         if (resData.success) {
             // Send Confirmation Email
             const msg = `Security Alert: Your password was successfully changed just now.\n\nIf this wasn't you, contact admin immediately.`;
-            await emailjs.send("service_k7rqgqq", "template_qiyhfbm", { 
+            await emailjs.send("service_k7rqgqq", "template_2ohbmld", { 
                 to_email: recoveryUser.personal.email, 
                 name: recoveryUser.personal.name,     
                 message: msg         
@@ -1024,7 +1024,7 @@ window.initiateActionOTP = (targetEmail) => {
     const messageBody = `Confirm your request with OTP: ${actionOTP}`;
     
     toggleLoader(true);
-    emailjs.send("service_k7rqgqq", "template_qiyhfbm", { 
+    emailjs.send("service_k7rqgqq", "template_2ohbmld", { 
         to_email: targetEmail, 
         name: currentUser.personal.name, 
         message: messageBody 
@@ -1069,7 +1069,7 @@ function submitFinalUpdate() {
         body: JSON.stringify(requestData)
     }).then(() => {
         const messageBody = `User ${currentUser.personal.name} (${currentUser.uid}) requested changes:\n\n${JSON.stringify(pendingUpdateData)}`;
-        emailjs.send("service_k7rqgqq", "template_qiyhfbm", { 
+        emailjs.send("service_k7rqgqq", "template_2ohbmld", { 
             to_email: "aryanta@support.com", 
             name: "Admin", 
             message: messageBody 
@@ -1269,7 +1269,7 @@ window.submitPasswordChange = async () => {
 
             // Notify User
             const msg = `Security Alert: Your password was changed via Settings panel.\n\nIf this wasn't you, contact admin immediately.`;
-            emailjs.send("service_k7rqgqq", "template_qiyhfbm", { 
+            emailjs.send("service_k7rqgqq", "template_2ohbmld", { 
                 to_email: currentUser.personal.email, 
                 name: currentUser.personal.name,     
                 message: msg         
@@ -1479,4 +1479,5 @@ function logout(msg) {
       }
     });
 });
+
 
