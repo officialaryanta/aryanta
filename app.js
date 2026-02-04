@@ -22,7 +22,6 @@ function startAutoLogoutTimer() {
 const API_URL = "https://rough-field-c679.official-aryanta.workers.dev";
 
 // --- EMAILJS CREDENTIALS ---
-// Used for OTP emails and notifications
 emailjs.init("TDgNRO0CEs9rU3ozD");
 
 // --- GLOBAL STATE ---
@@ -36,7 +35,7 @@ let updateEmailOTP = null;
 let actionOTP = null; 
 let pendingUpdateData = null; 
 let refreshInterval = null; 
-let pendingNewPassword = null; // Stores password during OTP verification
+let pendingNewPassword = null; 
 
 // --- RECOVERY STATE ---
 let recoveryUser = null;
@@ -47,57 +46,48 @@ let recoveryOTP = null;
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     
-    // 1. INPUT ENFORCEMENT (Allow only numbers for Phone/Aadhaar)
+    // Load saved theme
+    const savedTheme = localStorage.getItem("aryanta_theme");
+    if(savedTheme) setTheme(savedTheme);
+
+    // 1. INPUT ENFORCEMENT
     document.querySelectorAll('.input-numeric').forEach(inp => {
         inp.addEventListener('input', function() {
             this.value = this.value.replace(/[^0-9]/g, '');
         });
     });
 
-    // 2. INPUT ENFORCEMENT (Uppercase for IFSC)
     document.querySelectorAll('.input-uppercase').forEach(inp => {
         inp.addEventListener('input', function() {
             this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
         });
     });
 
-    // 3. CHECK LOCAL STORAGE: If user data exists, skip login screen
+    // 3. CHECK LOCAL STORAGE
     const savedData = localStorage.getItem("aryanta_user");
     
     if(savedData) {
         try {
-            // Load local data immediately
             currentUser = JSON.parse(savedData);
             
-            // Go straight to dashboard (Don't ask to login)
             if(currentUser && currentUser.uid) {
-                // Console log removed for privacy
-                
-                // Hide Login View Immediately
                 document.getElementById('view-login').classList.add('hidden');
                 
                 // Show Dashboard immediately
                 loadDashboard();
-
-                // Start Auto-Logout Timer
                 startAutoLogoutTimer();
-                
-                // Verify session in background & Update Tracking (Silent Security Check)
                 verifySession(currentUser.uid); 
             } else {
                 throw new Error("Invalid stored data");
             }
         } catch(e) { 
-            // console.error("Auth Error", e); // Kept minimal
             logout(false); 
         }
     } else {
-        // 4. NO DATA: Show Login Screen normally
         document.getElementById('view-login').classList.remove('hidden');
         document.getElementById('section-credentials').classList.remove('hidden');
     }
     
-    // Listeners
     document.getElementById('btn-login-action')?.addEventListener('click', handleLogin);
     
     const overlay = document.querySelector('.mobile-nav-overlay');
@@ -120,6 +110,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initCustomPicker();
 });
+
+// ==========================================
+// THEME & SETTINGS
+// ==========================================
+window.setTheme = (mode) => {
+    if (mode === 'light') {
+        document.body.classList.add('light-theme');
+    } else {
+        document.body.classList.remove('light-theme');
+    }
+    localStorage.setItem("aryanta_theme", mode);
+};
 
 // ==========================================
 // SECURITY HELPERS
@@ -180,7 +182,6 @@ async function verifySession(uid, waitPromise) {
         toggleLoader(false);
 
     } catch(e) { 
-        // console.error(e);
         if(waitPromise) await waitPromise; 
         toggleLoader(false); 
         logout(false); 
@@ -191,7 +192,7 @@ function checkRoleAndRedirect() {
     if(!currentUser) return;
     const role = (currentUser.personal.post || "").toLowerCase();
     
-    // Automatically redirect managers, everyone else goes to dashboard
+    // Automatically redirect managers
     if(role.includes('manager')) {
         window.location.href = "manager.html"; 
     } else {
@@ -218,15 +219,12 @@ async function updateUserActivity(uid, dbKey) {
             body: JSON.stringify({ dbKey, activityData })
         });
 
-    } catch (err) { 
-        // Tracking error ignored silently
-    }
+    } catch (err) { }
 }
 
 async function handleLogin(e) {
     if(e) e.preventDefault();
     
-    // 1. Capture Input
     let inputIdentifier = document.getElementById('in-uid').value.trim();
     const pass = document.getElementById('in-pass').value.trim();
     
@@ -240,22 +238,17 @@ async function handleLogin(e) {
     try {
         let finalUid = inputIdentifier;
 
-        // Resolve Email/Phone to UID logic
         if (inputIdentifier.includes('@') || /^\d{10,}$/.test(inputIdentifier)) {
             try {
-                // Try to resolve UID using the get-user smart search endpoint
                 const searchRes = await fetch(`${API_URL}/api/get-user?uid=${inputIdentifier}`);
                 const searchData = await searchRes.json();
                 
                 if (searchData && searchData.user && searchData.user.uid) {
                     finalUid = searchData.user.uid;
                 }
-            } catch(err) {
-                // Silent catch
-            }
+            } catch(err) {}
         }
 
-        // 2. Send Login Request
         const response = await fetch(`${API_URL}/api/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -264,7 +257,6 @@ async function handleLogin(e) {
         
         const result = await response.json();
         
-        // 3. Handle Errors
         if(!response.ok) {
             toggleLoader(false); 
             document.getElementById('section-credentials').classList.remove('hidden');
@@ -278,7 +270,6 @@ async function handleLogin(e) {
             return;
         }
 
-        // 4. Success - But Check Activity/Behavior
         const emp = result.user;
         const key = result.key;
 
@@ -293,30 +284,20 @@ async function handleLogin(e) {
         currentUser.databaseKey = key;
         
         // --- SUSPICIOUS ACTIVITY & NETWORK CHECK ---
-        
-        // Check 1: Is this a "Known Device"?
         const trustedDeviceKey = `aryanta_trusted_${emp.uid}`;
         const isKnownDevice = localStorage.getItem(trustedDeviceKey) === "true";
 
-        // Check 2: Low Network / Changed Network (Simulated via Network API)
         let isLowNetwork = false;
         const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
         if (connection) {
-            // If effectiveType is 2g or slow-2g or saveData is on, treat as low network/suspicious
             if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g' || connection.effectiveType === '3g' || connection.saveData) {
                 isLowNetwork = true;
             }
         }
-
-        // Decision Logic:
-        // If it's a known device AND network is good -> Login Directly
-        // If it's a NEW device OR Low Network -> Send OTP
         
         if (isKnownDevice && !isLowNetwork) {
-            // Normal Behavior: Skip OTP
             finalizeLogin(emp);
         } else {
-            // Suspicious Behavior or New Device: Send OTP
             let msg = "New Device Detected.";
             if(isLowNetwork) msg = "Network instability detected. Verifying...";
             showToast(msg, "warning");
@@ -326,7 +307,6 @@ async function handleLogin(e) {
     } catch (error) {
         toggleLoader(false);
         document.getElementById('section-credentials').classList.remove('hidden');
-        console.error("Login Error: Connection failed"); // Generic error
         showToast("Connection Error. Check Internet.", "danger");
     }
 }
@@ -360,7 +340,6 @@ async function sendOTP(emp) {
     }).catch(err => { 
         toggleLoader(false); 
         document.getElementById('section-credentials').classList.remove('hidden');
-        console.error("OTP Error: Email service failed"); // Generic error
         showToast("Failed to send email. Check Console.", "danger"); 
     });
 }
@@ -379,7 +358,6 @@ async function handleOTPVerify(e) {
     const storedHash = sessionStorage.getItem("auth_token_hash");
     
     if (inputHash === storedHash) {
-        // Mark device as trusted after successful OTP
         localStorage.setItem(`aryanta_trusted_${currentUser.uid}`, "true");
         finalizeLogin(currentUser);
     } else { 
@@ -387,7 +365,6 @@ async function handleOTPVerify(e) {
     }
 }
 
-// Helper to finalize login (called by direct login or after OTP)
 function finalizeLogin(user) {
     toggleLoader(true);
     document.getElementById('section-otp').classList.add('hidden');
@@ -395,7 +372,6 @@ function finalizeLogin(user) {
     document.getElementById('loader').classList.remove('hidden');
     document.getElementById('loader-text').innerText = "Accessing Dashboard...";
 
-    // Set session data
     localStorage.setItem("aryanta_login", "true");
     localStorage.setItem("aryanta_user", JSON.stringify(user));
     startAutoLogoutTimer();
@@ -412,26 +388,23 @@ function finalizeLogin(user) {
 }
 
 // ==========================================
-// FORGOT PASSWORD / RECOVERY LOGIC (UPDATED)
+// FORGOT PASSWORD / RECOVERY LOGIC
 // ==========================================
 
 window.showForgotPass = () => { 
     document.getElementById('section-credentials').classList.add('hidden'); 
     document.getElementById('section-forgot').classList.remove('hidden');
     
-    // Reset views to Step 1
     document.getElementById('forgot-step-verify').classList.remove('hidden');
     document.getElementById('forgot-step-otp').classList.add('hidden');
     document.getElementById('forgot-step-reset').classList.add('hidden');
     document.getElementById('forgot-step-manual').classList.add('hidden');
     
-    // Clear forms
     document.getElementById('form-forgot-verify').reset();
     document.getElementById('rec-otp-input').value = "";
     document.getElementById('rec-new-pass').value = "";
     document.getElementById('rec-conf-pass').value = "";
 
-    // Reset recovery state
     recoveryUser = null;
     recoveryOTP = null;
 };
@@ -441,12 +414,10 @@ window.hideForgotPass = () => {
     document.getElementById('section-credentials').classList.remove('hidden'); 
 };
 
-// STEP 1: VERIFY IDENTITY (CLEAN - NO PII LOGS)
 window.verifyRecoveryDetails = async () => {
     const contact = document.getElementById('rec-contact').value.trim();
     const aadhaar = document.getElementById('rec-aadhaar').value.trim();
 
-    // STRICT AADHAAR CHECK
     if(!/^\d{12}$/.test(aadhaar)) {
         showToast("Aadhaar must be exactly 12 digits", "danger");
         return;
@@ -460,26 +431,20 @@ window.verifyRecoveryDetails = async () => {
     document.getElementById('section-forgot').classList.add('hidden'); 
 
     try {
-        // Fetch User Data
         const response = await fetch(`${API_URL}/api/get-user?uid=${contact}`);
         const data = await response.json();
 
-        // REMOVED DEBUG LOGS HERE TO HIDE IDENTITY
-
         if (data && data.user) {
             const user = data.user;
-            // Trim values to avoid invisible space issues
             const storedAadhaar = user.security ? String(user.security.aadhaar).trim() : "";
             const storedPhone = user.personal ? String(user.personal.phone).trim() : "";
             const storedEmail = user.personal ? String(user.personal.email).trim() : "";
             const storedUid = String(user.uid).trim();
 
-            // Validate Aadhaar AND (Phone OR Email OR UID)
             const isMatch = (storedAadhaar === aadhaar) && 
                             (storedPhone === contact || storedEmail === contact || storedUid === contact);
 
             if (isMatch) {
-                // MATCH FOUND!
                 recoveryUser = user;
                 const otp = Math.floor(100000 + Math.random() * 900000).toString();
                 recoveryOTP = otp;
@@ -499,41 +464,25 @@ window.verifyRecoveryDetails = async () => {
                 document.getElementById('forgot-step-verify').classList.add('hidden');
                 document.getElementById('forgot-step-otp').classList.remove('hidden');
                 return;
-            } else {
-                // console.warn("Match Failed."); // Kept generic
             }
-        } else {
-            // console.warn("User not found via API.");
         }
-
-        // No Match Found
         throw new Error("No matching user found");
 
     } catch(e) { 
-        console.error("Recovery Failed: Invalid Details"); // Only generic error log
         toggleLoader(false);
-        
-        // Restore Recovery Screen & Show Manual Options
         document.getElementById('section-forgot').classList.remove('hidden'); 
         showToast("Details not found. Please try manual request.", "warning");
-        
         document.getElementById('forgot-step-verify').classList.add('hidden');
         document.getElementById('forgot-step-manual').classList.remove('hidden');
     }
 };
 
-// STEP 2: VERIFY OTP
 window.verifyRecoveryOTP = () => {
     const inputOtp = document.getElementById('rec-otp-input').value.trim();
-    
     if (inputOtp === recoveryOTP) {
         showToast("Code Verified ✅");
-        
-        // SWITCH TO STEP 3
         document.getElementById('forgot-step-otp').classList.add('hidden');
         document.getElementById('forgot-step-reset').classList.remove('hidden');
-        
-        // Populate User Info (Read-Only)
         document.getElementById('rec-disp-name').innerText = recoveryUser.personal.name;
         document.getElementById('rec-disp-uid').innerText = "UID: " + recoveryUser.uid;
     } else {
@@ -541,19 +490,12 @@ window.verifyRecoveryOTP = () => {
     }
 };
 
-// STEP 3: SUBMIT NEW PASSWORD
 window.submitNewPassword = async () => {
     const newPass = document.getElementById('rec-new-pass').value.trim();
     const confPass = document.getElementById('rec-conf-pass').value.trim();
 
-    if (newPass.length < 6) {
-        showToast("Password must be at least 6 characters", "warning");
-        return;
-    }
-    if (newPass !== confPass) {
-        showToast("Passwords do not match", "danger");
-        return;
-    }
+    if (newPass.length < 6) return showToast("Password must be at least 6 characters", "warning");
+    if (newPass !== confPass) return showToast("Passwords do not match", "danger");
 
     const btn = document.getElementById('btn-reset-final');
     const oldText = btn.innerHTML;
@@ -561,7 +503,6 @@ window.submitNewPassword = async () => {
     btn.disabled = true;
 
     try {
-        // CALL API TO UPDATE PASSWORD
         const updateResponse = await fetch(`${API_URL}/api/update-password`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -574,7 +515,6 @@ window.submitNewPassword = async () => {
         const resData = await updateResponse.json();
 
         if (resData.success) {
-            // Send Confirmation Email
             const msg = `Security Alert: Your password was successfully changed just now.\n\nIf this wasn't you, contact admin immediately.`;
             await emailjs.send("service_wnqvm4n", "template_qiyhfbm", { 
                 to_email: recoveryUser.personal.email, 
@@ -585,7 +525,7 @@ window.submitNewPassword = async () => {
             showToast("Password Changed Successfully! ✅");
             
             setTimeout(() => {
-                hideForgotPass(); // Go back to login
+                hideForgotPass(); 
                 btn.innerHTML = oldText;
                 btn.disabled = false;
             }, 2000);
@@ -594,7 +534,6 @@ window.submitNewPassword = async () => {
         }
 
     } catch (e) {
-        console.error("Update Error: Failed to save"); // Generic error
         showToast("Error updating password. Try again later.", "danger");
         btn.innerHTML = oldText;
         btn.disabled = false;
@@ -610,6 +549,10 @@ function loadDashboard() {
     document.getElementById('view-login').classList.add('hidden');
     document.getElementById('view-dashboard').classList.remove('hidden');
     
+    // UPDATED: Default to Dashboard Tab
+    const dashBtn = document.getElementById('nav-dashboard');
+    if(dashBtn) switchTab('dashboard', dashBtn);
+
     refreshAllData();
 
     if(refreshInterval) clearInterval(refreshInterval);
@@ -630,7 +573,6 @@ function refreshAllData() {
             if(data.user) {
                 currentUser = data.user;
                 localStorage.setItem("aryanta_user", JSON.stringify(data.user));
-
                 updateUI(currentUser);
             }
         });
@@ -646,12 +588,17 @@ function updateUI(u) {
     const b = u.bank || {};
     const s = u.security || {};
     const defImg = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
-    setText('header-name', p.name || "User");
-    document.getElementById('header-img').src = s.photo || defImg;
-    document.getElementById('p-img').src = s.photo || defImg;
     
+    setText('header-name', p.name || "User");
+    
+    const photoUrl = s.photo || defImg;
+    document.getElementById('header-img').src = photoUrl;
+    document.getElementById('p-img').src = photoUrl;
+    document.getElementById('dash-img').src = photoUrl;
+    
+    setText('dash-name', p.name);
+    setText('dash-uid', "UID: " + u.uid);
     setText('p-name', p.name);
-    // FIX: Set Full Name Display
     setText('p-fullname', p.name);
     
     const designation = p.job || "Employee";
@@ -717,9 +664,7 @@ function loadNotifications() {
             });
             chatBox.scrollTop = chatBox.scrollHeight;
         })
-        .catch(e => {
-            console.error("Notice Error:", e);
-        });
+        .catch(e => {});
 }
 
 window.submitUserMessage = () => {
@@ -761,15 +706,11 @@ window.submitUserMessage = () => {
     });
 };
 
-// ==========================================
-// INCHARGE PANEL (AMAZON STYLE)
-// ==========================================
 window.loadInchargePanel = function() {
     const container = document.getElementById('incharge-list-container');
     if (!container) return;
     container.innerHTML = `<p style="text-align: center; color: #94a3b8; margin-top:20px;">Loading Incharges...</p>`;
 
-    // Hardcoded profiles for A, B, C, D
     const mockIncharges = [
         { 
             name: "MD.Asad salam", 
@@ -812,7 +753,6 @@ window.loadInchargePanel = function() {
         const card = document.createElement('div');
         card.className = "incharge-card"; 
         
-        // Added onclick to img and style cursor pointer
         card.innerHTML = `
             <img src="${img}" class="incharge-img" onclick="viewFullImage(this.src)">
             <div class="incharge-info">
@@ -964,11 +904,9 @@ window.validateAndInitiateUpdate = () => {
     if (!currentUser) return;
     if (!isEmailVerified) return showToast("Please verify new email first", "danger");
 
-    // OLD DATA
     const p = currentUser.personal || {};
     const b = currentUser.bank || {};
 
-    // INPUT VALUES
     const phoneIn  = document.getElementById('up-phone').value.trim();
     const emailIn  = document.getElementById('up-email').value.trim();
     const bankIn   = document.getElementById('up-bank').value.trim();
@@ -976,11 +914,9 @@ window.validateAndInitiateUpdate = () => {
     const ifscIn   = document.getElementById('up-ifsc').value.trim();
     const accIn    = document.getElementById('up-acc').value.trim();
 
-    // STRICT VALIDATIONS BEFORE SUBMITTING
     if(phoneIn && phoneIn.length !== 10) return showToast("Phone must be 10 digits", "danger");
     if(accIn && accIn.length > 16) return showToast("Account No max 16 digits", "danger");
 
-    // FINAL VALUES (fallback to old if empty)
     const newPhone  = phoneIn  || p.phone;
     const newEmail  = emailIn  || p.email;
     const newBank   = bankIn   || b.bank;
@@ -988,7 +924,6 @@ window.validateAndInitiateUpdate = () => {
     const newIfsc   = ifscIn   || b.ifsc;
     const newAcc    = accIn    || b.acc;
 
-    // CHECK IF ANYTHING CHANGED
     if (
         newPhone  === p.phone &&
         newEmail  === p.email &&
@@ -1000,7 +935,6 @@ window.validateAndInitiateUpdate = () => {
         return showToast("No changes detected.", "warning");
     }
 
-    // 🔥 SEND ONLY CHANGED DATA
     pendingUpdateData = {
         personal: {
             phone: newPhone !== p.phone ? newPhone : null,
@@ -1014,7 +948,6 @@ window.validateAndInitiateUpdate = () => {
         }
     };
 
-    // SEND OTP FOR CONFIRMATION
     initiateActionOTP(newEmail);
 };
 
@@ -1032,7 +965,6 @@ window.initiateActionOTP = (targetEmail) => {
         toggleLoader(false); 
         showToast("Confirmation OTP Sent 📧"); 
         
-        // If we have pending password change, show password modal, else profile update modal
         if (pendingNewPassword) {
             document.getElementById('modal-verify-pass-change').classList.remove('hidden');
         } else {
@@ -1040,7 +972,7 @@ window.initiateActionOTP = (targetEmail) => {
         }
         
         startUpdateResendTimer();
-    }).catch(err => { toggleLoader(false); console.error(err); showToast("Error sending OTP", "danger"); });
+    }).catch(err => { toggleLoader(false); showToast("Error sending OTP", "danger"); });
 };
 
 function startUpdateResendTimer() {
@@ -1085,34 +1017,42 @@ function submitFinalUpdate() {
 }
 
 // ==========================================
-// UTILITIES (UPDATED: PRINT & INCHARGE)
+// UTILITIES (UPDATED: PRINT & FIX)
 // ==========================================
 
 window.downloadPayslipPDF = function() {
     const element = document.getElementById('payslip-paper-content');
-    if(!element) return;
+    if(!element) return showToast("Error: No slip found", "danger");
+
     const opt = {
       margin:       10,
       filename:     `Payslip_${currentUser.uid}_${Date.now()}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2 },
+      html2canvas:  { scale: 2, useCORS: true }, // ADDED CORS SUPPORT
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
+    
     showToast("Downloading PDF...");
-    html2pdf().set(opt).from(element).save();
+    try {
+        if(typeof html2pdf !== 'undefined') {
+            html2pdf().set(opt).from(element).save();
+        } else {
+            showToast("Library loading...", "warning");
+        }
+    } catch(e) {
+        console.error(e);
+        showToast("Download failed.", "danger");
+    }
 };
 
 function viewPayslipPaper(data) {
     const modal = document.getElementById('payslip-preview-modal');
     const paper = document.getElementById('payslip-paper-content');
     
-    // FIX: USE GENERATION TIME, NOT CURRENT TIME
-    // Prefer data.timestamp (number), fallback to data.date (string), finally current date
     let genDate = new Date();
     if (data.timestamp) {
         genDate = new Date(data.timestamp);
     } else if (data.date) {
-        // If data.date is just YYYY-MM-DD, this will be midnight. Good enough if no timestamp.
         genDate = new Date(data.date);
     }
 
@@ -1140,16 +1080,13 @@ function viewPayslipPaper(data) {
         });
     }
     
-    // FIX: Payroll Period Logic - Avoid "Current Month"
     let payrollPeriod = data.salaryMonth;
     if (!payrollPeriod && data.date) {
-        // Derive purely from date if salaryMonth string missing
         const d = new Date(data.date);
         payrollPeriod = d.toLocaleString('default', { month: 'long', year: 'numeric' });
     }
-    if (!payrollPeriod) payrollPeriod = "N/A"; // Fallback only if absolutely no data
+    if (!payrollPeriod) payrollPeriod = "N/A";
 
-    // UPDATED: EMAIL & PHONE NUMBER & FIXED TIME
     paper.innerHTML = `
     <div class="prime-slip-container">
         <div class="prime-header-box"><div class="title-strip">PAYROLL SLIP</div><h1>ARYANTA</h1><p><strong>Email:</strong> official.aryanta@gmail.com &nbsp;|&nbsp; <strong>Phone:</strong> +91 8603467878</p><p>Habibpur, Bhagalpur, Bihar - 813113</p></div>
@@ -1169,20 +1106,23 @@ function viewPayslipPaper(data) {
     modal.classList.remove('hidden');
 }
 
-// CHANGED: Use window.print() triggered by class
 window.printPayslip = () => { 
     document.body.classList.add('print-mode-slip'); 
     window.print(); 
-    // Remove class after print dialog closes (delay ensures dialog is open)
     setTimeout(() => { document.body.classList.remove('print-mode-slip'); }, 1000); 
 };
 
 window.toggleSidebar = () => { document.querySelector('.sidebar').classList.toggle('active'); document.querySelector('.mobile-nav-overlay').classList.toggle('active'); };
+
+// UPDATED: Handle new tabs
 window.switchTab = (tabId, btn) => {
     document.querySelectorAll('.content-section').forEach(el => el.classList.add('hidden'));
-    document.getElementById('tab-'+tabId).classList.remove('hidden');
+    
+    const target = document.getElementById('tab-'+tabId);
+    if(target) target.classList.remove('hidden');
+
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+    if(btn) btn.classList.add('active');
     
     if (tabId === 'attendance') { renderCustomPickerBtn(); loadAttendance(); }
     if (tabId === 'payments') { const now = new Date(); const monthStr = now.toISOString().slice(0, 7); loadSalaryExpectation(monthStr); }
@@ -1194,12 +1134,10 @@ window.switchTab = (tabId, btn) => {
 function setText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text || "N/A"; }
 function showToast(m, t='success') { const box = document.getElementById('toast-box'); const d = document.createElement('div'); d.className = `toast ${t}`; d.innerText = m; box.appendChild(d); setTimeout(() => d.remove(), 3000); }
 
-// Login Timer
 function startResendTimer() { const btn = document.getElementById('btn-resend'); const txt = document.getElementById('timer-text'); btn.disabled = true; let t = 30; clearInterval(resendTimer); resendTimer = setInterval(() => { txt.innerText = `(${t}s)`; t--; if(t < 0) { clearInterval(resendTimer); btn.disabled = false; txt.innerText = ""; } }, 1000); }
 
 function resendOTP() { if(currentUser) { toggleLoader(true); sendOTP(currentUser); } }
 
-// UPDATED: View Full Image accepts source
 window.viewFullImage = (src) => { 
     const finalSrc = src || document.getElementById('p-img').src;
     document.getElementById('fs-img').src = finalSrc; 
@@ -1210,7 +1148,7 @@ window.openUpdateModal = () => document.getElementById('modal-update').classList
 window.closeUpdateModal = () => document.getElementById('modal-update').classList.add('hidden');
 
 // ==========================================
-// PASSWORD CHANGE (SETTINGS) - REWRITTEN
+// PASSWORD CHANGE (SETTINGS)
 // ==========================================
 
 window.changePassword = () => {
@@ -1222,15 +1160,12 @@ window.changePassword = () => {
     if(newPass !== confPass) return showToast("Passwords do not match", "danger");
 
     pendingNewPassword = newPass;
-    
-    // Trigger OTP Flow
     initiateActionOTP(currentUser.personal.email);
 };
 
 window.verifyPasswordChangeOTP = () => {
     const entered = document.getElementById('pass-change-otp').value.trim();
     if(entered == actionOTP) {
-        // OTP Correct, Proceed to update
         submitPasswordChange();
     } else {
         showToast("Incorrect OTP", "danger");
@@ -1260,14 +1195,11 @@ window.submitPasswordChange = async () => {
         if (resData.success) {
             showToast("Password Updated Successfully! ✅");
             document.getElementById('modal-verify-pass-change').classList.add('hidden');
-            
-            // Clear inputs
             document.getElementById('set-new-pass').value = "";
             document.getElementById('set-conf-pass').value = "";
             document.getElementById('pass-change-otp').value = "";
             pendingNewPassword = null;
 
-            // Notify User
             const msg = `Security Alert: Your password was changed via Settings panel.\n\nIf this wasn't you, contact admin immediately.`;
             emailjs.send("service_wnqvm4n", "template_qiyhfbm", { 
                 to_email: currentUser.personal.email, 
@@ -1309,7 +1241,7 @@ function closeManagerPopup(){
 }
 
 // ==========================================
-// MANUAL RECOVERY (CLOUD FALLBACK)
+// MANUAL RECOVERY
 // ==========================================
 
 window.submitRecoveryToFirebase = function() {
@@ -1349,13 +1281,11 @@ window.submitRecoveryToFirebase = function() {
         if (data.success) {
             document.getElementById('modal-rec-success').classList.remove('hidden');
         } else {
-            console.error("API Error: Submission failed"); // Generic error
             showToast(data.error || "Submission failed.", "danger");
             advanceToStage2(); 
         }
     })
     .catch((error) => {
-        console.error("Network Error: Failed to connect"); // Generic error
         btn.innerHTML = originalText;
         btn.disabled = false;
         showToast("Connection Error. Try links below.", "danger");
@@ -1375,7 +1305,6 @@ window.showFinalNoWay = function() {
     document.getElementById('rec-stage-3').classList.remove('hidden');
 };
 
-// HELPER: Generate the specific message text
 function getRecoveryMessage(name, phone) {
     return `Respected Admin Sir,
 
@@ -1388,7 +1317,6 @@ Mobile No: ${phone}
 Thank you for your support.`;
 }
 
-// OPTION 1: Send via NATIVE EMAIL APP (mailto:)
 window.sendManualRecoveryRequest = () => {
     const name = document.getElementById('req-name').value.trim();
     const phone = document.getElementById('req-phone').value.trim();
@@ -1404,7 +1332,6 @@ window.sendManualRecoveryRequest = () => {
     window.location.href = mailtoLink;
 };
 
-// OPTION 2: Open WhatsApp
 window.openWhatsAppSupport = () => {
     const name = document.getElementById('req-name').value.trim();
     const phone = document.getElementById('req-phone').value.trim();
@@ -1471,7 +1398,6 @@ function logout(msg) {
     location.reload();
 }
   
-// Reset the auto-logout timer on user interaction
 ["click","mousemove","keydown","scroll","touchstart"].forEach(event => {
     document.addEventListener(event, () => {
       if (localStorage.getItem("aryanta_login") === "true") {
