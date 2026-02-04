@@ -21,7 +21,7 @@
     
     <script type="text/javascript">
         (function() {
-            emailjs.init("VKtRMaLwTDl-sNoU1"); 
+            emailjs.init("TDgNRO0CEs9rU3ozD");
         })();
     </script>
 
@@ -92,46 +92,59 @@
             width: 42px; height: 42px; border-radius: 50%; 
             border: 1px solid #333; display: flex; align-items: center; justify-content: center; 
             color: #94a3b8; text-decoration: none; transition: 0.3s; background: rgba(255,255,255,0.02);
-            font-size: 1.1rem;
+            font-size: 1.1rem; /* Adjusted for better visibility */
         }
         .social-icon:hover { background: white; color: black; border-color: white; transform: translateY(-3px); }
 
         /* FORM INPUTS */
         .input-group { position: relative; margin-bottom: 35px; }
         
+        /* Input Styling */
         .input-group input, .input-group textarea {
             width: 100%; padding: 12px 0; background: transparent; 
             border: none; border-bottom: 1px solid #333; 
             color: white; font-size: 1rem; outline: none; 
             transition: 0.3s; font-family: 'Inter', sans-serif; border-radius: 0;
-            z-index: 2; position: relative; 
+            z-index: 2; position: relative; /* Ensures input is on top of hacks */
         }
 
+        /* Label Styling - Initial State */
         .input-group label {
             position: absolute; top: 12px; left: 0; color: #64748b; 
             pointer-events: none; transition: 0.3s; font-size: 1rem;
-            z-index: 5; 
+            z-index: 5; /* Ensures label floats ABOVE autofill background */
         }
         
+        /* Highlight Border on Focus */
         .input-group input:focus, .input-group textarea:focus { 
             border-bottom-color: var(--accent-primary);
             background: transparent !important;
         }
 
+        /* --- FLOATING LABEL LOGIC (ROBUST) --- */
+        /* 1. When Focused */
         .input-group input:focus ~ label,
         .input-group textarea:focus ~ label,
+        /* 2. When placeholder is NOT shown (user typed something) */
         .input-group input:not(:placeholder-shown) ~ label,
         .input-group textarea:not(:placeholder-shown) ~ label,
+        /* 3. When Autofilled by Browser */
         .input-group input:-webkit-autofill ~ label,
         .input-group textarea:-webkit-autofill ~ label,
+        /* 4. When JS detects value (The Fix for Phone Number) */
         .input-group input.has-value ~ label,
         .input-group textarea.has-value ~ label {
             top: -20px; font-size: 0.8rem; color: var(--accent-primary); font-weight: 600;
         }
 
-        /* AUTOFILL BACKGROUND FIX */
-        input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, 
-        textarea:-webkit-autofill, textarea:-webkit-autofill:hover, textarea:-webkit-autofill:focus {
+        /* --- AUTOFILL BACKGROUND FIX --- */
+        /* Prevents white background on Chrome/Safari autofill */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus, 
+        textarea:-webkit-autofill,
+        textarea:-webkit-autofill:hover,
+        textarea:-webkit-autofill:focus {
             -webkit-text-fill-color: #ffffff;
             -webkit-box-shadow: 0 0 0px 1000px #000 inset !important;
             transition: background-color 5000s ease-in-out 0s;
@@ -205,7 +218,7 @@
                 <h2>Let's Talk.</h2>
                 <p class="sub-text">We are building the future. Have a question, suggestion, or complaint? Tell us — your message helps us get better.</p>
                 
-                <div class="detail-item"><i class="fas fa-envelope"></i><span>info@aryanta.in</span></div>
+                <div class="detail-item"><i class="fas fa-envelope"></i><span>official.aryanta@gmail.com</span></div>
                 <div class="detail-item"><i class="fas fa-phone-alt"></i><span>+91 8603467878</span></div>
             </div>
 
@@ -219,30 +232,27 @@
 
         <div class="contact-form-section">
             <form id="contactForm">
-                
-                <input type="hidden" name="from_email" value="info@aryanta.in">
-
                 <div class="input-group">
-                    <input type="text" id="name" name="name" required placeholder=" ">
+                    <input type="text" id="name" required placeholder=" ">
                     <label>Your Name</label>
                 </div>
                 <div class="input-group">
-                    <input type="email" id="email" name="user_email" required placeholder=" ">
+                    <input type="email" id="email" required placeholder=" ">
                     <label>Email Address</label>
                 </div>
                 
                 <div class="input-group">
-                    <input type="tel" id="phone" name="phone" placeholder=" " maxlength="10" 
+                    <input type="tel" id="phone" placeholder=" " maxlength="10" 
                            oninput="this.value = this.value.replace(/[^0-9]/g, '');">
                     <label>Phone Number (Optional)</label>
                 </div>
 
                 <div class="input-group">
-                    <input type="text" id="subject" name="subject" required placeholder=" ">
+                    <input type="text" id="subject" required placeholder=" ">
                     <label>Subject</label>
                 </div>
                 <div class="input-group">
-                    <textarea id="message" name="message" rows="4" required placeholder=" "></textarea>
+                    <textarea id="message" rows="4" required placeholder=" "></textarea>
                     <label>Message</label>
                 </div>
                 <button type="submit" class="btn-submit" id="submitBtn">Send Message</button>
@@ -251,56 +261,6 @@
     </div>
 
     <script type="module" src="style.js"></script>
-
-    <script>
-        document.getElementById('contactForm').addEventListener('submit', function(event) {
-            event.preventDefault(); 
-            
-            // Disable button so user can't double-click
-            const btn = document.getElementById('submitBtn');
-            const originalText = btn.innerText;
-            btn.innerText = 'Sending...';
-            btn.disabled = true;
-
-            // Send Email using YOUR exact IDs
-            emailjs.sendForm('service_k7rqgqq', 'template_8628c9i', this)
-                .then(() => {
-                    // Success! Show popup silently.
-                    triggerSuccess(btn, originalText);
-                })
-                .catch(() => {
-                    // Error occurred behind the scenes. Show success anyway. 
-                    // NO ALERTS. NO CONSOLE LOGS. 
-                    triggerSuccess(btn, originalText);
-                });
-        });
-
-        // Function to handle the success animation
-        function triggerSuccess(btn, originalText) {
-            btn.innerText = originalText;
-            btn.disabled = false;
-            document.getElementById('successPopup').classList.add('active');
-            document.getElementById('contactForm').reset();
-            
-            // Start 10-second countdown
-            let timeLeft = 10;
-            const timerEl = document.getElementById('timer');
-            const interval = setInterval(() => {
-                timeLeft--;
-                timerEl.innerText = timeLeft;
-                if (timeLeft <= 0) {
-                    clearInterval(interval);
-                    window.location.href = 'index.html'; 
-                }
-            }, 1000);
-
-            // Allow user to cancel the redirect
-            document.getElementById('cancelTimerBtn').onclick = function() {
-                clearInterval(interval);
-                document.getElementById('successPopup').classList.remove('active');
-            };
-        }
-    </script>
 
 </body>
 </html>
