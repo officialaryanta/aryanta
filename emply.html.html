@@ -191,11 +191,16 @@
                 Aryanta
             </div>
             <nav style="flex:1;">
-                <button class="nav-btn active" onclick="switchTab('profile', this)"><i class="fa-solid fa-user"></i> Profile</button>
+                <button class="nav-btn" id="nav-dashboard" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-house"></i> Dashboard</button>
+                
+                <button class="nav-btn" onclick="switchTab('profile', this)"><i class="fa-solid fa-user"></i> Profile</button>
                 <button class="nav-btn" onclick="switchTab('payments', this)"><i class="fa-solid fa-credit-card"></i> Payments</button>
                 <button class="nav-btn" onclick="switchTab('send-message', this)"><i class="fa-solid fa-paper-plane"></i> Send Message</button>
                 <button class="nav-btn" onclick="switchTab('messages', this)"><i class="fa-solid fa-bell"></i> Notifications <span id="msg-badge" class="badge-dot hidden"></span></button>
                 <button class="nav-btn" onclick="switchTab('attendance', this)"><i class="fa-solid fa-calendar-check"></i> Attendance</button>
+                
+                <button class="nav-btn" onclick="switchTab('rules', this)"><i class="fa-solid fa-scale-balanced"></i> Your Rules</button>
+                
                 <button class="nav-btn" onclick="switchTab('incharge', this)"><i class="fa-solid fa-user-tie"></i> Your Incharge</button>
                 <button class="nav-btn" onclick="switchTab('company-details', this)"><i class="fa-solid fa-building"></i> Aryanta Details</button>
             </nav>
@@ -216,8 +221,99 @@
                 </div>
             </header>
 
+            <div id="tab-dashboard" class="content-section">
+                <div class="profile-card text-center" style="margin-top: 20px; padding: 40px 20px;">
+                    <div style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--accent); overflow: hidden; margin: 0 auto 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                        <img id="dash-img" src="" style="width: 100%; height: 100%; object-fit: cover;" onclick="viewFullImage(this.src)">
+                    </div>
+                    <h2 style="font-size: 28px; color: var(--text-dark); margin-bottom: 5px;">Welcome back, <span id="dash-name" style="color: var(--accent);">User</span></h2>
+                    <p style="color: #64748b; margin-bottom: 20px;">Employee Panel Access</p>
+                    <span id="dash-uid" class="badge" style="font-size: 14px; padding: 8px 16px;">UID: --</span>
+                </div>
+
+                <div class="details-grid" style="margin-top: 20px;">
+                    <div class="profile-card" onclick="switchTab('payments', document.querySelector('.nav-btn:nth-child(3)'))" style="cursor: pointer; transition: transform 0.2s;">
+                        <i class="fa-solid fa-wallet" style="font-size: 24px; color: #10b981; margin-bottom: 10px;"></i>
+                        <h4 style="color: var(--text-dark);">Payments</h4>
+                        <p style="font-size: 12px; color: #64748b;">Check slips</p>
+                    </div>
+                    <div class="profile-card" onclick="switchTab('attendance', document.querySelector('.nav-btn:nth-child(6)'))" style="cursor: pointer; transition: transform 0.2s;">
+                        <i class="fa-solid fa-calendar-days" style="font-size: 24px; color: #3b82f6; margin-bottom: 10px;"></i>
+                        <h4 style="color: var(--text-dark);">Attendance</h4>
+                        <p style="font-size: 12px; color: #64748b;">View record</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-rules" class="content-section hidden">
+                <div class="profile-card">
+                    <div class="settings-header-banner">
+                        <div class="icon-circle"><i class="fa-solid fa-scale-balanced"></i></div>
+                        <div>
+                            <h3>Company Rules & Regulations</h3>
+                            <p>Guidelines for all employees</p>
+                        </div>
+                    </div>
+                    <div class="settings-body" style="line-height: 1.8; color: #334155;">
+                        <ul style="list-style-type: none; padding-left: 0;">
+                            <li style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9;">
+                                <strong style="color: var(--accent);">1. Attendance:</strong> Employees must mark attendance before 10:00 AM. Late arrivals more than 3 times a month will incur a deduction.
+                            </li>
+                            <li style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9;">
+                                <strong style="color: var(--accent);">2. Dress Code:</strong> Formal or semi-formal attire is required on weekdays. Casuals allowed on Saturdays.
+                            </li>
+                            <li style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9;">
+                                <strong style="color: var(--accent);">3. Leaves:</strong> Leave requests must be submitted at least 2 days in advance via the manager.
+                            </li>
+                            <li style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9;">
+                                <strong style="color: var(--accent);">4. Confidentiality:</strong> Company data and client information must remain confidential and not be shared externally.
+                            </li>
+                            <li>
+                                <strong style="color: var(--accent);">5. Code of Conduct:</strong> Professional behavior is expected at all times. Harassment of any kind will result in immediate termination.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <div id="tab-settings" class="content-section hidden">
                 <div style="max-width: 600px; margin: 0 auto;">
+                    <div class="profile-card">
+  <h3 style="margin-bottom:15px;">App Theme</h3>
+
+  <div class="theme-toggle-box">
+    <div id="theme-dark" class="theme-option dark" onclick="setTheme('dark')">
+      🌙 Dark
+    </div>
+
+    <div id="theme-light" class="theme-option light" onclick="setTheme('light')">
+      ☀️ Light
+    </div>
+  </div>
+</div>
+
+                    <div class="profile-card" style="padding: 0; overflow: hidden; margin-bottom: 25px;">
+                        <div class="settings-header-banner" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);">
+                            <div class="icon-circle" style="color: #16a34a;"><i class="fa-solid fa-palette"></i></div>
+                            <div>
+                                <h3>Appearance</h3>
+                                <p>Customize app look</p>
+                            </div>
+                        </div>
+                        <div class="settings-body">
+                            <div class="setting-row border-none">
+                                <div>
+                                    <span class="s-title">App Theme</span>
+                                    <span class="s-desc">Switch between Light and Dark mode</span>
+                                </div>
+                                <div style="display: flex; gap: 10px;">
+                                    <button class="btn-prime" onclick="setTheme('dark')" style="width: auto; padding: 8px 15px; font-size: 12px; background: #0f172a;">Dark</button>
+                                    <button class="btn-prime" onclick="setTheme('light')" style="width: auto; padding: 8px 15px; font-size: 12px; background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1;">Light</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="profile-card" style="padding: 0; overflow: hidden; margin-bottom: 25px;">
                         <div class="settings-header-banner">
                             <div class="icon-circle"><i class="fa-solid fa-sliders"></i></div>
@@ -271,12 +367,12 @@
                 </div>
             </div>
 
-            <div id="tab-profile" class="content-section">
+            <div id="tab-profile" class="content-section hidden">
                 <div class="profile-card">
                     <div class="profile-header">
                         <div class="img-container" onclick="viewFullImage()" title="Click to Expand"><img id="p-img" src="" alt="Profile"><div class="overlay"><i class="fa-solid fa-expand"></i></div></div>
                         <div>
-                            <h3 id="p-name" style="color:#1e293b; font-size:24px;">Loading...</h3>
+                            <h3 id="p-name" style="color:var(--text-dark); font-size:24px;">Loading...</h3>
                             <p id="p-job" style="color:var(--accent); font-weight:700; font-size:16px; margin-bottom:2px;">--</p>
                             <p id="p-post" style="color:#64748b; font-size:13px; font-weight:600; margin-bottom:8px; text-transform:uppercase;">--</p>
                             <span id="p-uid" class="badge">UID: ...</span>
@@ -396,7 +492,7 @@
             <div id="tab-company-details" class="content-section hidden">
                 <div class="profile-card" style="text-align: center;">
                     <img src="https://user-gen-media-assets.s3.amazonaws.com/gpt4o_images/405ba96c-ee6d-452d-a99a-38ae2fd6b74b.png" style="width: 100px; margin-bottom: 15px; filter: drop-shadow(0 0 10px rgba(59,130,246,0.3));" alt="Aryanta">
-                    <h2 style="color: #1e293b; font-size: 24px; font-weight: 800;">ARYANTA CONNECT</h2>
+                    <h2 style="color: var(--text-dark); font-size: 24px; font-weight: 800;">ARYANTA CONNECT</h2>
                     <p style="color: #64748b; font-size: 14px; margin-bottom: 30px;">Official Company Contact & Social Channels</p>
 
                     <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 30px; border: 1px solid #e2e8f0; text-align: left;">
@@ -426,36 +522,12 @@
                     <h4 style="margin-bottom: 20px; color: #334155; text-transform: uppercase; font-size: 13px; letter-spacing: 1px;">Connect With Us</h4>
                     
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px;">
-                       <a href="https://www.instagram.com/official.aryanta?igsh=MWMwbHZkdndmeWZtMw==" 
-   class="social-btn instagram" target="_blank">
-    <i class="fa-brands fa-instagram"></i> <span>Instagram</span>
-</a>
-
-<a href="#" class="social-btn linkedin">
-    <i class="fa-brands fa-linkedin-in"></i> <span>LinkedIn</span>
-</a>
-
-<a href="https://www.facebook.com/share/1WKmq2yTGL/" 
-   class="social-btn facebook" target="_blank">
-    <i class="fa-brands fa-facebook-f"></i> <span>Facebook</span>
-</a>
-
-<a href="https://youtube.com/@official.aryanta?si=r-Nzkh34RF3F5Grx" 
-   class="social-btn youtube" target="_blank">
-    <i class="fa-brands fa-youtube"></i> <span>YouTube</span>
-</a>
-
-<a href="https://aryanta.in/" 
-   class="social-btn website" target="_blank">
-    <i class="fa-solid fa-globe"></i> <span>Website</span>
-</a>
-
-<a href="https://wa.me/918603467878" 
-   class="social-btn whatsapp" target="_blank">
-    <i class="fa-brands fa-whatsapp"></i> <span>WhatsApp</span>
-</a>
-
-
+                       <a href="https://www.instagram.com/official.aryanta?igsh=MWMwbHZkdndmeWZtMw==" class="social-btn instagram" target="_blank"><i class="fa-brands fa-instagram"></i> <span>Instagram</span></a>
+                       <a href="#" class="social-btn linkedin"><i class="fa-brands fa-linkedin-in"></i> <span>LinkedIn</span></a>
+                       <a href="https://www.facebook.com/share/1WKmq2yTGL/" class="social-btn facebook" target="_blank"><i class="fa-brands fa-facebook-f"></i> <span>Facebook</span></a>
+                       <a href="https://youtube.com/@official.aryanta?si=r-Nzkh34RF3F5Grx" class="social-btn youtube" target="_blank"><i class="fa-brands fa-youtube"></i> <span>YouTube</span></a>
+                       <a href="https://aryanta.in/" class="social-btn website" target="_blank"><i class="fa-solid fa-globe"></i> <span>Website</span></a>
+                       <a href="https://wa.me/918603467878" class="social-btn whatsapp" target="_blank"><i class="fa-brands fa-whatsapp"></i> <span>WhatsApp</span></a>
                     </div>
                 </div>
             </div>
@@ -604,19 +676,17 @@
     <script src="app.js"></script>
 
     <script>
-if (localStorage.getItem("aryanta_login") === "true") {
-  startAutoLogoutTimer();
-}
-</script>
-<script>
-["click","mousemove","keydown","scroll","touchstart"].forEach(e => {
-  document.addEventListener(e, () => {
     if (localStorage.getItem("aryanta_login") === "true") {
       startAutoLogoutTimer();
     }
-  });
-});
-</script>
+    ["click","mousemove","keydown","scroll","touchstart"].forEach(e => {
+      document.addEventListener(e, () => {
+        if (localStorage.getItem("aryanta_login") === "true") {
+          startAutoLogoutTimer();
+        }
+      });
+    });
+    </script>
 
 </body>
 </html>
