@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Aryanta</title>
+    <!-- Favicon -->
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="icon" href="favicon.ico">
+
+<!-- Apple / Mobile Icon -->
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<!-- PWA Manifest (optional but same as index) -->
+<link rel="manifest" href="manifest.json">
+
+    <meta name="description" content="The story of Asad Salam and how Aryanta was born.">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- 1. CORE VARIABLES & RESET --- */
+        :root {
+            --bg-color: #050505;
+            --section-bg: #0b0b0b;
+            --text-color: #e0e0e0;
+            --text-muted: #b0b0b0; /* Made slightly brighter for easier reading */
+            --accent-color: #d4af37; /* Aryanta Gold */
+            --accent-dim: #8a701e;
+            
+            --font-heading: 'Playfair Display', serif;
+            --font-body: 'Inter', sans-serif;
+            
+            --spacing-section: clamp(4rem, 8vw, 8rem);
+            --container-padding: clamp(1.5rem, 5vw, 3rem);
+        }
+
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-body);
+            line-height: 1.8;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Typography Defaults */
+        h1, h2, h3, h4 {
+            font-family: var(--font-heading);
+            color: #ffffff;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        p {
+            margin-bottom: 1.5rem;
+            color: var(--text-muted);
+            font-weight: 400; /* Increased weight for readability */
+            font-size: clamp(1.05rem, 1.2vw, 1.25rem); /* Slightly larger text */
+        }
+
+        /* Container Logic */
+        .container {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 var(--container-padding);
+        }
+
+        .container-wide {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 0 var(--container-padding);
+        }
+
+        /* Utility Classes */
+        .text-center { text-align: center; }
+        .section-padding { padding: var(--spacing-section) 0; }
+        
+        .chapter-label {
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        /* --- 2. NAVIGATION (Sticky) --- */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 1.2rem 0;
+            background: rgba(5, 5, 5, 0.9);
+            backdrop-filter: blur(12px);
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand-logo {
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        /* --- 3. HERO SECTION --- */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            /* Cinematic Background */
+            background: 
+                radial-gradient(circle at center, rgba(0,0,0,0.4) 0%, rgba(5,5,5,1) 90%),
+                url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop') no-repeat center center/cover;
+            text-align: center;
+            padding-top: 60px;
+        }
+
+        .hero h1 {
+            font-size: clamp(3rem, 7vw, 6rem);
+            margin-bottom: 1rem;
+            letter-spacing: -2px;
+            color: #fff;
+            animation: fadeUp 1s ease-out forwards;
+        }
+
+        .hero h2 {
+            font-family: var(--font-body);
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            font-weight: 300;
+            color: var(--accent-color);
+            letter-spacing: 2px;
+            animation: fadeUp 1.2s ease-out forwards;
+        }
+
+        /* --- 4. STORY CONTENT STYLES --- */
+        
+        /* Intro Style */
+        .intro-box {
+            max-width: 800px;
+            margin: 0 auto;
+            border-left: 2px solid var(--accent-dim);
+            padding-left: 2rem;
+        }
+
+        /* Interview Block Styling */
+        .interview-block {
+            background: #111;
+            border-left: 4px solid var(--accent-color);
+            padding: 2rem;
+            margin: 3rem 0;
+            position: relative;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .interview-label {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #111;
+            padding: 0 10px;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            color: var(--accent-color);
+            text-transform: uppercase;
+        }
+
+        .interview-text {
+            font-family: var(--font-body); 
+            font-size: 1.15rem;
+            font-style: italic;
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+
+        /* Split Grid for Story Chapters */
+        .split-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: clamp(2rem, 6vw, 6rem);
+            align-items: center;
+        }
+
+        .story-image {
+            width: 100%;
+            height: 450px; 
+            background-color: #1a1a1a;
+            object-fit: cover;
+            border-radius: 4px;
+            filter: brightness(0.8);
+        }
+
+        /* --- 5. CARDS --- */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .info-card {
+            padding: 2rem;
+            border: 1px solid #333;
+            background: #0f0f0f;
+            transition: 0.3s;
+        }
+
+        .info-card:hover { border-color: var(--accent-color); transform: translateY(-5px); }
+        .info-card h4 { color: #fff; margin-bottom: 1rem; font-size: 1.3rem; }
+        .info-card p { font-size: 1rem; margin: 0; color: #aaa; }
+
+        /* --- 6. PARALLAX QUOTE --- */
+        .parallax-quote {
+            padding: 8rem 2rem;
+            background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)),
+                url('https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2070&auto=format&fit=crop') fixed center center/cover;
+            text-align: center;
+        }
+
+        .big-quote {
+            font-size: clamp(1.8rem, 4vw, 3rem);
+            font-family: var(--font-heading);
+            color: #fff;
+            max-width: 1000px;
+            margin: 0 auto;
+            line-height: 1.4;
+        }
+
+        /* --- 7. FOOTER --- */
+        footer {
+            border-top: 1px solid #222;
+            padding: 4rem 2rem;
+            text-align: center;
+            font-size: 0.9rem;
+            background: #000;
+        }
+
+        /* --- MOBILE ADJUSTMENTS --- */
+        @media (max-width: 900px) {
+            .split-grid { grid-template-columns: 1fr; }
+            .story-image { height: 300px; order: -1; margin-bottom: 2rem; }
+            .intro-box { border-left: none; padding-left: 0; }
+        }
+
+        /* --- ANIMATIONS --- */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="container-wide nav-content">
+            <a href="index.html" class="brand-logo">Aryanta</a>
+            <a href="index.html" style="color: var(--text-muted); text-decoration: none; font-size: 0.9rem;">Back to Home</a>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="container">
+            <h1>The Founder's Story</h1>
+            <h2>From Vision to Aryanta</h2>
+        </div>
+    </header>
+
+    <section class="section-padding">
+        <div class="container">
+            <span class="chapter-label text-center">Part 1</span>
+            <h2 class="text-center" style="margin-bottom: 2rem;">A Boy from a Small Town</h2>
+            <div class="intro-box">
+                <p>
+                    Big stories often start in small places.
+                </p>
+                <p>
+                    If you visited <strong>Bhagalpur, Bihar</strong> many years ago, you would see a simple life. It is a place of history and hard work. In Bhagalpur, most families have one big dream for their children: study hard and get a safe government job.
+                </p>
+                <p>
+                    <strong>Asad Salam</strong> was born into this world. He was a normal boy from a middle-class family. He didn't have rich business parents. He had parents who worked hard to survive. They taught him the value of money, and the value of dreams.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section-padding" style="background-color: var(--section-bg);">
+        <div class="container-wide">
+            <div class="split-grid">
+                <div>
+                    <span class="chapter-label">The Turning Point</span>
+                    <h3>The Plane in the Sky</h3>
+                    <p>
+                        Until 6th grade, Asad did what he was told. His father wanted him to become an <strong>IAS officer</strong>. It was a respected job. It meant safety. Asad agreed. He studied for it.
+                    </p>
+                    <p>
+                        But one day, everything changed.
+                    </p>
+                    <p>
+                        Asad was playing outside when he heard a loud noise. He looked up. A private jet was flying low over his house. It wasn't a normal passenger plane. It was fast, sleek, and powerful.
+                    </p>
+                    <p>
+                        In that moment, Asad realized something. The person inside that plane wasn't waiting for a boss to tell them what to do. They were free.
+                    </p>
+                    <p style="color: var(--accent-color); font-size: 1.3rem;">
+                        He made a silent promise to himself: <em>"One day, I won't just watch the plane. I will be the one flying."</em>
+                    </p>
+                </div>
+                <img src="https://images.unsplash.com/photo-1540962351504-03099e0a754b?q=80&w=2070&auto=format&fit=crop" alt="Plane in sky" class="story-image">
+            </div>
+
+            <div class="container">
+                <div class="interview-block">
+                    <span class="interview-label">Asad Salam Says:</span>
+                    <p class="interview-text">
+                        "In Bihar, being an officer is like being a king. My father wanted that safety for me. But when I saw that jet, I didn't want safety anymore. I wanted freedom. I didn't want to just work in the system. I wanted to build a new one."
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section-padding">
+        <div class="container">
+            <span class="chapter-label text-center">The Struggle</span>
+            <h2 class="text-center" style="margin-bottom: 3rem;">When Reality Hit</h2>
+            
+            <div class="intro-box">
+                <p>
+                    Dreams are nice, but life is hard. As Asad grew up, his family faced money problems. The middle-class life became difficult. He saw his father worry about bills.
+                </p>
+                <p>
+                    This is when Asad learned his biggest lesson: <strong>Money isn't just paper. Money is protection.</strong>
+                </p>
+                <p>
+                    While reading books about society, he understood one simple truth:
+                    <br><br>
+                    1. An Officer <em>works for</em> the system.<br>
+                    2. A Businessman <em>builds</em> the system.
+                </p>
+                <p>
+                    He decided to stop chasing a job title. He started learning about business, technology, and how to solve problems. He decided to become a Builder.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section-padding" style="background: #0f0f0f;">
+        <div class="container-wide">
+            <div class="split-grid">
+                <img src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=2070&auto=format&fit=crop" alt="Technology Abstract" class="story-image">
+                
+                <div>
+                    <span class="chapter-label">The Identity</span>
+                    <h3>Finding the Name</h3>
+                    <p>
+                        A few years later, Asad was at a school Exibitition. While other students were making volcanoes, Asad was building an Artificial Intelligence (AI) project. He was trying to make a computer think.
+                    </p>
+                    <p>
+                        He needed a name for his project. He didn't want a boring name. He wanted something strong. He looked at history and old languages. He found the word:
+                    </p>
+                    <h2 style="font-size: 3rem; color: var(--accent-color); margin: 1rem 0;">ARYANTA</h2>
+                    <p>
+                        It sounded perfect. It sounded like a bright future. He wrote the name on his project. That day, Aryanta was born.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section-padding" style="border-top: 1px solid #222;">
+        <div class="container">
+            <h2 class="text-center">The Hard Days</h2>
+            <p class="text-center" style="max-width: 600px; margin: 0 auto 3rem auto;">
+                Starting a business isn't like the movies. It was lonely and difficult.
+            </p>
+
+            <div class="card-grid">
+                <div class="info-card">
+                    <h4>No Money</h4>
+                    <p>He had big ideas, but empty pockets. He had to be smart with every single rupee.</p>
+                </div>
+                <div class="info-card">
+                    <h4>No Support</h4>
+                    <p>In a small town, if you don't get a normal job, people think you are unemployed. He was alone.</p>
+                </div>
+                <div class="info-card">
+                    <h4>The Doubt</h4>
+                    <p>People asked, "Who do you think you are?" But Asad didn't answer with words. He answered with work.</p>
+                </div>
+            </div>
+
+            <div class="interview-block" style="background: transparent; border: 1px solid #333; margin-top: 4rem;">
+                <p class="interview-text">
+                    "Struggle is my wealth. When you have no money, you have to use your brain. When people laugh at you, you have to work harder. I didn't have investors, but I had a vision."
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section-padding">
+        <div class="container">
+            <span class="chapter-label text-center">The Present</span>
+            <h2 class="text-center" style="margin-bottom: 3rem;">What Aryanta is Today</h2>
+            <p class="text-center" style="max-width: 700px; margin: 0 auto 4rem auto;">
+                Today, Aryanta is in its early building phase. 
+It is not yet a finished company, but a growing vision—slowly entering its chosen fields with clarity, discipline, and long-term intent.
+
+            </p>
+
+            <div class="card-grid">
+                <div class="info-card">
+                    <h4>Marketplace</h4>
+                    <p>Aryanta is beginning its journey in the marketplace space, 
+with the idea of creating a fair and respectful platform where buying and selling are simple, transparent, and accessible to everyone.
+</p>
+                </div>
+                <div class="info-card">
+                    <h4>Education</h4>
+                    <p>In education, Aryanta is exploring ways to support learning through technology and simple systems, 
+believing that knowledge is the strongest foundation for changing lives.
+</p>
+                </div>
+                <div class="info-card">
+                    <h4>Healthcare</h4>
+                    <p>In healthcare, Aryanta is in the concept and research stage, 
+with a long-term vision of using technology to support doctors and make quality healthcare more accessible, not only for the privileged.
+</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="parallax-quote">
+        <div class="container">
+            <blockquote class="big-quote">
+                "We are not building for today. Today is already gone. We are building for the future."
+            </blockquote>
+            <div style="margin-top: 2rem; color: var(--accent-color); font-weight: bold; letter-spacing: 2px;">
+                — ASAD SALAM
+            </div>
+        </div>
+    </section>
+
+    <section class="section-padding text-center" style="background-color: var(--section-bg);">
+        <div class="container" style="max-width: 800px;">
+            <span class="chapter-label">The Future</span>
+            <h2 style="font-size: 2.5rem; margin-bottom: 2rem;">Just the Beginning</h2>
+            <p>
+                Asad Salam's story proves one thing: It doesn't matter where you are born. It matters where you want to go. A boy from Bhagalpur can dream of changing the world.
+            </p>
+            <p>
+                Aryanta is still growing. We are building a company that people can trust for the next 100 years.
+            </p>
+            <p style="font-size: 1.4rem; color: #fff; margin-top: 3rem;">
+                The jet is no longer flying over us.<br>
+                <span style="color: var(--accent-color);">We are building the runway.</span>
+            </p>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div style="font-family: var(--font-heading); font-size: 2rem; margin-bottom: 1rem; color: #fff; letter-spacing: 2px;">ARYANTA</div>
+            <p>&copy; 2025 Aryanta Holdings. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
