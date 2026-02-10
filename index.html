@@ -8,7 +8,6 @@
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
     <link rel="icon" href="favicon.ico">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <link rel="manifest" href="manifest.json">
 
 
     
@@ -466,9 +465,13 @@
             </button>
             
             <button class="popup-btn btn-install"
-onclick="window.location.href='https://drive.google.com/uc?export=download&id=1t-tasSgVq44FxN_PbxQcXRg3savhXBzJ'">
-    <i class="fas fa-download"></i> Download App
+        onclick="downloadEmployeeApp()">
+
+  <i class="fas fa-download"></i> Download App
+
 </button>
+
+
 
             </button>
 
@@ -527,10 +530,38 @@ onclick="window.location.href='https://drive.google.com/uc?export=download&id=1t
         }
         
     </script>
-    <script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js");
-}
+
+
+window.downloadEmployeeApp = async function () {
+
+  try {
+
+    const res = await fetch(
+      "https://rough-field-c679.official-aryanta.workers.dev/api/app-version"
+    );
+
+    const data = await res.json();
+
+    // SAME logic as employee panel
+    if (data.url) {
+
+      window.location.href = data.url;
+
+    } else {
+
+      alert("Download link not found.");
+
+    }
+
+  } catch (err) {
+
+    console.error("Download Error:", err);
+    alert("Failed to fetch download link.");
+
+  }
+
+};
+
 </script>
 
 </body>
