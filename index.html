@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aryanta | Premium Shopping</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+    <header class="top-bar">
+        <div class="nav-left">
+            <div class="menu-trigger" id="menuBtn">
+                <i class="fas fa-bars"></i>
+            </div>
+            <div class="brand-logo" onclick="location.href='index.html'">Aryanta</div>
+        </div>
+
+        <div class="nav-search">
+            <input type="text" id="searchInput" placeholder="Explore products...">
+            <button><i class="fas fa-search"></i></button>
+        </div>
+
+        <div class="nav-actions">
+            <button class="login-trigger" id="accountBtn">Sign In</button>
+            <div class="cart-icon" id="cartBtn">
+                <i class="fas fa-shopping-bag"></i>
+                <span class="badge" id="cartBadge">0</span>
+            </div>
+        </div>
+    </header>
+
+    <aside class="side-panel" id="sidebar">
+        <div class="panel-header">
+            <div class="user-profile">
+                <i class="fas fa-user-circle"></i>
+                <span id="sidebarUser">Welcome Guest</span>
+            </div>
+        </div>
+        <nav class="panel-links">
+            <a href="index.html"><i class="fas fa-home"></i> Home</a>
+            <a href="#"><i class="fas fa-truck"></i> Track Order</a>
+            <a href="#"><i class="fas fa-history"></i> Order History</a>
+            <div class="menu-spacer"></div>
+            <a href="#"><i class="fas fa-store-alt"></i> Sell on Aryanta</a>
+            <a href="#"><i class="fas fa-headset"></i> Support</a>
+            
+            <a href="details.html"><i class="fas fa-info-circle"></i> About Company</a>
+            
+            <div class="company-details">
+                <h4>Aryanta Retail Pvt. Ltd.</h4>
+                <p>123 Commerce Avenue</p>
+                <p>support@aryanta.com</p>
+                <p>&copy; 2026 All rights reserved.</p>
+            </div>
+        </nav>
+    </aside>
+
+    <div class="dimmer" id="overlay"></div>
+
+    <div class="auth-box" id="authModal">
+        <div class="auth-content">
+            <span class="exit-modal" id="closeModal">&times;</span>
+            
+            <div id="loginView">
+                <h3>Welcome Back</h3>
+                <p>Login to manage your orders.</p>
+                <input type="email" id="loginEmail" class="input-field" placeholder="Email Address">
+                <button class="prime-btn" id="loginBtn" onclick="handleLogin()">Send OTP</button>
+                <div class="switch-container">
+                    <p class="switch-text">New user?</p>
+                    <button class="switch-btn" onclick="goToStep('signup')">Register here</button>
+                </div>
+            </div>
+
+            <div id="signupView" style="display:none;">
+                <h3>Join Aryanta</h3>
+                <input type="text" id="regName" class="input-field" placeholder="Full Name (Mandatory)" required>
+                <input type="email" id="regEmail" class="input-field" placeholder="Email Address (Mandatory)" required>
+                <input type="tel" id="regPhone" class="input-field" placeholder="Phone Number (Mandatory)" required>
+                
+                <input type="text" id="regAddress" class="input-field" placeholder="Full Address">
+                <div class="input-row">
+                    <input type="text" id="regCity" class="input-field" placeholder="City">
+                    <input type="text" id="regState" class="input-field" placeholder="State">
+                </div>
+                <input type="text" id="regPincode" class="input-field" placeholder="Pincode">
+                
+                <button class="prime-btn" id="signupBtn" onclick="handleSignup()">Send Secure OTP</button>
+                <div class="switch-container">
+                    <p class="switch-text">Already a member?</p>
+                    <button class="switch-btn" onclick="goToStep('login')">Login</button>
+                </div>
+            </div>
+
+            <div id="otpView" style="display:none;">
+                <h3>Secure Verification</h3>
+                <p>Enter the 6-digit code sent to your email.</p>
+                <div class="otp-container" id="otpInputs">
+                    <input type="text" class="otp-input" maxlength="1">
+                    <input type="text" class="otp-input" maxlength="1">
+                    <input type="text" class="otp-input" maxlength="1">
+                    <input type="text" class="otp-input" maxlength="1">
+                    <input type="text" class="otp-input" maxlength="1">
+                    <input type="text" class="otp-input" maxlength="1">
+                </div>
+                <button class="prime-btn" onclick="completeAuth()">Verify & Register</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="productModal">
+        <div class="modal-content product-modal-content">
+            <span class="exit-modal" onclick="closeProductModal()">&times;</span>
+            <div class="product-split">
+                <div class="product-image-container">
+                    <img id="modalProductImage" src="" alt="Product">
+                </div>
+                <div class="product-details">
+                    <h2 id="modalProductName">Product Name</h2>
+                    <p id="modalProductDesc" class="desc">Description goes here.</p>
+                    <h3 id="modalProductPrice" class="price">₹0</h3>
+                    <div class="product-actions">
+                        <button class="prime-btn" id="modalAddToCart" onclick="addToCartFromModal()">Add to Cart</button>
+                        <button class="secondary-btn">Order Now</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cart-panel" id="cartPanel">
+        <div class="cart-header">
+            <h2>Your Cart</h2>
+            <span class="exit-cart" id="closeCart">&times;</span>
+        </div>
+        <div class="cart-items" id="cartItemsContainer">
+            </div>
+        <div class="cart-footer">
+            <div class="cart-total">
+                <span>Total:</span>
+                <span id="cartTotalValue">₹0</span>
+            </div>
+            <button class="prime-btn">Checkout</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Item successfully added to cart!</div>
+
+    <main class="page-body">
+        <section class="hero-banner">
+            <h1>Elevate Your Lifestyle</h1>
+            <p>Exclusive deals on premium electronics and fashion.</p>
+        </section>
+
+        <div class="product-shelf" id="productShelf">
+            </div>
+    </main>
+
+    <script src="java.js"></script>
+</body>
+</html>
