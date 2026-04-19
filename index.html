@@ -12,6 +12,11 @@
 </head>
 <body>
 
+    <div id="pageLoader" class="page-loader">
+        <div class="spinner"></div>
+        <p>Loading premium products...</p>
+    </div>
+
     <header class="top-bar">
         <div class="nav-left">
             <div class="menu-trigger" id="menuBtn"><i class="fas fa-bars"></i></div>
@@ -22,7 +27,16 @@
             <button><i class="fas fa-search"></i></button>
         </div>
         <div class="nav-actions">
-            <button class="login-trigger" id="accountBtn">Sign In</button>
+            <div class="user-dropdown" id="userDropdownContainer">
+                <button class="login-trigger" id="accountBtn">Sign In</button>
+                <div class="dropdown-content" id="profileDropdown">
+                    <p><strong>Name:</strong> <span id="ddName"></span></p>
+                    <p><strong>Email:</strong> <span id="ddEmail"></span></p>
+                    <p><strong>Phone:</strong> <span id="ddPhone"></span></p>
+                    <button class="secondary-btn" id="logoutBtn" style="margin-top:15px; padding: 10px;">Log Out</button>
+                </div>
+            </div>
+            
             <div class="cart-icon" id="cartBtn">
                 <i class="fas fa-shopping-bag"></i>
                 <span class="badge" id="cartBadge">0</span>
@@ -40,9 +54,8 @@
         <nav class="panel-links">
             <a href="index.html"><i class="fas fa-home"></i> Home</a>
             <a href="track.html"><i class="fas fa-truck"></i> Track Order</a>
-            <a href="#"><i class="fas fa-history"></i> Order History</a>
             <div class="menu-spacer"></div>
-            <a href="#"><i class="fas fa-store-alt"></i> Sell on Aryanta</a>
+            <a href="panel.html"><i class="fas fa-store-alt"></i> Sell on Aryanta</a>
             <a href="#"><i class="fas fa-headset"></i> Support</a>
             <a href="details.html"><i class="fas fa-info-circle"></i> About Company</a>
         </nav>
@@ -55,14 +68,16 @@
             <i class="fas fa-exclamation-circle" style="font-size: 30px; color: var(--primary); margin-bottom: 10px;"></i>
             <h3 id="alertTitle">Notice</h3>
             <p id="alertMessage">Message goes here.</p>
-            <button class="prime-btn" onclick="closeAlert()">OK</button>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="switch-btn" id="alertCancelBtn" onclick="closeAlert(false)" style="display: none;">Cancel</button>
+                <button class="prime-btn" id="alertOkBtn" onclick="closeAlert(true)">OK</button>
+            </div>
         </div>
     </div>
 
     <div class="auth-box" id="authModal">
         <div class="auth-content">
             <span class="exit-modal" id="closeModal">&times;</span>
-            
             <div id="loginView">
                 <h3>Welcome Back</h3>
                 <input type="email" id="loginEmail" class="input-field" placeholder="Email Address">
@@ -72,7 +87,6 @@
                     <button class="switch-btn" onclick="goToStep('signup')">Register here</button>
                 </div>
             </div>
-
             <div id="signupView" style="display:none;">
                 <h3>Join Aryanta</h3>
                 <input type="text" id="regName" class="input-field" placeholder="Full Name (Mandatory)" required>
@@ -90,7 +104,6 @@
                     <button class="switch-btn" onclick="goToStep('login')">Login</button>
                 </div>
             </div>
-
             <div id="otpView" style="display:none;">
                 <h3>Secure Verification</h3>
                 <p>Enter the 4-digit code sent to your email.</p>
@@ -109,7 +122,11 @@
         <div class="modal-content product-modal-content">
             <span class="exit-modal" onclick="closeProductModal()">&times;</span>
             <div class="product-split">
-                <div class="product-image-container" id="modalProductImage"></div>
+                <div class="product-image-container" id="modalProductImage">
+                    <button class="carousel-btn prev" id="carouselPrev" onclick="changeImage(-1)"><i class="fas fa-chevron-left"></i></button>
+                    <div id="carouselContent" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"></div>
+                    <button class="carousel-btn next" id="carouselNext" onclick="changeImage(1)"><i class="fas fa-chevron-right"></i></button>
+                </div>
                 <div class="product-details">
                     <h2 id="modalProductName">Product Name</h2>
                     <p id="modalProductDesc" class="desc">Description goes here.</p>
@@ -124,12 +141,18 @@
     </div>
 
     <div class="modal" id="checkoutModal">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content" style="max-width: 550px;">
             <span class="exit-modal" onclick="document.getElementById('checkoutModal').style.display='none'">&times;</span>
             
             <div id="checkoutStep1">
                 <h3>Delivery Details</h3>
                 <p>Review or edit your delivery address.</p>
+                
+                <div class="address-actions" style="display: flex; gap: 10px; margin: 15px 0;">
+                    <button class="switch-btn" onclick="useDefaultAddress()" style="margin: 0; font-size: 13px;"><i class="fas fa-home"></i> Use Default</button>
+                    <button class="switch-btn" onclick="clearAddress()" style="margin: 0; font-size: 13px; color: #555; border-color: #ccc;"><i class="fas fa-plus"></i> Add New / Clear</button>
+                </div>
+
                 <input type="text" id="chkName" class="input-field" placeholder="Full Name">
                 <input type="tel" id="chkPhone" class="input-field" placeholder="Phone Number">
                 <textarea id="chkAddress" class="input-field" placeholder="Full Delivery Address" rows="3"></textarea>
@@ -141,26 +164,34 @@
             </div>
 
             <div id="checkoutStep2" style="display:none;">
-                <h3>Order Summary & Payment</h3>
-                <div class="summary-box">
-                    <p>Items Total: <strong id="sumItems">₹0</strong></p>
-                    <p>Shipping (From Bhagalpur): <strong id="sumShipping">₹0</strong></p>
-                    <hr style="margin: 10px 0; border: 0.5px solid #eee;">
-                    <h4>Grand Total: <strong id="sumTotal" style="color:var(--primary);">₹0</strong></h4>
+                <h3><i class="fas fa-file-invoice-dollar"></i> Order Summary & Payment</h3>
+                
+                <div class="summary-box premium-summary">
+                    <div class="summary-row"><span>Items Total:</span> <strong id="sumItems">₹0</strong></div>
+                    <div class="summary-row"><span>Shipping Fee:</span> <strong id="sumShipping">₹0</strong></div>
+                    <div class="divider"></div>
+                    <div class="summary-row grand-total"><span>Grand Total:</span> <strong id="sumTotal" style="color:var(--primary);">₹0</strong></div>
                 </div>
 
-                <div class="payment-options" style="margin-top: 20px;">
-                    <label class="pay-option">
+                <h4 style="margin: 20px 0 10px 0;">Choose Payment Method</h4>
+                <div class="payment-options premium-options">
+                    <label class="pay-option premium-pay-option">
                         <input type="radio" name="payMethod" value="online" checked>
-                        <strong>Pay Online (Razorpay)</strong> - Pay full amount now.
+                        <div class="pay-details">
+                            <strong><i class="fas fa-credit-card"></i> Pay Online (Razorpay)</strong>
+                            <span>Securely pay the full amount now.</span>
+                        </div>
                     </label>
-                    <label class="pay-option" style="margin-top: 10px; display: block;">
+                    <label class="pay-option premium-pay-option">
                         <input type="radio" name="payMethod" value="cod">
-                        <strong>Cash on Delivery (COD)</strong> - Pay Shipping now, pay Items on delivery.
+                        <div class="pay-details">
+                            <strong><i class="fas fa-money-bill-wave"></i> Cash on Delivery (COD)</strong>
+                            <span>Pay Shipping now, pay Items on delivery.</span>
+                        </div>
                     </label>
                 </div>
 
-                <button class="prime-btn" id="payBtn" onclick="processPayment()" style="margin-top:20px;">Proceed to Pay</button>
+                <button class="prime-btn" id="payBtn" onclick="processPayment()" style="margin-top:25px; font-size: 16px;"><i class="fas fa-lock"></i> Secure Checkout</button>
                 <button class="switch-btn" onclick="document.getElementById('checkoutStep2').style.display='none'; document.getElementById('checkoutStep1').style.display='block';" style="margin-top:10px;">Back to Address</button>
             </div>
         </div>
@@ -175,34 +206,22 @@
                 </svg>
             </div>
             <h2 style="color: #4CAF50; margin-bottom: 15px;">Order Placed Successfully!</h2>
-            
             <div class="receipt-box">
                 <div class="receipt-header">
                     <p><strong>Order No:</strong> <span id="recOrderNo"></span></p>
                     <p><strong>Shipping To:</strong> <span id="recAddress"></span></p>
                 </div>
-                
                 <table class="receipt-table">
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Qty</th>
-                            <th>Price</th>
-                        </tr>
-                    </thead>
-                    <tbody id="recTableBody">
-                        </tbody>
+                    <thead><tr><th>Item</th><th>Qty</th><th>Price</th></tr></thead>
+                    <tbody id="recTableBody"></tbody>
                 </table>
-                
                 <div class="receipt-totals">
                     <p>Items Total: <span id="recItemsTotal"></span></p>
                     <p>Shipping: <span id="recShipping"></span></p>
                     <h4>Grand Total: <span id="recGrandTotal"></span></h4>
                 </div>
-                
                 <p class="policy-note"><strong>Note:</strong> You can cancel your items until they are shipped. If you cancel after shipping, shipping charges will not be refunded.</p>
             </div>
-            
             <button class="prime-btn" onclick="closeOrderSuccess()">Continue Shopping</button>
         </div>
     </div>
