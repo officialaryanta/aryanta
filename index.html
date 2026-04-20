@@ -3,253 +3,233 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aryanta | Premium Shopping</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <title>Live Election Results - MLZS</title>
+    <style>
+        :root { 
+            --primary: #0f2942; 
+            --accent: #d4af37; 
+            --bg: #f0f2f5; 
+            --card-bg: #ffffff; 
+            --text: #2d3436;
+            --progress-bg: #e9ecef;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background-color: var(--bg); 
+            margin: 0; 
+            padding: 15px; 
+            color: var(--text); 
+            line-height: 1.6;
+        }
+
+        /* Header Section */
+        .header { 
+            text-align: center;
+            margin-bottom: 30px; 
+            padding: 20px;
+            background: var(--primary);
+            color: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h1 { 
+            margin: 0; 
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+            text-transform: uppercase; 
+        }
+
+        .total-votes-badge { 
+            display: inline-block;
+            margin-top: 10px;
+            background-color: var(--accent); 
+            color: var(--primary); 
+            padding: 5px 15px; 
+            border-radius: 20px; 
+            font-size: 14px; 
+            font-weight: bold; 
+        }
+
+        /* Responsive Grid */
+        #dashboard-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 20px; 
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Result Cards */
+        .result-card { 
+            background-color: var(--card-bg); 
+            border-radius: 12px; 
+            padding: 20px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+            border-top: 6px solid var(--accent);
+            transition: transform 0.2s;
+        }
+
+        .result-card h2 { 
+            color: var(--primary); 
+            margin: 0 0 15px 0; 
+            font-size: 1.2rem; 
+            border-bottom: 2px solid #f0f0f0; 
+            padding-bottom: 8px;
+        }
+
+        /* Candidate Rows */
+        .candidate-block {
+            margin-bottom: 15px;
+        }
+
+        .candidate-info { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 5px;
+            font-size: 14px; 
+            font-weight: 600; 
+        }
+
+        .vote-count {
+            color: var(--primary);
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        /* Progress Bar Styles */
+        .progress-container {
+            width: 100%;
+            background-color: var(--progress-bg);
+            border-radius: 10px;
+            height: 12px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #1a4a75);
+            width: 0%;
+            transition: width 0.8s ease-out;
+            border-radius: 10px;
+        }
+
+        .percentage-label {
+            color: var(--accent);
+            font-weight: 800;
+        }
+
+        /* Tablet/Desktop Tweaks */
+        @media (min-width: 768px) {
+            body { padding: 40px; }
+            h1 { font-size: 2rem; }
+            #dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (min-width: 1024px) {
+            #dashboard-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+    </style>
 </head>
 <body>
 
-    <div id="pageLoader" class="page-loader">
-        <div class="spinner"></div>
-        <p>Loading premium products...</p>
+    <div class="header">
+        <h1>📊 Live Election Results</h1>
+        <div class="total-votes-badge" id="total-voters">Total Ballots Cast: 0</div>
     </div>
 
-    <header class="top-bar">
-        <div class="nav-left">
-            <div class="menu-trigger" id="menuBtn"><i class="fas fa-bars"></i></div>
-            <div class="brand-logo" onclick="location.href='index.html'">Aryanta</div>
+    <div id="dashboard-grid">
         </div>
-        <div class="nav-search">
-            <input type="text" id="searchInput" placeholder="Explore products...">
-            <button><i class="fas fa-search"></i></button>
-        </div>
-        <div class="nav-actions">
-            <div class="user-dropdown" id="userDropdownContainer">
-                <button class="login-trigger" id="accountBtn">Sign In</button>
-                <div class="dropdown-content" id="profileDropdown">
-                    <p><strong>Name:</strong> <span id="ddName"></span></p>
-                    <p><strong>Email:</strong> <span id="ddEmail"></span></p>
-                    <p><strong>Phone:</strong> <span id="ddPhone"></span></p>
-                    <button class="secondary-btn" id="logoutBtn" style="margin-top:15px; padding: 10px;">Log Out</button>
-                </div>
-            </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA2LFjhw79KbX8uAToobgj732aYOsuy74k",
+            authDomain: "vote-3df4d.firebaseapp.com",
+            databaseURL: "https://vote-3df4d-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "vote-3df4d",
+            storageBucket: "vote-3df4d.firebasestorage.app",
+            messagingSenderId: "39376456060",
+            appId: "1:39376456060:web:f1423fbddff9eebceb3cf9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const categories = ["Head Boy", "Head Girl", "Cultural Captain", "Sports Captain", "Discipline Captain"];
+
+        function renderDashboard(allVotes) {
+            const totalCount = allVotes.length;
+            document.getElementById('total-voters').innerText = `Total Ballots Cast: ${totalCount}`;
             
-            <div class="cart-icon" id="cartBtn">
-                <i class="fas fa-shopping-bag"></i>
-                <span class="badge" id="cartBadge">0</span>
-            </div>
-        </div>
-    </header>
+            const tally = {};
+            categories.forEach(cat => tally[cat] = {});
 
-    <aside class="side-panel" id="sidebar">
-        <div class="panel-header">
-            <div class="user-profile">
-                <i class="fas fa-user-circle"></i>
-                <span id="sidebarUser">Welcome Guest</span>
-            </div>
-        </div>
-        <nav class="panel-links">
-            <a href="index.html"><i class="fas fa-home"></i> Home</a>
-            <a href="track.html"><i class="fas fa-truck"></i> Track Order</a>
-            <div class="menu-spacer"></div>
-            <a href="panel.html"><i class="fas fa-store-alt"></i> Sell on Aryanta</a>
-            <a href="#"><i class="fas fa-headset"></i> Support</a>
-            <a href="details.html"><i class="fas fa-info-circle"></i> About Company</a>
-        </nav>
-    </aside>
+            // Process votes
+            allVotes.forEach(voteRecord => {
+                for (const cat in voteRecord) {
+                    const chosenCand = voteRecord[cat];
+                    if (tally[cat]) {
+                        tally[cat][chosenCand] = (tally[cat][chosenCand] || 0) + 1;
+                    }
+                }
+            });
 
-    <div class="dimmer" id="overlay"></div>
+            const grid = document.getElementById('dashboard-grid');
+            grid.innerHTML = ''; 
 
-    <div class="custom-alert-overlay" id="customAlertOverlay">
-        <div class="custom-alert-box">
-            <i class="fas fa-exclamation-circle" style="font-size: 30px; color: var(--primary); margin-bottom: 10px;"></i>
-            <h3 id="alertTitle">Notice</h3>
-            <p id="alertMessage">Message goes here.</p>
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="switch-btn" id="alertCancelBtn" onclick="closeAlert(false)" style="display: none;">Cancel</button>
-                <button class="prime-btn" id="alertOkBtn" onclick="closeAlert(true)">OK</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="auth-box" id="authModal">
-        <div class="auth-content">
-            <span class="exit-modal" id="closeModal">&times;</span>
-            <div id="loginView">
-                <h3>Welcome Back</h3>
-                <input type="email" id="loginEmail" class="input-field" placeholder="Email Address">
-                <button class="prime-btn" id="loginBtn" onclick="handleLogin()">Send OTP</button>
-                <div class="switch-container">
-                    <p class="switch-text">New user?</p>
-                    <button class="switch-btn" onclick="goToStep('signup')">Register here</button>
-                </div>
-            </div>
-            <div id="signupView" style="display:none;">
-                <h3>Join Aryanta</h3>
-                <input type="text" id="regName" class="input-field" placeholder="Full Name (Mandatory)" required>
-                <input type="email" id="regEmail" class="input-field" placeholder="Email Address (Mandatory)" required>
-                <input type="tel" id="regPhone" class="input-field" placeholder="Phone Number (Mandatory)" required>
-                <input type="text" id="regAddress" class="input-field" placeholder="Full Address">
-                <div class="input-row">
-                    <input type="text" id="regCity" class="input-field" placeholder="City">
-                    <input type="text" id="regState" class="input-field" placeholder="State">
-                </div>
-                <input type="text" id="regPincode" class="input-field" placeholder="Pincode (Mandatory for Delivery)">
-                <button class="prime-btn" id="signupBtn" onclick="handleSignup()">Send Secure OTP</button>
-                <div class="switch-container">
-                    <p class="switch-text">Already a member?</p>
-                    <button class="switch-btn" onclick="goToStep('login')">Login</button>
-                </div>
-            </div>
-            <div id="otpView" style="display:none;">
-                <h3>Secure Verification</h3>
-                <p>Enter the 4-digit code sent to your email.</p>
-                <div class="otp-container" id="otpInputs" style="justify-content: center; gap: 15px;">
-                    <input type="text" class="otp-input" maxlength="1">
-                    <input type="text" class="otp-input" maxlength="1">
-                    <input type="text" class="otp-input" maxlength="1">
-                    <input type="text" class="otp-input" maxlength="1">
-                </div>
-                <button class="prime-btn" onclick="completeAuth()">Verify & Register</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="productModal">
-        <div class="modal-content product-modal-content">
-            <span class="exit-modal" onclick="closeProductModal()">&times;</span>
-            <div class="product-split">
-                <div class="product-image-container" id="modalProductImage">
-                    <button class="carousel-btn prev" id="carouselPrev" onclick="changeImage(-1)"><i class="fas fa-chevron-left"></i></button>
-                    <div id="carouselContent" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"></div>
-                    <button class="carousel-btn next" id="carouselNext" onclick="changeImage(1)"><i class="fas fa-chevron-right"></i></button>
-                </div>
-                <div class="product-details">
-                    <h2 id="modalProductName">Product Name</h2>
-                    <p id="modalProductDesc" class="desc">Description goes here.</p>
-                    <h3 id="modalProductPrice" class="price">₹0</h3>
-                    <div class="product-actions">
-                        <button class="prime-btn" id="modalAddToCart" onclick="addToCartFromModal()">Add to Cart</button>
-                        <button class="secondary-btn" onclick="buyNowFromModal()">Buy Now</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="checkoutModal">
-        <div class="modal-content" style="max-width: 550px;">
-            <span class="exit-modal" onclick="document.getElementById('checkoutModal').style.display='none'">&times;</span>
-            
-            <div id="checkoutStep1">
-                <h3>Delivery Details</h3>
-                <p>Review or edit your delivery address.</p>
+            categories.forEach(cat => {
+                const card = document.createElement('div');
+                card.className = 'result-card';
                 
-                <div class="address-actions" style="display: flex; gap: 10px; margin: 15px 0;">
-                    <button class="switch-btn" onclick="useDefaultAddress()" style="margin: 0; font-size: 13px;"><i class="fas fa-home"></i> Use Default</button>
-                    <button class="switch-btn" onclick="clearAddress()" style="margin: 0; font-size: 13px; color: #555; border-color: #ccc;"><i class="fas fa-plus"></i> Add New / Clear</button>
-                </div>
-
-                <input type="text" id="chkName" class="input-field" placeholder="Full Name">
-                <input type="tel" id="chkPhone" class="input-field" placeholder="Phone Number">
-                <textarea id="chkAddress" class="input-field" placeholder="Full Delivery Address" rows="3"></textarea>
-                <div class="input-row">
-                    <input type="text" id="chkCity" class="input-field" placeholder="City">
-                    <input type="text" id="chkPincode" class="input-field" placeholder="Pincode (Used for Shipping Calc)">
-                </div>
-                <button class="prime-btn" id="calcShippingBtn" onclick="calculateShippingAndProceed()">Calculate Shipping & Next</button>
-            </div>
-
-            <div id="checkoutStep2" style="display:none;">
-                <h3><i class="fas fa-file-invoice-dollar"></i> Order Summary & Payment</h3>
+                let cardHTML = `<h2>${cat}</h2>`;
+                const categoryVotes = tally[cat] || {};
                 
-                <div class="summary-box premium-summary">
-                    <div class="summary-row"><span>Items Total:</span> <strong id="sumItems">₹0</strong></div>
-                    <div class="summary-row"><span>Shipping Fee:</span> <strong id="sumShipping">₹0</strong></div>
-                    <div class="divider"></div>
-                    <div class="summary-row grand-total"><span>Grand Total:</span> <strong id="sumTotal" style="color:var(--primary);">₹0</strong></div>
-                </div>
+                // Calculate total votes for this specific category
+                const catTotal = Object.values(categoryVotes).reduce((a, b) => a + b, 0);
+                
+                const sortedCandidates = Object.keys(categoryVotes).sort((a, b) => categoryVotes[b] - categoryVotes[a]);
 
-                <h4 style="margin: 20px 0 10px 0;">Choose Payment Method</h4>
-                <div class="payment-options premium-options">
-                    <label class="pay-option premium-pay-option">
-                        <input type="radio" name="payMethod" value="online" checked>
-                        <div class="pay-details">
-                            <strong><i class="fas fa-credit-card"></i> Pay Online (Razorpay)</strong>
-                            <span>Securely pay the full amount now.</span>
-                        </div>
-                    </label>
-                    <label class="pay-option premium-pay-option">
-                        <input type="radio" name="payMethod" value="cod">
-                        <div class="pay-details">
-                            <strong><i class="fas fa-money-bill-wave"></i> Cash on Delivery (COD)</strong>
-                            <span>Pay Shipping now, pay Items on delivery.</span>
-                        </div>
-                    </label>
-                </div>
+                if (sortedCandidates.length === 0) {
+                    cardHTML += `<div style="text-align:center; color:#999; padding:20px;">Waiting for votes...</div>`;
+                } else {
+                    sortedCandidates.forEach(cand => {
+                        const count = categoryVotes[cand];
+                        const percentage = catTotal > 0 ? ((count / catTotal) * 100).toFixed(1) : 0;
+                        
+                        cardHTML += `
+                            <div class="candidate-block">
+                                <div class="candidate-info">
+                                    <span>${cand} <span class="vote-count">(${count} votes)</span></span>
+                                    <span class="percentage-label">${percentage}%</span>
+                                </div>
+                                <div class="progress-container">
+                                    <div class="progress-fill" style="width: ${percentage}%"></div>
+                                </div>
+                            </div>`;
+                    });
+                }
+                
+                card.innerHTML = cardHTML;
+                grid.appendChild(card);
+            });
+        }
 
-                <button class="prime-btn" id="payBtn" onclick="processPayment()" style="margin-top:25px; font-size: 16px;"><i class="fas fa-lock"></i> Secure Checkout</button>
-                <button class="switch-btn" onclick="document.getElementById('checkoutStep2').style.display='none'; document.getElementById('checkoutStep1').style.display='block';" style="margin-top:10px;">Back to Address</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="orderSuccessModal">
-        <div class="modal-content success-content">
-            <div class="success-animation">
-                <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                    <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
-                    <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-                </svg>
-            </div>
-            <h2 style="color: #4CAF50; margin-bottom: 15px;">Order Placed Successfully!</h2>
-            <div class="receipt-box">
-                <div class="receipt-header">
-                    <p><strong>Order No:</strong> <span id="recOrderNo"></span></p>
-                    <p><strong>Shipping To:</strong> <span id="recAddress"></span></p>
-                </div>
-                <table class="receipt-table">
-                    <thead><tr><th>Item</th><th>Qty</th><th>Price</th></tr></thead>
-                    <tbody id="recTableBody"></tbody>
-                </table>
-                <div class="receipt-totals">
-                    <p>Items Total: <span id="recItemsTotal"></span></p>
-                    <p>Shipping: <span id="recShipping"></span></p>
-                    <h4>Grand Total: <span id="recGrandTotal"></span></h4>
-                </div>
-                <p class="policy-note"><strong>Note:</strong> You can cancel your items until they are shipped. If you cancel after shipping, shipping charges will not be refunded.</p>
-            </div>
-            <button class="prime-btn" onclick="closeOrderSuccess()">Continue Shopping</button>
-        </div>
-    </div>
-
-    <div class="cart-panel" id="cartPanel">
-        <div class="cart-header">
-            <h2>Your Cart</h2>
-            <span class="exit-cart" id="closeCart">&times;</span>
-        </div>
-        <div class="cart-items" id="cartItemsContainer"></div>
-        <div class="cart-footer">
-            <div class="cart-total">
-                <span>Total:</span><span id="cartTotalValue">₹0</span>
-            </div>
-            <button class="prime-btn" onclick="openCheckout()">Checkout</button>
-        </div>
-    </div>
-
-    <div id="toast" class="toast">Item successfully added to cart!</div>
-
-    <main class="page-body">
-        <section class="hero-banner">
-            <h1>Elevate Your Lifestyle</h1>
-            <p>Exclusive deals on premium electronics and fashion.</p>
-        </section>
-        <div class="product-shelf" id="productShelf"></div>
-    </main>
-
-    <script src="java.js"></script>
+        // Listen for realtime updates
+        const votesRef = ref(db, 'votes');
+        onValue(votesRef, (snapshot) => {
+            const data = snapshot.val();
+            const allVotes = [];
+            if (data) { 
+                for (let key in data) { 
+                    if(data[key].selections) allVotes.push(data[key].selections); 
+                } 
+            }
+            renderDashboard(allVotes);
+        });
+    </script>
 </body>
 </html>
