@@ -3,144 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Election Results - MLZS</title>
+    <title>MLZS Live Election Results</title>
     <style>
         :root { 
             --primary: #0f2942; 
             --accent: #d4af37; 
-            --bg: #f0f2f5; 
+            --bg: #f8fafc; 
             --card-bg: #ffffff; 
-            --text: #2d3436;
-            --progress-bg: #e9ecef;
+            --text-main: #1e293b;
+            --text-light: #64748b;
         }
 
         body { 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
             background-color: var(--bg); 
             margin: 0; 
-            padding: 15px; 
-            color: var(--text); 
-            line-height: 1.6;
+            padding: 0; 
+            color: var(--text-main); 
         }
 
-        /* Header Section */
+        /* --- FETCHING DATA LOADER --- */
+        #loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--primary);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.4s ease;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid rgba(212, 175, 55, 0.1);
+            border-top: 6px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loader-text {
+            margin-top: 20px;
+            color: white;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            font-size: 13px;
+        }
+
+        /* --- LAYOUT --- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
         .header { 
             text-align: center;
-            margin-bottom: 30px; 
-            padding: 20px;
+            padding: 30px 15px;
             background: var(--primary);
             color: white;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 0 0 25px 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
         }
 
         h1 { 
             margin: 0; 
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             letter-spacing: 1px;
             text-transform: uppercase; 
         }
 
         .total-votes-badge { 
             display: inline-block;
-            margin-top: 10px;
-            background-color: var(--accent); 
-            color: var(--primary); 
-            padding: 5px 15px; 
-            border-radius: 20px; 
-            font-size: 14px; 
-            font-weight: bold; 
+            margin-top: 12px;
+            background: var(--accent);
+            color: var(--primary);
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 800;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
 
-        /* Responsive Grid */
+        /* --- DASHBOARD GRID --- */
         #dashboard-grid { 
             display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-            gap: 20px; 
-            max-width: 1200px;
-            margin: 0 auto;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
+            gap: 25px; 
         }
 
-        /* Result Cards */
         .result-card { 
-            background-color: var(--card-bg); 
-            border-radius: 12px; 
-            padding: 20px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
-            border-top: 6px solid var(--accent);
-            transition: transform 0.2s;
+            background: var(--card-bg); 
+            border-radius: 16px; 
+            padding: 24px; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
+            border-top: 5px solid var(--accent);
         }
 
         .result-card h2 { 
             color: var(--primary); 
-            margin: 0 0 15px 0; 
-            font-size: 1.2rem; 
-            border-bottom: 2px solid #f0f0f0; 
-            padding-bottom: 8px;
+            margin: 0 0 20px 0; 
+            font-size: 1.3rem; 
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
         }
 
-        /* Candidate Rows */
-        .candidate-block {
-            margin-bottom: 15px;
+        /* --- CANDIDATE BARS --- */
+        .candidate-entry {
+            margin-bottom: 20px;
         }
 
-        .candidate-info { 
-            display: flex; 
-            justify-content: space-between; 
-            margin-bottom: 5px;
-            font-size: 14px; 
-            font-weight: 600; 
+        .candidate-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 6px;
         }
 
-        .vote-count {
-            color: var(--primary);
-            font-size: 12px;
-            opacity: 0.8;
-        }
+        .cand-name { font-weight: 700; font-size: 15px; color: var(--text-main); }
+        .cand-stats { font-size: 13px; color: var(--text-light); }
+        .cand-percent { font-weight: 800; color: var(--primary); font-size: 15px; }
 
-        /* Progress Bar Styles */
-        .progress-container {
+        .progress-track {
             width: 100%;
-            background-color: var(--progress-bg);
+            height: 10px;
+            background: #e2e8f0;
             border-radius: 10px;
-            height: 12px;
             overflow: hidden;
         }
 
-        .progress-fill {
+        .progress-bar {
             height: 100%;
-            background: linear-gradient(90deg, var(--primary), #1a4a75);
-            width: 0%;
-            transition: width 0.8s ease-out;
+            background: linear-gradient(90deg, #0f2942, #1e4d7a);
             border-radius: 10px;
+            transition: width 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .percentage-label {
-            color: var(--accent);
-            font-weight: 800;
-        }
-
-        /* Tablet/Desktop Tweaks */
-        @media (min-width: 768px) {
-            body { padding: 40px; }
-            h1 { font-size: 2rem; }
-            #dashboard-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        @media (min-width: 1024px) {
-            #dashboard-grid { grid-template-columns: repeat(3, 1fr); }
+        /* --- MOBILE OPTIMIZATION --- */
+        @media (max-width: 480px) {
+            h1 { font-size: 1.3rem; }
+            .container { padding: 10px; }
+            #dashboard-grid { grid-template-columns: 1fr; }
+            .result-card { padding: 18px; }
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>📊 Live Election Results</h1>
-        <div class="total-votes-badge" id="total-voters">Total vote: 0</div>
+    <div id="loader-overlay">
+        <div class="spinner"></div>
+        <div class="loader-text">Fetching Live Results...</div>
     </div>
 
-    <div id="dashboard-grid">
-        </div>
+    <div class="header">
+        <h1>📡 Live Realtime Results</h1>
+        <div class="total-votes-badge" id="total-vote-display">Total Votes: 0</div>
+    </div>
+
+    <div class="container">
+        <div id="dashboard-grid">
+            </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
@@ -158,77 +195,80 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-
         const categories = ["Head Boy", "Head Girl", "Cultural Captain", "Sports Captain", "Discipline Captain"];
+        let initialLoad = true;
 
-        function renderDashboard(allVotes) {
-            const totalCount = allVotes.length;
-            document.getElementById('total-voters').innerText = `Total vote: ${totalCount}`;
+        function updateUI(allVotes) {
+            // Updated spelling to "Total Votes"
+            document.getElementById('total-vote-display').innerText = `Total Votes: ${allVotes.length}`;
             
             const tally = {};
-            categories.forEach(cat => tally[cat] = {});
+            categories.forEach(c => tally[c] = {});
 
-            // Process votes
-            allVotes.forEach(voteRecord => {
-                for (const cat in voteRecord) {
-                    const chosenCand = voteRecord[cat];
+            allVotes.forEach(vote => {
+                for (let cat in vote) {
                     if (tally[cat]) {
-                        tally[cat][chosenCand] = (tally[cat][chosenCand] || 0) + 1;
+                        let candidate = vote[cat];
+                        tally[cat][candidate] = (tally[cat][candidate] || 0) + 1;
                     }
                 }
             });
 
             const grid = document.getElementById('dashboard-grid');
-            grid.innerHTML = ''; 
+            grid.innerHTML = '';
 
             categories.forEach(cat => {
                 const card = document.createElement('div');
                 card.className = 'result-card';
                 
-                let cardHTML = `<h2>${cat}</h2>`;
-                const categoryVotes = tally[cat] || {};
-                
-                // Calculate total votes for this specific category
-                const catTotal = Object.values(categoryVotes).reduce((a, b) => a + b, 0);
-                
-                const sortedCandidates = Object.keys(categoryVotes).sort((a, b) => categoryVotes[b] - categoryVotes[a]);
+                const categoryVotes = tally[cat];
+                const totalCatVotes = Object.values(categoryVotes).reduce((a, b) => a + b, 0);
+                const sorted = Object.keys(categoryVotes).sort((a, b) => categoryVotes[b] - categoryVotes[a]);
 
-                if (sortedCandidates.length === 0) {
-                    cardHTML += `<div style="text-align:center; color:#999; padding:20px;">Waiting for votes...</div>`;
+                let html = `<h2>${cat}</h2>`;
+
+                if (sorted.length === 0) {
+                    html += `<p style="color:#94a3b8; text-align:center;">Waiting for first vote...</p>`;
                 } else {
-                    sortedCandidates.forEach(cand => {
-                        const count = categoryVotes[cand];
-                        const percentage = catTotal > 0 ? ((count / catTotal) * 100).toFixed(1) : 0;
-                        
-                        cardHTML += `
-                            <div class="candidate-block">
-                                <div class="candidate-info">
-                                    <span>${cand} <span class="vote-count">(${count} votes)</span></span>
-                                    <span class="percentage-label">${percentage}%</span>
+                    sorted.forEach(name => {
+                        const count = categoryVotes[name];
+                        const percent = ((count / totalCatVotes) * 100).toFixed(1);
+                        html += `
+                            <div class="candidate-entry">
+                                <div class="candidate-meta">
+                                    <span class="cand-name">${name}</span>
+                                    <span class="cand-stats">${count} votes</span>
+                                    <span class="cand-percent">${percent}%</span>
                                 </div>
-                                <div class="progress-container">
-                                    <div class="progress-fill" style="width: ${percentage}%"></div>
+                                <div class="progress-track">
+                                    <div class="progress-bar" style="width: ${percent}%"></div>
                                 </div>
                             </div>`;
                     });
                 }
-                
-                card.innerHTML = cardHTML;
+                card.innerHTML = html;
                 grid.appendChild(card);
             });
+
+            // Handle Loader Removal
+            if (initialLoad) {
+                const loader = document.getElementById('loader-overlay');
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 500);
+                initialLoad = false;
+            }
         }
 
-        // Listen for realtime updates
         const votesRef = ref(db, 'votes');
         onValue(votesRef, (snapshot) => {
             const data = snapshot.val();
             const allVotes = [];
-            if (data) { 
-                for (let key in data) { 
-                    if(data[key].selections) allVotes.push(data[key].selections); 
-                } 
+            if (data) {
+                for (let id in data) {
+                    if (data[id].selections) allVotes.push(data[id].selections);
+                }
             }
-            renderDashboard(allVotes);
+            updateUI(allVotes);
         });
     </script>
 </body>
