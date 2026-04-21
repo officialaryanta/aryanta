@@ -1,86 +1,222 @@
-// --- 1. CONFIGURATION ---
+// --- 1. CORE CONFIGURATION ---
 const API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
 const RAZORPAY_KEY = "rzp_test_SfN9xZbqkMSz6G"; 
-
 emailjs.init("TDgNRO0CEs9rU3ozD");
 
-// --- 2. GLOBAL STATE ---
-let hashedOTP; 
-let tempUserData = null;
-let cart = [];
-let allProducts = [];
-let currentOrderState = { itemsTotal: 0, shippingCost: 0, grandTotal: 0, distanceKm: 0 };
-let alertConfirmCallback = null; 
-let alertCancelCallback = null;
+// CHANGE THIS: You must paste your real Firebase Config here to stop the permission errors!
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
+// Application State
+let allProducts = [];
+let cart = [];
+let currentProduct = null;
+let hashedOTP = "";
+let tempUserData = null; 
+let currentOrderState = { itemsTotal: 0, shippingCost: 0, grandTotal: 0 };
+let firebaseAddresses = [];
+let userAvatar = "";
+
+// Map Constants
 const BHAGALPUR_LAT = 25.2425;
 const BHAGALPUR_LON = 86.9842;
 
-// --- 3. UI & CUSTOM ALERT LOGIC ---
-const menuBtn = document.getElementById('menuBtn');
-const sidebar = document.getElementById('sidebar');
+// --- 2. GLOBAL UI CONTROLS & TOASTS ---
 const overlay = document.getElementById('overlay');
-const authModal = document.getElementById('authModal');
-const productModal = document.getElementById('productModal');
-const checkoutModal = document.getElementById('checkoutModal');
-const orderSuccessModal = document.getElementById('orderSuccessModal');
-const cartPanel = document.getElementById('cartPanel');
-const customAlertOverlay = document.getElementById('customAlertOverlay');
-const pageLoader = document.getElementById('pageLoader');
+const sidebar = document.getElementById('sidebar');
 
-// Alert now supports OK and Cancel buttons conditionally
-function showAlert(message, title = "Notice", showCancel = false, onConfirm = null, onCancel = null) {
-    document.getElementById('alertTitle').innerText = title;
-    document.getElementById('alertMessage').innerText = message;
-    
-    const cancelBtn = document.getElementById('alertCancelBtn');
-    if (showCancel) {
-        cancelBtn.style.display = 'block';
-    } else {
-        cancelBtn.style.display = 'none';
-    }
-
-    alertConfirmCallback = onConfirm;
-    alertCancelCallback = onCancel;
-    
-    customAlertOverlay.style.display = 'flex';
-}
-
-window.closeAlert = function(isConfirm = true) { 
-    customAlertOverlay.style.display = 'none'; 
-    if (isConfirm && alertConfirmCallback) {
-        alertConfirmCallback();
-    } else if (!isConfirm && alertCancelCallback) {
-        alertCancelCallback();
-    }
-    // Reset callbacks
-    alertConfirmCallback = null;
-    alertCancelCallback = null;
-};
-
-menuBtn.addEventListener('click', () => { sidebar.classList.add('open'); overlay.classList.add('show'); });
+document.getElementById('menuBtn').addEventListener('click', () => { sidebar.classList.add('open'); overlay.classList.add('show'); });
 overlay.addEventListener('click', closeAllModals);
-document.querySelectorAll('.exit-modal').forEach(btn => btn.addEventListener('click', closeAllModals));
-document.getElementById('closeCart').addEventListener('click', closeAllModals);
-
-document.getElementById('cartBtn').addEventListener('click', () => {
-    cartPanel.classList.add('open');
-    overlay.classList.add('show');
-});
 
 function closeAllModals() {
     sidebar.classList.remove('open');
-    cartPanel.classList.remove('open');
     overlay.classList.remove('show');
-    authModal.style.display = 'none';
-    checkoutModal.style.display = 'none';
-    productModal.style.display = 'none';
-    orderSuccessModal.style.display = 'none';
+    document.getElementById('authModal').style.display = 'none';
 }
 
-window.closeProductModal = function() {
-    productModal.style.display = 'none';
-    overlay.classList.remove('show');
+function closeFullPage(id) {
+    document.getElementById(id).classList.remove('open');
+    document.body.style.overflow = 'auto';
+}
+
+function showToast(message) {
+    const toast = document.getElementById('toastNotification');
+    document.getElementById('toastMessage').innerText = message;
+    toast.classList.add('show');
+    setTimeout(() => { toast.classList.remove('show'); }, 3000);
+}
+
+function showAlert(message, title = "Notice", showCancel = false, onConfirm = null) {
+    document.getElementById('alertTitle').innerText = title;
+    document.getElementById('alertMessage').innerText = message;
+    document.getElementById('alertCancelBtn').style.display = showCancel ? 'block' : 'none';
+    document.getElementById('customAlertOverlay').style.display = 'flex';
+    
+    document.getElementById('alertOkBtn').onclick = () => { document.getElementById('customAlertOverlay').style.display = 'none'; if(onConfirm) onConfirm(); };
+    document.getElementById('alertCancelBtn').onclick = () => { document.getElementById('customAlertOverlay').style.display = 'none'; };
+}
+
+window.closeAlert = function(confirm) {
+    document.getElementById('customAlertOverlay').style.display = 'none';
+}
+
+function toggleButtonState(btnId, isLoading, defaultText) {
+    const btn = document.getElementById(btnId);
+    if (isLoading) {
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Processing...';
+        btn.disabled = true;
+    } else {
+        btn.innerHTML = defaultText;
+        btn.disabled = false;
+    }
+}
+
+// --- 3. PRODUCTS & LIVE SEARCH ---
+async function fetchProducts() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/products`);
+        allProducts = await res.json();
+        renderProducts(allProducts, 'productShelf');
+    } catch(err) {
+        document.getElementById('productShelf').innerHTML = '<p style="text-align:center; width:100%; font-weight: 600; color: var(--text-muted);">Premium catalog is currently refreshing.</p>';
+    } finally {
+        document.getElementById('pageLoader').classList.add('hidden');
+    }
+}
+
+document.getElementById('searchInput').addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase();
+    const filtered = allProducts.filter(p => p.name.toLowerCase().includes(term) || (p.desc && p.desc.toLowerCase().includes(term)));
+    renderProducts(filtered, 'productShelf');
+});
+
+function renderProducts(list, containerId) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    list.forEach((p, index) => {
+        const div = document.createElement('div');
+        div.style.animationDelay = `${index * 0.05}s`;
+        
+        if(p.isDummy) {
+            div.className = 'item-card dummy-box';
+            div.innerHTML = `<div class="dummy-content"><i class="fas fa-box-open"></i><p>More Premium Drops Coming Soon</p></div>`;
+            div.onclick = null;
+            container.appendChild(div);
+            return;
+        }
+
+        div.className = 'item-card';
+        let img = p.images && p.images.length > 0 ? p.images[0] : 'https://via.placeholder.com/300';
+        div.onclick = () => openProductPage(p);
+        div.innerHTML = `
+            <div class="item-image"><img src="${img}" alt="${p.name}"></div>
+            <div class="item-info">
+                <h4>${p.name}</h4>
+                <div class="price">₹${Number(p.price).toLocaleString('en-IN')}</div>
+            </div>`;
+        container.appendChild(div);
+    });
+}
+
+// --- 4. ULTRA PREMIUM FULL SCREEN PRODUCT PAGE ---
+function openProductPage(product) {
+    currentProduct = product;
+    document.getElementById('fpName').innerText = product.name;
+    document.getElementById('fpDesc').innerText = product.desc || "Experience the pinnacle of craftsmanship. Engineered for the modern elite with uncompromising quality.";
+    document.getElementById('fpPrice').innerText = `₹${Number(product.price).toLocaleString('en-IN')}`;
+    document.getElementById('fpImage').src = product.images && product.images.length > 0 ? product.images[0] : 'https://via.placeholder.com/600';
+    
+    // Exactly 12 items logic
+    let similar = allProducts.filter(p => p.id !== product.id).slice(0, 12);
+    while(similar.length > 0 && similar.length < 12) {
+        similar.push({ isDummy: true });
+    }
+    renderProducts(similar, 'relatedProductsShelf');
+    
+    document.body.style.overflow = 'hidden';
+    document.getElementById('fullProductPage').classList.add('open');
+    document.getElementById('fullProductPage').scrollTo(0,0);
+}
+
+// --- 5. CART LOGIC (WITH TOAST) ---
+window.addToCartFromPage = function() {
+    const existing = cart.find(i => i.id === currentProduct.id);
+    existing ? existing.qty += 1 : cart.push({ ...currentProduct, qty: 1 });
+    updateCartUI();
+    
+    const badge = document.getElementById('cartBadge');
+    badge.classList.add('show');
+    badge.style.transform = 'scale(1.3)';
+    setTimeout(() => badge.style.transform = 'scale(1)', 200);
+    
+    showToast(`"${currentProduct.name}" added to bag.`);
+};
+
+window.buyNowFromPage = function() {
+    cart = []; addToCartFromPage(); document.getElementById('cartBtn').click();
+};
+
+document.getElementById('cartBtn').addEventListener('click', () => {
+    updateCartUI();
+    document.getElementById('fullCartPage').classList.add('open');
+});
+
+function updateCartUI() {
+    const container = document.getElementById('cartItemsContainer');
+    container.innerHTML = '';
+    let total = 0, count = 0;
+
+    cart.forEach(item => {
+        total += item.price * item.qty;
+        count += item.qty;
+        let img = item.images && item.images.length > 0 ? item.images[0] : 'https://via.placeholder.com/150';
+        container.innerHTML += `
+            <div class="cart-item-row">
+                <div class="cart-img-box"><img src="${img}"></div>
+                <div class="cart-details">
+                    <h4>${item.name}</h4>
+                    <div class="price">₹${(item.price * item.qty).toLocaleString('en-IN')}</div>
+                    <div class="cart-controls">
+                        <button class="qty-btn" onclick="changeQty('${item.id}', -1)"><i class="fas fa-minus"></i></button>
+                        <span style="font-weight:800; width: 24px; text-align:center;">${item.qty}</span>
+                        <button class="qty-btn" onclick="changeQty('${item.id}', 1)"><i class="fas fa-plus"></i></button>
+                        <button class="btn-remove" onclick="removeFromCart('${item.id}')">Remove</button>
+                    </div>
+                </div>
+            </div>`;
+    });
+
+    if(cart.length === 0) container.innerHTML = '<p style="font-size:18px; font-weight:600; color:var(--text-muted); padding:40px 0;">Your shopping bag is empty.</p>';
+
+    document.getElementById('cartBadge').innerText = count;
+    if(count > 0) document.getElementById('cartBadge').classList.add('show');
+    else document.getElementById('cartBadge').classList.remove('show');
+    
+    document.getElementById('cartSubtotal').innerText = `₹${total.toLocaleString('en-IN')}`;
+    document.getElementById('cartTotalValue').innerText = `₹${total.toLocaleString('en-IN')}`;
+    currentOrderState.itemsTotal = total;
+}
+
+window.changeQty = function(id, d) {
+    const item = cart.find(i => i.id === id);
+    if(item) { item.qty += d; if(item.qty <= 0) cart = cart.filter(i => i.id !== id); updateCartUI(); }
+};
+window.removeFromCart = function(id) { cart = cart.filter(i => i.id !== id); updateCartUI(); };
+
+
+// --- 6. AUTHENTICATION ---
+async function secureHash(string) {
+    const msgBuffer = new TextEncoder().encode(string);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 window.goToStep = function(step) {
@@ -90,275 +226,267 @@ window.goToStep = function(step) {
     document.getElementById(step + 'View').style.display = 'block';
 };
 
-// --- 4. SESSION, AUTH & PROFILE DROPDOWN ---
 function checkSession() {
     const session = JSON.parse(localStorage.getItem('active_session'));
     const accBtn = document.getElementById('accountBtn');
-    const dropdown = document.getElementById('profileDropdown');
     
     if (session && session.email) {
-        document.getElementById('sidebarUser').innerText = 'Welcome ' + session.name;
+        document.getElementById('sidebarUser').innerText = session.name;
+        document.getElementById('sidebarRole').innerText = "Prime Member";
+        document.getElementById('sidebarLogoutBtn').style.display = "flex"; 
         
-        accBtn.innerHTML = '<i class="fas fa-user-circle" style="font-size:26px;"></i>';
-        accBtn.style.background = 'transparent';
-        accBtn.style.border = 'none';
-        accBtn.style.padding = '0';
-        accBtn.style.color = 'var(--primary)';
-
-        document.getElementById('ddName').innerText = session.name;
-        document.getElementById('ddEmail').innerText = session.email;
-        document.getElementById('ddPhone').innerText = session.phone;
-
-        accBtn.onclick = (e) => { 
-            e.stopPropagation();
-            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block'; 
-        };
-        document.addEventListener('click', () => { dropdown.style.display = 'none'; });
-        document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('active_session'); location.reload(); };
+        accBtn.innerHTML = '<i class="fas fa-user-circle" style="font-size:20px; margin-right:8px;"></i> <span>' + session.name.split(' ')[0] + '</span>';
+        
+        accBtn.onclick = () => openAccount();
+        document.getElementById('sidebarAccountLink').onclick = (e) => { e.preventDefault(); openAccount(); };
+        
+        initFirebaseProfile(session.email);
     } else {
         document.getElementById('sidebarUser').innerText = 'Welcome Guest';
-        accBtn.innerText = 'Sign In';
-        accBtn.onclick = () => { authModal.style.display = 'flex'; goToStep('login'); overlay.classList.add('show'); };
-    }
-}
-
-async function secureHash(string) {
-    const msgBuffer = new TextEncoder().encode(string);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-const otpInputs = document.querySelectorAll('.otp-input');
-otpInputs.forEach((input, index) => {
-    input.addEventListener('input', (e) => { if (e.target.value.length === 1 && index < 3) otpInputs[index + 1].focus(); });
-    input.addEventListener('keydown', (e) => { if (e.key === 'Backspace' && e.target.value === '' && index > 0) otpInputs[index - 1].focus(); });
-});
-
-function toggleButtonState(btnId, isLoading) {
-    const btn = document.getElementById(btnId);
-    if (isLoading) {
-        btn.dataset.originalText = btn.innerHTML;
-        btn.innerHTML = 'Wait... <i class="fas fa-spinner fa-spin"></i>';
-        btn.disabled = true;
-    } else {
-        btn.innerHTML = btn.dataset.originalText;
-        btn.disabled = false;
+        document.getElementById('sidebarRole').innerText = "Sign in to access Prime";
+        document.getElementById('sidebarLogoutBtn').style.display = "none";
+        
+        accBtn.innerHTML = 'Sign In';
+        accBtn.onclick = () => { document.getElementById('authModal').style.display = 'flex'; goToStep('login'); overlay.classList.add('show'); };
+        document.getElementById('sidebarAccountLink').onclick = (e) => { e.preventDefault(); accBtn.click(); };
     }
 }
 
 window.handleSignup = async function() {
     tempUserData = {
         action: 'signup',
-        name: document.getElementById('regName').value,
-        email: document.getElementById('regEmail').value,
-        phone: document.getElementById('regPhone').value,
-        address: document.getElementById('regAddress').value,
-        city: document.getElementById('regCity').value,
-        state: document.getElementById('regState').value,
-        pincode: document.getElementById('regPincode').value
+        name: document.getElementById('regName').value, email: document.getElementById('regEmail').value, phone: document.getElementById('regPhone').value,
+        address: document.getElementById('regAddress').value, city: document.getElementById('regCity').value, state: document.getElementById('regState').value, pincode: document.getElementById('regPincode').value
     };
 
-    if (!tempUserData.name || !tempUserData.email || !tempUserData.phone || !tempUserData.pincode) {
-        return showAlert("Please fill all mandatory fields including Pincode.");
-    }
+    if (!tempUserData.name || !tempUserData.email || !tempUserData.phone || !tempUserData.pincode) return showAlert("Fill all mandatory fields including Pincode.");
 
-    toggleButtonState('signupBtn', true);
+    toggleButtonState('signupBtn', true, 'Send OTP');
     const rawOTP = Math.floor(1000 + Math.random() * 9000).toString();
     hashedOTP = await secureHash(rawOTP);
 
     try {
         await emailjs.send("service_wnqvm4n", "template_5by2ldn", { to_email: tempUserData.email, to_name: tempUserData.name, otp_code: rawOTP });
-        showAlert("Verification code sent to your email!", "Check Inbox");
+        showAlert("Verification code dispatched.", "Check Inbox");
         goToStep('otp');
-    } catch (err) { showAlert("Failed to send email. Check API keys."); } 
-    finally { toggleButtonState('signupBtn', false); }
+    } catch (err) { showAlert("Failed to send secure email."); } 
+    finally { toggleButtonState('signupBtn', false, 'Send OTP'); }
 };
 
 window.handleLogin = async function() {
     const email = document.getElementById('loginEmail').value;
-    if(!email) return showAlert("Please enter your email.");
+    if(!email) return showAlert("Enter your registered email.");
     
-    toggleButtonState('loginBtn', true);
+    toggleButtonState('loginBtn', true, 'Send Secure OTP');
     try {
         const res = await fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(email)}`);
         const data = await res.json();
 
         if (!data || !data.email) {
-            toggleButtonState('loginBtn', false);
-            showAlert("Email not found. Please register as a new user.");
+            toggleButtonState('loginBtn', false, 'Send Secure OTP');
+            showAlert("Email not found. Please create an account.");
             return goToStep('signup');
         }
 
-        tempUserData = { action: 'login', ...data };
+        tempUserData = { action: 'login', ...data }; 
         const rawOTP = Math.floor(1000 + Math.random() * 9000).toString();
         hashedOTP = await secureHash(rawOTP);
         await emailjs.send("service_wnqvm4n", "template_5by2ldn", { to_email: email, to_name: tempUserData.name, otp_code: rawOTP });
         goToStep('otp');
-    } catch(err) { showAlert("Login failed. Check your connection."); }
-    finally { toggleButtonState('loginBtn', false); }
+    } catch(err) { showAlert("Secure connection failed."); }
+    finally { toggleButtonState('loginBtn', false, 'Send Secure OTP'); }
 };
 
+const otpInputs = document.querySelectorAll('.otp-box');
+otpInputs.forEach((input, index) => {
+    input.addEventListener('input', (e) => { if (e.target.value.length === 1 && index < 3) otpInputs[index + 1].focus(); });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Backspace' && e.target.value === '' && index > 0) otpInputs[index - 1].focus(); });
+});
+
 window.completeAuth = async function() {
-    let otp = '';
-    otpInputs.forEach(i => otp += i.value);
-    if(otp.length !== 4) return showAlert("Please enter all 4 digits.");
+    let otp = ''; otpInputs.forEach(i => otp += i.value);
+    if(otp.length !== 4) return showAlert("Enter full secure code.");
     
     const hash = await secureHash(otp);
     if (hash === hashedOTP) {
         try {
             if (tempUserData.action === 'signup') {
                 const addRes = await fetch(`${API_BASE_URL}/add-user`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: tempUserData.name,
-                        email: tempUserData.email,
-                        phone: tempUserData.phone,
-                        address: tempUserData.address,
-                        city: tempUserData.city,
-                        state: tempUserData.state,
-                        pincode: tempUserData.pincode,
-                        timestamp: new Date().toISOString()
-                    })
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...tempUserData, timestamp: new Date().toISOString() })
                 });
                 if(!addRes.ok) throw new Error("API Save Failed");
+                
+                await db.collection("users").doc(tempUserData.email).set({ avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=" + tempUserData.name, addresses: [] }, { merge: true });
             }
+            
             localStorage.setItem('active_session', JSON.stringify(tempUserData));
-            showAlert(`Welcome, ${tempUserData.name}!`, "Success");
+            showAlert(`Welcome to Prime, ${tempUserData.name.split(' ')[0]}.`, "Authentication Success");
             setTimeout(() => location.reload(), 1500);
-        } catch (error) { showAlert("Server sync failed."); }
-    } else { showAlert("Invalid OTP."); }
+        } catch (error) { showAlert("Sync failed."); }
+    } else { showAlert("Invalid Verification Code."); }
 };
 
-// --- 5. PRODUCTS (STRICTLY FROM DATABASE) ---
-async function fetchProducts() {
-    const shelf = document.getElementById('productShelf');
-    try {
-        const res = await fetch(`${API_BASE_URL}/products`);
-        if(!res.ok) throw new Error("Failed to load");
-        
-        allProducts = await res.json();
-        
-        // PURE DATABASE LOGIC - NO PRE-INSTALLED ITEMS
-        if(allProducts.length === 0) {
-            shelf.innerHTML = '<p style="text-align:center; grid-column:1/-1; padding: 40px; color:#666;">No products available at the moment.</p>';
-        } else {
-            renderProducts(allProducts);
+
+// --- 7. EDITABLE PROFILE & ADDRESS BOOK LOGIC ---
+window.openAccount = function() {
+    const session = JSON.parse(localStorage.getItem('active_session'));
+    if(!session) return;
+    
+    closeAllModals();
+    document.getElementById('fullAccountPage').classList.add('open');
+    
+    document.getElementById('accName').value = session.name || "";
+    document.getElementById('accEmail').value = session.email || "";
+    document.getElementById('accPhone').value = session.phone || "";
+    document.getElementById('accAddress').value = session.address || "";
+    document.getElementById('accCity').value = session.city || "";
+    document.getElementById('accState').value = session.state || "";
+    document.getElementById('accPincode').value = session.pincode || "";
+    
+    initFirebaseProfile(session.email);
+};
+
+function initFirebaseProfile(email) {
+    db.collection("users").doc(email).get().then(doc => {
+        if(doc.exists) {
+            const data = doc.data();
+            firebaseAddresses = data.addresses || [];
+            userAvatar = data.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`;
+            
+            document.getElementById('sidebarAvatar').src = userAvatar;
+            
+            const session = JSON.parse(localStorage.getItem('active_session'));
+            const firstName = session ? session.name.split(' ')[0] : 'Profile';
+            const accBtn = document.getElementById('accountBtn');
+            accBtn.innerHTML = `<img src="${userAvatar}" class="nav-avatar" title="My Profile" style="margin-right: 8px;"> <span>${firstName}</span>`;
+            
+            document.querySelectorAll('.avatar-opt').forEach(el => {
+                el.classList.remove('selected');
+                if(el.src === userAvatar) el.classList.add('selected');
+            });
+            renderAddresses();
         }
-        
-    } catch(err) {
-        shelf.innerHTML = '<p style="text-align:center; grid-column:1/-1; padding: 40px; color:red;">Error connecting to the database.</p>';
-    } finally {
-        setTimeout(() => pageLoader.classList.add('hidden'), 500);
+    }).catch(err => console.error("Firebase Auth Warning:", err));
+}
+
+window.selectAvatar = function(src) {
+    document.querySelectorAll('.avatar-opt').forEach(el => el.classList.remove('selected'));
+    event.target.classList.add('selected');
+    userAvatar = src;
+};
+
+window.saveAvatarToFirebase = async function() {
+    const session = JSON.parse(localStorage.getItem('active_session'));
+    await db.collection("users").doc(session.email).set({ avatar: userAvatar }, { merge: true });
+    document.getElementById('sidebarAvatar').src = userAvatar;
+    
+    const firstName = session ? session.name.split(' ')[0] : 'Profile';
+    const accBtn = document.getElementById('accountBtn');
+    accBtn.innerHTML = `<img src="${userAvatar}" class="nav-avatar" title="My Profile" style="margin-right: 8px;"> <span>${firstName}</span>`;
+    
+    showToast("Avatar updated securely.");
+};
+
+window.saveProfileDetails = async function() {
+    const session = JSON.parse(localStorage.getItem('active_session'));
+    if (!session) return;
+    
+    const newName = document.getElementById('accName').value;
+    const newPhone = document.getElementById('accPhone').value;
+    const newAddress = document.getElementById('accAddress').value;
+    const newCity = document.getElementById('accCity').value;
+    const newState = document.getElementById('accState').value;
+    const newPincode = document.getElementById('accPincode').value;
+
+    session.name = newName;
+    session.phone = newPhone;
+    session.address = newAddress;
+    session.city = newCity;
+    session.state = newState;
+    session.pincode = newPincode;
+
+    localStorage.setItem('active_session', JSON.stringify(session));
+
+    await db.collection("users").doc(session.email).set({
+        name: newName, phone: newPhone, address: newAddress, city: newCity, state: newState, pincode: newPincode
+    }, { merge: true });
+
+    document.getElementById('sidebarUser').innerText = newName;
+    saveAvatarToFirebase();
+    showToast("Profile saved successfully.");
+};
+
+// Ensure address addition ONLY checks address and pin for validation
+window.saveNewAddress = async function() {
+    const session = JSON.parse(localStorage.getItem('active_session'));
+    const add = document.getElementById('newAddText').value;
+    const city = document.getElementById('newCity').value;
+    const state = document.getElementById('newState').value;
+    const pin = document.getElementById('newPin').value;
+    
+    if(!add || !pin) return showAlert("Address and Pincode are strictly required.");
+    
+    firebaseAddresses.push({ address: add, city: city, state: state, pincode: pin });
+    await db.collection("users").doc(session.email).set({ addresses: firebaseAddresses }, { merge: true });
+    
+    document.getElementById('newAddText').value = ""; document.getElementById('newCity').value = ""; document.getElementById('newState').value = ""; document.getElementById('newPin').value = "";
+    document.getElementById('newAddressForm').classList.remove('show');
+    renderAddresses();
+    showToast("New Address Added");
+};
+
+window.removeAddress = async function(index) {
+    if(confirm("Delete this saved location?")) {
+        const session = JSON.parse(localStorage.getItem('active_session'));
+        firebaseAddresses.splice(index, 1);
+        await db.collection("users").doc(session.email).set({ addresses: firebaseAddresses }, { merge: true });
+        renderAddresses();
+        showToast("Address Removed");
     }
 }
 
-function renderProducts(list) {
-    const shelf = document.getElementById('productShelf');
-    shelf.innerHTML = '';
-    list.forEach(p => {
-        const div = document.createElement('div');
-        div.className = 'item-card';
-        
-        let displayMedia = p.images && p.images.length > 0 
-            ? `<img src="${p.images[0]}" alt="${p.name}" class="carousel-img">` 
-            : p.icon || "📦";
-
-        div.onclick = () => openProductModal(p);
-        div.innerHTML = `<div class="item-image">${displayMedia}</div><div class="item-info"><h4>${p.name}</h4><span class="price">₹${Number(p.price).toLocaleString('en-IN')}</span></div>`;
-        shelf.appendChild(div);
-    });
+window.editAddress = function(index) {
+    const a = firebaseAddresses[index];
+    document.getElementById('newAddText').value = a.address;
+    document.getElementById('newCity').value = a.city;
+    document.getElementById('newState').value = a.state;
+    document.getElementById('newPin').value = a.pincode;
+    document.getElementById('newAddressForm').classList.add('show');
+    
+    // Remove the old entry so saving acts as an update
+    firebaseAddresses.splice(index, 1);
 }
 
-// Carousel Logic
-let currentProduct = null;
-let currentImageIndex = 0;
-
-function openProductModal(product) {
-    currentProduct = product;
-    currentImageIndex = 0;
+function renderAddresses() {
+    const list = document.getElementById('addressList');
+    list.innerHTML = '';
     
-    document.getElementById('modalProductName').innerText = product.name;
-    document.getElementById('modalProductDesc').innerText = product.desc;
-    document.getElementById('modalProductPrice').innerText = `₹${Number(product.price).toLocaleString('en-IN')}`;
-    
-    updateCarouselUI();
-    
-    productModal.style.display = 'flex';
-    overlay.classList.add('show');
-}
-
-function updateCarouselUI() {
-    const content = document.getElementById('carouselContent');
-    const prevBtn = document.getElementById('carouselPrev');
-    const nextBtn = document.getElementById('carouselNext');
-
-    if (currentProduct.images && currentProduct.images.length > 0) {
-        content.innerHTML = `<img src="${currentProduct.images[currentImageIndex]}" class="carousel-img">`;
-        if (currentProduct.images.length > 1) {
-            prevBtn.style.display = 'block'; nextBtn.style.display = 'block';
-        } else {
-            prevBtn.style.display = 'none'; nextBtn.style.display = 'none';
-        }
-    } else {
-        content.innerHTML = `<div style="font-size: 80px;">${currentProduct.icon || "📦"}</div>`;
-        prevBtn.style.display = 'none'; nextBtn.style.display = 'none';
+    if(firebaseAddresses.length === 0) {
+        list.innerHTML = '<p class="sub-text">No additional locations saved yet.</p>';
+        return;
     }
-}
 
-window.changeImage = function(direction) {
-    if(!currentProduct || !currentProduct.images) return;
-    currentImageIndex += direction;
-    if (currentImageIndex < 0) currentImageIndex = currentProduct.images.length - 1;
-    if (currentImageIndex >= currentProduct.images.length) currentImageIndex = 0;
-    updateCarouselUI();
-}
-
-window.addToCartFromModal = function() { addToCart(currentProduct); closeAllModals(); };
-window.buyNowFromModal = function() { cart = []; addToCart(currentProduct); closeAllModals(); openCheckout(); };
-
-function addToCart(product) {
-    const existing = cart.find(i => i.id === product.id);
-    existing ? existing.qty += 1 : cart.push({ ...product, qty: 1 });
-    updateCartUI();
-    const t = document.getElementById("toast");
-    t.className = "toast show"; setTimeout(() => t.className = "toast", 3000);
-}
-window.changeQty = function(id, d) {
-    const item = cart.find(i => i.id === id);
-    if(item) { item.qty += d; if(item.qty <= 0) cart = cart.filter(i => i.id !== id); updateCartUI(); }
-};
-window.removeFromCart = function(id) { cart = cart.filter(i => i.id !== id); updateCartUI(); };
-
-function updateCartUI() {
-    const container = document.getElementById('cartItemsContainer');
-    container.innerHTML = '';
-    let total = 0, qty = 0;
-
-    cart.forEach(item => {
-        qty += item.qty; total += (item.price * item.qty);
-        let media = item.images && item.images.length > 0 ? `<img src="${item.images[0]}" style="width:40px;height:40px;object-fit:cover;">` : item.icon || "📦";
-        container.innerHTML += `
-            <div class="cart-item">
-                <div class="cart-item-info">
-                    <h5>${item.name}</h5>
-                    <span style="color:var(--primary); font-weight:bold;">₹${(item.price * item.qty).toLocaleString('en-IN')}</span>
-                    <div class="cart-item-controls">
-                        <button class="qty-btn" onclick="changeQty('${item.id}', -1)">-</button>
-                        <span>${item.qty}</span>
-                        <button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>
-                        <button class="remove-btn" onclick="removeFromCart('${item.id}')">Remove</button>
-                    </div>
-                </div>
-                <div style="font-size:30px;">${media}</div>
-            </div>`;
+    firebaseAddresses.forEach((a, index) => {
+        list.innerHTML += `
+        <div class="address-item">
+            <strong class="loc-title"><i class="fas fa-map-marker-alt" style="margin-right:8px;"></i> Location ${index + 1}</strong>
+            ${a.address}, ${a.city}, ${a.state} - <strong style="font-family: var(--font-mono);">${a.pincode}</strong>
+            <div class="address-controls">
+                <button class="btn-mini" onclick="editAddress(${index})"><i class="fas fa-edit"></i> Edit</button>
+                <button class="btn-mini delete" onclick="removeAddress(${index})"><i class="fas fa-trash"></i> Remove</button>
+            </div>
+        </div>`;
     });
-    document.getElementById('cartBadge').innerText = qty;
-    document.getElementById('cartTotalValue').innerText = `₹${total.toLocaleString('en-IN')}`;
-    currentOrderState.itemsTotal = total;
 }
 
-// --- 6. CHECKOUT & ADDRESS MANAGEMENT ---
+window.logOut = function() {
+    localStorage.removeItem('active_session');
+    location.reload();
+}
+
+
+// --- 8. PREMIUM NON-BLOCKING CHECKOUT & GLORIOUS RECEIPT ---
 window.useDefaultAddress = function() {
     const session = JSON.parse(localStorage.getItem('active_session'));
     if(!session) return;
@@ -369,23 +497,39 @@ window.useDefaultAddress = function() {
     document.getElementById('chkPincode').value = session.pincode || "";
 };
 
-window.clearAddress = function() {
-    document.getElementById('chkName').value = "";
-    document.getElementById('chkPhone').value = "";
-    document.getElementById('chkAddress').value = "";
-    document.getElementById('chkCity').value = "";
-    document.getElementById('chkPincode').value = "";
-};
-
 window.openCheckout = function() {
-    if (cart.length === 0) return showAlert("Your Cart is empty!");
+    if (cart.length === 0) return showAlert("Bag is empty.");
     const session = JSON.parse(localStorage.getItem('active_session'));
-    if (!session) { showAlert("Please sign in first.", "Account Required"); return document.getElementById('accountBtn').click(); }
-    useDefaultAddress();
-    cartPanel.classList.remove('open');
-    checkoutModal.style.display = 'flex';
+    if (!session) return showAlert("Please authenticate to proceed.", "Secure Checkout", false, () => document.getElementById('accountBtn').click());
+    
+    document.getElementById('fullCartPage').classList.remove('open');
+    
+    document.getElementById('fullCheckoutPage').classList.add('open');
+    document.body.style.overflow = 'hidden';
+
     document.getElementById('checkoutStep1').style.display = 'block';
     document.getElementById('checkoutStep2').style.display = 'none';
+    
+    const chkList = document.getElementById('checkoutAddressList');
+    chkList.innerHTML = '';
+    if(firebaseAddresses.length > 0) {
+        chkList.innerHTML = `<div class="divider-elegant text-center"><span class="bg-surface px-10">Or select from Address Book</span></div>`;
+        firebaseAddresses.forEach((a, i) => {
+            chkList.innerHTML += `<div class="address-item premium-hover" onclick="selectCheckoutAdd(${i})" style="margin-bottom:10px; cursor:pointer;"><strong class="loc-title" style="font-size:14px; margin-bottom:4px;"><i class="fas fa-map-marker-alt"></i> Location ${i + 1}</strong>${a.address}, ${a.city} - ${a.pincode}</div>`;
+        });
+    }
+};
+
+// FIX: Ensure name and phone are autofilled when selecting from Address Book during checkout
+window.selectCheckoutAdd = function(index) {
+    const session = JSON.parse(localStorage.getItem('active_session'));
+    const a = firebaseAddresses[index];
+    
+    document.getElementById('chkName').value = session.name || "";
+    document.getElementById('chkPhone').value = session.phone || "";
+    document.getElementById('chkAddress').value = a.address;
+    document.getElementById('chkCity').value = a.city;
+    document.getElementById('chkPincode').value = a.pincode;
 };
 
 function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
@@ -396,8 +540,8 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 
 window.calculateShippingAndProceed = async function() {
     const pincode = document.getElementById('chkPincode').value;
-    if(!pincode) return showAlert("Pincode is required to calculate shipping.");
-    toggleButtonState('calcShippingBtn', true);
+    if(!pincode) return showAlert("Pincode is mandatory for shipping calculation.");
+    toggleButtonState('calcShippingBtn', true, 'Calculating Logistics...');
 
     try {
         const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${pincode},+India`);
@@ -415,145 +559,115 @@ window.calculateShippingAndProceed = async function() {
 
         currentOrderState.shippingCost = shippingFee;
         currentOrderState.grandTotal = currentOrderState.itemsTotal + shippingFee;
-        document.getElementById('sumItems').innerText = `₹${currentOrderState.itemsTotal}`;
-        document.getElementById('sumShipping').innerText = `₹${shippingFee}`;
-        document.getElementById('sumTotal').innerText = `₹${currentOrderState.grandTotal}`;
+        
+        document.getElementById('sumItems').innerText = `₹${currentOrderState.itemsTotal.toLocaleString('en-IN')}`;
+        document.getElementById('sumShipping').innerText = `₹${shippingFee.toLocaleString('en-IN')}`;
+        document.getElementById('sumTotal').innerText = `₹${currentOrderState.grandTotal.toLocaleString('en-IN')}`;
+        
         document.getElementById('checkoutStep1').style.display = 'none';
         document.getElementById('checkoutStep2').style.display = 'block';
     } catch(err) {
-        showAlert("Could not verify Pincode accurately. Applying default ₹60 shipping.", "Map Warning");
-        currentOrderState.shippingCost = 60;
-        currentOrderState.grandTotal = currentOrderState.itemsTotal + 60;
-        document.getElementById('sumItems').innerText = `₹${currentOrderState.itemsTotal}`;
-        document.getElementById('sumShipping').innerText = `₹60`;
-        document.getElementById('sumTotal').innerText = `₹${currentOrderState.grandTotal}`;
-        document.getElementById('checkoutStep1').style.display = 'none';
-        document.getElementById('checkoutStep2').style.display = 'block';
+        currentOrderState.shippingCost = 60; currentOrderState.grandTotal = currentOrderState.itemsTotal + 60;
+        document.getElementById('sumItems').innerText = `₹${currentOrderState.itemsTotal.toLocaleString('en-IN')}`;
+        document.getElementById('sumShipping').innerText = `₹60`; document.getElementById('sumTotal').innerText = `₹${currentOrderState.grandTotal.toLocaleString('en-IN')}`;
+        document.getElementById('checkoutStep1').style.display = 'none'; document.getElementById('checkoutStep2').style.display = 'block';
     } finally {
-        toggleButtonState('calcShippingBtn', false);
+        toggleButtonState('calcShippingBtn', false, 'Next: Payment <i class="fas fa-arrow-right"></i>');
     }
 };
 
-// --- 7. PAYMENT, RECEIPT & FAILED HANDLING ---
-function handlePaymentFailure(response) {
-    const randomCode = Math.floor(100000000000 + Math.random() * 900000000000);
-    showAlert(`Payment unsuccessful. Your code: ${randomCode}. If payment has been deducted it will be refunded within 24h.`, "Payment Failed");
-}
-
 window.processPayment = function() {
-    const session = JSON.parse(localStorage.getItem('active_session'));
-    const isCOD = document.querySelector('input[name="payMethod"]:checked').value === 'cod';
-    const amountToCharge = isCOD ? currentOrderState.shippingCost : currentOrderState.grandTotal;
-
-    if (amountToCharge === 0 && isCOD) return saveOrderToBackend("COD_NO_SHIPPING_FEE", isCOD);
-
-    const options = {
-        "key": RAZORPAY_KEY, 
-        "amount": amountToCharge * 100, 
-        "currency": "INR",
-        "name": "Aryanta Premium",
-        "description": isCOD ? "Shipping Charge Payment" : "Full Order Payment",
-        "handler": function (response) {
-            saveOrderToBackend(response.razorpay_payment_id, isCOD);
-        },
-        "prefill": { "name": document.getElementById('chkName').value, "email": session.email, "contact": document.getElementById('chkPhone').value },
-        "theme": { "color": "#008080" }
-    };
+    toggleButtonState('payBtn', true, 'Initializing Gateway...');
     
-    const rzp = new Razorpay(options);
-    rzp.on('payment.failed', handlePaymentFailure);
+    setTimeout(() => {
+        const session = JSON.parse(localStorage.getItem('active_session'));
+        const isCOD = document.querySelector('input[name="payMethod"]:checked').value === 'cod';
+        const amountToCharge = isCOD ? currentOrderState.shippingCost : currentOrderState.grandTotal;
 
-    if (isCOD) {
-        // Trigger alert with CANCEL button
-        showAlert(
-            `As you chose COD, you must pay the ₹${amountToCharge} shipping charge now. You will pay ₹${currentOrderState.itemsTotal} on delivery.`, 
-            "COD Policy", 
-            true, 
-            () => { rzp.open(); }, // On OK -> Open Razorpay
-            () => { /* On Cancel -> Do nothing, stay on checkout */ } 
-        );
-    } else {
-        rzp.open();
-    }
+        const options = {
+            "key": RAZORPAY_KEY, "amount": amountToCharge * 100, "currency": "INR", "name": "Aryanta Prime",
+            "description": isCOD ? "Shipping Charge Payment" : "Full Order Payment",
+            "handler": function (response) { saveOrderToBackend(response.razorpay_payment_id, isCOD); },
+            "prefill": { "name": document.getElementById('chkName').value, "email": session.email, "contact": document.getElementById('chkPhone').value },
+            "theme": { "color": "#0a0a0a" },
+            "modal": {
+                "ondismiss": function() {
+                    toggleButtonState('payBtn', false, '<i class="fas fa-lock"></i> Authorize Payment');
+                }
+            }
+        };
+        
+        const rzp = new Razorpay(options);
+        rzp.on('payment.failed', () => {
+            toggleButtonState('payBtn', false, '<i class="fas fa-lock"></i> Authorize Payment');
+            showAlert(`Payment unsuccessful. If deducted it will be refunded within 24h.`, "Transaction Failed");
+        });
+
+        if (isCOD) {
+            showAlert(`As you chose COD, you must pay the ₹${amountToCharge} shipping charge now. You will pay ₹${currentOrderState.itemsTotal} on delivery.`, "COD Policy", true, () => { rzp.open(); });
+            toggleButtonState('payBtn', false, '<i class="fas fa-lock"></i> Authorize Payment');
+        } else { 
+            rzp.open(); 
+        }
+    }, 100);
 };
 
 async function saveOrderToBackend(paymentId, isCOD) {
     const session = JSON.parse(localStorage.getItem('active_session'));
-    const orderNo = "ORD-" + Date.now().toString().slice(-6) + Math.floor(Math.random() * 100);
+    const orderNo = "ARY-" + Date.now().toString().slice(-6) + Math.floor(Math.random() * 100);
     const fullAddress = `${document.getElementById('chkAddress').value}, ${document.getElementById('chkCity').value} - ${document.getElementById('chkPincode').value}`;
 
     const orderData = {
-        order_no: orderNo,
-        user_email: session.email,
-        delivery_name: document.getElementById('chkName').value,
-        delivery_phone: document.getElementById('chkPhone').value,
-        delivery_address: fullAddress,
-        items: cart,
-        financials: currentOrderState,
-        payment_method: isCOD ? "COD (Shipping Prepaid)" : "Online Full",
-        razorpay_id: paymentId,
-        status: "Processing",
-        timestamp: new Date().toISOString()
+        order_no: orderNo, user_email: session.email, delivery_name: document.getElementById('chkName').value,
+        delivery_phone: document.getElementById('chkPhone').value, delivery_address: fullAddress,
+        items: cart, financials: currentOrderState, payment_method: isCOD ? "COD (Shipping Prepaid)" : "Online Full",
+        razorpay_id: paymentId, status: "Confirmed", timestamp: new Date().toISOString()
     };
 
-    document.getElementById('payBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-    document.getElementById('payBtn').disabled = true;
+    toggleButtonState('payBtn', true, 'Authorizing...');
 
     try {
-        const res = await fetch(`${API_BASE_URL}/order`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(orderData)
-        });
-
+        const res = await fetch(`${API_BASE_URL}/order`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderData) });
         if(!res.ok) throw new Error("API Save Failed");
 
-        buildReceiptAndEmail(orderData);
-        cart = []; 
-        updateCartUI();
-        checkoutModal.style.display = 'none';
-        orderSuccessModal.style.display = 'flex';
+        buildGloriousReceipt(orderData);
+        cart = []; updateCartUI();
+        
+        document.getElementById('fullCheckoutPage').classList.remove('open');
+        document.getElementById('overlay').classList.add('show');
+        document.getElementById('orderSuccessModal').style.display = 'flex';
 
     } catch (error) {
         showAlert("Payment successful, but saving order failed. Screenshot this Payment ID: " + paymentId, "Critical Error");
-    } finally {
-        document.getElementById('payBtn').innerHTML = '<i class="fas fa-lock"></i> Secure Checkout';
-        document.getElementById('payBtn').disabled = false;
-    }
+    } finally { toggleButtonState('payBtn', false, '<i class="fas fa-lock"></i> Authorize Payment'); }
 }
 
-function buildReceiptAndEmail(data) {
+function buildGloriousReceipt(data) {
     document.getElementById('recOrderNo').innerText = data.order_no;
     document.getElementById('recAddress').innerText = data.delivery_address;
-    document.getElementById('recItemsTotal').innerText = `₹${data.financials.itemsTotal}`;
-    document.getElementById('recShipping').innerText = `₹${data.financials.shippingCost}`;
-    document.getElementById('recGrandTotal').innerText = `₹${data.financials.grandTotal}`;
+    document.getElementById('recItemsTotal').innerText = `₹${data.financials.itemsTotal.toLocaleString('en-IN')}`;
+    document.getElementById('recShipping').innerText = `₹${data.financials.shippingCost.toLocaleString('en-IN')}`;
+    document.getElementById('recGrandTotal').innerText = `₹${data.financials.grandTotal.toLocaleString('en-IN')}`;
     
     const tbody = document.getElementById('recTableBody');
     tbody.innerHTML = '';
     let emailItemsText = ""; 
 
     data.items.forEach(item => {
-        tbody.innerHTML += `<tr><td>${item.name}</td><td>${item.qty}</td><td>₹${item.price * item.qty}</td></tr>`;
+        tbody.innerHTML += `<tr><td>${item.name}</td><td class="mono-td">x${item.qty}</td><td class="text-right mono-td">₹${(item.price * item.qty).toLocaleString('en-IN')}</td></tr>`;
         emailItemsText += `${item.name} (x${item.qty}) - Rs.${item.price * item.qty}\n`;
     });
 
     emailjs.send("service_wnqvm4n", "YOUR_NEW_RECEIPT_TEMPLATE_ID", {
-        to_email: data.user_email,
-        to_name: data.delivery_name,
-        order_no: data.order_no,
-        address: data.delivery_address,
-        items_list: emailItemsText,
-        shipping: data.financials.shippingCost,
-        grand_total: data.financials.grandTotal
-    }).catch(err => console.log("Receipt email failed to send", err));
+        to_email: data.user_email, to_name: data.delivery_name, order_no: data.order_no, address: data.delivery_address,
+        items_list: emailItemsText, shipping: data.financials.shippingCost, grand_total: data.financials.grandTotal
+    }).catch(err => console.log("Receipt email failed", err));
 }
 
 window.closeOrderSuccess = function() {
-    orderSuccessModal.style.display = 'none';
+    document.getElementById('orderSuccessModal').style.display = 'none';
     overlay.classList.remove('show');
 }
 
-// Init
 checkSession();
 fetchProducts();
