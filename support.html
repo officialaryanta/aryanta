@@ -12,37 +12,39 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
     <style>
-        /* --- CHAT BOT SPECIFIC STYLES --- */
-        .support-wrapper { max-width: 800px; margin: 0 auto; padding: 20px 5%; height: calc(100vh - 100px); display: flex; flex-direction: column; }
+        /* --- STRICT NO-SCROLL APP LAYOUT --- */
+        html, body { margin: 0; padding: 0; height: 100vh; overflow: hidden; background: var(--bg-color); }
         
-        .chat-header { text-align: center; margin-bottom: 20px; }
-        .chat-header h1 { font-size: 28px; font-weight: 800; letter-spacing: -1px; }
+        .main-content { padding-top: 70px; height: 100vh; display: flex; flex-direction: column; }
         
-        .chat-container { flex-grow: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 24px; box-shadow: var(--shadow-md); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .support-wrapper { flex-grow: 1; max-width: 800px; margin: 0 auto; width: 100%; padding: 15px 5%; display: flex; flex-direction: column; max-height: calc(100vh - 70px); }
         
-        .chat-history { flex-grow: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; background: #f8fafc; scroll-behavior: smooth; }
+        .chat-header { text-align: center; margin-bottom: 15px; flex-shrink: 0; }
+        .chat-header h1 { font-size: 26px; font-weight: 800; letter-spacing: -1px; }
+        
+        .chat-container { flex-grow: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 24px; box-shadow: var(--shadow-md); display: flex; flex-direction: column; overflow: hidden; position: relative; margin-bottom: 15px; }
+        
+        .chat-history { flex-grow: 1; padding: 20px 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: #f8fafc; scroll-behavior: smooth; }
         
         /* Message Bubbles */
-        .msg-row { display: flex; width: 100%; animation: chatPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; transform: translateY(20px); }
+        .msg-row { display: flex; width: 100%; animation: chatPop 0.3s ease-out forwards; opacity: 0; transform: translateY(15px); }
         .msg-bot { justify-content: flex-start; }
         .msg-user { justify-content: flex-end; }
         
-        .bubble { max-width: 80%; padding: 15px 20px; border-radius: 20px; font-size: 15px; line-height: 1.5; position: relative; box-shadow: var(--shadow-sm); word-wrap: break-word; }
+        .bubble { max-width: 85%; padding: 14px 18px; border-radius: 18px; font-size: 14.5px; line-height: 1.5; position: relative; box-shadow: var(--shadow-sm); word-wrap: break-word; }
         .msg-bot .bubble { background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
         .msg-user .bubble { background: var(--primary); color: white; border-bottom-right-radius: 4px; }
         
-        .bot-icon { width: 35px; height: 35px; border-radius: 50%; background: var(--accent); color: white; display: flex; justify-content: center; align-items: center; margin-right: 15px; font-size: 14px; flex-shrink: 0; align-self: flex-end; }
+        .bot-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; display: flex; justify-content: center; align-items: center; margin-right: 12px; font-size: 13px; flex-shrink: 0; align-self: flex-end; }
 
-        /* Quick Replies & Inputs Area */
-        .chat-actions { background: var(--surface); border-top: 1px solid var(--border); padding: 20px; min-height: 80px; display: flex; flex-direction: column; justify-content: center; }
-        .quick-replies { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        /* Quick Replies (Strictly 4 Options Max) */
+        .chat-actions { background: var(--surface); border-top: 1px solid var(--border); padding: 15px; min-height: 70px; display: flex; flex-direction: column; justify-content: center; flex-shrink: 0; }
+        .quick-replies { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
         
-        .btn-reply { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 12px 20px; border-radius: 100px; font-size: 14px; font-weight: 700; cursor: pointer; transition: var(--transition); }
-        .btn-reply:hover { border-color: var(--primary); background: var(--bg-color); transform: translateY(-2px); }
+        .btn-reply { background: var(--bg-color); border: 1px solid var(--border); color: var(--text-main); padding: 12px 15px; border-radius: 12px; font-size: 13.5px; font-weight: 700; cursor: pointer; transition: var(--transition); text-align: center; }
+        .btn-reply:hover { border-color: var(--primary); background: var(--surface); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
         .btn-reply.primary { background: var(--primary); color: white; border-color: var(--primary); }
-        .btn-reply.primary:hover { background: var(--primary-hover); color: white; }
-        .btn-reply.danger { border-color: var(--danger); color: var(--danger); }
-        .btn-reply.danger:hover { background: var(--danger); color: white; }
+        .btn-reply.danger { border-color: #fca5a5; color: var(--danger); background: #fef2f2; }
 
         /* Internal Chat Elements */
         .chat-card { border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-top: 10px; background: var(--bg-color); }
@@ -51,13 +53,37 @@
 
         /* Typing Indicator */
         .typing-indicator { display: flex; gap: 5px; padding: 5px; }
-        .dot { width: 8px; height: 8px; background: var(--text-muted); border-radius: 50%; animation: blink 1.4s infinite both; }
+        .dot { width: 7px; height: 7px; background: var(--text-muted); border-radius: 50%; animation: blink 1.4s infinite both; }
         .dot:nth-child(2) { animation-delay: 0.2s; }
         .dot:nth-child(3) { animation-delay: 0.4s; }
         @keyframes blink { 0% { opacity: 0.2; } 20% { opacity: 1; } 100% { opacity: 0.2; } }
         
-        /* Custom Chat Inputs */
-        .chat-input-wrapper { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 500px; margin: 0 auto; }
+        /* Custom Inputs */
+        .chat-input-wrapper { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+        
+        /* --- INVOICE PRINT STYLES --- */
+        .invoice-hidden-container { display: none; }
+        .invoice-box { border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; background: var(--bg-color); text-align: left; }
+        .invoice-box-title { font-size: 12px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        .invoice-info-text { font-size: 14px; margin-bottom: 6px; color: var(--text-main); font-weight: 500; }
+        .invoice-address-grid { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 10px; }
+        .invoice-address-grid .invoice-box { flex: 1; min-width: 250px; margin-bottom: 0; }
+        
+        @media print {
+            @page { size: A4; margin: 10mm; }
+            body { background: white; overflow: visible; height: auto; }
+            body * { visibility: hidden; }
+            
+            .invoice-hidden-container { display: block !important; position: absolute; left: 0; top: 0; width: 100%; background: white; z-index: 9999; }
+            .invoice-hidden-container * { visibility: visible; }
+            .main-content, .top-bar, .side-panel, .dimmer, .toast-notification { display: none !important; }
+        }
+
+        /* Mobile Layout */
+        @media (max-width: 768px) {
+            .quick-replies { grid-template-columns: 1fr; } /* Stack buttons vertically on small screens */
+            .bubble { max-width: 90%; }
+        }
     </style>
 </head>
 <body>
@@ -86,13 +112,11 @@
             <a href="index.html" class="stagger-link"><i class="fas fa-compass"></i> Discover</a>
             <a href="index.html" class="stagger-link" id="sidebarAccountLink"><i class="fas fa-user-circle"></i> My Profile</a>
             <a href="track.html" class="stagger-link"><i class="fas fa-box-open"></i> Orders & Tracking</a>
-            <a href="claim-warranty.html" class="stagger-link"><i class="fas fa-shield-alt"></i> Claim Warranty</a>
+            <a href="claim-warrenty.html" class="stagger-link"><i class="fas fa-shield-alt"></i> Claim Warranty</a>
             <a href="support.html" class="stagger-link" style="color: var(--primary); background: var(--bg-color); border-right: 3px solid var(--primary);"><i class="fas fa-headset"></i> Concierge Support</a>
         </nav>
         <div class="sidebar-footer">
-            <button class="btn-sidebar-logout" id="sidebarLogoutBtn" onclick="logOut()" style="display:none;">
-                <i class="fas fa-sign-out-alt"></i> Secure Logout
-            </button>
+            <button class="btn-sidebar-logout" onclick="logOut()"><i class="fas fa-sign-out-alt"></i> Secure Logout</button>
             <p>Aryanta Prime © 2026</p>
         </div>
     </aside>
@@ -101,11 +125,11 @@
 
     <div id="productShelf" style="display:none;"></div><div id="cartItemsContainer" style="display:none;"></div><span id="cartBadge" style="display:none;"></span><div id="cartSubtotal" style="display:none;"></div><div id="cartTotalValue" style="display:none;"></div><div class="modal" id="authModal" style="display:none;"></div><div class="custom-alert-overlay" id="customAlertOverlay" style="display:none;"></div>
 
-    <main class="main-content" style="padding-top: 80px;">
+    <main class="main-content">
         <div class="support-wrapper">
             <div class="chat-header">
                 <h1>Aryanta Assistant</h1>
-                <p class="sub-text">AI-powered premium support, instantly available.</p>
+                <p class="sub-text">AI-powered premium support.</p>
             </div>
 
             <div class="chat-container">
@@ -118,6 +142,67 @@
         </div>
     </main>
 
+    <div class="invoice-hidden-container" id="printInvoiceArea">
+        <div style="padding: 40px; max-width: 800px; margin: 0 auto; background: white;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 15px;">
+                <div>
+                    <h2 style="font-size: 32px; font-weight: 800; letter-spacing: 2px; color: #000; margin-bottom: 5px;">ARYANTA.</h2>
+                    <p style="color: #666; font-weight: 700; letter-spacing: 1px; font-size: 13px;">TAX INVOICE</p>
+                </div>
+                <div style="text-align: right;">
+                    <p style="font-size: 12px; color: #666; font-weight: 700; text-transform: uppercase;">Invoice Number</p>
+                    <h3 id="invOrderNo" style="font-family: monospace; font-size: 18px; color: #000;">---</h3>
+                </div>
+            </div>
+            
+            <div class="invoice-address-grid">
+                <div class="invoice-box">
+                    <div class="invoice-box-title">Issued By</div>
+                    <p class="invoice-info-text"><strong>Aryanta Prime Exclusives</strong></p>
+                    <p class="invoice-info-text">123 Prime Tech District, IN</p>
+                    <p class="invoice-info-text">GSTIN: 22AAAAA0000A1Z5</p>
+                </div>
+                <div class="invoice-box">
+                    <div class="invoice-box-title">Billed & Shipped To</div>
+                    <p class="invoice-info-text"><strong id="invCustName">---</strong></p>
+                    <p class="invoice-info-text" id="invCustEmail">---</p>
+                    <p class="invoice-info-text" id="invAddress" style="line-height: 1.5; margin-top:5px;">---</p>
+                    <p class="invoice-info-text" style="margin-top: 10px;"><strong>Order Date:</strong> <span id="invDate">---</span></p>
+                </div>
+            </div>
+
+            <div class="invoice-box" style="margin-top: 20px;">
+                <div class="invoice-box-title">Order Ledger</div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #ddd;">
+                            <th style="padding: 10px 0;">#</th>
+                            <th style="padding: 10px 0;">Item Description</th>
+                            <th style="padding: 10px 0; text-align: center;">Qty</th>
+                            <th style="padding: 10px 0; text-align: right;">Unit Price</th>
+                            <th style="padding: 10px 0; text-align: right;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invTableBody"></tbody>
+                </table>
+                
+                <div style="display: flex; justify-content: flex-end; margin-top: 20px; border-top: 1px dashed #ddd; padding-top: 15px;">
+                    <div style="width: 320px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span>Subtotal:</span> <span id="invItemsTotal"></span></div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span>Shipping:</span> <span id="invShipping"></span></div>
+                        <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 18px; margin-top: 10px; border-top: 2px solid #000; padding-top: 10px;">
+                            <span>Grand Total:</span> <span id="invGrandTotal"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px; font-size: 11px; color: #666;">
+                <p>This is a computer-generated invoice and does not require a physical signature.</p>
+            </div>
+        </div>
+    </div>
+
     <script src="java.js"></script>
 
     <script>
@@ -127,28 +212,50 @@
         
         let currentUser = null;
         let allMyOrders = [];
-        let latestOrder = null;
 
-        // Menu sets
+        // STRICT 4-ITEM MENUS
         const MENU_MAIN = [
             { text: "Where is my order?", action: "track_order" },
             { text: "Cancel my order", action: "start_cancel" },
             { text: "Refund status", action: "refund_status" },
-            { text: "Other Options...", action: "show_more" }
+            { text: "More Options...", action: "show_menu_2" }
         ];
 
-        const MENU_MORE = [
-            { text: "Claim my items warranty", action: "claim_warranty" },
+        const MENU_2 = [
+            { text: "Report delivery delay", action: "report_delay" },
+            { text: "Modify shipping address", action: "mod_address" },
+            { text: "Report missing item", action: "missing_item" },
+            { text: "More Options...", action: "show_menu_3" }
+        ];
+
+        const MENU_3 = [
+            { text: "Exchange policy", action: "exchange_policy" },
+            { text: "Download Invoice", action: "start_invoice" },
+            { text: "Claim my warranty", action: "claim_warranty" },
+            { text: "More Options...", action: "show_menu_4" }
+        ];
+
+        const MENU_4 = [
             { text: "Payment issue", action: "payment_issue" },
+            { text: "Check Prime membership", action: "check_prime" },
             { text: "Get a call back", action: "call_back" },
-            { text: "← Back to main menu", action: "show_main" }
+            { text: "← Main Menu", action: "show_main" }
         ];
 
-        // UI Core
         function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('overlay').classList.toggle('show');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if (!sidebar.classList.contains('open')) {
+                sidebar.classList.add('open'); overlay.classList.add('show');
+                history.pushState({ sidebarOpen: true }, "");
+            } else {
+                sidebar.classList.remove('open'); overlay.classList.remove('show');
+            }
         }
+        window.addEventListener('popstate', () => {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('show');
+        });
 
         async function initChat() {
             currentUser = JSON.parse(localStorage.getItem('active_session'));
@@ -164,7 +271,7 @@
                 showOptions(MENU_MAIN);
                 fetchUserOrders(); 
             } else {
-                await botSpeak("Welcome to Aryanta Support. Please Sign In to access personalized order tracking and support features.");
+                await botSpeak("Welcome to Aryanta Support. Please Sign In to access personalized features.");
                 showOptions([{ text: "Sign In", action: "sign_in", primary: true }]);
             }
         }
@@ -175,30 +282,18 @@
                 const orders = await res.json();
                 allMyOrders = orders.filter(o => o.user_email === currentUser.email);
                 allMyOrders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                if(allMyOrders.length > 0) latestOrder = allMyOrders[0];
-            } catch(e) { console.error("Failed to pre-fetch orders"); }
+            } catch(e) { console.error("Database fetch failed"); }
         }
 
-        // Messaging Mechanics
-        async function botSpeak(htmlContent, delay = 600) {
+        async function botSpeak(htmlContent, delay = 500) {
             return new Promise(resolve => {
                 const typingId = "typing-" + Date.now();
-                chatHistory.innerHTML += `
-                    <div class="msg-row msg-bot" id="${typingId}">
-                        <div class="bot-icon"><i class="fas fa-robot"></i></div>
-                        <div class="bubble"><div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>
-                    </div>`;
+                chatHistory.innerHTML += `<div class="msg-row msg-bot" id="${typingId}"><div class="bot-icon"><i class="fas fa-robot"></i></div><div class="bubble"><div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></div>`;
                 chatHistory.scrollTop = chatHistory.scrollHeight;
 
                 setTimeout(() => {
-                    const typingEl = document.getElementById(typingId);
-                    if(typingEl) typingEl.remove();
-                    
-                    chatHistory.innerHTML += `
-                        <div class="msg-row msg-bot">
-                            <div class="bot-icon"><i class="fas fa-robot"></i></div>
-                            <div class="bubble">${htmlContent}</div>
-                        </div>`;
+                    document.getElementById(typingId).remove();
+                    chatHistory.innerHTML += `<div class="msg-row msg-bot"><div class="bot-icon"><i class="fas fa-robot"></i></div><div class="bubble">${htmlContent}</div></div>`;
                     chatHistory.scrollTop = chatHistory.scrollHeight;
                     resolve();
                 }, delay);
@@ -206,11 +301,7 @@
         }
 
         function userSpeak(text) {
-            chatActions.innerHTML = ""; // Disable buttons while processing
-            chatHistory.innerHTML += `
-                <div class="msg-row msg-user">
-                    <div class="bubble">${text}</div>
-                </div>`;
+            chatHistory.innerHTML += `<div class="msg-row msg-user"><div class="bubble">${text}</div></div>`;
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
 
@@ -226,217 +317,181 @@
             chatActions.innerHTML = html;
         }
 
-        // Custom Inputs Builder
         function showCustomInput(type, defaultValue, placeholder, nextAction) {
             let html = `<div class="chat-input-wrapper">`;
-            if (type === 'textarea') {
-                html += `<textarea id="chatInputVal" class="modern-input" placeholder="${placeholder}" style="min-height: 80px; margin-bottom: 0;"></textarea>`;
-            } else {
-                html += `<input type="${type}" id="chatInputVal" class="modern-input" value="${defaultValue}" placeholder="${placeholder}" style="margin-bottom: 0;">`;
-            }
-            html += `<button class="btn-prime w-100" onclick="submitCustomInput('${nextAction}')">Next <i class="fas fa-arrow-right"></i></button></div>`;
+            if (type === 'textarea') html += `<textarea id="chatInputVal" class="modern-input" placeholder="${placeholder}" style="min-height:80px;"></textarea>`;
+            else html += `<input type="${type}" id="chatInputVal" class="modern-input" value="${defaultValue}" placeholder="${placeholder}">`;
+            html += `<button class="btn-prime w-100" onclick="submitCustomInput('${nextAction}')">Submit <i class="fas fa-check"></i></button></div>`;
             chatActions.innerHTML = html;
         }
 
-        // Handle Custom Input Submit
         window.submitCustomInput = async function(action) {
             let val = document.getElementById('chatInputVal').value.trim();
             if (!val) return;
-            
+            chatActions.innerHTML = "";
             userSpeak(val);
             
             if (action === 'callback_step_2') {
                 window.tempCallbackPhone = val;
-                await botSpeak("Thank you. Please briefly describe why you need a call back so our executive can prepare the right information.");
-                showCustomInput('textarea', '', 'E.g., Query regarding a delayed refund...', 'callback_step_3');
-            } 
-            else if (action === 'callback_step_3') {
-                let desc = val;
-                await botSpeak("Submitting your request to our Concierge Team...", 400);
-                
+                await botSpeak("Please briefly describe why you need a call back.");
+                showCustomInput('textarea', '', 'Reason for callback...', 'callback_step_3');
+            } else if (action === 'callback_step_3') {
+                await botSpeak("Submitting request...", 400);
                 try {
-                    // Requires Firestore Database rules to allow writing to callback_requests
                     await db.collection('callback_requests').add({
-                        user_email: currentUser.email,
-                        user_name: currentUser.name,
-                        phone: window.tempCallbackPhone,
-                        description: desc,
-                        status: 'Pending',
-                        timestamp: new Date().toISOString()
+                        user_email: currentUser.email, phone: window.tempCallbackPhone, description: val, status: 'Pending', timestamp: new Date().toISOString()
                     });
-                    await botSpeak(`<strong style="color:var(--success);"><i class="fas fa-check-circle"></i> Request Received</strong><br>A concierge executive will call you at <strong>${window.tempCallbackPhone}</strong> shortly. Is there anything else I can help you with?`);
-                } catch(e) {
-                    await botSpeak("Sorry, there was an error saving your request. Please try again later.");
-                }
+                    await botSpeak(`<strong style="color:var(--success);"><i class="fas fa-check-circle"></i> Request Logged</strong><br>An executive will call you at ${window.tempCallbackPhone} shortly.`);
+                } catch(e) { await botSpeak("Error saving request. Please try again."); }
                 showOptions(MENU_MAIN);
             }
         }
 
-        // Order Selection Paginator
-        function showOrderSelection(page) {
-            let startIndex = page === 0 ? 0 : 3;
-            let endIndex = page === 0 ? 3 : 7;
-            let slice = allMyOrders.slice(startIndex, endIndex);
+        // --- DYNAMIC DATABASE PAGINATOR (STRICTLY 4 BUTTONS) ---
+        function showOrderSelection(page, purpose) {
+            let filteredList = allMyOrders;
+            
+            // If cancelling, filter OUT delivered or already cancelled items
+            if(purpose === 'cancel') {
+                filteredList = allMyOrders.filter(o => !o.status.toLowerCase().includes('cancel') && !o.status.toLowerCase().includes('deliver'));
+            }
 
+            if(filteredList.length === 0) {
+                botSpeak(purpose === 'cancel' ? "You have no active orders eligible for cancellation." : "No orders found.");
+                showOptions(MENU_MAIN);
+                return;
+            }
+
+            let start = page * 3;
+            let slice = filteredList.slice(start, start + 3);
+            
             let options = slice.map(o => ({
-                text: `Order #${o.order_no} - ${o.items[0].name}`,
-                action: `select_order_${o.order_no}`
+                text: `#${o.order_no} - ${o.items[0].name.substring(0, 18)}...`,
+                action: `${purpose}_select_${o.order_no}`
             }));
 
-            if (page === 0 && allMyOrders.length > 3) {
-                options.push({ text: "Not found", action: "track_order_page_1" });
-            } else if (page === 1 || (page === 0 && allMyOrders.length <= 3)) {
-                options.push({ text: "Not found", action: "track_order_not_found" });
+            // Force 4th Option
+            if (start + 3 < filteredList.length) {
+                options.push({ text: "Next 3 Orders...", action: `${purpose}_page_${page + 1}`, primary: true });
+            } else {
+                options.push({ text: "← Main Menu", action: "show_main" });
             }
 
             showOptions(options);
         }
 
+        // --- INVOICE GENERATOR ---
+        function generateAndPrintInvoice(orderNo) {
+            const order = allMyOrders.find(o => o.order_no === orderNo);
+            if(!order) return;
 
-        // Master Logic Router
-        async function handleUserChoice(action, text) {
-            userSpeak(text);
+            document.getElementById('invOrderNo').innerText = order.order_no;
+            document.getElementById('invDate').innerText = new Date(order.timestamp).toLocaleDateString();
+            document.getElementById('invCustName').innerText = order.delivery_name || currentUser.name;
+            document.getElementById('invCustEmail').innerText = order.user_email;
+            document.getElementById('invAddress').innerText = order.delivery_address;
             
-            // Dynamic Order Selection (Intercepts any select_order_ action)
-            if (action.startsWith("select_order_")) {
-                let orderNo = action.replace("select_order_", "");
-                let order = allMyOrders.find(o => o.order_no === orderNo);
-                
-                if(order) {
-                    const orderDate = new Date(order.timestamp);
-                    let expectedDate = order.expected_delivery ? new Date(order.expected_delivery) : new Date(orderDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-                    
-                    let report = `
-                        <strong>Order Status Report:</strong>
-                        <div class="chat-card">
-                            <p style="font-family:var(--font-mono); font-size:12px; margin-bottom:5px;">#${order.order_no}</p>
-                            <p style="font-weight:700;">${order.items[0].name}</p>
-                            <p style="color:var(--primary); font-weight:800; margin-top:5px; text-transform:uppercase; font-size:12px;">STATUS: ${order.status}</p>
-                            <div class="divider-elegant" style="margin: 10px 0;"></div>
-                            <p style="font-size:13px;"><strong>Expected Delivery:</strong> ${expectedDate.toLocaleDateString()}</p>
-                            <p style="font-size:13px; margin-top:5px;"><strong>Shipping To:</strong> ${order.delivery_address}</p>
-                        </div>
-                    `;
-                    await botSpeak(report, 800);
-                    await botSpeak("Do you need help with anything else?");
-                } else {
-                    await botSpeak("Sorry, I couldn't pull up the details for that order.");
-                }
-                showOptions(MENU_MAIN);
+            const tbody = document.getElementById('invTableBody');
+            tbody.innerHTML = '';
+            order.items.forEach((item, index) => {
+                tbody.innerHTML += `<tr><td style="padding:10px 0;">${index + 1}</td><td><strong>${item.name}</strong></td><td style="text-align:center;">${item.qty}</td><td style="text-align:right;">₹${item.price}</td><td style="text-align:right;"><strong>₹${item.price * item.qty}</strong></td></tr>`;
+            });
+
+            document.getElementById('invItemsTotal').innerText = `₹${order.financials.itemsTotal}`;
+            document.getElementById('invShipping').innerText = `₹${order.financials.shippingCost}`;
+            document.getElementById('invGrandTotal').innerText = `₹${order.financials.grandTotal}`;
+
+            // Trigger Print Dialog Immediately
+            setTimeout(() => { window.print(); }, 500);
+        }
+
+
+        // --- LOGIC ROUTER ---
+        async function handleUserChoice(action, text) {
+            if (!action.includes("show_") && !action.includes("_page_")) userSpeak(text);
+            chatActions.innerHTML = ""; // Clear actions
+
+            // Intercept Pagination
+            if (action.startsWith("track_page_")) return showOrderSelection(parseInt(action.split("_")[2]), "track");
+            if (action.startsWith("cancel_page_")) return showOrderSelection(parseInt(action.split("_")[2]), "cancel");
+            if (action.startsWith("invoice_page_")) return showOrderSelection(parseInt(action.split("_")[2]), "invoice");
+
+            // Intercept Tracking Selection
+            if (action.startsWith("track_select_")) {
+                let order = allMyOrders.find(o => o.order_no === action.replace("track_select_", ""));
+                let expected = order.expected_delivery ? new Date(order.expected_delivery).toLocaleDateString() : "Pending";
+                await botSpeak(`<strong>Tracking Report:</strong><div class="chat-card"><p style="font-family:monospace; font-size:12px;">#${order.order_no}</p><p style="font-weight:700;">${order.items[0].name}</p><p style="color:var(--primary); font-weight:800; font-size:12px; margin: 8px 0;">STATUS: ${order.status}</p><p style="font-size:13px;">Expected Delivery: ${expected}</p></div>`);
+                return showOptions(MENU_MAIN);
+            }
+
+            // Intercept Invoice Selection
+            if (action.startsWith("invoice_select_")) {
+                await botSpeak("Generating your secure Tax Invoice. The download/print window will open momentarily.");
+                generateAndPrintInvoice(action.replace("invoice_select_", ""));
+                setTimeout(() => { showOptions(MENU_MAIN); }, 1500);
                 return;
             }
 
-            // Fixed Action Routes
+            // Intercept Cancel Selection Step 1
+            if (action.startsWith("cancel_select_")) {
+                window.tempCancelOrder = allMyOrders.find(o => o.order_no === action.replace("cancel_select_", ""));
+                await botSpeak(`Why do you wish to cancel <strong>${window.tempCancelOrder.items[0].name}</strong>?`);
+                showOptions([
+                    { text: "Changed my mind", action: "cancel_reason" },
+                    { text: "Found better alternative", action: "cancel_reason" },
+                    { text: "Placed by mistake", action: "cancel_reason" },
+                    { text: "← Main Menu", action: "show_main" }
+                ]);
+                return;
+            }
+
             switch(action) {
-                case "show_more": showOptions(MENU_MORE); break;
+                // Menus
                 case "show_main": showOptions(MENU_MAIN); break;
+                case "show_menu_2": showOptions(MENU_2); break;
+                case "show_menu_3": showOptions(MENU_3); break;
+                case "show_menu_4": showOptions(MENU_4); break;
                 case "sign_in": window.location.href = "index.html"; break;
                 
-                case "track_order":
-                    if(allMyOrders.length === 0) {
-                        await botSpeak("I couldn't find any recent orders associated with your profile.");
-                        showOptions(MENU_MAIN);
-                    } else {
-                        await botSpeak("Which order would you like to track? Please select from your recent acquisitions:");
-                        showOrderSelection(0);
-                    }
-                    break;
-                    
-                case "track_order_page_1":
-                    await botSpeak("Here are some older orders from your ledger:");
-                    showOrderSelection(1);
-                    break;
-                    
-                case "track_order_not_found":
-                    await botSpeak("You can view your complete and detailed order history in your dedicated tracking ledger.");
-                    showOptions([
-                        { text: "Open Orders & Tracking", action: "go_track", primary: true }, 
-                        { text: "Main Menu", action: "show_main" }
-                    ]);
-                    break;
-                    
-                case "go_track":
-                    window.location.href = "track.html";
-                    break;
+                // Track & Cancel Triggers
+                case "track_order": await botSpeak("Which order would you like to track?"); showOrderSelection(0, "track"); break;
+                case "start_cancel": await botSpeak("Select an active order to cancel:"); showOrderSelection(0, "cancel"); break;
+                case "start_invoice": await botSpeak("Which order's invoice do you need?"); showOrderSelection(0, "invoice"); break;
 
-                case "refund_status":
-                    await botSpeak("Refunds are processed within 5-7 business days after a cancellation or return is approved. The amount will reflect in your original payment method.");
-                    showOptions(MENU_MAIN);
-                    break;
-                    
-                case "claim_warranty":
-                    window.location.href = "claim-warranty.html";
-                    break;
-                    
-                case "payment_issue":
-                    await botSpeak("If your amount was deducted but the order failed, don't worry. This is usually due to a banking timeout. The amount will automatically reverse to your account within 48 hours.");
-                    showOptions(MENU_MAIN);
-                    break;
-                    
-                case "call_back":
-                    let userPhone = currentUser.phone || "";
-                    await botSpeak("Please confirm the phone number where our executive should call you. You can update it if necessary.");
-                    showCustomInput('tel', userPhone, "Enter phone number", "callback_step_2");
-                    break;
+                // FAQs
+                case "refund_status": await botSpeak("Refunds reflect in your original payment method within 5-7 business days."); showOptions(MENU_MAIN); break;
+                case "report_delay": await botSpeak("We have expedited your shipping with our logistics partner. You'll receive an SMS update shortly."); showOptions(MENU_MAIN); break;
+                case "mod_address": await botSpeak("Addresses can only be modified before dispatch via the 'Orders & Tracking' page."); showOptions([{ text: "Go to Tracking", action: "go_track", primary:true }, { text: "Main Menu", action: "show_main" }]); break;
+                case "missing_item": await botSpeak("Please initiate a 'Return' request from the Tracking page. We will review packing footage instantly."); showOptions(MENU_MAIN); break;
+                case "exchange_policy": await botSpeak("We offer a 7-day no-questions-asked replacement for defects, and 14 days for size exchanges."); showOptions(MENU_MAIN); break;
+                case "claim_warranty": window.location.href = "claim-warranty.html"; break;
+                case "go_track": window.location.href = "track.html"; break;
+                case "payment_issue": await botSpeak("Failed payments usually reverse automatically within 48 hours via your bank."); showOptions(MENU_MAIN); break;
+                case "check_prime": await botSpeak("You are logged in as a Prime Member! Enjoy free express shipping and priority concierge support."); showOptions(MENU_MAIN); break;
+                case "call_back": await botSpeak("Confirm your phone number for the callback."); showCustomInput('tel', currentUser.phone || "", "Enter phone number", "callback_step_2"); break;
 
-                case "start_cancel":
-                    if(!latestOrder) {
-                        await botSpeak("You don't have any active orders to cancel.");
-                        showOptions(MENU_MAIN);
-                        return;
-                    }
-                    
-                    const s = latestOrder.status.toLowerCase();
-                    if(s.includes('cancel') || s.includes('deliver') || s.includes('ship')) {
-                        await botSpeak(`Your latest order (#${latestOrder.order_no}) is currently marked as <strong>${latestOrder.status}</strong> and cannot be cancelled automatically via chat.`);
-                        showOptions(MENU_MAIN);
-                    } else {
-                        await botSpeak(`I can help cancel Order #${latestOrder.order_no} (${latestOrder.items[0].name}). Why do you wish to cancel?`);
-                        showOptions([
-                            { text: "Changed my mind", action: "cancel_reason" },
-                            { text: "Found better alternative", action: "cancel_reason" },
-                            { text: "Placed by mistake", action: "cancel_reason" }
-                        ]);
-                    }
-                    break;
-                
+                // Cancel Execution
                 case "cancel_reason":
                     window.tempCancelReason = text;
-                    await botSpeak("Are you absolutely sure you want to cancel this order? Shipping charges are strictly non-refundable.");
-                    showOptions([
-                        { text: "Yes, Confirm Cancellation", action: "confirm_cancel", danger: true },
-                        { text: "No, Keep Order", action: "show_main" }
-                    ]);
+                    await botSpeak("Shipping charges are strictly non-refundable. Confirm cancellation?");
+                    showOptions([ { text: "Yes, Cancel Order", action: "confirm_cancel", danger: true }, { text: "No, Keep It", action: "show_main" } ]);
                     break;
 
                 case "confirm_cancel":
-                    await botSpeak("Processing your cancellation request...", 500);
+                    await botSpeak("Processing...", 400);
                     try {
-                        const res = await fetch(`${API_URL}/update-order`, {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ 
-                                id: latestOrder.id, 
-                                status: "Cancelled",
-                                reason: window.tempCancelReason,
-                                notes: "Cancelled via Concierge Chatbot"
-                            })
+                        const res = await fetch(`${API_URL}/update-order`, { method: 'POST', headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ id: window.tempCancelOrder.id, status: "Cancelled", reason: window.tempCancelReason, notes: "Support Bot" })
                         });
-                        
                         if(res.ok) {
-                            latestOrder.status = "Cancelled"; 
-                            await botSpeak(`<strong style="color:var(--danger);"><i class="fas fa-check-circle"></i> Item Cancelled.</strong><br>Your order #${latestOrder.order_no} has been successfully cancelled.`);
-                        } else { throw new Error(); }
-                    } catch(e) {
-                        await botSpeak("I encountered an error communicating with the database. Please try again later or request a callback.");
-                    }
-                    
-                    setTimeout(() => { showOptions(MENU_MAIN); }, 1500);
+                            window.tempCancelOrder.status = "Cancelled"; 
+                            await botSpeak(`<strong style="color:var(--danger);">Cancelled.</strong> Order #${window.tempCancelOrder.order_no} has been cancelled.`);
+                        } else throw new Error();
+                    } catch(e) { await botSpeak("Database error. Please try again."); }
+                    setTimeout(() => showOptions(MENU_MAIN), 1500);
                     break;
             }
         }
-
-        // Boot
         setTimeout(initChat, 300);
     </script>
 </body>
