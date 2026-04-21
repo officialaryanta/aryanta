@@ -3,273 +3,355 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MLZS Live Election Results</title>
-    <style>
-        :root { 
-            --primary: #0f2942; 
-            --accent: #d4af37; 
-            --bg: #f8fafc; 
-            --card-bg: #ffffff; 
-            --text-main: #1e293b;
-            --text-light: #64748b;
-        }
-
-        body { 
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
-            background-color: var(--bg); 
-            margin: 0; 
-            padding: 0; 
-            color: var(--text-main); 
-        }
-
-        /* --- FETCHING DATA LOADER --- */
-        #loader-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--primary);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            transition: opacity 0.4s ease;
-        }
-
-        .spinner {
-            width: 60px;
-            height: 60px;
-            border: 6px solid rgba(212, 175, 55, 0.1);
-            border-top: 6px solid var(--accent);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loader-text {
-            margin-top: 20px;
-            color: white;
-            font-weight: 600;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            font-size: 13px;
-        }
-
-        /* --- LAYOUT --- */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .header { 
-            text-align: center;
-            padding: 30px 15px;
-            background: var(--primary);
-            color: white;
-            border-radius: 0 0 25px 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-
-        h1 { 
-            margin: 0; 
-            font-size: 1.6rem;
-            letter-spacing: 1px;
-            text-transform: uppercase; 
-        }
-
-        .total-votes-badge { 
-            display: inline-block;
-            margin-top: 12px;
-            background: var(--accent);
-            color: var(--primary);
-            padding: 8px 20px;
-            border-radius: 50px;
-            font-size: 16px;
-            font-weight: 800;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-
-        /* --- DASHBOARD GRID --- */
-        #dashboard-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
-            gap: 25px; 
-        }
-
-        .result-card { 
-            background: var(--card-bg); 
-            border-radius: 16px; 
-            padding: 24px; 
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
-            border-top: 5px solid var(--accent);
-        }
-
-        .result-card h2 { 
-            color: var(--primary); 
-            margin: 0 0 20px 0; 
-            font-size: 1.3rem; 
-            border-bottom: 2px solid #f1f5f9;
-            padding-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        /* --- CANDIDATE BARS --- */
-        .candidate-entry {
-            margin-bottom: 20px;
-        }
-
-        .candidate-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            margin-bottom: 6px;
-        }
-
-        .cand-name { font-weight: 700; font-size: 15px; color: var(--text-main); }
-        .cand-stats { font-size: 13px; color: var(--text-light); }
-        .cand-percent { font-weight: 800; color: var(--primary); font-size: 15px; }
-
-        .progress-track {
-            width: 100%;
-            height: 10px;
-            background: #e2e8f0;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #0f2942, #1e4d7a);
-            border-radius: 10px;
-            transition: width 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        /* --- MOBILE OPTIMIZATION --- */
-        @media (max-width: 480px) {
-            h1 { font-size: 1.3rem; }
-            .container { padding: 10px; }
-            #dashboard-grid { grid-template-columns: 1fr; }
-            .result-card { padding: 18px; }
-        }
-    </style>
+    <title>Aryanta | Prime Exclusive</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-    <div id="loader-overlay">
+    <div id="pageLoader" class="page-loader">
         <div class="spinner"></div>
-        <div class="loader-text">Fetching Live Results...</div>
+        <p class="loader-text">Loading Prime Experience...</p>
     </div>
 
-    <div class="header">
-        <h1>📡 Live Realtime Results</h1>
-        <div class="total-votes-badge" id="total-vote-display">Total Votes: 0</div>
-    </div>
-
-    <div class="container">
-        <div id="dashboard-grid">
+    <header class="top-bar glass-effect">
+        <div class="nav-left">
+            <div class="menu-trigger" id="menuBtn"><i class="fas fa-bars-staggered"></i></div>
+            <div class="brand-logo" onclick="location.href='index.html'">ARYANTA<span class="prime-dot">.</span></div>
+        </div>
+        <div class="nav-search">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="searchInput" placeholder="Search premium collections...">
+        </div>
+        <div class="nav-actions">
+            <button class="login-trigger premium-hover" id="accountBtn">Sign In</button>
+            <div class="cart-icon" id="cartBtn">
+                <i class="fas fa-shopping-bag"></i>
+                <span class="badge" id="cartBadge" style="opacity: 0; transform: scale(0);">0</span>
             </div>
+        </div>
+    </header>
+
+    <aside class="side-panel" id="sidebar">
+        <div class="panel-header">
+            <div class="user-profile">
+                <img id="sidebarAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Guest" alt="avatar" class="avatar-img">
+                <div class="user-greeting">
+                    <span id="sidebarUser">Welcome Guest</span>
+                    <small id="sidebarRole">Prime Member</small>
+                </div>
+            </div>
+        </div>
+        <nav class="panel-links">
+            <a href="index.html" class="stagger-link"><i class="fas fa-compass"></i> Discover</a>
+            <a href="#" id="sidebarAccountLink" class="stagger-link"><i class="fas fa-user-circle"></i> My Profile</a>
+            <a href="track.html" class="stagger-link"><i class="fas fa-box-open"></i> Orders & Tracking</a>
+            <a href="warrenty.html" class="stagger-link"><i class="fas fa-shield-alt"></i> Claim Warranty</a>
+            <a href="support.html" class="stagger-link"><i class="fas fa-headset"></i> Concierge Support</a>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="btn-sidebar-logout" id="sidebarLogoutBtn" onclick="logOut()" style="display:none;">
+                <i class="fas fa-sign-out-alt"></i> Secure Logout
+            </button>
+            <p>Aryanta Prime © 2026</p>
+        </div>
+    </aside>
+
+    <div class="dimmer" id="overlay"></div>
+
+    <div id="toastNotification" class="toast-notification">
+        <i class="fas fa-check-circle"></i> <span id="toastMessage">Action successful</span>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+    <div class="custom-alert-overlay" id="customAlertOverlay">
+        <div class="custom-alert-box">
+            <i class="fas fa-info-circle alert-icon"></i>
+            <h3 id="alertTitle">Notice</h3>
+            <p id="alertMessage">Message goes here.</p>
+            <div class="alert-actions">
+                <button class="btn-cancel" id="alertCancelBtn" onclick="closeAlert(false)" style="display:none;">Cancel</button>
+                <button class="btn-prime" id="alertOkBtn" onclick="closeAlert(true)">Got it</button>
+            </div>
+        </div>
+    </div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyA2LFjhw79KbX8uAToobgj732aYOsuy74k",
-            authDomain: "vote-3df4d.firebaseapp.com",
-            databaseURL: "https://vote-3df4d-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "vote-3df4d",
-            storageBucket: "vote-3df4d.firebasestorage.app",
-            messagingSenderId: "39376456060",
-            appId: "1:39376456060:web:f1423fbddff9eebceb3cf9"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const categories = ["Head Boy", "Head Girl", "Cultural Captain", "Sports Captain", "Discipline Captain"];
-        let initialLoad = true;
-
-        function updateUI(allVotes) {
-            // Updated spelling to "Total Votes"
-            document.getElementById('total-vote-display').innerText = `Total Votes: ${allVotes.length}`;
+    <div class="modal" id="authModal">
+        <div class="modal-content auth-content">
+            <span class="exit-modal" onclick="closeAllModals()"><i class="fas fa-times"></i></span>
             
-            const tally = {};
-            categories.forEach(c => tally[c] = {});
+            <div id="loginView" class="fade-view">
+                <h2>Welcome Back</h2>
+                <p class="sub-text">Enter your email to receive a secure OTP.</p>
+                <input type="email" id="loginEmail" class="modern-input" placeholder="Email Address">
+                <button class="btn-prime w-100" id="loginBtn" onclick="handleLogin()">Send Secure OTP</button>
+                <p class="switch-prompt">New to Aryanta? <span onclick="goToStep('signup')">Create an account</span></p>
+            </div>
+            
+            <div id="signupView" class="fade-view" style="display:none;">
+                <h2>Join Prime</h2>
+                <p class="sub-text">Experience premium shopping.</p>
+                <input type="text" id="regName" class="modern-input" placeholder="Full Name" required>
+                <input type="email" id="regEmail" class="modern-input" placeholder="Email Address" required>
+                <input type="tel" id="regPhone" class="modern-input" placeholder="Phone Number" required>
+                <input type="text" id="regAddress" class="modern-input" placeholder="Street Address">
+                <div class="input-row">
+                    <input type="text" id="regCity" class="modern-input" placeholder="City">
+                    <input type="text" id="regState" class="modern-input" placeholder="State">
+                </div>
+                <input type="text" id="regPincode" class="modern-input" placeholder="Pincode (Mandatory)">
+                <button class="btn-prime w-100" id="signupBtn" onclick="handleSignup()">Send OTP</button>
+                <p class="switch-prompt">Already a member? <span onclick="goToStep('login')">Sign In</span></p>
+            </div>
+            
+            <div id="otpView" class="fade-view" style="display:none;">
+                <h2>Secure Verification</h2>
+                <p class="sub-text">Enter the 4-digit code sent to your email.</p>
+                <div class="otp-container" id="otpInputs">
+                    <input type="text" class="otp-box" maxlength="1"><input type="text" class="otp-box" maxlength="1">
+                    <input type="text" class="otp-box" maxlength="1"><input type="text" class="otp-box" maxlength="1">
+                </div>
+                <button class="btn-prime w-100" onclick="completeAuth()">Verify & Proceed</button>
+            </div>
+        </div>
+    </div>
 
-            allVotes.forEach(vote => {
-                for (let cat in vote) {
-                    if (tally[cat]) {
-                        let candidate = vote[cat];
-                        tally[cat][candidate] = (tally[cat][candidate] || 0) + 1;
-                    }
-                }
-            });
-
-            const grid = document.getElementById('dashboard-grid');
-            grid.innerHTML = '';
-
-            categories.forEach(cat => {
-                const card = document.createElement('div');
-                card.className = 'result-card';
+    <div class="full-page" id="fullAccountPage">
+        <div class="full-page-header glass-effect">
+            <button class="btn-back premium-hover" onclick="closeFullPage('fullAccountPage')"><i class="fas fa-arrow-left"></i> Back</button>
+            <h2>My Profile</h2>
+            <button class="btn-logout" onclick="logOut()"><i class="fas fa-power-off"></i> Logout</button>
+        </div>
+        <div class="full-page-body account-body">
+            <div class="account-grid">
+                <div class="profile-card">
+                    <h3>Personal Identity</h3>
+                    <div class="avatar-selection">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" class="avatar-opt" onclick="selectAvatar(this.src)">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" class="avatar-opt" onclick="selectAvatar(this.src)">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Jack" class="avatar-opt" onclick="selectAvatar(this.src)">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Luna" class="avatar-opt" onclick="selectAvatar(this.src)">
+                    </div>
+                    
+                    <div class="input-row">
+                        <div class="form-group w-100"><label>Full Name</label><input type="text" id="accName" class="modern-input editable-input"></div>
+                        <div class="form-group w-100"><label>Email Address</label><input type="text" id="accEmail" class="modern-input read-only-input" readonly></div>
+                    </div>
+                    <div class="form-group"><label>Phone Number</label><input type="text" id="accPhone" class="modern-input editable-input"></div>
+                    
+                    <h4 class="section-divider-title">Default Shipping Address</h4>
+                    <div class="form-group"><label>Street Address</label><input type="text" id="accAddress" class="modern-input editable-input"></div>
+                    <div class="input-row">
+                        <div class="form-group w-100"><label>City</label><input type="text" id="accCity" class="modern-input editable-input"></div>
+                        <div class="form-group w-100"><label>State</label><input type="text" id="accState" class="modern-input editable-input"></div>
+                        <div class="form-group w-100"><label>Pincode</label><input type="text" id="accPincode" class="modern-input editable-input"></div>
+                    </div>
+                    
+                    <button class="btn-prime w-100 mt-10" onclick="saveProfileDetails()"><i class="fas fa-save"></i> Save Profile Details</button>
+                </div>
                 
-                const categoryVotes = tally[cat];
-                const totalCatVotes = Object.values(categoryVotes).reduce((a, b) => a + b, 0);
-                const sorted = Object.keys(categoryVotes).sort((a, b) => categoryVotes[b] - categoryVotes[a]);
+                <div class="address-card">
+                    <h3>Address Book</h3>
+                    <p class="sub-text">Manage your extra shipping locations.</p>
+                    <div id="addressList" class="address-list"></div>
+                    
+                    <button class="btn-outline w-100 mt-20" onclick="document.getElementById('newAddressForm').classList.toggle('show')"><i class="fas fa-plus"></i> Add New Location</button>
+                    
+                    <div id="newAddressForm" class="new-address-form" style="display:none;">
+                        <textarea id="newAddText" class="modern-input mt-10" placeholder="Full Address"></textarea>
+                        <div class="input-row">
+                            <input type="text" id="newCity" class="modern-input" placeholder="City">
+                            <input type="text" id="newState" class="modern-input" placeholder="State">
+                            <input type="text" id="newPin" class="modern-input" placeholder="Pincode">
+                        </div>
+                        <button class="btn-prime w-100" onclick="saveNewAddress()">Save to Address Book</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                let html = `<h2>${cat}</h2>`;
+    <div class="full-page" id="fullProductPage">
+        <div class="full-page-header glass-effect">
+            <button class="btn-back premium-hover" onclick="closeFullPage('fullProductPage')"><i class="fas fa-arrow-left"></i> Back</button>
+        </div>
+        <div class="full-page-body product-page-body">
+            <div class="product-hero">
+                <div class="product-visual prime-visual-bg">
+                    <img id="fpImage" src="" alt="Product" class="main-prod-img">
+                </div>
+                <div class="product-data">
+                    <span class="category-tag"><i class="fas fa-crown"></i> Prime Exclusive</span>
+                    <h1 id="fpName" class="display-title">Product Name</h1>
+                    <div class="rating-stars">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i> <span class="verified-text">4.9 (Verified)</span>
+                    </div>
+                    <div class="price-block">
+                        <h2 id="fpPrice" class="display-price">₹0</h2>
+                        <span class="inclusive-taxes">Inclusive of all taxes</span>
+                    </div>
+                    
+                    <div class="divider-elegant"></div>
+                    <p id="fpDesc" class="display-desc">Description goes here.</p>
+                    
+                    <div class="action-dock">
+                        <button class="btn-add-cart" id="addToBagBtn" onclick="addToCartFromPage()"><i class="fas fa-shopping-bag"></i> Add to Bag</button>
+                        <button class="btn-buy-now" onclick="buyNowFromPage()"><i class="fas fa-bolt"></i> Buy It Now</button>
+                    </div>
+                    <div class="trust-badges">
+                        <div class="badge-item"><i class="fas fa-shield-check"></i> Secure TXN</div>
+                        <div class="badge-item"><i class="fas fa-shipping-fast"></i> Express Dispatch</div>
+                        <div class="badge-item"><i class="fas fa-undo"></i> Easy Returns</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="related-section mt-40">
+                <h3 class="section-title">Curated For You</h3>
+                <div id="relatedProductsShelf"></div>
+            </div>
+        </div>
+    </div>
 
-                if (sorted.length === 0) {
-                    html += `<p style="color:#94a3b8; text-align:center;">Waiting for first vote...</p>`;
-                } else {
-                    sorted.forEach(name => {
-                        const count = categoryVotes[name];
-                        const percent = ((count / totalCatVotes) * 100).toFixed(1);
-                        html += `
-                            <div class="candidate-entry">
-                                <div class="candidate-meta">
-                                    <span class="cand-name">${name}</span>
-                                    <span class="cand-stats">${count} votes</span>
-                                    <span class="cand-percent">${percent}%</span>
-                                </div>
-                                <div class="progress-track">
-                                    <div class="progress-bar" style="width: ${percent}%"></div>
-                                </div>
-                            </div>`;
-                    });
-                }
-                card.innerHTML = html;
-                grid.appendChild(card);
-            });
+    <div class="full-page right-slide" id="fullCartPage">
+        <div class="full-page-header glass-effect">
+            <button class="btn-back premium-hover" onclick="closeFullPage('fullCartPage')"><i class="fas fa-arrow-left"></i> Back</button>
+            <h2>Your Shopping Bag</h2>
+            <div style="width: 70px;"></div>
+        </div>
+        <div class="full-page-body cart-body">
+            <div class="cart-layout">
+                <div class="cart-items-container" id="cartItemsContainer"></div>
+                <div class="cart-summary-panel">
+                    <h3>Order Summary</h3>
+                    <div class="summary-line"><span>Subtotal</span> <strong id="cartSubtotal">₹0</strong></div>
+                    <div class="summary-line"><span>Estimated Shipping</span> <strong style="color:var(--text-muted); font-size: 13px;">Calculated Next</strong></div>
+                    <div class="divider-elegant"></div>
+                    <div class="summary-line total-line"><span>Total</span> <strong id="cartTotalValue">₹0</strong></div>
+                    <button class="btn-prime w-100 btn-large mt-20" onclick="openCheckout()">Secure Checkout <i class="fas fa-arrow-right" style="margin-left: 8px;"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            // Handle Loader Removal
-            if (initialLoad) {
-                const loader = document.getElementById('loader-overlay');
-                loader.style.opacity = '0';
-                setTimeout(() => loader.style.display = 'none', 500);
-                initialLoad = false;
-            }
-        }
+    <div class="full-page right-slide" id="fullCheckoutPage">
+        <div class="full-page-header glass-effect">
+            <button class="btn-back premium-hover" onclick="closeFullPage('fullCheckoutPage')"><i class="fas fa-arrow-left"></i> Back</button>
+            <h2>Secure Checkout</h2>
+            <div style="width: 70px;"></div>
+        </div>
+        <div class="full-page-body checkout-body" style="padding: 40px 5%; max-width: 800px; margin: 0 auto;">
+            
+            <div id="checkoutStep1" class="fade-view step-container checkout-panel">
+                <div class="step-indicator">Step 1 of 2: Shipping</div>
+                <h2>Delivery Details</h2>
+                
+                <button class="btn-outline w-100 mb-15" onclick="useDefaultAddress()"><i class="fas fa-magic"></i> Autofill Base Account Address</button>
 
-        const votesRef = ref(db, 'votes');
-        onValue(votesRef, (snapshot) => {
-            const data = snapshot.val();
-            const allVotes = [];
-            if (data) {
-                for (let id in data) {
-                    if (data[id].selections) allVotes.push(data[id].selections);
-                }
-            }
-            updateUI(allVotes);
-        });
-    </script>
+                <div class="saved-addresses" id="checkoutAddressList" style="margin-bottom: 15px;"></div>
+                
+                <div class="divider-elegant text-center"><span class="bg-surface px-10">Or enter new delivery info</span></div>
+                
+                <input type="text" id="chkName" class="modern-input" placeholder="Recipient's Full Name">
+                <input type="tel" id="chkPhone" class="modern-input" placeholder="Recipient's Phone Number">
+                <textarea id="chkAddress" class="modern-input" placeholder="Complete Street Address"></textarea>
+                <div class="input-row">
+                    <input type="text" id="chkCity" class="modern-input" placeholder="City">
+                    <input type="text" id="chkPincode" class="modern-input" placeholder="Pincode (Crucial)">
+                </div>
+                <button class="btn-prime w-100 btn-large mt-10" id="calcShippingBtn" onclick="calculateShippingAndProceed()">Next: Payment <i class="fas fa-arrow-right"></i></button>
+            </div>
+
+            <div id="checkoutStep2" class="fade-view step-container checkout-panel" style="display:none;">
+                <div class="step-indicator">Step 2 of 2: Payment</div>
+                <h2>Review & Pay</h2>
+                
+                <div class="mini-receipt">
+                    <div class="summary-line">Items Total: <strong id="sumItems">₹0</strong></div>
+                    <div class="summary-line">Shipping Fee: <strong id="sumShipping">₹0</strong></div>
+                    <div class="divider-elegant"></div>
+                    <div class="summary-line total-line">Grand Total: <strong id="sumTotal" style="color:var(--primary);">₹0</strong></div>
+                </div>
+
+                <h3 class="mt-20 mb-15">Select Payment Method</h3>
+                <div class="payment-options">
+                    <label class="pay-radio premium-radio">
+                        <input type="radio" name="payMethod" value="online" checked>
+                        <div class="radio-content">
+                            <strong><i class="fas fa-credit-card"></i> Pay Online (Razorpay)</strong>
+                            <span>100% Secure encrypted transaction.</span>
+                        </div>
+                    </label>
+                    <label class="pay-radio premium-radio">
+                        <input type="radio" name="payMethod" value="cod">
+                        <div class="radio-content">
+                            <strong><i class="fas fa-money-bill-wave"></i> Cash on Delivery</strong>
+                            <span>Pay shipping now, remainder on delivery.</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="action-row mt-20" style="display: flex; gap: 15px;">
+                    <button class="btn-cancel w-100" onclick="document.getElementById('checkoutStep2').style.display='none'; document.getElementById('checkoutStep1').style.display='block';">Back</button>
+                    <button class="btn-prime w-100" id="payBtn" onclick="processPayment()"><i class="fas fa-lock"></i> Authorize Payment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="orderSuccessModal">
+        <div class="modal-content success-content receipt-wrapper">
+            <div class="success-animation-container">
+                <svg class="checkmark-glorious" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                    <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
+                    <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                </svg>
+            </div>
+            <h1 class="success-title">Payment Successful</h1>
+            <p class="success-subtitle">Your premium order is confirmed.</p>
+            
+            <div class="physical-receipt-slip">
+                <div class="receipt-cutout top"></div>
+                <div class="receipt-header-brand">
+                    <h2>ARYANTA PRIME</h2>
+                    <p>Official Invoice</p>
+                </div>
+                <div class="receipt-meta">
+                    <p><span>Order No:</span> <strong id="recOrderNo"></strong></p>
+                    <p><span>Shipping To:</span> <strong id="recAddress" style="text-align: right; max-width: 60%;"></strong></p>
+                </div>
+                <div class="receipt-divider-dashed"></div>
+                <table class="receipt-table-modern">
+                    <thead><tr><th>Item Details</th><th>Qty</th><th class="text-right">Amount</th></tr></thead>
+                    <tbody id="recTableBody"></tbody>
+                </table>
+                <div class="receipt-divider-dashed"></div>
+                <div class="receipt-totals-modern">
+                    <div class="calc-row"><span>Subtotal</span> <span id="recItemsTotal"></span></div>
+                    <div class="calc-row"><span>Shipping</span> <span id="recShipping"></span></div>
+                    <div class="calc-row grand-calc"><span>Paid Total</span> <span id="recGrandTotal"></span></div>
+                </div>
+                <div class="receipt-cutout bottom"></div>
+            </div>
+            
+            <button class="btn-prime w-100 btn-large mt-20" onclick="closeOrderSuccess()"><i class="fas fa-shopping-bag"></i> Continue Shopping</button>
+        </div>
+    </div>
+
+    <main class="main-content">
+        <section class="hero-section">
+            <h1 class="animate-up">Redefining Elegance.</h1>
+            <p class="animate-up delay-1">Discover products engineered for absolute perfection.</p>
+        </section>
+        
+        <div class="product-grid" id="productShelf"></div>
+    </main>
+
+    <script src="java.js"></script>
 </body>
 </html>
