@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Concierge Support | Aryanta Prime</title>
+    
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* --- CHAT BOT SPECIFIC STYLES --- */
+        .support-wrapper { max-width: 800px; margin: 0 auto; padding: 20px 5%; height: calc(100vh - 100px); display: flex; flex-direction: column; }
+        
+        .chat-header { text-align: center; margin-bottom: 20px; }
+        .chat-header h1 { font-size: 28px; font-weight: 800; letter-spacing: -1px; }
+        
+        .chat-container { flex-grow: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 24px; box-shadow: var(--shadow-md); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        
+        .chat-history { flex-grow: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; background: #f8fafc; scroll-behavior: smooth; }
+        
+        /* Message Bubbles */
+        .msg-row { display: flex; width: 100%; animation: chatPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; transform: translateY(20px); }
+        .msg-bot { justify-content: flex-start; }
+        .msg-user { justify-content: flex-end; }
+        
+        .bubble { max-width: 80%; padding: 15px 20px; border-radius: 20px; font-size: 15px; line-height: 1.5; position: relative; box-shadow: var(--shadow-sm); word-wrap: break-word; }
+        .msg-bot .bubble { background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+        .msg-user .bubble { background: var(--primary); color: white; border-bottom-right-radius: 4px; }
+        
+        .bot-icon { width: 35px; height: 35px; border-radius: 50%; background: var(--accent); color: white; display: flex; justify-content: center; align-items: center; margin-right: 15px; font-size: 14px; flex-shrink: 0; align-self: flex-end; }
+
+        /* Quick Replies & Inputs Area */
+        .chat-actions { background: var(--surface); border-top: 1px solid var(--border); padding: 20px; min-height: 80px; display: flex; flex-direction: column; justify-content: center; }
+        .quick-replies { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        
+        .btn-reply { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 12px 20px; border-radius: 100px; font-size: 14px; font-weight: 700; cursor: pointer; transition: var(--transition); }
+        .btn-reply:hover { border-color: var(--primary); background: var(--bg-color); transform: translateY(-2px); }
+        .btn-reply.primary { background: var(--primary); color: white; border-color: var(--primary); }
+        .btn-reply.primary:hover { background: var(--primary-hover); color: white; }
+        .btn-reply.danger { border-color: var(--danger); color: var(--danger); }
+        .btn-reply.danger:hover { background: var(--danger); color: white; }
+
+        /* Internal Chat Elements */
+        .chat-card { border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-top: 10px; background: var(--bg-color); }
+        
+        @keyframes chatPop { to { opacity: 1; transform: translateY(0); } }
+
+        /* Typing Indicator */
+        .typing-indicator { display: flex; gap: 5px; padding: 5px; }
+        .dot { width: 8px; height: 8px; background: var(--text-muted); border-radius: 50%; animation: blink 1.4s infinite both; }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink { 0% { opacity: 0.2; } 20% { opacity: 1; } 100% { opacity: 0.2; } }
+        
+        /* Custom Chat Inputs */
+        .chat-input-wrapper { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 500px; margin: 0 auto; }
+    </style>
+</head>
+<body>
+
+    <header class="top-bar glass-effect">
+        <div class="nav-left">
+            <div class="menu-trigger" id="menuBtn" onclick="toggleSidebar()"><i class="fas fa-bars-staggered"></i></div>
+            <div class="brand-logo" onclick="location.href='index.html'">ARYANTA<span class="prime-dot">.</span></div>
+        </div>
+        <div class="nav-actions">
+            <button class="login-trigger premium-hover" id="accountBtn">Sign In</button>
+        </div>
+    </header>
+
+    <aside class="side-panel" id="sidebar">
+        <div class="panel-header">
+            <div class="user-profile">
+                <img id="sidebarAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Guest" alt="avatar" class="avatar-img">
+                <div class="user-greeting">
+                    <span id="sidebarUser">Welcome Guest</span>
+                    <small id="sidebarRole">Prime Member</small>
+                </div>
+            </div>
+        </div>
+        <nav class="panel-links">
+            <a href="index.html" class="stagger-link"><i class="fas fa-compass"></i> Discover</a>
+            <a href="index.html" class="stagger-link" id="sidebarAccountLink"><i class="fas fa-user-circle"></i> My Profile</a>
+            <a href="track.html" class="stagger-link"><i class="fas fa-box-open"></i> Orders & Tracking</a>
+            <a href="claim-warranty.html" class="stagger-link"><i class="fas fa-shield-alt"></i> Claim Warranty</a>
+            <a href="support.html" class="stagger-link" style="color: var(--primary); background: var(--bg-color); border-right: 3px solid var(--primary);"><i class="fas fa-headset"></i> Concierge Support</a>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="btn-sidebar-logout" id="sidebarLogoutBtn" onclick="logOut()" style="display:none;">
+                <i class="fas fa-sign-out-alt"></i> Secure Logout
+            </button>
+            <p>Aryanta Prime © 2026</p>
+        </div>
+    </aside>
+
+    <div class="dimmer" id="overlay" onclick="toggleSidebar()"></div>
+
+    <div id="productShelf" style="display:none;"></div><div id="cartItemsContainer" style="display:none;"></div><span id="cartBadge" style="display:none;"></span><div id="cartSubtotal" style="display:none;"></div><div id="cartTotalValue" style="display:none;"></div><div class="modal" id="authModal" style="display:none;"></div><div class="custom-alert-overlay" id="customAlertOverlay" style="display:none;"></div>
+
+    <main class="main-content" style="padding-top: 80px;">
+        <div class="support-wrapper">
+            <div class="chat-header">
+                <h1>Aryanta Assistant</h1>
+                <p class="sub-text">AI-powered premium support, instantly available.</p>
+            </div>
+
+            <div class="chat-container">
+                <div class="chat-history" id="chatHistory">
+                    </div>
+                
+                <div class="chat-actions" id="chatActions">
+                    </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="java.js"></script>
+
+    <script>
+        const chatHistory = document.getElementById('chatHistory');
+        const chatActions = document.getElementById('chatActions');
+        const API_URL = "https://rough-field-c679.official-aryanta.workers.dev";
+        
+        let currentUser = null;
+        let allMyOrders = [];
+        let latestOrder = null;
+
+        // Menu sets
+        const MENU_MAIN = [
+            { text: "Where is my order?", action: "track_order" },
+            { text: "Cancel my order", action: "start_cancel" },
+            { text: "Refund status", action: "refund_status" },
+            { text: "Other Options...", action: "show_more" }
+        ];
+
+        const MENU_MORE = [
+            { text: "Claim my items warranty", action: "claim_warranty" },
+            { text: "Payment issue", action: "payment_issue" },
+            { text: "Get a call back", action: "call_back" },
+            { text: "← Back to main menu", action: "show_main" }
+        ];
+
+        // UI Core
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('show');
+        }
+
+        async function initChat() {
+            currentUser = JSON.parse(localStorage.getItem('active_session'));
+            
+            if(currentUser) {
+                const accBtn = document.getElementById('accountBtn');
+                const firstName = currentUser.name.split(' ')[0];
+                const savedAvatar = currentUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.email}`;
+                accBtn.innerHTML = `<img src="${savedAvatar}" class="nav-avatar" style="margin-right:8px;"> <span>${firstName}</span>`;
+                accBtn.onclick = null;
+                
+                await botSpeak(`Hello ${firstName}, I am your Aryanta Virtual Assistant. How can I assist you today?`);
+                showOptions(MENU_MAIN);
+                fetchUserOrders(); 
+            } else {
+                await botSpeak("Welcome to Aryanta Support. Please Sign In to access personalized order tracking and support features.");
+                showOptions([{ text: "Sign In", action: "sign_in", primary: true }]);
+            }
+        }
+
+        async function fetchUserOrders() {
+            try {
+                const res = await fetch(`${API_URL}/get-orders?email=${encodeURIComponent(currentUser.email)}`);
+                const orders = await res.json();
+                allMyOrders = orders.filter(o => o.user_email === currentUser.email);
+                allMyOrders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                if(allMyOrders.length > 0) latestOrder = allMyOrders[0];
+            } catch(e) { console.error("Failed to pre-fetch orders"); }
+        }
+
+        // Messaging Mechanics
+        async function botSpeak(htmlContent, delay = 600) {
+            return new Promise(resolve => {
+                const typingId = "typing-" + Date.now();
+                chatHistory.innerHTML += `
+                    <div class="msg-row msg-bot" id="${typingId}">
+                        <div class="bot-icon"><i class="fas fa-robot"></i></div>
+                        <div class="bubble"><div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>
+                    </div>`;
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+
+                setTimeout(() => {
+                    const typingEl = document.getElementById(typingId);
+                    if(typingEl) typingEl.remove();
+                    
+                    chatHistory.innerHTML += `
+                        <div class="msg-row msg-bot">
+                            <div class="bot-icon"><i class="fas fa-robot"></i></div>
+                            <div class="bubble">${htmlContent}</div>
+                        </div>`;
+                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                    resolve();
+                }, delay);
+            });
+        }
+
+        function userSpeak(text) {
+            chatActions.innerHTML = ""; // Disable buttons while processing
+            chatHistory.innerHTML += `
+                <div class="msg-row msg-user">
+                    <div class="bubble">${text}</div>
+                </div>`;
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function showOptions(optionsArray) {
+            let html = '<div class="quick-replies">';
+            optionsArray.forEach(opt => {
+                let cls = "btn-reply";
+                if(opt.danger) cls += " danger";
+                if(opt.primary) cls += " primary";
+                html += `<button class="${cls}" onclick="handleUserChoice('${opt.action}', '${opt.text.replace(/'/g, "\\'")}')">${opt.text}</button>`;
+            });
+            html += '</div>';
+            chatActions.innerHTML = html;
+        }
+
+        // Custom Inputs Builder
+        function showCustomInput(type, defaultValue, placeholder, nextAction) {
+            let html = `<div class="chat-input-wrapper">`;
+            if (type === 'textarea') {
+                html += `<textarea id="chatInputVal" class="modern-input" placeholder="${placeholder}" style="min-height: 80px; margin-bottom: 0;"></textarea>`;
+            } else {
+                html += `<input type="${type}" id="chatInputVal" class="modern-input" value="${defaultValue}" placeholder="${placeholder}" style="margin-bottom: 0;">`;
+            }
+            html += `<button class="btn-prime w-100" onclick="submitCustomInput('${nextAction}')">Next <i class="fas fa-arrow-right"></i></button></div>`;
+            chatActions.innerHTML = html;
+        }
+
+        // Handle Custom Input Submit
+        window.submitCustomInput = async function(action) {
+            let val = document.getElementById('chatInputVal').value.trim();
+            if (!val) return;
+            
+            userSpeak(val);
+            
+            if (action === 'callback_step_2') {
+                window.tempCallbackPhone = val;
+                await botSpeak("Thank you. Please briefly describe why you need a call back so our executive can prepare the right information.");
+                showCustomInput('textarea', '', 'E.g., Query regarding a delayed refund...', 'callback_step_3');
+            } 
+            else if (action === 'callback_step_3') {
+                let desc = val;
+                await botSpeak("Submitting your request to our Concierge Team...", 400);
+                
+                try {
+                    // Requires Firestore Database rules to allow writing to callback_requests
+                    await db.collection('callback_requests').add({
+                        user_email: currentUser.email,
+                        user_name: currentUser.name,
+                        phone: window.tempCallbackPhone,
+                        description: desc,
+                        status: 'Pending',
+                        timestamp: new Date().toISOString()
+                    });
+                    await botSpeak(`<strong style="color:var(--success);"><i class="fas fa-check-circle"></i> Request Received</strong><br>A concierge executive will call you at <strong>${window.tempCallbackPhone}</strong> shortly. Is there anything else I can help you with?`);
+                } catch(e) {
+                    await botSpeak("Sorry, there was an error saving your request. Please try again later.");
+                }
+                showOptions(MENU_MAIN);
+            }
+        }
+
+        // Order Selection Paginator
+        function showOrderSelection(page) {
+            let startIndex = page === 0 ? 0 : 3;
+            let endIndex = page === 0 ? 3 : 7;
+            let slice = allMyOrders.slice(startIndex, endIndex);
+
+            let options = slice.map(o => ({
+                text: `Order #${o.order_no} - ${o.items[0].name}`,
+                action: `select_order_${o.order_no}`
+            }));
+
+            if (page === 0 && allMyOrders.length > 3) {
+                options.push({ text: "Not found", action: "track_order_page_1" });
+            } else if (page === 1 || (page === 0 && allMyOrders.length <= 3)) {
+                options.push({ text: "Not found", action: "track_order_not_found" });
+            }
+
+            showOptions(options);
+        }
+
+
+        // Master Logic Router
+        async function handleUserChoice(action, text) {
+            userSpeak(text);
+            
+            // Dynamic Order Selection (Intercepts any select_order_ action)
+            if (action.startsWith("select_order_")) {
+                let orderNo = action.replace("select_order_", "");
+                let order = allMyOrders.find(o => o.order_no === orderNo);
+                
+                if(order) {
+                    const orderDate = new Date(order.timestamp);
+                    let expectedDate = order.expected_delivery ? new Date(order.expected_delivery) : new Date(orderDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+                    
+                    let report = `
+                        <strong>Order Status Report:</strong>
+                        <div class="chat-card">
+                            <p style="font-family:var(--font-mono); font-size:12px; margin-bottom:5px;">#${order.order_no}</p>
+                            <p style="font-weight:700;">${order.items[0].name}</p>
+                            <p style="color:var(--primary); font-weight:800; margin-top:5px; text-transform:uppercase; font-size:12px;">STATUS: ${order.status}</p>
+                            <div class="divider-elegant" style="margin: 10px 0;"></div>
+                            <p style="font-size:13px;"><strong>Expected Delivery:</strong> ${expectedDate.toLocaleDateString()}</p>
+                            <p style="font-size:13px; margin-top:5px;"><strong>Shipping To:</strong> ${order.delivery_address}</p>
+                        </div>
+                    `;
+                    await botSpeak(report, 800);
+                    await botSpeak("Do you need help with anything else?");
+                } else {
+                    await botSpeak("Sorry, I couldn't pull up the details for that order.");
+                }
+                showOptions(MENU_MAIN);
+                return;
+            }
+
+            // Fixed Action Routes
+            switch(action) {
+                case "show_more": showOptions(MENU_MORE); break;
+                case "show_main": showOptions(MENU_MAIN); break;
+                case "sign_in": window.location.href = "index.html"; break;
+                
+                case "track_order":
+                    if(allMyOrders.length === 0) {
+                        await botSpeak("I couldn't find any recent orders associated with your profile.");
+                        showOptions(MENU_MAIN);
+                    } else {
+                        await botSpeak("Which order would you like to track? Please select from your recent acquisitions:");
+                        showOrderSelection(0);
+                    }
+                    break;
+                    
+                case "track_order_page_1":
+                    await botSpeak("Here are some older orders from your ledger:");
+                    showOrderSelection(1);
+                    break;
+                    
+                case "track_order_not_found":
+                    await botSpeak("You can view your complete and detailed order history in your dedicated tracking ledger.");
+                    showOptions([
+                        { text: "Open Orders & Tracking", action: "go_track", primary: true }, 
+                        { text: "Main Menu", action: "show_main" }
+                    ]);
+                    break;
+                    
+                case "go_track":
+                    window.location.href = "track.html";
+                    break;
+
+                case "refund_status":
+                    await botSpeak("Refunds are processed within 5-7 business days after a cancellation or return is approved. The amount will reflect in your original payment method.");
+                    showOptions(MENU_MAIN);
+                    break;
+                    
+                case "claim_warranty":
+                    window.location.href = "claim-warranty.html";
+                    break;
+                    
+                case "payment_issue":
+                    await botSpeak("If your amount was deducted but the order failed, don't worry. This is usually due to a banking timeout. The amount will automatically reverse to your account within 48 hours.");
+                    showOptions(MENU_MAIN);
+                    break;
+                    
+                case "call_back":
+                    let userPhone = currentUser.phone || "";
+                    await botSpeak("Please confirm the phone number where our executive should call you. You can update it if necessary.");
+                    showCustomInput('tel', userPhone, "Enter phone number", "callback_step_2");
+                    break;
+
+                case "start_cancel":
+                    if(!latestOrder) {
+                        await botSpeak("You don't have any active orders to cancel.");
+                        showOptions(MENU_MAIN);
+                        return;
+                    }
+                    
+                    const s = latestOrder.status.toLowerCase();
+                    if(s.includes('cancel') || s.includes('deliver') || s.includes('ship')) {
+                        await botSpeak(`Your latest order (#${latestOrder.order_no}) is currently marked as <strong>${latestOrder.status}</strong> and cannot be cancelled automatically via chat.`);
+                        showOptions(MENU_MAIN);
+                    } else {
+                        await botSpeak(`I can help cancel Order #${latestOrder.order_no} (${latestOrder.items[0].name}). Why do you wish to cancel?`);
+                        showOptions([
+                            { text: "Changed my mind", action: "cancel_reason" },
+                            { text: "Found better alternative", action: "cancel_reason" },
+                            { text: "Placed by mistake", action: "cancel_reason" }
+                        ]);
+                    }
+                    break;
+                
+                case "cancel_reason":
+                    window.tempCancelReason = text;
+                    await botSpeak("Are you absolutely sure you want to cancel this order? Shipping charges are strictly non-refundable.");
+                    showOptions([
+                        { text: "Yes, Confirm Cancellation", action: "confirm_cancel", danger: true },
+                        { text: "No, Keep Order", action: "show_main" }
+                    ]);
+                    break;
+
+                case "confirm_cancel":
+                    await botSpeak("Processing your cancellation request...", 500);
+                    try {
+                        const res = await fetch(`${API_URL}/update-order`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ 
+                                id: latestOrder.id, 
+                                status: "Cancelled",
+                                reason: window.tempCancelReason,
+                                notes: "Cancelled via Concierge Chatbot"
+                            })
+                        });
+                        
+                        if(res.ok) {
+                            latestOrder.status = "Cancelled"; 
+                            await botSpeak(`<strong style="color:var(--danger);"><i class="fas fa-check-circle"></i> Item Cancelled.</strong><br>Your order #${latestOrder.order_no} has been successfully cancelled.`);
+                        } else { throw new Error(); }
+                    } catch(e) {
+                        await botSpeak("I encountered an error communicating with the database. Please try again later or request a callback.");
+                    }
+                    
+                    setTimeout(() => { showOptions(MENU_MAIN); }, 1500);
+                    break;
+            }
+        }
+
+        // Boot
+        setTimeout(initChat, 300);
+    </script>
+</body>
+</html>

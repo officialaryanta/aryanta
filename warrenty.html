@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claim Warranty | Aryanta Prime</title>
+    
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* Premium Tabs Layout */
+        .warranty-container { max-width: 900px; margin: 0 auto; padding: 40px 5%; }
+        .tab-header { display: flex; gap: 20px; border-bottom: 2px solid var(--border); margin-bottom: 40px; }
+        .tab-btn { background: transparent; border: none; font-size: 16px; font-weight: 800; color: var(--text-muted); padding: 15px 5px; cursor: pointer; transition: var(--transition); border-bottom: 3px solid transparent; margin-bottom: -2px; }
+        .tab-btn:hover { color: var(--primary); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+        .tab-content { display: none; animation: slideUpFade 0.4s ease forwards; }
+        .tab-content.active { display: block; }
+
+        /* Panels and UI */
+        .warranty-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 40px; box-shadow: var(--shadow-sm); margin-bottom: 25px; }
+        .panel-title { font-size: 22px; font-weight: 800; margin-bottom: 20px; }
+        
+        /* Drag & Drop Image Zone */
+        .drop-zone { border: 2px dashed var(--border); border-radius: 16px; padding: 50px 20px; text-align: center; cursor: pointer; transition: var(--transition); background: var(--bg-color); margin-top: 10px; margin-bottom: 20px; }
+        .drop-zone:hover, .drop-zone.dragover { border-color: var(--primary); background: var(--surface); }
+        .drop-zone i { font-size: 40px; color: var(--text-muted); margin-bottom: 15px; }
+        .drop-zone p { font-size: 14px; font-weight: 600; color: var(--text-main); }
+        .drop-zone .sub-text { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+
+        /* Reusing Invoice Styles */
+        .invoice-box { border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; background: var(--bg-color); text-align: left; }
+        .invoice-box-title { font-size: 12px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        .invoice-info-text { font-size: 14px; margin-bottom: 6px; color: var(--text-main); font-weight: 600; }
+        .invoice-info-text i { color: var(--primary); width: 20px; text-align: center; margin-right: 5px; }
+
+        /* Status colors for history */
+        .status-progress { color: #d97706; background: #fef3c7; padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+        .status-rejected { color: #991b1b; background: #fee2e2; padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+        .status-approved { color: #166534; background: #dcfce3; padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+    <header class="top-bar glass-effect">
+        <div class="nav-left">
+            <div class="menu-trigger" id="menuBtn" onclick="toggleSidebar()"><i class="fas fa-bars-staggered"></i></div>
+            <div class="brand-logo" onclick="location.href='index.html'">ARYANTA<span class="prime-dot">.</span></div>
+        </div>
+        <div class="nav-actions">
+            <button class="login-trigger premium-hover" id="accountBtn">Sign In</button>
+        </div>
+    </header>
+
+    <aside class="side-panel" id="sidebar">
+        <div class="panel-header">
+            <div class="user-profile">
+                <img id="sidebarAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Guest" alt="avatar" class="avatar-img">
+                <div class="user-greeting">
+                    <span id="sidebarUser">Welcome Guest</span>
+                    <small id="sidebarRole">Prime Member</small>
+                </div>
+            </div>
+        </div>
+        <nav class="panel-links">
+            <a href="index.html" class="stagger-link"><i class="fas fa-compass"></i> Discover</a>
+            <a href="index.html" class="stagger-link" id="sidebarAccountLink"><i class="fas fa-user-circle"></i> My Profile</a>
+            <a href="track.html" class="stagger-link"><i class="fas fa-box-open"></i> Orders & Tracking</a>
+            <a href="claim-warranty.html" class="stagger-link" style="color: var(--primary); background: var(--bg-color); border-right: 3px solid var(--primary);"><i class="fas fa-shield-alt"></i> Claim Warranty</a>
+            <a href="support.html" class="stagger-link"><i class="fas fa-headset"></i> Concierge Support</a>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="btn-sidebar-logout" id="sidebarLogoutBtn" onclick="logOut()" style="display:none;">
+                <i class="fas fa-sign-out-alt"></i> Secure Logout
+            </button>
+            <p>Aryanta Prime © 2026</p>
+        </div>
+    </aside>
+
+    <div class="dimmer" id="overlay" onclick="toggleSidebar()"></div>
+    <div id="toastNotification" class="toast-notification"><i class="fas fa-check-circle"></i> <span id="toastMessage">Action successful</span></div>
+    
+    <div class="custom-alert-overlay" id="customAlertOverlay">
+        <div class="custom-alert-box">
+            <i class="fas fa-info-circle alert-icon"></i>
+            <h3 id="alertTitle">Notice</h3>
+            <p id="alertMessage">Message goes here.</p>
+            <div class="alert-actions">
+                <button class="btn-cancel" id="alertCancelBtn" onclick="closeAlert(false)" style="display:none;">Cancel</button>
+                <button class="btn-prime" id="alertOkBtn" onclick="closeAlert(true)">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="productShelf" style="display:none;"></div><div id="cartItemsContainer" style="display:none;"></div><span id="cartBadge" style="display:none;"></span><div id="cartSubtotal" style="display:none;"></div><div id="cartTotalValue" style="display:none;"></div><div class="modal" id="authModal" style="display:none;"></div>
+
+    <main class="main-content" style="padding-top: 100px;">
+        <div class="warranty-container">
+            <div class="text-center mb-15">
+                <h1 style="font-size: 36px; font-weight: 800; letter-spacing: -1px;">Aryanta Care.</h1>
+                <p class="sub-text">Initiate and track your premium warranty claims.</p>
+            </div>
+
+            <div class="tab-header">
+                <button class="tab-btn active" onclick="switchTab('newClaimTab', this)">Initiate Claim</button>
+                <button class="tab-btn" onclick="switchTab('historyTab', this)">See Progress Report</button>
+            </div>
+
+            <div id="newClaimTab" class="tab-content active">
+                
+                <div class="warranty-panel" id="step1_verify">
+                    <h2 class="panel-title">Identify Your Product</h2>
+                    <p class="sub-text mb-15">Enter the Serial Number (Order ID) attached by our company.</p>
+                    <input type="text" id="serialInput" class="modern-input" placeholder="e.g. ARY-123456">
+                    <button class="btn-prime w-100 mt-10" id="btnVerify" onclick="verifySerial()"><i class="fas fa-search"></i> Verify Serial Number</button>
+                    
+                    <div id="notFoundContainer" style="display:none; margin-top: 25px; border-top: 1px solid var(--border); padding-top: 25px;">
+                        <p style="color: var(--danger); font-weight: 700; margin-bottom: 15px;"><i class="fas fa-exclamation-triangle"></i> No serial number found associated with your profile.</p>
+                        <button class="btn-outline w-100" onclick="showOtherProductForm()">Claim Warranty for Other Product Made By Onther Profile.</button>
+                    </div>
+                </div>
+
+                <div class="warranty-panel" id="step2_other_verify" style="display:none;">
+                    <button class="btn-back mb-15" style="padding:0; background: transparent; border: none; cursor: pointer; font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px;" onclick="resetVerification()"><i class="fas fa-arrow-left"></i> Back</button>
+                    <h2 class="panel-title">External Verification</h2>
+                    <p class="sub-text mb-15">Please enter the phone number associated with this serial number to verify ownership.</p>
+                    <input type="text" id="otherSerialInput" class="modern-input" placeholder="Serial Number (Order ID)">
+                    <input type="tel" id="otherPhoneInput" class="modern-input" placeholder="Registered Phone Number">
+                    <button class="btn-prime w-100 mt-10" onclick="verifyOtherSerial()"><i class="fas fa-shield-alt"></i> Verify Details</button>
+                </div>
+
+                <div class="warranty-panel" id="step3_details" style="display:none;">
+                    <div class="invoice-box">
+                        <div class="invoice-box-title"><i class="fas fa-box-open"></i> Product Verified</div>
+                        <p class="invoice-info-text"><i class="fas fa-barcode"></i> Serial: <strong id="detSerial" style="font-family: var(--font-mono);">---</strong></p>
+                        <p class="invoice-info-text"><i class="fas fa-shopping-bag"></i> Item: <strong id="detItemName">---</strong></p>
+                        <p class="invoice-info-text"><i class="fas fa-calendar-check"></i> Purchase Date: <strong id="detDate">---</strong></p>
+                        <p class="invoice-info-text"><i class="fas fa-user-check"></i> Registered To: <strong id="detPhone">---</strong></p>
+                    </div>
+                    <button class="btn-prime w-100" onclick="proceedToClaimForm()"><i class="fas fa-file-contract"></i> Claim Warranty</button>
+                </div>
+
+                <div class="warranty-panel" id="step4_form" style="display:none;">
+                    <button class="btn-back mb-15" style="padding:0; background: transparent; border: none; cursor: pointer; font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px;" onclick="resetVerification()"><i class="fas fa-arrow-left"></i> Cancel</button>
+                    <h2 class="panel-title">Warranty Claim Form</h2>
+                    
+                    <label style="font-size: 13px; font-weight: 700; color: var(--text-muted);">Why are you claiming the warranty?</label>
+                    <select id="claimReason" class="modern-input mt-10">
+                        <option value="Product malfunctioning">Product is malfunctioning</option>
+                        <option value="Physical defect found">Physical defect found</option>
+                        <option value="Stopped working entirely">Stopped working entirely</option>
+                        <option value="Other">Other</option>
+                    </select>
+
+                    <label style="font-size: 13px; font-weight: 700; color: var(--text-muted); display: block; margin-top: 15px;">Upload Image of Item (Mandatory)</label>
+                    <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                    <div class="drop-zone" id="dropZone">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Drag and drop image here</p>
+                        <p class="sub-text">or click to browse from your device</p>
+                    </div>
+
+                    <label style="font-size: 13px; font-weight: 700; color: var(--text-muted);">Detailed Description</label>
+                    <textarea id="claimDesc" class="modern-input mt-10" placeholder="Please describe the exact issue you are facing..." style="min-height: 120px;"></textarea>
+
+                    <button class="btn-prime w-100 btn-large mt-10" id="submitClaimBtn" onclick="submitClaim()"><i class="fas fa-paper-plane"></i> Submit Claim to Aryanta</button>
+                </div>
+
+            </div>
+
+            <div id="historyTab" class="tab-content">
+                <div class="warranty-panel">
+                    <h2 class="panel-title">Warranty Claim Progress Report</h2>
+                    <p class="sub-text mb-15">Track the status of your existing claims.</p>
+                    <div id="historyContainer">
+                        <p class="text-center mt-20" style="color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Fetching records...</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="java.js"></script>
+    
+    <script>
+        // Data context for current claim
+        let claimContext = { order: null, item: null };
+        let selectedImageBase64 = null;
+
+        // UI Controls
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('show');
+        }
+
+        function closeAlert(confirm) {
+            document.getElementById('customAlertOverlay').style.display = 'none';
+        }
+
+        // UI Tabs Switcher
+        function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            btnElement.classList.add('active');
+
+            if(tabId === 'historyTab') {
+                loadClaimHistory();
+            }
+        }
+
+        // Setup Header Avatar properly
+        setTimeout(() => {
+            const user = JSON.parse(localStorage.getItem('active_session'));
+            if(user) {
+                const accBtn = document.getElementById('accountBtn');
+                const firstName = user.name.split(' ')[0];
+                const savedAvatar = user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`;
+                accBtn.innerHTML = `<img src="${savedAvatar}" class="nav-avatar" style="margin-right:8px; width: 30px; height: 30px; border-radius: 50%;"> <span>${firstName}</span>`;
+                accBtn.onclick = null;
+            } else {
+                showAlert("You must be signed in to access Warranty features.", "Access Denied", false, () => { window.location.href="index.html"; });
+            }
+        }, 500);
+
+        // Verification Logic 1: Check Current User Profile
+        async function verifySerial() {
+            const serial = document.getElementById('serialInput').value.trim();
+            if(!serial) return showAlert("Please enter a Serial Number.");
+            
+            const user = JSON.parse(localStorage.getItem('active_session'));
+            toggleButtonState('btnVerify', true, 'Verifying...');
+
+            try {
+                // We use order_no as the Serial ID proxy
+                const snapshot = await db.collection("orders").where("order_no", "==", serial).where("user_email", "==", user.email).get();
+                if(snapshot.empty) {
+                    document.getElementById('notFoundContainer').style.display = 'block';
+                } else {
+                    document.getElementById('notFoundContainer').style.display = 'none';
+                    claimContext.order = snapshot.docs[0].data();
+                    renderProductDetails(claimContext.order);
+                }
+            } catch (e) {
+                showAlert("Network Error: Could not verify serial.");
+            } finally {
+                toggleButtonState('btnVerify', false, '<i class="fas fa-search"></i> Verify Serial Number');
+            }
+        }
+
+        function showOtherProductForm() {
+            document.getElementById('step1_verify').style.display = 'none';
+            document.getElementById('step2_other_verify').style.display = 'block';
+        }
+
+        function resetVerification() {
+            document.getElementById('step1_verify').style.display = 'block';
+            document.getElementById('step2_other_verify').style.display = 'none';
+            document.getElementById('step3_details').style.display = 'none';
+            document.getElementById('step4_form').style.display = 'none';
+            document.getElementById('notFoundContainer').style.display = 'none';
+            document.getElementById('serialInput').value = "";
+            claimContext = { order: null, item: null };
+            selectedImageBase64 = null;
+            document.getElementById('dropZone').innerHTML = `<i class="fas fa-cloud-upload-alt"></i><p>Drag and drop image here</p><p class="sub-text">or click to browse from your device</p>`;
+        }
+
+        // Verification Logic 2: External Purchases
+        async function verifyOtherSerial() {
+            const serial = document.getElementById('otherSerialInput').value.trim();
+            const phone = document.getElementById('otherPhoneInput').value.trim();
+            if(!serial || !phone) return showAlert("Please provide both Serial and Phone Number.");
+
+            try {
+                const snapshot = await db.collection("orders").where("order_no", "==", serial).where("delivery_phone", "==", phone).get();
+                if(snapshot.empty) {
+                    showAlert("Authentication Failed. No matching purchase found for these details.");
+                } else {
+                    claimContext.order = snapshot.docs[0].data();
+                    renderProductDetails(claimContext.order);
+                }
+            } catch (e) {
+                showAlert("Network Error: Could not verify external serial.");
+            }
+        }
+
+        function renderProductDetails(order) {
+            document.getElementById('step1_verify').style.display = 'none';
+            document.getElementById('step2_other_verify').style.display = 'none';
+            
+            claimContext.item = order.items[0]; // Take first item
+            
+            document.getElementById('detSerial').innerText = order.order_no;
+            document.getElementById('detItemName').innerText = claimContext.item.name;
+            document.getElementById('detDate').innerText = new Date(order.timestamp).toLocaleDateString();
+            document.getElementById('detPhone').innerText = order.delivery_phone;
+            
+            document.getElementById('step3_details').style.display = 'block';
+        }
+
+        function proceedToClaimForm() {
+            document.getElementById('step3_details').style.display = 'none';
+            document.getElementById('step4_form').style.display = 'block';
+        }
+
+        // Drag & Drop Image Logic
+        const dropZone = document.getElementById('dropZone');
+        const imageInput = document.getElementById('imageInput');
+
+        dropZone.addEventListener('click', () => imageInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if(e.dataTransfer.files.length) handleImageFile(e.dataTransfer.files[0]);
+        });
+        imageInput.addEventListener('change', function() {
+            if(this.files.length) handleImageFile(this.files[0]);
+        });
+
+        function handleImageFile(file) {
+            if(!file.type.startsWith('image/')) return showAlert('Please upload a valid image file (JPG, PNG).');
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                selectedImageBase64 = e.target.result;
+                dropZone.innerHTML = `
+                    <img src="${selectedImageBase64}" style="max-height: 180px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);"> 
+                    <p style="margin-top:15px; color:var(--success); font-weight:800;"><i class="fas fa-check-circle"></i> Image Successfully Uploaded</p>
+                    <p class="sub-text">Click to replace</p>`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Submit Claim to Firebase
+        async function submitClaim() {
+            const reason = document.getElementById('claimReason').value;
+            const desc = document.getElementById('claimDesc').value.trim();
+            
+            if(!selectedImageBase64) return showAlert('Uploading an image of the item is mandatory.');
+            if(!desc) return showAlert('Please provide a detailed description of the issue.');
+            
+            const user = JSON.parse(localStorage.getItem('active_session'));
+            const claimId = "CLM-" + Date.now().toString().slice(-6);
+            
+            const claimData = {
+                claim_id: claimId,
+                order_no: claimContext.order.order_no,
+                item_name: claimContext.item.name,
+                user_email: user.email,
+                registered_phone: claimContext.order.delivery_phone,
+                reason: reason,
+                description: desc,
+                image: selectedImageBase64,
+                status: 'Claim in progress', // Default status
+                timestamp: new Date().toISOString()
+            };
+            
+            toggleButtonState('submitClaimBtn', true, 'Submitting...');
+            
+            try {
+                await db.collection('warranty_claims').doc(claimId).set(claimData);
+                showToast('Warranty claim in progress');
+                
+                // Reset and redirect to history
+                resetVerification();
+                switchTab('historyTab', document.querySelectorAll('.tab-btn')[1]);
+                
+            } catch(e) {
+                showAlert('Failed to submit claim. Ensure Firebase rules allow writing to warranty_claims.');
+            } finally {
+                toggleButtonState('submitClaimBtn', false, '<i class="fas fa-paper-plane"></i> Submit Claim to Aryanta');
+            }
+        }
+
+        // Fetch History
+        async function loadClaimHistory() {
+            const user = JSON.parse(localStorage.getItem('active_session'));
+            const container = document.getElementById('historyContainer');
+            
+            try {
+                const snapshot = await db.collection('warranty_claims').where('user_email', '==', user.email).get();
+                if(snapshot.empty) {
+                    container.innerHTML = `
+                        <div class="text-center" style="padding: 40px; border: 1px dashed var(--border); border-radius: 16px;">
+                            <i class="fas fa-box-open" style="font-size: 40px; color: var(--border); margin-bottom: 15px;"></i>
+                            <p class="sub-text">No warranty claims initiated yet.</p>
+                        </div>`;
+                    return;
+                }
+                
+                let html = '';
+                // Sort locally by timestamp descending
+                const claims = snapshot.docs.map(doc => doc.data()).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+                
+                claims.forEach(data => {
+                    let statusClass = 'status-progress';
+                    let statusText = data.status;
+                    
+                    const lowerStatus = data.status.toLowerCase();
+                    if(lowerStatus.includes('cancel') || lowerStatus.includes('reject')) {
+                        statusClass = 'status-rejected';
+                        statusText = "Claim Cancelled - Cannot be claimable";
+                    } else if(lowerStatus.includes('approve') || lowerStatus.includes('accept')) {
+                        statusClass = 'status-approved';
+                    }
+                    
+                    html += `
+                    <div class="invoice-box" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap: 15px;">
+                        <div>
+                            <span class="invoice-box-title" style="border:none; margin:0; padding:0;">Claim ID: ${data.claim_id}</span>
+                            <h4 style="font-size: 18px; margin-top:5px; margin-bottom: 5px;">${data.item_name}</h4>
+                            <p class="sub-text" style="font-family: var(--font-mono); font-size:12px;">Serial: ${data.order_no}</p>
+                            <p class="sub-text" style="font-size:12px; margin-top:3px;"><i class="fas fa-info-circle"></i> Reason: ${data.reason}</p>
+                        </div>
+                        <div style="text-align:right;">
+                            <span class="${statusClass}">${statusText}</span>
+                            <p style="font-size:12px; font-weight:700; color:var(--text-muted); margin-top:10px;">Filed on: ${new Date(data.timestamp).toLocaleDateString()}</p>
+                        </div>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            } catch(e) {
+                container.innerHTML = '<p class="text-center" style="color:var(--danger);"><i class="fas fa-exclamation-triangle"></i> Failed to sync ledger.</p>';
+            }
+        }
+    </script>
+</body>
+</html>
