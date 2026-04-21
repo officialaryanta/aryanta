@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Aryanta | Prime Exclusive</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -22,16 +22,16 @@
 
     <header class="top-bar glass-effect">
         <div class="nav-left">
-            <div class="menu-trigger" id="menuBtn"><i class="fas fa-bars-staggered"></i></div>
+            <div class="menu-trigger" onclick="openSidebar()"><i class="fas fa-bars-staggered"></i></div>
             <div class="brand-logo" onclick="location.href='index.html'">ARYANTA<span class="prime-dot">.</span></div>
         </div>
-        <div class="nav-search">
-            <i class="fas fa-search search-icon"></i>
-            <input type="text" id="searchInput" placeholder="Search premium collections...">
+        <div class="nav-search ai-search-bar">
+            <i class="fas fa-sparkles ai-icon"></i>
+            <input type="text" id="searchInput" placeholder="Ask AI to find premium collections...">
         </div>
         <div class="nav-actions">
             <button class="login-trigger premium-hover" id="accountBtn">Sign In</button>
-            <div class="cart-icon" id="cartBtn">
+            <div class="cart-icon" onclick="openUI('fullCartPage')">
                 <i class="fas fa-shopping-bag"></i>
                 <span class="badge" id="cartBadge" style="opacity: 0; transform: scale(0);">0</span>
             </div>
@@ -52,7 +52,7 @@
             <a href="index.html" class="stagger-link"><i class="fas fa-compass"></i> Discover</a>
             <a href="#" id="sidebarAccountLink" class="stagger-link"><i class="fas fa-user-circle"></i> My Profile</a>
             <a href="track.html" class="stagger-link"><i class="fas fa-box-open"></i> Orders & Tracking</a>
-            <a href="warrenty.html" class="stagger-link"><i class="fas fa-shield-alt"></i> Claim Warranty</a>
+            <a href="claim-warrenty.html" class="stagger-link"><i class="fas fa-shield-alt"></i> Claim Warranty</a>
             <a href="support.html" class="stagger-link"><i class="fas fa-headset"></i> Concierge Support</a>
         </nav>
         <div class="sidebar-footer">
@@ -63,7 +63,7 @@
         </div>
     </aside>
 
-    <div class="dimmer" id="overlay"></div>
+    <div class="dimmer" id="overlay" onclick="history.back()"></div>
 
     <div id="toastNotification" class="toast-notification">
         <i class="fas fa-check-circle"></i> <span id="toastMessage">Action successful</span>
@@ -71,19 +71,19 @@
 
     <div class="custom-alert-overlay" id="customAlertOverlay">
         <div class="custom-alert-box">
-            <i class="fas fa-info-circle alert-icon"></i>
+            <div class="alert-icon-wrapper"><i class="fas fa-info-circle"></i></div>
             <h3 id="alertTitle">Notice</h3>
             <p id="alertMessage">Message goes here.</p>
             <div class="alert-actions">
                 <button class="btn-cancel" id="alertCancelBtn" onclick="closeAlert(false)" style="display:none;">Cancel</button>
-                <button class="btn-prime" id="alertOkBtn" onclick="closeAlert(true)">Got it</button>
+                <button class="btn-prime-alert" id="alertOkBtn" onclick="closeAlert(true)">Got it</button>
             </div>
         </div>
     </div>
 
     <div class="modal" id="authModal">
         <div class="modal-content auth-content">
-            <span class="exit-modal" onclick="closeAllModals()"><i class="fas fa-times"></i></span>
+            <span class="exit-modal" onclick="history.back()"><i class="fas fa-times"></i></span>
             
             <div id="loginView" class="fade-view">
                 <h2>Welcome Back</h2>
@@ -123,13 +123,13 @@
 
     <div class="full-page" id="fullAccountPage">
         <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="closeFullPage('fullAccountPage')"><i class="fas fa-arrow-left"></i> Back</button>
+            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
             <h2>My Profile</h2>
-            <button class="btn-logout" onclick="logOut()"><i class="fas fa-power-off"></i> Logout</button>
+            <button class="btn-logout-header premium-hover" onclick="logOut()"><i class="fas fa-power-off"></i> Logout</button>
         </div>
         <div class="full-page-body account-body">
             <div class="account-grid">
-                <div class="profile-card">
+                <div class="profile-card panel-box">
                     <h3>Personal Identity</h3>
                     <div class="avatar-selection">
                         <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" class="avatar-opt" onclick="selectAvatar(this.src)">
@@ -155,30 +155,34 @@
                     <button class="btn-prime w-100 mt-10" onclick="saveProfileDetails()"><i class="fas fa-save"></i> Save Profile Details</button>
                 </div>
                 
-                <div class="address-card">
+                <div class="address-card panel-box">
                     <h3>Address Book</h3>
                     <p class="sub-text">Manage your extra shipping locations.</p>
                     <div id="addressList" class="address-list"></div>
                     
-                    <button class="btn-outline w-100 mt-20" onclick="document.getElementById('newAddressForm').classList.toggle('show')"><i class="fas fa-plus"></i> Add New Location</button>
+                    <button class="btn-outline w-100 mt-20" onclick="document.getElementById('newAddressForm').style.display='block'"><i class="fas fa-plus"></i> Add New Location</button>
                     
-                    <div id="newAddressForm" class="new-address-form" style="display:none;">
-                        <textarea id="newAddText" class="modern-input mt-10" placeholder="Full Address"></textarea>
+                    <div id="newAddressForm" style="display:none; margin-top:15px; border-top: 1px dashed var(--border); padding-top: 15px;">
+                        <div class="input-row">
+                            <input type="text" id="newAddName" class="modern-input" placeholder="Recipient Name">
+                            <input type="tel" id="newAddPhone" class="modern-input" placeholder="Phone Number">
+                        </div>
+                        <textarea id="newAddText" class="modern-input" placeholder="Full Street Address"></textarea>
                         <div class="input-row">
                             <input type="text" id="newCity" class="modern-input" placeholder="City">
                             <input type="text" id="newState" class="modern-input" placeholder="State">
                             <input type="text" id="newPin" class="modern-input" placeholder="Pincode">
                         </div>
-                        <button class="btn-prime w-100" onclick="saveNewAddress()">Save to Address Book</button>
+                        <button class="btn-prime w-100" onclick="saveNewAddress()"><i class="fas fa-save"></i> Save to Address Book</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="full-page" id="fullProductPage">
+    <div class="full-page right-slide" id="fullProductPage">
         <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="closeFullPage('fullProductPage')"><i class="fas fa-arrow-left"></i> Back</button>
+            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
         </div>
         <div class="full-page-body product-page-body">
             <div class="product-hero">
@@ -188,9 +192,13 @@
                 <div class="product-data">
                     <span class="category-tag"><i class="fas fa-crown"></i> Prime Exclusive</span>
                     <h1 id="fpName" class="display-title">Product Name</h1>
-                    <div class="rating-stars">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i> <span class="verified-text">4.9 (Verified)</span>
+                    
+                    <div class="rating-stars" style="cursor: pointer; display: inline-flex; align-items: center; gap: 10px; background: var(--bg-color); padding: 8px 15px; border-radius: 100px; margin-bottom: 20px;" onclick="openUI('fullReviewPage')">
+                        <span id="fpStarsAvg" style="color: #f59e0b; font-size: 16px;"></span>
+                        <span class="verified-text" id="fpRatingCount">View Ratings & Reviews</span>
+                        <i class="fas fa-chevron-right" style="font-size: 12px; color: var(--primary);"></i>
                     </div>
+
                     <div class="price-block">
                         <h2 id="fpPrice" class="display-price">₹0</h2>
                         <span class="inclusive-taxes">Inclusive of all taxes</span>
@@ -210,17 +218,61 @@
                     </div>
                 </div>
             </div>
-            
             <div class="related-section mt-40">
                 <h3 class="section-title">Curated For You</h3>
-                <div id="relatedProductsShelf"></div>
+                <div id="relatedProductsShelf" class="product-list" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));"></div>
             </div>
+        </div>
+    </div>
+
+    <div class="full-page right-slide" id="fullReviewPage">
+         <div class="full-page-header glass-effect">
+            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+            <h2>Customer Reviews</h2>
+            <div style="width: 60px;"></div>
+        </div>
+        <div class="full-page-body" style="padding: 30px 5%; max-width: 900px; margin: 0 auto;">
+            
+            <div class="panel-box mb-15" style="display:flex; align-items:center; gap:20px; background:var(--surface); border:1px solid var(--border); padding:20px; border-radius:16px;">
+                <img id="revProdImg" src="" style="width: 80px; height: 80px; object-fit: contain; border-radius: 8px; background: var(--bg-color);">
+                <div>
+                    <h3 id="revProdName" style="margin-bottom: 5px; font-size: 18px;">Product</h3>
+                    <div style="font-size: 24px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 10px;">
+                        <span id="revScore">0.0</span> 
+                        <span id="revStars" style="color: #f59e0b; font-size: 18px;"></span>
+                    </div>
+                    <p class="sub-text" id="revCount">0 verified ratings</p>
+                </div>
+            </div>
+
+            <div class="panel-box mb-15" style="background:var(--surface); border:1px solid var(--border); padding:30px; border-radius:16px;">
+                <h3 style="margin-bottom: 15px; font-size: 18px;">Write a Review</h3>
+                <div id="starSelector" style="font-size: 28px; color: #cbd5e1; margin-bottom: 15px; cursor: pointer; display: flex; gap: 5px;">
+                    <i class="fas fa-star" onclick="setReviewStars(1)"></i>
+                    <i class="fas fa-star" onclick="setReviewStars(2)"></i>
+                    <i class="fas fa-star" onclick="setReviewStars(3)"></i>
+                    <i class="fas fa-star" onclick="setReviewStars(4)"></i>
+                    <i class="fas fa-star" onclick="setReviewStars(5)"></i>
+                </div>
+                <textarea id="revText" class="modern-input" placeholder="Share your experience with this product..." style="min-height: 100px; resize: none;"></textarea>
+                
+                <input type="file" id="revImage" accept="image/*" style="display: none;">
+                <div class="drop-zone" id="revDropZone" style="padding: 20px; text-align: center; border: 2px dashed var(--border); border-radius: 12px; margin-bottom: 20px; cursor: pointer; transition: 0.3s; background: var(--bg-color);">
+                    <i class="fas fa-camera" style="font-size: 24px; color: var(--text-muted); margin-bottom: 10px;"></i> 
+                    <div style="font-size: 14px; font-weight: 600;">Attach an Image (Optional)</div>
+                </div>
+
+                <button class="btn-prime w-100" onclick="submitReview()"><i class="fas fa-paper-plane"></i> Submit Feedback</button>
+            </div>
+
+            <h3 style="margin: 40px 0 20px; font-size: 22px;">Recent Reviews</h3>
+            <div id="reviewsList"></div>
         </div>
     </div>
 
     <div class="full-page right-slide" id="fullCartPage">
         <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="closeFullPage('fullCartPage')"><i class="fas fa-arrow-left"></i> Back</button>
+            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
             <h2>Your Shopping Bag</h2>
             <div style="width: 70px;"></div>
         </div>
@@ -241,21 +293,17 @@
 
     <div class="full-page right-slide" id="fullCheckoutPage">
         <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="closeFullPage('fullCheckoutPage')"><i class="fas fa-arrow-left"></i> Back</button>
+            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
             <h2>Secure Checkout</h2>
             <div style="width: 70px;"></div>
         </div>
         <div class="full-page-body checkout-body" style="padding: 40px 5%; max-width: 800px; margin: 0 auto;">
             
-            <div id="checkoutStep1" class="fade-view step-container checkout-panel">
-                <div class="step-indicator">Step 1 of 2: Shipping</div>
-                <h2>Delivery Details</h2>
+            <div id="checkoutStep1" class="fade-view step-container checkout-panel" style="background:var(--surface); border:1px solid var(--border); padding:30px; border-radius:20px;">
+                <div class="step-indicator" style="font-weight: 800; color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Step 1 of 2: Shipping</div>
+                <h2 style="margin-bottom: 20px;">Delivery Details</h2>
                 
-                <button class="btn-outline w-100 mb-15" onclick="useDefaultAddress()"><i class="fas fa-magic"></i> Autofill Base Account Address</button>
-
-                <div class="saved-addresses" id="checkoutAddressList" style="margin-bottom: 15px;"></div>
-                
-                <div class="divider-elegant text-center"><span class="bg-surface px-10">Or enter new delivery info</span></div>
+                <div class="divider-elegant text-center"><span class="bg-surface px-10">Current Selected Address</span></div>
                 
                 <input type="text" id="chkName" class="modern-input" placeholder="Recipient's Full Name">
                 <input type="tel" id="chkPhone" class="modern-input" placeholder="Recipient's Phone Number">
@@ -264,34 +312,37 @@
                     <input type="text" id="chkCity" class="modern-input" placeholder="City">
                     <input type="text" id="chkPincode" class="modern-input" placeholder="Pincode (Crucial)">
                 </div>
-                <button class="btn-prime w-100 btn-large mt-10" id="calcShippingBtn" onclick="calculateShippingAndProceed()">Next: Payment <i class="fas fa-arrow-right"></i></button>
+
+                <div class="saved-addresses" id="checkoutAddressList" style="margin-top: 25px;"></div>
+
+                <button class="btn-prime w-100 btn-large mt-20" id="calcShippingBtn" onclick="calculateShippingAndProceed()">Next: Payment <i class="fas fa-arrow-right"></i></button>
             </div>
 
-            <div id="checkoutStep2" class="fade-view step-container checkout-panel" style="display:none;">
-                <div class="step-indicator">Step 2 of 2: Payment</div>
-                <h2>Review & Pay</h2>
+            <div id="checkoutStep2" class="fade-view step-container checkout-panel" style="display:none; background:var(--surface); border:1px solid var(--border); padding:30px; border-radius:20px;">
+                <div class="step-indicator" style="font-weight: 800; color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Step 2 of 2: Payment</div>
+                <h2 style="margin-bottom: 20px;">Review & Pay</h2>
                 
-                <div class="mini-receipt">
-                    <div class="summary-line">Items Total: <strong id="sumItems">₹0</strong></div>
-                    <div class="summary-line">Shipping Fee: <strong id="sumShipping">₹0</strong></div>
-                    <div class="divider-elegant"></div>
-                    <div class="summary-line total-line">Grand Total: <strong id="sumTotal" style="color:var(--primary);">₹0</strong></div>
+                <div class="mini-receipt" style="background:var(--bg-color); padding:20px; border-radius:12px; border:1px solid var(--border); margin-bottom:20px;">
+                    <div class="summary-line" style="display:flex; justify-content:space-between; margin-bottom:10px;"><span>Items Total:</span> <strong id="sumItems">₹0</strong></div>
+                    <div class="summary-line" style="display:flex; justify-content:space-between; margin-bottom:10px;"><span>Shipping Fee:</span> <strong id="sumShipping">₹0</strong></div>
+                    <div class="divider-elegant" style="margin: 10px 0;"></div>
+                    <div class="summary-line total-line" style="display:flex; justify-content:space-between; font-size:20px; font-weight:800;"><span>Grand Total:</span> <strong id="sumTotal" style="color:var(--primary);">₹0</strong></div>
                 </div>
 
                 <h3 class="mt-20 mb-15">Select Payment Method</h3>
                 <div class="payment-options">
-                    <label class="pay-radio premium-radio">
-                        <input type="radio" name="payMethod" value="online" checked>
+                    <label class="pay-radio premium-radio" style="display:flex; gap:15px; border:1px solid var(--border); padding:20px; border-radius:12px; margin-bottom:10px; cursor:pointer;">
+                        <input type="radio" name="payMethod" value="online" checked style="width:20px; height:20px; accent-color:var(--primary);">
                         <div class="radio-content">
-                            <strong><i class="fas fa-credit-card"></i> Pay Online (Razorpay)</strong>
-                            <span>100% Secure encrypted transaction.</span>
+                            <strong><i class="fas fa-credit-card"></i> Pay Online (Razorpay)</strong><br>
+                            <span style="font-size:13px; color:var(--text-muted);">100% Secure encrypted transaction.</span>
                         </div>
                     </label>
-                    <label class="pay-radio premium-radio">
-                        <input type="radio" name="payMethod" value="cod">
+                    <label class="pay-radio premium-radio" style="display:flex; gap:15px; border:1px solid var(--border); padding:20px; border-radius:12px; cursor:pointer;">
+                        <input type="radio" name="payMethod" value="cod" style="width:20px; height:20px; accent-color:var(--primary);">
                         <div class="radio-content">
-                            <strong><i class="fas fa-money-bill-wave"></i> Cash on Delivery</strong>
-                            <span>Pay shipping now, remainder on delivery.</span>
+                            <strong><i class="fas fa-money-bill-wave"></i> Cash on Delivery</strong><br>
+                            <span style="font-size:13px; color:var(--text-muted);">Pay shipping now, remainder on delivery.</span>
                         </div>
                     </label>
                 </div>
@@ -304,16 +355,13 @@
         </div>
     </div>
 
-    <div class="modal" id="orderSuccessModal">
-        <div class="modal-content success-content receipt-wrapper">
+    <div class="modal" id="orderSuccessModal" style="z-index: 5000;">
+        <div class="modal-content success-content receipt-wrapper" style="text-align: center;">
             <div class="success-animation-container">
-                <svg class="checkmark-glorious" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                    <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
-                    <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-                </svg>
+                <i class="fas fa-check-circle" style="font-size: 70px; color: var(--success); margin-bottom: 20px;"></i>
             </div>
-            <h1 class="success-title">Payment Successful</h1>
-            <p class="success-subtitle">Your premium order is confirmed.</p>
+            <h1 class="success-title" style="color:var(--primary); font-size:32px;">Payment Successful</h1>
+            <p class="success-subtitle" style="color:var(--text-muted); font-weight:600; margin-bottom:30px;">Your premium order is confirmed.</p>
             
             <div class="physical-receipt-slip">
                 <div class="receipt-cutout top"></div>
@@ -349,7 +397,21 @@
             <p class="animate-up delay-1">Discover products engineered for absolute perfection.</p>
         </section>
         
-        <div class="product-grid" id="productShelf"></div>
+        <div class="product-list" id="productShelf"></div>
+
+        <footer class="premium-footer">
+            <div style="max-width: 800px; margin: 0 auto;">
+                <p style="font-size: 15px; line-height: 1.8; font-weight: 500; margin-bottom: 25px; color: #e2e8f0;">
+                    Experience the pinnacle of luxury shopping. We are dedicated to providing exclusive, high-end products curated specifically for our discerning members, ensuring unmatched quality, deep trust, and absolute perfection in every detail.
+                </p>
+                <div class="social-links" style="display: flex; justify-content: center; gap: 25px; margin-bottom: 25px; font-size: 22px;">
+                    <a href="#" style="color: white; transition: 0.3s;"><i class="fab fa-instagram"></i></a>
+                    <a href="#" style="color: white; transition: 0.3s;"><i class="fab fa-twitter"></i></a>
+                    <a href="#" style="color: white; transition: 0.3s;"><i class="fab fa-facebook-f"></i></a>
+                </div>
+                <p style="font-size: 13px; color: #94a3b8; font-family: var(--font-mono); font-weight: 600; letter-spacing: 1px;">&copy; Aryanta 2026. All rights reserved.</p>
+            </div>
+        </footer>
     </main>
 
     <script src="java.js"></script>
