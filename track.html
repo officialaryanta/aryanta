@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Track Your Orders | Aryanta Prime</title>
     
     <link rel="stylesheet" href="style.css">
@@ -10,85 +10,76 @@
     
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     
     <style>
-        /* --- TRACKING SPECIFIC PREMIUM STYLES --- */
-        .order-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 30px; padding: 40px 5%; max-width: 1400px; margin: 0 auto; }
-        .order-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 30px; transition: var(--transition); cursor: pointer; display: flex; flex-direction: column; gap: 15px; animation: slideUpFade 0.5s backwards; }
+        /* --- MOBILE OPTIMIZED LAYOUT STYLES --- */
+        body, html { overflow-x: hidden; width: 100%; box-sizing: border-box; }
+        * { box-sizing: inherit; }
+
+        .order-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; padding: 30px 5%; max-width: 1400px; margin: 0 auto; }
+        .order-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 25px; transition: var(--transition); cursor: pointer; display: flex; flex-direction: column; gap: 15px; animation: slideUpFade 0.5s backwards; width: 100%; }
         .order-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-5px); border-color: var(--primary); }
         
         .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
         .order-id-text { font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--text-muted); }
         
-        .status-badge { display: inline-block; padding: 6px 14px; border-radius: 100px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        .status-badge { display: inline-block; padding: 6px 14px; border-radius: 100px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
         .status-pending, .status-processing { background: #fef08a; color: #854d0e; }
         .status-shipped, .status-near, .status-out { background: #bae6fd; color: #075985; }
         .status-delivered { background: #bbf7d0; color: #166534; }
         .status-cancelled { background: #fecaca; color: #991b1b; }
 
-        .card-body { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
-        .item-summary { font-size: 16px; font-weight: 700; color: var(--text-main); }
-        .order-total { font-size: 24px; font-weight: 800; color: var(--primary); }
+        .card-body { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-wrap: wrap; gap: 10px; }
+        .item-summary { font-size: 16px; font-weight: 700; color: var(--text-main); flex: 1 1 100%; }
+        .order-total { font-size: 22px; font-weight: 800; color: var(--primary); }
 
-        /* Detail View Layout */
-        .track-layout { display: flex; flex-wrap: wrap; gap: 40px; max-width: 1300px; margin: 0 auto; padding: 40px 5%; }
-        .track-main { flex: 1 1 700px; }
-        .track-sidebar { flex: 1 1 350px; }
-
-        .panel-box { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 40px; margin-bottom: 30px; box-shadow: var(--shadow-sm); }
+        /* Detail View Re-structured for Vertical Flow */
+        .track-layout { display: flex; flex-direction: column; gap: 25px; max-width: 900px; margin: 0 auto; padding: 30px 5% 100px; width: 100%; }
+        .panel-box { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 30px 25px; box-shadow: var(--shadow-sm); width: 100%; overflow: hidden; }
         .panel-box h3 { font-size: 20px; font-weight: 800; margin-bottom: 25px; }
 
-        /* Premium Timeline */
-        .timeline-container { position: relative; margin: 50px 0 30px; padding: 0 10px; }
+        /* Scrollable Timeline for Mobile */
+        .timeline-scroll-wrapper { width: 100%; overflow-x: auto; padding-bottom: 15px; -webkit-overflow-scrolling: touch; }
+        .timeline-container { position: relative; margin: 40px 0 20px; padding: 0 10px; min-width: 500px; }
         .timeline-track { position: absolute; top: 15px; left: 30px; right: 30px; height: 4px; background: var(--bg-color); z-index: 1; border-radius: 2px; }
-        .timeline-fill { position: absolute; top: 15px; left: 30px; height: 4px; background: var(--success); z-index: 2; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 2px; }
+        .timeline-fill { position: absolute; top: 15px; left: 30px; height: 4px; background: var(--success); z-index: 2; transition: width 0.8s ease; border-radius: 2px; }
         .timeline-steps { display: flex; justify-content: space-between; position: relative; z-index: 3; }
         
-        .step { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 80px; text-align: center; }
-        .step-icon { width: 34px; height: 34px; border-radius: 50%; background: var(--surface); border: 3px solid var(--border); display: flex; justify-content: center; align-items: center; color: var(--text-muted); font-size: 14px; transition: var(--transition); background: var(--surface); }
-        
+        .step { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 80px; text-align: center; }
+        .step-icon { width: 34px; height: 34px; border-radius: 50%; background: var(--surface); border: 3px solid var(--border); display: flex; justify-content: center; align-items: center; color: var(--text-muted); font-size: 14px; transition: var(--transition); }
         .step.active .step-icon { border-color: var(--success); background: var(--success); color: white; box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.15); }
         .step.current .step-icon { border-color: var(--primary); background: var(--primary); color: white; box-shadow: 0 0 0 6px rgba(10, 10, 10, 0.1); }
         .step.error .step-icon { border-color: var(--danger); background: var(--danger); color: white; }
-        
         .step-label { font-size: 12px; font-weight: 700; color: var(--text-muted); line-height: 1.3; }
         .step.active .step-label, .step.current .step-label { color: var(--text-main); }
 
-        .meta-text { font-size: 14px; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
-        .meta-value { font-size: 16px; color: var(--text-main); font-weight: 700; display: block; margin-bottom: 20px; }
+        .meta-text { font-size: 14px; color: var(--text-muted); font-weight: 600; margin-bottom: 5px; display: block; }
+        .meta-value { font-size: 16px; color: var(--text-main); font-weight: 700; display: block; word-wrap: break-word; }
 
+        .items-list-row { display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; flex-wrap: wrap; gap: 10px; background: var(--bg-color); }
+        
         /* Boxed Invoice Styles */
-        .invoice-box { border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; background: var(--bg-color); text-align: left; }
-        .invoice-box-title { font-size: 12px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-        .invoice-info-text { font-size: 14px; margin-bottom: 6px; color: var(--text-main); font-weight: 500; }
-        .invoice-info-text i { color: var(--primary); width: 20px; margin-right: 5px; text-align: center; }
-        .invoice-address-grid { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 10px; }
-        .invoice-address-grid .invoice-box { flex: 1; min-width: 250px; margin-bottom: 0; }
-        
-        .receipt-table-modern th { text-align: left; padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
-        .receipt-table-modern td { padding: 12px; border-bottom: 1px solid var(--border); font-weight: 600; font-size: 14px; }
-        
-        .calc-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 10px; font-weight: 600; color: var(--text-muted); }
-        .grand-calc { font-size: 20px; font-weight: 800; color: var(--primary); }
-
-        /* Strictly For Printing to A4 perfectly */
+        .invoice-hidden-container { display: none; }
         @media print {
             @page { size: A4; margin: 10mm; }
-            body { background: white; margin: 0; padding: 0; }
+            body { background: white; overflow: visible !important; height: auto; }
             body * { visibility: hidden; }
             
-            #invoiceModal { position: absolute; left: 0; top: 0; width: 100%; display: block !important; background: white; padding: 0; }
-            #invoiceModal .modal-content { max-width: 100%; width: 100%; padding: 0; margin: 0; box-shadow: none; border: none; }
-            
-            #invoicePrintArea, #invoicePrintArea * { visibility: visible; }
-            #invoicePrintArea { position: relative; left: 0; top: 0; width: 100%; padding: 0; box-shadow: none !important; border: none !important; }
-            
-            .btn-action, .btn-prime, .btn-cancel, .exit-modal, .btn-back, .receipt-cutout { display: none !important; }
-            
-            .invoice-box { page-break-inside: avoid; border: 1px solid #ccc; background: transparent; }
-            table { page-break-inside: auto; }
-            tr { page-break-inside: avoid; page-break-after: auto; }
-            .physical-receipt-slip { filter: none; padding: 0; }
+            .invoice-hidden-container { display: block !important; position: absolute; left: 0; top: 0; width: 100%; background: white; z-index: 9999; }
+            .invoice-hidden-container * { visibility: visible; }
+            .main-content, .top-bar, .side-panel, .dimmer, .toast-notification, .full-page { display: none !important; }
+            .invoice-box { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 768px) {
+            .order-grid { grid-template-columns: 1fr; padding: 20px 5%; }
+            .track-layout { padding: 20px 5% 80px; gap: 20px; }
+            .panel-box { padding: 25px 20px; }
+            .items-list-row { flex-direction: column; align-items: flex-start; }
+            .items-list-row strong:last-child { align-self: flex-end; font-size: 18px; }
         }
     </style>
 </head>
@@ -99,8 +90,6 @@
             <div class="menu-trigger" id="menuBtn" onclick="toggleSidebar()"><i class="fas fa-bars-staggered"></i></div>
             <div class="brand-logo" onclick="location.href='index.html'">ARYANTA<span class="prime-dot">.</span></div>
         </div>
-        <div class="nav-search">
-            </div>
         <div class="nav-actions">
             <button class="login-trigger premium-hover" id="accountBtn">Sign In</button>
         </div>
@@ -131,7 +120,7 @@
         </div>
     </aside>
 
-    <div class="dimmer" id="overlay" onclick="toggleSidebar()"></div>
+    <div class="dimmer" id="overlay" onclick="closeAllOverlays()"></div>
     
     <div id="pageLoader" class="page-loader">
         <div class="spinner"></div>
@@ -151,21 +140,22 @@
     <div class="full-page right-slide" id="detailViewPage">
         <div class="full-page-header glass-effect">
             <h2>Order Overview</h2>
-            <button class="btn-back premium-hover" onclick="closeDetailView()"><i class="fas fa-arrow-left"></i> Back</button>
+            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
         </div>
         
         <div class="full-page-body">
             <div class="track-layout">
-                <div class="track-main">
-                    <div class="panel-box">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                            <div>
-                                <span class="meta-text">Order Number</span>
-                                <span class="meta-value" id="dispOrderNo" style="font-family: var(--font-mono);">---</span>
-                            </div>
-                            <div class="status-badge" id="dispStatusBadge">Processing</div>
+                
+                <div class="panel-box">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <span class="meta-text">Order Number</span>
+                            <span class="meta-value" id="dispOrderNo" style="font-family: var(--font-mono);">---</span>
                         </div>
+                        <div class="status-badge" id="dispStatusBadge">Processing</div>
+                    </div>
 
+                    <div class="timeline-scroll-wrapper">
                         <div class="timeline-container" id="timelineSection">
                             <div class="timeline-track"></div>
                             <div class="timeline-fill" id="timelineFill" style="width: 0%;"></div>
@@ -177,65 +167,62 @@
                                 <div class="step" id="step4"><div class="step-icon"><i class="fas fa-check-circle"></i></div><span class="step-label">Delivered</span></div>
                             </div>
                         </div>
-
-                        <div id="lateWarningArea"></div>
-
-                        <div class="divider-elegant"></div>
-                        
-                        <div style="display: flex; gap: 40px; flex-wrap: wrap;">
-                            <div>
-                                <span class="meta-text">Placement Date</span>
-                                <span class="meta-value" id="dispDate">---</span>
-                            </div>
-                            <div>
-                                <span class="meta-text">Expected Delivery</span>
-                                <span class="meta-value" id="dispExpected" style="color: var(--primary);">---</span>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-20">
-                            <span class="meta-text">Shipping Address</span>
-                            <span class="meta-value" id="dispAddress" style="font-weight: 500; line-height: 1.5;">---</span>
-                        </div>
                     </div>
 
-                    <div class="panel-box">
-                        <h3>Acquired Items</h3>
-                        <div id="dispItemsContainer"></div>
+                    <div id="lateWarningArea"></div>
+                    <div class="divider-elegant"></div>
+                    
+                    <div style="display: flex; gap: 30px; flex-wrap: wrap; margin-bottom: 20px;">
+                        <div style="flex: 1 1 120px;">
+                            <span class="meta-text">Placement Date</span>
+                            <span class="meta-value" id="dispDate">---</span>
+                        </div>
+                        <div style="flex: 1 1 120px;">
+                            <span class="meta-text">Expected Delivery</span>
+                            <span class="meta-value" id="dispExpected" style="color: var(--primary);">---</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <span class="meta-text">Shipping Address</span>
+                        <span class="meta-value" id="dispAddress" style="font-weight: 500; line-height: 1.5;">---</span>
                     </div>
                 </div>
 
-                <div class="track-sidebar">
-                    <div class="panel-box">
-                        <h3>Financial Summary</h3>
-                        <div class="summary-line"><span>Subtotal</span> <strong id="finItems">₹0</strong></div>
-                        <div class="summary-line"><span>Shipping</span> <strong id="finShipping">₹0</strong></div>
-                        <div class="divider-elegant"></div>
-                        <div class="summary-line total-line"><span>Grand Total</span> <strong id="finGrand">₹0</strong></div>
-                        
-                        <div class="mt-20 p-15" style="background: var(--bg-color); border-radius: 12px; border: 1px dashed var(--border);">
-                            <div class="summary-line mb-15"><span>Amount Paid</span> <strong id="finPaid" style="color: var(--success);">₹0</strong></div>
-                            <div class="summary-line" id="pendingRow" style="display: none;"><span>Amount Pending</span> <strong id="finPending" style="color: var(--danger);">₹0</strong></div>
-                        </div>
-
-                        <div id="actionArea" class="mt-20" style="display: flex; flex-direction: column; gap: 15px;">
-                            </div>
-                        
-                        <button class="btn-outline w-100 mt-20" onclick="downloadInvoice()"><i class="fas fa-file-invoice"></i> Download Invoice</button>
+                <div class="panel-box">
+                    <h3>Financial Summary</h3>
+                    <div class="summary-line" style="display:flex; justify-content:space-between; margin-bottom:12px;"><span>Subtotal</span> <strong id="finItems">₹0</strong></div>
+                    <div class="summary-line" style="display:flex; justify-content:space-between; margin-bottom:12px;"><span>Shipping</span> <strong id="finShipping">₹0</strong></div>
+                    <div class="divider-elegant" style="margin: 15px 0;"></div>
+                    <div class="summary-line total-line" style="display:flex; justify-content:space-between; font-size:20px; font-weight:800;"><span>Grand Total</span> <strong id="finGrand" style="color:var(--primary);">₹0</strong></div>
+                    
+                    <div class="mt-20 p-15" style="background: var(--bg-color); border-radius: 12px; border: 1px dashed var(--border); padding: 15px;">
+                        <div class="summary-line mb-15" style="display:flex; justify-content:space-between; margin-bottom:10px;"><span>Amount Paid</span> <strong id="finPaid" style="color: var(--success);">₹0</strong></div>
+                        <div class="summary-line" id="pendingRow" style="display:none; justify-content:space-between;"><span>Amount Pending</span> <strong id="finPending" style="color: var(--danger);">₹0</strong></div>
                     </div>
+
+                    <div id="actionArea" class="mt-20" style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+                        </div>
+                    <button class="btn-outline w-100 mt-20" onclick="downloadInvoice()"><i class="fas fa-file-invoice"></i> Download Invoice</button>
                 </div>
+
+                <div class="panel-box">
+                    <h3>Acquired Items</h3>
+                    <div id="dispItemsContainer"></div>
+                </div>
+
             </div>
         </div>
     </div>
 
-    <div class="modal" id="actionModal">
-        <div class="modal-content">
-            <button class="btn-back mb-15" style="padding:0;" onclick="closeActionModal()"><i class="fas fa-arrow-left"></i> Back</button>
+    <div class="modal" id="actionModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 4000; justify-content: center; align-items: center;">
+        <div class="modal-content" style="background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px;">
+            <button class="btn-back mb-15" style="background:none; border:none; font-weight:bold; font-size:16px; margin-bottom:15px; cursor:pointer;" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
             <h2 id="modalTitle">Request Action</h2>
-            <p id="modalPolicy" class="sub-text mb-15" style="color: var(--danger);">Note: Shipping charges are strictly non-refundable.</p>
+            <p id="modalPolicy" class="sub-text mb-15" style="color: var(--danger); font-size:13px; margin-bottom:15px;">Note: Shipping charges are strictly non-refundable.</p>
 
             <label class="meta-text">Reason for Request</label>
-            <select id="reasonSelect" class="modern-input">
+            <select id="reasonSelect" class="modern-input" style="width:100%; padding:12px; border:1px solid #ccc; border-radius:8px; margin-bottom:15px;">
                 <option value="Changed my mind">Changed my mind</option>
                 <option value="Found a better alternative">Found a better alternative</option>
                 <option value="Defective / Damaged (Return)">Defective or Damaged</option>
@@ -243,97 +230,116 @@
             </select>
 
             <label class="meta-text">Additional Remarks</label>
-            <textarea id="reasonDetails" class="modern-input" placeholder="Please elaborate on your reason..."></textarea>
+            <textarea id="reasonDetails" class="modern-input" placeholder="Elaborate on your reason..." style="width:100%; padding:12px; border:1px solid #ccc; border-radius:8px; margin-bottom:15px; min-height:80px;"></textarea>
 
-            <button class="btn-prime w-100 mt-10" id="modalSubmitBtn" onclick="submitAction()">Submit Request</button>
+            <button class="btn-prime w-100" id="modalSubmitBtn" style="background:var(--primary); color:white; border:none; padding:15px; border-radius:8px; width:100%; font-weight:bold; cursor:pointer;" onclick="submitAction()">Submit Request</button>
         </div>
     </div>
 
-    <div class="modal" id="invoiceModal">
-        <div class="modal-content" style="background: transparent; box-shadow: none; max-width: 800px; width: 95%;">
-            <button class="btn-back mb-15" style="color:white; padding:0; text-shadow: 0 2px 4px rgba(0,0,0,0.5);" onclick="document.getElementById('invoiceModal').style.display='none'"><i class="fas fa-arrow-left"></i> Back</button>
+    <div class="invoice-hidden-container" id="invoicePrintArea">
+        <div style="padding: 40px; max-width: 800px; margin: 0 auto; background: white; font-family: sans-serif;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 15px;">
+                <div>
+                    <h2 style="font-size: 32px; font-weight: 800; letter-spacing: 2px; color: #000; margin: 0 0 5px 0;">ARYANTA.</h2>
+                    <p style="color: #666; font-weight: 700; letter-spacing: 1px; font-size: 13px; margin: 0;">TAX INVOICE / DIGITAL RECEIPT</p>
+                </div>
+                <div style="text-align: right;">
+                    <p style="font-size: 12px; color: #666; font-weight: 700; text-transform: uppercase; margin: 0;">Invoice Number</p>
+                    <h3 id="invOrderNo" style="font-family: monospace; font-size: 18px; color: #000; margin: 5px 0 0 0;">---</h3>
+                </div>
+            </div>
             
-            <div class="physical-receipt-slip" id="invoicePrintArea">
-                <div class="receipt-cutout top"></div>
-                
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 2px solid var(--primary); padding-bottom: 15px;">
-                    <div style="text-align: left;">
-                        <h2 style="font-size: 32px; font-weight: 800; letter-spacing: 2px; color: var(--primary); margin-bottom: 5px;">ARYANTA.</h2>
-                        <p style="color: var(--text-muted); font-weight: 700; letter-spacing: 1px; font-size: 13px;">TAX INVOICE / DIGITAL RECEIPT</p>
-                    </div>
-                    <div style="text-align: right;">
-                        <p style="font-size: 12px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Invoice Number</p>
-                        <h3 id="invOrderNo" style="font-family: var(--font-mono); font-size: 18px; color: var(--primary);">---</h3>
-                    </div>
-                </div>
-                
-                <div class="invoice-address-grid">
-                    <div class="invoice-box">
-                        <div class="invoice-box-title"><i class="fas fa-building"></i> Issued By</div>
-                        <p class="invoice-info-text"><strong>Aryanta Prime Exclusives</strong></p>
-                        <p class="invoice-info-text">123 Prime Tech District, Cyber City</p>
-                        <p class="invoice-info-text">New Delhi, IN - 110001</p>
-                        <p class="invoice-info-text" style="margin-top: 8px;"><i class="fas fa-phone"></i> +91 800-ARYANTA</p>
-                        <p class="invoice-info-text"><i class="fas fa-envelope"></i> support@aryanta.com</p>
-                        <p class="invoice-info-text" style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">GSTIN: 22AAAAA0000A1Z5</p>
-                    </div>
-
-                    <div class="invoice-box">
-                        <div class="invoice-box-title"><i class="fas fa-user-circle"></i> Billed & Shipped To</div>
-                        <p class="invoice-info-text"><strong id="invCustName" style="font-size: 16px;">---</strong></p>
-                        <p class="invoice-info-text" id="invCustEmail">---</p>
-                        <p class="invoice-info-text" style="margin-top: 8px; color: var(--text-muted); font-size: 12px; text-transform: uppercase; font-weight: 700;">Delivery Address:</p>
-                        <p class="invoice-info-text" id="invAddress" style="line-height: 1.5;">---</p>
-                        <p class="invoice-info-text" style="margin-top: 15px;"><strong>Order Date:</strong> <span id="invDate">---</span></p>
-                    </div>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
+                <div class="invoice-box" style="flex: 1; border: 1px solid #ccc; padding: 20px; border-radius: 8px;">
+                    <div style="font-size: 12px; text-transform: uppercase; font-weight: 800; color: #666; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Issued By</div>
+                    <p style="font-size: 14px; margin: 0 0 5px 0;"><strong>Aryanta Prime Exclusives</strong></p>
+                    <p style="font-size: 14px; margin: 0 0 5px 0;">123 Prime Tech District, IN</p>
+                    <p style="font-size: 14px; margin: 0 0 5px 0;">support@aryanta.com</p>
+                    <p style="font-size: 12px; color: #666; margin: 10px 0 0 0;">GSTIN: 22AAAAA0000A1Z5</p>
                 </div>
 
-                <div class="invoice-box">
-                    <div class="invoice-box-title"><i class="fas fa-list-ul"></i> Order Ledger</div>
-                    <table class="receipt-table-modern" style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr>
-                                <th style="width: 5%;">#</th>
-                                <th style="width: 50%;">Item Description</th>
-                                <th style="width: 15%; text-align: center;">Qty</th>
-                                <th style="width: 15%; text-align: right;">Unit Price</th>
-                                <th style="width: 15%; text-align: right;">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody id="invTableBody"></tbody>
-                    </table>
-                    
-                    <div class="receipt-divider-dashed" style="margin: 20px 0;"></div>
-                    
-                    <div style="display: flex; justify-content: flex-end;">
-                        <div style="width: 320px;">
-                            <div class="calc-row"><span>Subtotal:</span> <span id="invItemsTotal" class="mono-td"></span></div>
-                            <div class="calc-row"><span>Shipping & Handling:</span> <span id="invShipping" class="mono-td"></span></div>
-                            <div class="receipt-divider-dashed" style="margin: 12px 0;"></div>
-                            <div class="calc-row grand-calc"><span>Grand Total:</span> <span id="invGrandTotal" class="mono-td"></span></div>
+                <div class="invoice-box" style="flex: 1; border: 1px solid #ccc; padding: 20px; border-radius: 8px;">
+                    <div style="font-size: 12px; text-transform: uppercase; font-weight: 800; color: #666; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Billed & Shipped To</div>
+                    <p style="font-size: 16px; margin: 0 0 5px 0;"><strong id="invCustName">---</strong></p>
+                    <p style="font-size: 14px; margin: 0 0 10px 0;" id="invCustEmail">---</p>
+                    <p style="font-size: 14px; line-height: 1.5; margin: 0;" id="invAddress">---</p>
+                    <p style="font-size: 14px; margin: 15px 0 0 0;"><strong>Date:</strong> <span id="invDate">---</span></p>
+                </div>
+            </div>
+
+            <div class="invoice-box" style="border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <div style="font-size: 12px; text-transform: uppercase; font-weight: 800; color: #666; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Order Ledger</div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #ccc; text-align: left;">
+                            <th style="padding: 10px 5px;">#</th>
+                            <th style="padding: 10px 5px;">Item Description</th>
+                            <th style="padding: 10px 5px; text-align: center;">Qty</th>
+                            <th style="padding: 10px 5px; text-align: right;">Unit Price</th>
+                            <th style="padding: 10px 5px; text-align: right;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invTableBody"></tbody>
+                </table>
+                
+                <div style="display: flex; justify-content: flex-end; margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 15px;">
+                    <div style="width: 300px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span>Subtotal:</span> <span id="invItemsTotal"></span></div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span>Shipping:</span> <span id="invShipping"></span></div>
+                        <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 18px; margin-top: 10px; border-top: 2px solid #000; padding-top: 10px;">
+                            <span>Grand Total:</span> <span id="invGrandTotal"></span>
                         </div>
                     </div>
                 </div>
-                
-                <div style="background: var(--bg-color); border: 1px dashed var(--border); padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center;">
-                    <p style="font-size: 12px; color: var(--text-muted); font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Payment Status</p>
-                    <h3 id="invStatus" style="color: var(--primary); margin-top: 5px; font-size: 18px;">---</h3>
-                </div>
-
-                <div style="margin-top: 35px; text-align: center; color: var(--text-muted); font-size: 11px; line-height: 1.6;">
-                    <p>This is a computer-generated invoice and does not require a physical signature.</p>
-                    <p>Thank you for choosing Aryanta Prime. For support, visit www.aryanta.com/support</p>
-                </div>
-                
-                <div class="receipt-cutout bottom"></div>
             </div>
             
-            <button class="btn-prime w-100 btn-large mt-20" onclick="window.print()"><i class="fas fa-print"></i> Print / Save as PDF</button>
+            <div style="background: #f8fafc; border: 1px dashed #ccc; padding: 15px; border-radius: 8px; text-align: center;">
+                <p style="font-size: 12px; color: #666; font-weight: 800; text-transform: uppercase; margin: 0;">Payment Status</p>
+                <h3 id="invStatus" style="margin: 5px 0 0 0; font-size: 18px;">---</h3>
+            </div>
+
+            <div style="margin-top: 30px; text-align: center; color: #666; font-size: 11px;">
+                <p>This is a computer-generated invoice and does not require a physical signature.</p>
+            </div>
         </div>
     </div>
 
     <script>
-        // Core Config
+        // --- HARDWARE BACK BUTTON LOGIC (HISTORY API) ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if (!sidebar.classList.contains('open')) {
+                sidebar.classList.add('open');
+                overlay.classList.add('show');
+                history.pushState({ modal: 'sidebar' }, "");
+            } else {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('show');
+            }
+        }
+
+        function closeAllOverlays() {
+            if(document.getElementById('sidebar').classList.contains('open')) history.back();
+        }
+
+        window.addEventListener('popstate', (e) => {
+            // Close Sidebar
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('show');
+            
+            // Close Detail View Page
+            const detailView = document.getElementById('detailViewPage');
+            if (detailView.classList.contains('open')) {
+                detailView.classList.remove('open');
+                document.body.style.overflow = 'auto'; // Restore scroll
+            }
+
+            // Close Action Modal
+            document.getElementById('actionModal').style.display = 'none';
+        });
+
+        // --- CORE APPLICATION LOGIC ---
         const API_URL = "https://rough-field-c679.official-aryanta.workers.dev";
         const RAZORPAY_KEY = "rzp_test_SfN9xZbqkMSz6G"; 
 
@@ -341,27 +347,11 @@
         let activeOrder = null;
         let actionType = "cancel"; 
 
-        // UI Controls
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('overlay').classList.toggle('show');
-        }
-
-        function closeDetailView() {
-            document.getElementById('detailViewPage').classList.remove('open');
-            document.body.style.overflow = 'auto';
-        }
-
-        function closeActionModal() {
-            document.getElementById('actionModal').style.display = 'none';
-        }
-
         function logOut() {
             localStorage.removeItem('active_session');
             window.location.href = 'index.html';
         }
 
-        // Initialize Page
         async function init() {
             const user = JSON.parse(localStorage.getItem('active_session'));
             const accBtn = document.getElementById('accountBtn');
@@ -372,28 +362,23 @@
                 return;
             }
             
-            // Setup Header Profile
             document.getElementById('sidebarUser').innerText = user.name;
             document.getElementById('sidebarLogoutBtn').style.display = "flex";
             const firstName = user.name.split(' ')[0];
             const savedAvatar = user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`;
             document.getElementById('sidebarAvatar').src = savedAvatar;
             
-            accBtn.innerHTML = `<img src="${savedAvatar}" class="nav-avatar" style="margin-right:8px; width: 30px; height: 30px; border-radius: 50%;"> <span>${firstName}</span>`;
-            accBtn.onclick = null; // Disable standard signin popup
+            accBtn.innerHTML = `<img src="${savedAvatar}" style="width:30px; height:30px; border-radius:50%; margin-right:8px; border:2px solid var(--primary);"> <span>${firstName}</span>`;
+            accBtn.onclick = null; 
             
-            // Fast Fetch Data
             try {
                 const res = await fetch(`${API_URL}/get-orders?email=${encodeURIComponent(user.email)}`);
                 const allData = await res.json();
-                
-                // Privacy check: Enforce exact email match locally too
                 myOrders = allData.filter(o => o.user_email === user.email);
                 myOrders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                
                 renderList();
             } catch(e) {
-                document.getElementById('ordersContainer').innerHTML = "<p style='text-align:center; width:100%; grid-column: 1/-1;' class='meta-text'>Error syncing order ledger.</p>";
+                document.getElementById('ordersContainer').innerHTML = "<p style='text-align:center; width:100%; grid-column: 1/-1;'>Error syncing order ledger.</p>";
             } finally {
                 document.getElementById('pageLoader').classList.add('hidden');
             }
@@ -403,7 +388,7 @@
             const container = document.getElementById('ordersContainer');
             container.innerHTML = "";
             if (myOrders.length === 0) {
-                container.innerHTML = `<div style="text-align:center; width:100%; grid-column: 1/-1; padding: 50px;"><h3 style="color:var(--text-muted);">Your ledger is empty.</h3></div>`;
+                container.innerHTML = `<div style="text-align:center; width:100%; grid-column: 1/-1; padding: 50px;"><h3>Your ledger is empty.</h3></div>`;
                 return;
             }
 
@@ -413,7 +398,6 @@
                 card.style.animationDelay = `${index * 0.05}s`;
                 card.onclick = () => showDetail(order.id);
                 
-                // Formatting Status
                 let statusClass = 'status-pending';
                 const s = order.status.toLowerCase();
                 if(s.includes('ship')) statusClass = 'status-shipped';
@@ -431,7 +415,7 @@
                         <span class="order-id-text">#${order.order_no}</span>
                         <div class="status-badge ${statusClass}">${order.status}</div>
                     </div>
-                    <p class="meta-text" style="margin:0;"><i class="fas fa-calendar-alt"></i> ${dateString}</p>
+                    <span class="meta-text" style="margin:0;"><i class="fas fa-calendar-alt"></i> ${dateString}</span>
                     <div class="card-body">
                         <div class="item-summary">${itemName}</div>
                         <div class="order-total">₹${order.financials.grandTotal.toLocaleString('en-IN')}</div>
@@ -445,29 +429,29 @@
             const order = myOrders.find(o => o.id === id);
             activeOrder = order;
             
+            // Push state for back button handling
+            history.pushState({ modal: 'detail' }, "");
+            
             document.getElementById('detailViewPage').classList.add('open');
-            document.body.style.overflow = 'hidden';
+            document.body.style.overflow = 'hidden'; // Lock background scroll
 
-            // Fixed Date Logic
             const orderDate = new Date(order.timestamp);
-            let expectedDate;
-            if (order.expected_delivery) {
-                expectedDate = new Date(order.expected_delivery);
-            } else {
-                expectedDate = new Date(orderDate.getTime() + 7 * 24 * 60 * 60 * 1000); // Strict +7 Days
-            }
+            let expectedDate = order.expected_delivery ? new Date(order.expected_delivery) : new Date(orderDate.getTime() + 7 * 24 * 60 * 60 * 1000); 
 
             document.getElementById('dispOrderNo').innerText = order.order_no;
-            document.getElementById('dispDate').innerText = orderDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            document.getElementById('dispExpected').innerText = expectedDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('dispDate').innerText = orderDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            document.getElementById('dispExpected').innerText = expectedDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
             document.getElementById('dispAddress').innerText = order.delivery_address;
 
             // Render Items
             const itemsContainer = document.getElementById('dispItemsContainer');
             itemsContainer.innerHTML = order.items.map(i => `
-                <div style="display:flex; justify-content:space-between; align-items:center; padding: 15px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px;">
-                    <div><strong style="font-size:15px;">${i.name}</strong> <span class="meta-text" style="margin-left:10px;">Qty: ${i.qty}</span></div>
-                    <strong style="font-family: var(--font-mono);">₹${(i.price * i.qty).toLocaleString('en-IN')}</strong>
+                <div class="items-list-row">
+                    <div>
+                        <strong style="font-size:15px; display:block; margin-bottom:5px;">${i.name}</strong> 
+                        <span class="meta-text">Qty: ${i.qty}</span>
+                    </div>
+                    <strong style="font-family: var(--font-mono); color: var(--primary);">₹${(i.price * i.qty).toLocaleString('en-IN')}</strong>
                 </div>
             `).join('');
 
@@ -504,14 +488,12 @@
             const actionArea = document.getElementById('actionArea');
             const badge = document.getElementById('dispStatusBadge');
             
-            for(let i=0; i<5; i++) {
-                document.getElementById('step'+i).className = 'step';
-            }
+            for(let i=0; i<5; i++) { document.getElementById('step'+i).className = 'step'; }
 
             badge.innerText = order.status;
             badge.className = 'status-badge';
 
-            actionArea.innerHTML = ''; // Clear actions completely
+            actionArea.innerHTML = ''; 
 
             if (isCancelled) {
                 badge.classList.add('status-cancelled');
@@ -520,8 +502,6 @@
                 fill.style.width = "0%";
                 fill.style.background = "var(--danger)";
                 document.getElementById('timelineSection').style.opacity = "0.5";
-                
-                // NO CANCELLATION BUTTON IF ALREADY CANCELLED
                 actionArea.innerHTML = `<p style="color: var(--danger); font-weight: 700; text-align: center; background: #fef2f2; padding: 15px; border-radius: 12px; border: 1px solid #fecaca;"><i class="fas fa-info-circle"></i> This order has been cancelled.</p>`;
             } else {
                 document.getElementById('timelineSection').style.opacity = "1";
@@ -531,40 +511,30 @@
                 if(currentIdx > 0 && currentIdx < 4) badge.classList.add('status-shipped');
                 if(currentIdx === 4) badge.classList.add('status-delivered');
 
-                // Animate Fill
                 setTimeout(() => { fill.style.width = (currentIdx * 25) + "%"; }, 100);
                 
                 for(let i=0; i<=currentIdx; i++) {
-                    if(i === currentIdx && i !== 4) {
-                        document.getElementById('step'+i).classList.add('current');
-                    } else {
-                        document.getElementById('step'+i).classList.add('active');
-                    }
+                    if(i === currentIdx && i !== 4) document.getElementById('step'+i).classList.add('current');
+                    else document.getElementById('step'+i).classList.add('active');
                 }
 
                 if (isCOD && !isDelivered) {
-                    actionArea.innerHTML += `
-                        <button class="btn-prime w-100" style="background: #eab308; color: #111;" onclick="payPendingBalance()">
-                            <i class="fas fa-bolt"></i> Pay full charge to avoid any issues
-                        </button>`;
+                    actionArea.innerHTML += `<button class="btn-prime w-100" style="background: #eab308; color: #111; border:none; padding:15px; border-radius:12px; font-weight:bold; font-size:15px; cursor:pointer;" onclick="payPendingBalance()"><i class="fas fa-bolt"></i> Pay full charge to avoid any issues</button>`;
                 }
 
                 if (isDelivered) {
-                    actionArea.innerHTML += `<button class="btn-outline w-100" onclick="openActionModal('return')"><i class="fas fa-undo"></i> Request Return</button>`;
+                    actionArea.innerHTML += `<button class="btn-outline w-100" style="background: transparent; border: 1px solid var(--border); padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer;" onclick="openActionModal('return')"><i class="fas fa-undo"></i> Request Return</button>`;
                 } else if (currentIdx < 2) {
-                    actionArea.innerHTML += `<button class="btn-cancel w-100" style="border: 1px solid var(--danger); background: transparent; color: var(--danger);" onclick="openActionModal('cancel')"><i class="fas fa-ban"></i> Request Cancellation</button>`;
+                    actionArea.innerHTML += `<button class="btn-cancel w-100" style="border: 1px solid var(--danger); background: transparent; color: var(--danger); padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer;" onclick="openActionModal('cancel')"><i class="fas fa-ban"></i> Request Cancellation</button>`;
                 }
             }
         }
 
         function openActionModal(type) {
             actionType = type;
+            history.pushState({ modal: 'action' }, ""); // Push state for back button
             document.getElementById('actionModal').style.display = "flex";
-            if(type === 'cancel') {
-                document.getElementById('modalTitle').innerText = "Cancel Order";
-            } else {
-                document.getElementById('modalTitle').innerText = "Return Product";
-            }
+            document.getElementById('modalTitle').innerText = (type === 'cancel') ? "Cancel Order" : "Return Product";
         }
 
         async function submitAction() {
@@ -579,8 +549,7 @@
 
             try {
                 const res = await fetch(`${API_URL}/update-order`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ id: activeOrder.id, status: finalStatus, reason: reason, notes: details })
                 });
                 
@@ -597,17 +566,11 @@
 
         function payPendingBalance() {
             if(!activeOrder) return;
-            const pendingAmount = activeOrder.financials.itemsTotal;
-            
             const options = {
-                "key": RAZORPAY_KEY, 
-                "amount": pendingAmount * 100, 
-                "currency": "INR", 
-                "name": "Aryanta Prime",
+                "key": RAZORPAY_KEY, "amount": activeOrder.financials.itemsTotal * 100, "currency": "INR", "name": "Aryanta Prime",
                 "description": "Remaining COD Balance Clearance",
                 "handler": async function (response) { 
-                    alert("Payment Successful! Your order is now fully prepaid. ID: " + response.razorpay_payment_id);
-                    location.reload();
+                    alert("Payment Successful! Your order is now fully prepaid."); location.reload();
                 },
                 "prefill": { "email": activeOrder.user_email },
                 "theme": { "color": "#0a0a0a" }
@@ -618,29 +581,18 @@
 
         function downloadInvoice() {
             if(!activeOrder) return;
-            
             const user = JSON.parse(localStorage.getItem('active_session'));
             
             document.getElementById('invOrderNo').innerText = activeOrder.order_no;
             document.getElementById('invDate').innerText = new Date(activeOrder.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-            
-            // Populate User Details
             document.getElementById('invCustName').innerText = activeOrder.delivery_name || user.name;
             document.getElementById('invCustEmail').innerText = activeOrder.user_email || user.email;
             document.getElementById('invAddress').innerText = activeOrder.delivery_address;
             
-            // Populate Items Table (with numbering)
             const tbody = document.getElementById('invTableBody');
             tbody.innerHTML = '';
             activeOrder.items.forEach((item, index) => {
-                tbody.innerHTML += `
-                <tr>
-                    <td style="color: var(--text-muted);">${index + 1}</td>
-                    <td><strong>${item.name}</strong></td>
-                    <td class="mono-td" style="text-align: center;">${item.qty}</td>
-                    <td class="text-right mono-td">₹${item.price.toLocaleString('en-IN')}</td>
-                    <td class="text-right mono-td"><strong>₹${(item.price * item.qty).toLocaleString('en-IN')}</strong></td>
-                </tr>`;
+                tbody.innerHTML += `<tr><td style="padding:10px 5px;">${index + 1}</td><td style="padding:10px 5px;"><strong>${item.name}</strong></td><td style="text-align:center; padding:10px 5px;">${item.qty}</td><td style="text-align:right; padding:10px 5px;">₹${item.price.toLocaleString('en-IN')}</td><td style="text-align:right; padding:10px 5px;"><strong>₹${(item.price * item.qty).toLocaleString('en-IN')}</strong></td></tr>`;
             });
 
             document.getElementById('invItemsTotal').innerText = `₹${activeOrder.financials.itemsTotal.toLocaleString('en-IN')}`;
@@ -651,18 +603,12 @@
             const isDelivered = activeOrder.status.includes("Delivered");
             const isCancelled = activeOrder.status.toLowerCase().includes("cancel");
             
-            if(isCancelled) {
-                document.getElementById('invStatus').innerText = "ORDER CANCELLED";
-                document.getElementById('invStatus').style.color = "var(--danger)";
-            } else if(isCOD && !isDelivered) {
-                document.getElementById('invStatus').innerText = "PARTIAL PAYMENT (Balance Due on Delivery)";
-                document.getElementById('invStatus').style.color = "#d97706";
-            } else {
-                document.getElementById('invStatus').innerText = "PAID IN FULL";
-                document.getElementById('invStatus').style.color = "var(--success)";
-            }
+            const stat = document.getElementById('invStatus');
+            if(isCancelled) { stat.innerText = "ORDER CANCELLED"; stat.style.color = "red"; }
+            else if(isCOD && !isDelivered) { stat.innerText = "PARTIAL PAYMENT (Balance Due on Delivery)"; stat.style.color = "#d97706"; }
+            else { stat.innerText = "PAID IN FULL"; stat.style.color = "green"; }
 
-            document.getElementById('invoiceModal').style.display = 'flex';
+            setTimeout(() => { window.print(); }, 300);
         }
 
         init();
