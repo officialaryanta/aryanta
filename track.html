@@ -10,6 +10,7 @@
     
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     
@@ -25,7 +26,7 @@
         .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
         .order-id-text { font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--text-muted); }
         
-        .status-badge { display: inline-block; padding: 6px 14px; border-radius: 100px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
+        .status-badge { display: inline-block; padding: 6px 14px; border-radius: 100px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; text-align: center; transition: background 0.3s, color 0.3s; }
         .status-pending, .status-processing { background: #fef08a; color: #854d0e; }
         .status-shipped, .status-near, .status-out { background: #bae6fd; color: #075985; }
         .status-delivered { background: #bbf7d0; color: #166534; }
@@ -44,7 +45,7 @@
         .timeline-scroll-wrapper { width: 100%; overflow-x: auto; padding-bottom: 15px; -webkit-overflow-scrolling: touch; }
         .timeline-container { position: relative; margin: 40px 0 20px; padding: 0 10px; min-width: 500px; }
         .timeline-track { position: absolute; top: 15px; left: 30px; right: 30px; height: 4px; background: var(--bg-color); z-index: 1; border-radius: 2px; }
-        .timeline-fill { position: absolute; top: 15px; left: 30px; height: 4px; background: var(--success); z-index: 2; transition: width 0.8s ease; border-radius: 2px; }
+        .timeline-fill { position: absolute; top: 15px; left: 30px; height: 4px; background: var(--success); z-index: 2; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 2px; }
         .timeline-steps { display: flex; justify-content: space-between; position: relative; z-index: 3; }
         
         .step { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 80px; text-align: center; }
@@ -124,17 +125,16 @@
     
     <div id="pageLoader" class="page-loader">
         <div class="spinner"></div>
-        <p class="loader-text">Locating your orders...</p>
+        <p class="loader-text">Locating your live orders...</p>
     </div>
 
     <main class="main-content" style="padding-top: 100px;">
         <div class="text-center mt-20 mb-15">
             <h1 style="font-size: 36px; font-weight: 800; letter-spacing: -1px;">Order History.</h1>
-            <p class="sub-text">Track and manage your premium acquisitions.</p>
+            <p class="sub-text">Track and manage your premium acquisitions in real-time.</p>
         </div>
         
-        <div class="order-grid" id="ordersContainer">
-            </div>
+        <div class="order-grid" id="ordersContainer"></div>
     </main>
 
     <div class="full-page right-slide" id="detailViewPage">
@@ -202,7 +202,8 @@
                     </div>
 
                     <div id="actionArea" class="mt-20" style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
-                        </div>
+                    </div>
+                    
                     <button class="btn-outline w-100 mt-20" onclick="downloadInvoice()"><i class="fas fa-file-invoice"></i> Download Invoice</button>
                 </div>
 
@@ -305,6 +306,16 @@
     </div>
 
     <script>
+        // --- FIREBASE LIVE TRACKING CONFIGURATION ---
+        const firebaseConfig = {
+            projectId: "aryanta-mart-a8893" 
+        };
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
         // --- HARDWARE BACK BUTTON LOGIC (HISTORY API) ---
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -324,23 +335,18 @@
         }
 
         window.addEventListener('popstate', (e) => {
-            // Close Sidebar
             document.getElementById('sidebar').classList.remove('open');
             document.getElementById('overlay').classList.remove('show');
             
-            // Close Detail View Page
             const detailView = document.getElementById('detailViewPage');
             if (detailView.classList.contains('open')) {
                 detailView.classList.remove('open');
-                document.body.style.overflow = 'auto'; // Restore scroll
+                document.body.style.overflow = 'auto'; 
             }
-
-            // Close Action Modal
             document.getElementById('actionModal').style.display = 'none';
         });
 
         // --- CORE APPLICATION LOGIC ---
-        const API_URL = "https://rough-field-c679.official-aryanta.workers.dev";
         const RAZORPAY_KEY = "rzp_test_SfN9xZbqkMSz6G"; 
 
         let myOrders = [];
@@ -352,7 +358,7 @@
             window.location.href = 'index.html';
         }
 
-        async function init() {
+        function init() {
             const user = JSON.parse(localStorage.getItem('active_session'));
             const accBtn = document.getElementById('accountBtn');
             
@@ -371,24 +377,43 @@
             accBtn.innerHTML = `<img src="${savedAvatar}" style="width:30px; height:30px; border-radius:50%; margin-right:8px; border:2px solid var(--primary);"> <span>${firstName}</span>`;
             accBtn.onclick = null; 
             
-            try {
-                const res = await fetch(`${API_URL}/get-orders?email=${encodeURIComponent(user.email)}`);
-                const allData = await res.json();
-                myOrders = allData.filter(o => o.user_email === user.email);
-                myOrders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                renderList();
-            } catch(e) {
-                document.getElementById('ordersContainer').innerHTML = "<p style='text-align:center; width:100%; grid-column: 1/-1;'>Error syncing order ledger.</p>";
-            } finally {
-                document.getElementById('pageLoader').classList.add('hidden');
-            }
+            // --- LIVE FIREBASE LISTENER ---
+            db.collection("orders")
+              .where("user_email", "==", user.email)
+              .onSnapshot((snapshot) => {
+                  myOrders = [];
+                  snapshot.forEach((doc) => {
+                      let data = doc.data();
+                      data.id = doc.id;
+                      myOrders.push(data);
+                  });
+                  
+                  myOrders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                  
+                  renderList();
+                  document.getElementById('pageLoader').classList.add('hidden');
+
+                  // LIVE UPDATE UI if details are currently open
+                  if (activeOrder && document.getElementById('detailViewPage').classList.contains('open')) {
+                      const updatedOrder = myOrders.find(o => o.id === activeOrder.id);
+                      if (updatedOrder) {
+                          activeOrder = updatedOrder;
+                          showDetail(activeOrder.id, false); 
+                      }
+                  }
+              }, (error) => {
+                  console.error("Firebase Streaming Error:", error);
+                  document.getElementById('ordersContainer').innerHTML = "<p style='text-align:center; width:100%; grid-column: 1/-1; color: var(--danger); font-weight: bold;'>Error syncing real-time order ledger.</p>";
+                  document.getElementById('pageLoader').classList.add('hidden');
+              });
         }
 
         function renderList() {
             const container = document.getElementById('ordersContainer');
             container.innerHTML = "";
+            
             if (myOrders.length === 0) {
-                container.innerHTML = `<div style="text-align:center; width:100%; grid-column: 1/-1; padding: 50px;"><h3>Your ledger is empty.</h3></div>`;
+                container.innerHTML = `<div style="text-align:center; width:100%; grid-column: 1/-1; padding: 50px;"><i class="fas fa-box-open" style="font-size: 50px; color: var(--border); margin-bottom: 20px;"></i><h3 style="color: var(--text-muted);">Your ledger is empty.</h3></div>`;
                 return;
             }
 
@@ -396,80 +421,100 @@
                 const card = document.createElement('div');
                 card.className = 'order-card';
                 card.style.animationDelay = `${index * 0.05}s`;
-                card.onclick = () => showDetail(order.id);
+                card.onclick = () => showDetail(order.id, true);
                 
+                // BULLETPROOF FALLBACK: Checks if order.status exists
                 let statusClass = 'status-pending';
-                const s = order.status.toLowerCase();
+                const s = (order.status || "Pending").toLowerCase();
                 if(s.includes('ship')) statusClass = 'status-shipped';
                 if(s.includes('out') || s.includes('near')) statusClass = 'status-out';
                 if(s.includes('deliver')) statusClass = 'status-delivered';
                 if(s.includes('cancel')) statusClass = 'status-cancelled';
 
-                let itemName = order.items[0].name;
-                if(order.items.length > 1) itemName += ` & ${order.items.length - 1} more items`;
+                // BULLETPROOF FALLBACK: Checks if order.items array actually exists and has content
+                let itemName = "Premium Order";
+                if (order.items && Array.isArray(order.items) && order.items.length > 0) {
+                    itemName = order.items[0].name || "Item";
+                    if(order.items.length > 1) itemName += ` & ${order.items.length - 1} more items`;
+                }
 
-                const dateString = new Date(order.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                // BULLETPROOF FALLBACK: Ensures grandTotal won't crash if financials is missing
+                const grandTotal = (order.financials && order.financials.grandTotal) ? order.financials.grandTotal : 0;
+                const dateString = order.timestamp ? new Date(order.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "Unknown Date";
 
                 card.innerHTML = `
                     <div class="card-header">
-                        <span class="order-id-text">#${order.order_no}</span>
-                        <div class="status-badge ${statusClass}">${order.status}</div>
+                        <span class="order-id-text">#${order.order_no || 'N/A'}</span>
+                        <div class="status-badge ${statusClass}">${order.status || 'Pending'}</div>
                     </div>
                     <span class="meta-text" style="margin:0;"><i class="fas fa-calendar-alt"></i> ${dateString}</span>
                     <div class="card-body">
                         <div class="item-summary">${itemName}</div>
-                        <div class="order-total">₹${order.financials.grandTotal.toLocaleString('en-IN')}</div>
+                        <div class="order-total">₹${grandTotal.toLocaleString('en-IN')}</div>
                     </div>
                 `;
                 container.appendChild(card);
             });
         }
 
-        function showDetail(id) {
+        function showDetail(id, pushHistory = true) {
             const order = myOrders.find(o => o.id === id);
+            if (!order) return;
+            
             activeOrder = order;
             
-            // Push state for back button handling
-            history.pushState({ modal: 'detail' }, "");
+            if (pushHistory) {
+                history.pushState({ modal: 'detail' }, "");
+            }
             
             document.getElementById('detailViewPage').classList.add('open');
-            document.body.style.overflow = 'hidden'; // Lock background scroll
+            document.body.style.overflow = 'hidden'; 
 
-            const orderDate = new Date(order.timestamp);
+            const orderDate = order.timestamp ? new Date(order.timestamp) : new Date();
             let expectedDate = order.expected_delivery ? new Date(order.expected_delivery) : new Date(orderDate.getTime() + 7 * 24 * 60 * 60 * 1000); 
 
-            document.getElementById('dispOrderNo').innerText = order.order_no;
+            document.getElementById('dispOrderNo').innerText = order.order_no || 'N/A';
             document.getElementById('dispDate').innerText = orderDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
             document.getElementById('dispExpected').innerText = expectedDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-            document.getElementById('dispAddress').innerText = order.delivery_address;
+            document.getElementById('dispAddress').innerText = order.delivery_address || 'Address not provided';
 
-            // Render Items
+            // BULLETPROOF FALLBACK: Safely render items
             const itemsContainer = document.getElementById('dispItemsContainer');
-            itemsContainer.innerHTML = order.items.map(i => `
-                <div class="items-list-row">
-                    <div>
-                        <strong style="font-size:15px; display:block; margin-bottom:5px;">${i.name}</strong> 
-                        <span class="meta-text">Qty: ${i.qty}</span>
+            if (order.items && Array.isArray(order.items) && order.items.length > 0) {
+                itemsContainer.innerHTML = order.items.map(i => `
+                    <div class="items-list-row">
+                        <div>
+                            <strong style="font-size:15px; display:block; margin-bottom:5px;">${i.name || 'Item'}</strong> 
+                            <span class="meta-text">Qty: ${i.qty || 1}</span>
+                        </div>
+                        <strong style="font-family: var(--font-mono); color: var(--primary);">₹${((i.price || 0) * (i.qty || 1)).toLocaleString('en-IN')}</strong>
                     </div>
-                    <strong style="font-family: var(--font-mono); color: var(--primary);">₹${(i.price * i.qty).toLocaleString('en-IN')}</strong>
-                </div>
-            `).join('');
+                `).join('');
+            } else {
+                itemsContainer.innerHTML = "<p style='color: var(--text-muted); font-size: 14px;'>Item details unavailable for this record.</p>";
+            }
 
-            // Financials
-            document.getElementById('finItems').innerText = `₹${order.financials.itemsTotal.toLocaleString('en-IN')}`;
-            document.getElementById('finShipping').innerText = `₹${order.financials.shippingCost.toLocaleString('en-IN')}`;
-            document.getElementById('finGrand').innerText = `₹${order.financials.grandTotal.toLocaleString('en-IN')}`;
+            // BULLETPROOF FALLBACK: Financials
+            const itemsTotal = order.financials?.itemsTotal || 0;
+            const shippingCost = order.financials?.shippingCost || 0;
+            const grandTotal = order.financials?.grandTotal || 0;
+            const paymentMethod = order.payment_method || "";
+            const status = order.status || "Pending";
+
+            document.getElementById('finItems').innerText = `₹${itemsTotal.toLocaleString('en-IN')}`;
+            document.getElementById('finShipping').innerText = `₹${shippingCost.toLocaleString('en-IN')}`;
+            document.getElementById('finGrand').innerText = `₹${grandTotal.toLocaleString('en-IN')}`;
             
-            const isCOD = order.payment_method.includes("COD");
-            const isDelivered = order.status.includes("Delivered");
-            const isCancelled = order.status.toLowerCase().includes("cancel");
+            const isCOD = paymentMethod.includes("COD") && !paymentMethod.includes("Cleared");
+            const isDelivered = status.includes("Delivered");
+            const isCancelled = status.toLowerCase().includes("cancel");
 
             if (isCOD && !isDelivered && !isCancelled) {
-                document.getElementById('finPaid').innerText = `₹${order.financials.shippingCost.toLocaleString('en-IN')}`;
-                document.getElementById('finPending').innerText = `₹${order.financials.itemsTotal.toLocaleString('en-IN')}`;
+                document.getElementById('finPaid').innerText = `₹${shippingCost.toLocaleString('en-IN')}`;
+                document.getElementById('finPending').innerText = `₹${itemsTotal.toLocaleString('en-IN')}`;
                 document.getElementById('pendingRow').style.display = "flex";
             } else {
-                document.getElementById('finPaid').innerText = `₹${order.financials.grandTotal.toLocaleString('en-IN')}`;
+                document.getElementById('finPaid').innerText = `₹${grandTotal.toLocaleString('en-IN')}`;
                 document.getElementById('pendingRow').style.display = "none";
             }
 
@@ -477,7 +522,7 @@
         }
 
         function updateTimeline(order, expectedDate, isCOD, isDelivered, isCancelled) {
-            const statusStr = order.status.toLowerCase();
+            const statusStr = (order.status || "Pending").toLowerCase();
             let currentIdx = 0;
             if(statusStr.includes('process')) currentIdx = 1;
             if(statusStr.includes('ship')) currentIdx = 2;
@@ -490,7 +535,7 @@
             
             for(let i=0; i<5; i++) { document.getElementById('step'+i).className = 'step'; }
 
-            badge.innerText = order.status;
+            badge.innerText = order.status || "Pending";
             badge.className = 'status-badge';
 
             actionArea.innerHTML = ''; 
@@ -502,6 +547,7 @@
                 fill.style.width = "0%";
                 fill.style.background = "var(--danger)";
                 document.getElementById('timelineSection').style.opacity = "0.5";
+                
                 actionArea.innerHTML = `<p style="color: var(--danger); font-weight: 700; text-align: center; background: #fef2f2; padding: 15px; border-radius: 12px; border: 1px solid #fecaca;"><i class="fas fa-info-circle"></i> This order has been cancelled.</p>`;
             } else {
                 document.getElementById('timelineSection').style.opacity = "1";
@@ -518,8 +564,9 @@
                     else document.getElementById('step'+i).classList.add('active');
                 }
 
+                // Add Live Action Buttons
                 if (isCOD && !isDelivered) {
-                    actionArea.innerHTML += `<button class="btn-prime w-100" style="background: #eab308; color: #111; border:none; padding:15px; border-radius:12px; font-weight:bold; font-size:15px; cursor:pointer;" onclick="payPendingBalance()"><i class="fas fa-bolt"></i> Pay full charge to avoid any issues</button>`;
+                    actionArea.innerHTML += `<button class="btn-prime w-100" style="background: #eab308; color: #111; border:none; padding:15px; border-radius:12px; font-weight:bold; font-size:15px; cursor:pointer;" onclick="payPendingBalance()"><i class="fas fa-bolt"></i> Pay balance online to clear delivery</button>`;
                 }
 
                 if (isDelivered) {
@@ -532,11 +579,12 @@
 
         function openActionModal(type) {
             actionType = type;
-            history.pushState({ modal: 'action' }, ""); // Push state for back button
+            history.pushState({ modal: 'action' }, ""); 
             document.getElementById('actionModal').style.display = "flex";
             document.getElementById('modalTitle').innerText = (type === 'cancel') ? "Cancel Order" : "Return Product";
         }
 
+        // --- LIVE ACTION: SUBMIT CANCEL/RETURN TO FIREBASE ---
         async function submitAction() {
             const reason = document.getElementById('reasonSelect').value;
             const details = document.getElementById('reasonDetails').value;
@@ -548,29 +596,45 @@
             const finalStatus = (actionType === 'cancel') ? "Cancelled" : "Return Requested";
 
             try {
-                const res = await fetch(`${API_URL}/update-order`, {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ id: activeOrder.id, status: finalStatus, reason: reason, notes: details })
+                // Update Firestore directly. UI will auto-update via onSnapshot instantly!
+                await db.collection("orders").doc(activeOrder.id).update({
+                    status: finalStatus,
+                    action_reason: reason,
+                    action_notes: details
                 });
                 
-                if(res.ok) {
-                    alert("Request submitted successfully.");
-                    location.reload();
-                } else throw new Error();
+                alert("Request processed successfully.");
+                document.getElementById('actionModal').style.display = 'none';
+                
+                btn.disabled = false;
+                btn.innerText = "Submit Request";
+                
+                history.back(); 
             } catch(e) {
-                alert("Network error processing request.");
+                alert("Network error processing request to Firestore.");
                 btn.disabled = false;
                 btn.innerText = "Submit Request";
             }
         }
 
+        // --- LIVE ACTION: PAY COD BALANCE TO FIREBASE ---
         function payPendingBalance() {
             if(!activeOrder) return;
+            const itemsTotal = activeOrder.financials?.itemsTotal || 0;
+            
             const options = {
-                "key": RAZORPAY_KEY, "amount": activeOrder.financials.itemsTotal * 100, "currency": "INR", "name": "Aryanta Prime",
+                "key": RAZORPAY_KEY, "amount": itemsTotal * 100, "currency": "INR", "name": "Aryanta Prime",
                 "description": "Remaining COD Balance Clearance",
                 "handler": async function (response) { 
-                    alert("Payment Successful! Your order is now fully prepaid."); location.reload();
+                    try {
+                        await db.collection("orders").doc(activeOrder.id).update({
+                            payment_method: "COD (Cleared Online)",
+                            razorpay_id_balance: response.razorpay_payment_id
+                        });
+                        alert("Payment Successful! Your order is now fully prepaid."); 
+                    } catch(e) {
+                        alert("Payment succeeded but database update failed.");
+                    }
                 },
                 "prefill": { "email": activeOrder.user_email },
                 "theme": { "color": "#0a0a0a" }
@@ -583,25 +647,36 @@
             if(!activeOrder) return;
             const user = JSON.parse(localStorage.getItem('active_session'));
             
-            document.getElementById('invOrderNo').innerText = activeOrder.order_no;
-            document.getElementById('invDate').innerText = new Date(activeOrder.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('invOrderNo').innerText = activeOrder.order_no || 'N/A';
+            document.getElementById('invDate').innerText = activeOrder.timestamp ? new Date(activeOrder.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : "Unknown";
             document.getElementById('invCustName').innerText = activeOrder.delivery_name || user.name;
             document.getElementById('invCustEmail').innerText = activeOrder.user_email || user.email;
-            document.getElementById('invAddress').innerText = activeOrder.delivery_address;
+            document.getElementById('invAddress').innerText = activeOrder.delivery_address || 'N/A';
             
             const tbody = document.getElementById('invTableBody');
             tbody.innerHTML = '';
-            activeOrder.items.forEach((item, index) => {
-                tbody.innerHTML += `<tr><td style="padding:10px 5px;">${index + 1}</td><td style="padding:10px 5px;"><strong>${item.name}</strong></td><td style="text-align:center; padding:10px 5px;">${item.qty}</td><td style="text-align:right; padding:10px 5px;">₹${item.price.toLocaleString('en-IN')}</td><td style="text-align:right; padding:10px 5px;"><strong>₹${(item.price * item.qty).toLocaleString('en-IN')}</strong></td></tr>`;
-            });
+            
+            if (activeOrder.items && Array.isArray(activeOrder.items)) {
+                activeOrder.items.forEach((item, index) => {
+                    const price = item.price || 0;
+                    const qty = item.qty || 1;
+                    tbody.innerHTML += `<tr><td style="padding:10px 5px;">${index + 1}</td><td style="padding:10px 5px;"><strong>${item.name || 'Item'}</strong></td><td style="text-align:center; padding:10px 5px;">${qty}</td><td style="text-align:right; padding:10px 5px;">₹${price.toLocaleString('en-IN')}</td><td style="text-align:right; padding:10px 5px;"><strong>₹${(price * qty).toLocaleString('en-IN')}</strong></td></tr>`;
+                });
+            }
 
-            document.getElementById('invItemsTotal').innerText = `₹${activeOrder.financials.itemsTotal.toLocaleString('en-IN')}`;
-            document.getElementById('invShipping').innerText = `₹${activeOrder.financials.shippingCost.toLocaleString('en-IN')}`;
-            document.getElementById('invGrandTotal').innerText = `₹${activeOrder.financials.grandTotal.toLocaleString('en-IN')}`;
+            const itemsTotal = activeOrder.financials?.itemsTotal || 0;
+            const shippingCost = activeOrder.financials?.shippingCost || 0;
+            const grandTotal = activeOrder.financials?.grandTotal || 0;
+            const paymentMethod = activeOrder.payment_method || "";
+            const status = (activeOrder.status || "Pending").toLowerCase();
 
-            const isCOD = activeOrder.payment_method.includes("COD");
-            const isDelivered = activeOrder.status.includes("Delivered");
-            const isCancelled = activeOrder.status.toLowerCase().includes("cancel");
+            document.getElementById('invItemsTotal').innerText = `₹${itemsTotal.toLocaleString('en-IN')}`;
+            document.getElementById('invShipping').innerText = `₹${shippingCost.toLocaleString('en-IN')}`;
+            document.getElementById('invGrandTotal').innerText = `₹${grandTotal.toLocaleString('en-IN')}`;
+
+            const isCOD = paymentMethod.includes("COD") && !paymentMethod.includes("Cleared");
+            const isDelivered = status.includes("delivered");
+            const isCancelled = status.includes("cancel");
             
             const stat = document.getElementById('invStatus');
             if(isCancelled) { stat.innerText = "ORDER CANCELLED"; stat.style.color = "red"; }
