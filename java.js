@@ -6,11 +6,14 @@ const RAZORPAY_KEY = "rzp_test_SfN9xZbqkMSz6G";
 emailjs.init("TDgNRO0CEs9rU3ozD");
 
 let allProducts = [];
+let baseCategoryProducts = []; // Used for category filtering
 let currentlyDisplayed = 0;
-const BATCH_SIZE = 10; // Extreme speed: only load 10 at a time
+const BATCH_SIZE = 10; 
 
 let cart = [];
 let currentProduct = null;
+let currentImageIndex = 0; // For product multiple images slider
+let currentCategory = 'All'; // Active category tracking
 let hashedOTP = "";
 let tempUserData = null; 
 let currentOrderState = { itemsTotal: 0, shippingCost: 0, grandTotal: 0 };
@@ -23,7 +26,6 @@ const BHAGALPUR_LON = 86.9842;
 // --- 2. FAST BOOT OPTIMIZATION & UI CONTROLS ---
 let activeOverlays = [];
 
-// Ultimate fast-boot: instantly kill loader after 800ms max, or earlier when DB loads
 setTimeout(() => {
     const loader = document.getElementById('pageLoader');
     if (loader) loader.classList.add('hidden');
@@ -113,7 +115,7 @@ async function updateUserDataAPI(email, updateFields) {
     } catch(e) { console.error("Cloudflare Update failed", e); }
 }
 
-// --- 3. PRODUCTS WITH INTERSECTION OBSERVER BATCHING ---
+// --- 3. PRODUCTS, CATEGORIES, & INFINITE SCROLL ---
 let scrollObserver = null;
 let isFetchingBatch = false;
 
@@ -121,9 +123,10 @@ async function fetchProducts() {
     try {
         const res = await fetch(`${API_BASE_URL}/products`);
         allProducts = await res.json();
+        baseCategoryProducts = allProducts; 
         
-        // Instantly hide loader, DO NOT fetch reviews here.
         document.getElementById('pageLoader').classList.add('hidden');
+        renderCategoryPills();
         
         currentlyDisplayed = 0;
         document.getElementById('productShelf').innerHTML = '';
@@ -134,20 +137,41 @@ async function fetchProducts() {
     }
 }
 
+function renderCategoryPills() {
+    const cats = new Set(allProducts.map(p => p.category || 'Other'));
+    const container = document.getElementById('categoryFilters');
+    container.innerHTML = `<button class="cat-pill active" onclick="filterCategory('All')">All</button>`;
+    cats.forEach(c => {
+        container.innerHTML += `<button class="cat-pill" onclick="filterCategory('${c}')">${c}</button>`;
+    });
+}
+
+window.filterCategory = function(cat) {
+    currentCategory = cat;
+    document.querySelectorAll('.cat-pill').forEach(btn => {
+        btn.classList.remove('active');
+        if(btn.innerText === cat) btn.classList.add('active');
+    });
+    
+    if (cat === 'All') baseCategoryProducts = allProducts;
+    else baseCategoryProducts = allProducts.filter(p => (p.category || 'Other') === cat);
+    
+    const term = document.getElementById('searchInput').value.toLowerCase().trim();
+    applySearchAndRender(term);
+}
+
 function loadMoreProducts() {
     if (isFetchingBatch) return;
     isFetchingBatch = true;
     
     const container = document.getElementById('productShelf');
-    if(!container || allProducts.length === 0) { isFetchingBatch = false; return; }
+    if(!container || baseCategoryProducts.length === 0) { isFetchingBatch = false; return; }
 
-    const nextBatch = allProducts.slice(currentlyDisplayed, currentlyDisplayed + BATCH_SIZE);
+    const nextBatch = baseCategoryProducts.slice(currentlyDisplayed, currentlyDisplayed + BATCH_SIZE);
     if(nextBatch.length === 0) { isFetchingBatch = false; return; } 
     
     renderProducts(nextBatch, 'productShelf', true); 
     
-    // Human Activity: Place observer on the 6th item of the CURRENT batch
-    // Index 5 represents the 6th item offset from currentlyDisplayed.
     const triggerIndex = currentlyDisplayed + 5;
     const allRenderedCards = container.querySelectorAll('.list-item-card');
 
@@ -155,10 +179,8 @@ function loadMoreProducts() {
         const triggerCard = allRenderedCards[triggerIndex];
         if (scrollObserver) scrollObserver.disconnect();
         scrollObserver = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting) {
-                loadMoreProducts();
-            }
-        }, { rootMargin: "300px" }); // Margin gives it a tiny headstart
+            if (entries[0].isIntersecting) loadMoreProducts();
+        }, { rootMargin: "300px" });
         scrollObserver.observe(triggerCard);
     }
 
@@ -166,33 +188,33 @@ function loadMoreProducts() {
     isFetchingBatch = false;
 }
 
-// Real-time AI Search
+function applySearchAndRender(term) {
+    if (!term) {
+        if (scrollObserver) scrollObserver.disconnect();
+        currentlyDisplayed = 0;
+        document.getElementById('productShelf').innerHTML = '';
+        return loadMoreProducts();
+    }
+    const searchTerms = term.split(' ');
+    const filtered = baseCategoryProducts.map(p => {
+        let score = 0;
+        const nameStr = p.name.toLowerCase();
+        const descStr = (p.desc || "").toLowerCase();
+        searchTerms.forEach(t => { if(nameStr.includes(t)) score += 3; if(descStr.includes(t)) score += 1; });
+        return { ...p, score };
+    }).filter(p => p.score > 0).sort((a,b) => b.score - a.score);
+    
+    if (scrollObserver) scrollObserver.disconnect();
+    renderProducts(filtered, 'productShelf', false); 
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('searchInput');
     let searchTimeout;
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                const term = e.target.value.toLowerCase().trim();
-                if (!term) {
-                    if (scrollObserver) scrollObserver.disconnect();
-                    currentlyDisplayed = 0;
-                    document.getElementById('productShelf').innerHTML = '';
-                    return loadMoreProducts();
-                }
-                const searchTerms = term.split(' ');
-                const filtered = allProducts.map(p => {
-                    let score = 0;
-                    const nameStr = p.name.toLowerCase();
-                    const descStr = (p.desc || "").toLowerCase();
-                    searchTerms.forEach(t => { if(nameStr.includes(t)) score += 3; if(descStr.includes(t)) score += 1; });
-                    return { ...p, score };
-                }).filter(p => p.score > 0).sort((a,b) => b.score - a.score);
-                
-                if (scrollObserver) scrollObserver.disconnect(); // Disable infinite scroll during search
-                renderProducts(filtered, 'productShelf', false); 
-            }, 300); 
+            searchTimeout = setTimeout(() => { applySearchAndRender(e.target.value.toLowerCase().trim()); }, 300); 
         });
     }
 });
@@ -209,10 +231,10 @@ function renderProducts(list, containerId, append = false) {
     
     list.forEach((p, index) => {
         if(p.isDummy) return;
-        let img = p.images && p.images.length > 0 ? p.images[0] : 'https://via.placeholder.com/300';
+        let img = p.image || (p.images && p.images.length > 0 ? p.images[0] : 'https://via.placeholder.com/300');
         let desc = p.desc ? p.desc.substring(0, 150) + '...' : 'Experience the pinnacle of craftsmanship.';
         
-        let starUI = p.avgRating ? `<i class="fas fa-star"></i> ${p.avgRating} (${p.reviewCount})` : "View Product Ratings";
+        let starUI = (p.avgRating && p.avgRating !== "New") ? `<i class="fas fa-star"></i> ${p.avgRating} (${p.reviewCount})` : `<i class="fas fa-star" style="color:#cbd5e1;"></i> New`;
 
         const div = document.createElement('div');
         div.className = 'list-item-card';
@@ -233,27 +255,36 @@ function renderProducts(list, containerId, append = false) {
     });
 }
 
-// --- 4. PRODUCT PAGE (ON-DEMAND FETCHING) ---
+// --- 4. PRODUCT PAGE (ON-DEMAND FETCHING & MULTI IMAGE) ---
 window.openProductPage = async function(id) {
     currentProduct = allProducts.find(p => p.id === id);
+    currentImageIndex = 0;
     
     document.getElementById('fpName').innerText = currentProduct.name;
     document.getElementById('fpDesc').innerText = currentProduct.desc || "Experience the pinnacle of craftsmanship. Engineered for the modern elite with uncompromising quality.";
     document.getElementById('fpPrice').innerText = `₹${Number(currentProduct.price).toLocaleString('en-IN')}`;
-    document.getElementById('fpImage').src = currentProduct.images && currentProduct.images.length > 0 ? currentProduct.images[0] : 'https://via.placeholder.com/600';
     
-    // Set UI to loading state until fetched
-    document.getElementById('fpStarsAvg').innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
-    document.getElementById('fpRatingCount').innerText = `Loading ratings...`;
+    const mainImgSrc = currentProduct.image || (currentProduct.images && currentProduct.images.length > 0 ? currentProduct.images[0] : 'https://via.placeholder.com/600');
+    document.getElementById('fpImage').src = mainImgSrc;
+    
+    // Toggle multi-image slider arrows
+    const prevBtn = document.getElementById('imgPrevBtn');
+    const nextBtn = document.getElementById('imgNextBtn');
+    if (currentProduct.images && currentProduct.images.length > 1) {
+        prevBtn.style.display = 'flex'; nextBtn.style.display = 'flex';
+    } else {
+        prevBtn.style.display = 'none'; nextBtn.style.display = 'none';
+    }
 
-    // Render static similar items
+    document.getElementById('fpStarsAvg').innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
+    document.getElementById('fpRatingCount').innerText = `Loading...`;
+
     let similar = allProducts.filter(p => p.id !== currentProduct.id).slice(0, 25);
     renderProducts(similar, 'relatedProductsShelf', false);
     
     openUI('fullProductPage');
     document.getElementById('fullProductPage').scrollTo(0,0);
 
-    // FETCH REVIEWS ONLY UPON CLICKING
     try {
         const revRes = await fetch(`${API_BASE_URL}/reviews?productId=${id}`);
         const reviews = await revRes.json();
@@ -267,22 +298,41 @@ window.openProductPage = async function(id) {
             currentProduct.avgRating = "New";
         }
         
-        document.getElementById('fpStarsAvg').innerHTML = currentProduct.avgRating === "New" ? "New Product" : `<i class="fas fa-star"></i> ${currentProduct.avgRating}`;
-        document.getElementById('fpRatingCount').innerText = `${currentProduct.reviewCount} Verified Ratings`;
+        document.getElementById('fpStarsAvg').innerHTML = currentProduct.avgRating === "New" ? "New" : `${currentProduct.avgRating}`;
+        document.getElementById('fpRatingCount').innerText = `${currentProduct.reviewCount} Ratings`;
         
         const cardStars = document.getElementById(`stars-${id}`);
-        if(cardStars) cardStars.innerHTML = currentProduct.avgRating === "New" ? "No ratings yet" : `<i class="fas fa-star"></i> ${currentProduct.avgRating} (${currentProduct.reviewCount})`;
+        if(cardStars) cardStars.innerHTML = currentProduct.avgRating === "New" ? `<i class="fas fa-star" style="color:#cbd5e1;"></i> New` : `<i class="fas fa-star"></i> ${currentProduct.avgRating} (${currentProduct.reviewCount})`;
         
     } catch(e) {
         document.getElementById('fpStarsAvg').innerHTML = `<i class="fas fa-exclamation-circle"></i>`;
-        document.getElementById('fpRatingCount').innerText = `Ratings unavailable`;
+        document.getElementById('fpRatingCount').innerText = `Error`;
     }
 };
 
-window.directAddToCart = function(id) { currentProduct = allProducts.find(p => p.id === id); window.addToCartFromPage(); };
-window.directBuyNow = function(id) { currentProduct = allProducts.find(p => p.id === id); window.buyNowFromPage(); };
+window.changeImage = function(dir) {
+    if (!currentProduct || !currentProduct.images || currentProduct.images.length <= 1) return;
+    currentImageIndex += dir;
+    if(currentImageIndex >= currentProduct.images.length) currentImageIndex = 0;
+    if(currentImageIndex < 0) currentImageIndex = currentProduct.images.length - 1;
+    document.getElementById('fpImage').src = currentProduct.images[currentImageIndex];
+}
 
-// --- 5. REAL-TIME REVIEWS SYSTEM (WITH ZOOM & EDIT/DELETE) ---
+// Quick Buy Actions Direct to Checkout
+window.directAddToCart = function(id) { currentProduct = allProducts.find(p => p.id === id); window.addToCartFromPage(); };
+
+window.directBuyNow = function(id) { 
+    currentProduct = allProducts.find(p => p.id === id); 
+    cart = [{ ...currentProduct, qty: 1 }]; 
+    saveCart(); updateCartUI(); openCheckoutDirect(); 
+};
+
+window.buyNowFromPage = function() { 
+    cart = [{ ...currentProduct, qty: 1 }]; 
+    saveCart(); updateCartUI(); openCheckoutDirect(); 
+};
+
+// --- 5. REAL-TIME REVIEWS SYSTEM ---
 let selectedReviewStars = 0;
 let selectedReviewImage = null;
 let currentZoom = 1;
@@ -308,7 +358,6 @@ window.toggleReviewForm = function() {
     }
 }
 
-// Image Zoom Logic
 window.openImageZoom = function(src) {
     const modal = document.getElementById('imageZoomModal');
     const img = document.getElementById('zoomedImage');
@@ -321,7 +370,6 @@ window.zoomImage = function(delta) {
 }
 window.resetZoom = function() { currentZoom = 1; document.getElementById('zoomedImage').style.transform = `scale(1)`; }
 
-// INTERCEPT UI OPENS TO LAZY LOAD CART/PROFILE
 const originalOpenUI = window.openUI;
 window.openUI = async function(id) {
     originalOpenUI(id);
@@ -329,7 +377,7 @@ window.openUI = async function(id) {
     if(id === 'fullReviewPage' && currentProduct) {
         document.getElementById('reviewFormContainer').style.display = 'none';
         document.getElementById('revProdName').innerText = currentProduct.name;
-        document.getElementById('revProdImg').src = currentProduct.images && currentProduct.images.length > 0 ? currentProduct.images[0] : 'https://via.placeholder.com/150';
+        document.getElementById('revProdImg').src = currentProduct.image || (currentProduct.images && currentProduct.images.length > 0 ? currentProduct.images[0] : 'https://via.placeholder.com/150');
         document.getElementById('revScore').innerText = currentProduct.avgRating === "New" ? "0.0" : currentProduct.avgRating;
         document.getElementById('revCount').innerText = `${currentProduct.reviewCount} verified ratings`;
         
@@ -345,18 +393,29 @@ window.openUI = async function(id) {
             revImageInput.onchange = function(e) {
                 if(this.files.length) {
                     const reader = new FileReader();
-                    reader.onload = (event) => {
-                        selectedReviewImage = event.target.result;
-                        revDropZone.innerHTML = `<img src="${selectedReviewImage}" style="max-height: 120px; border-radius: 12px; box-shadow: var(--shadow-sm);"><div style="color:var(--success); font-weight:800; font-size:13px; margin-top:10px;"><i class="fas fa-check-circle"></i> Image Attached Successfully</div>`;
-                    };
                     reader.readAsDataURL(this.files[0]);
+                    reader.onload = (event) => {
+                        // Compress Image logic to prevent Firebase crash
+                        const img = new Image();
+                        img.src = event.target.result;
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const MAX_WIDTH = 600; 
+                            let scaleSize = 1;
+                            if (img.width > MAX_WIDTH) scaleSize = MAX_WIDTH / img.width;
+                            canvas.width = img.width * scaleSize; canvas.height = img.height * scaleSize;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            selectedReviewImage = canvas.toDataURL('image/jpeg', 0.8);
+                            revDropZone.innerHTML = `<img src="${selectedReviewImage}" style="max-height: 120px; border-radius: 12px; box-shadow: var(--shadow-sm);"><div style="color:var(--success); font-weight:800; font-size:13px; margin-top:10px;"><i class="fas fa-check-circle"></i> Image Attached Successfully</div>`;
+                        }
+                    };
                 }
             };
         }
         await loadReviewsList();
     }
     
-    // SERVER FETCH ON DEMAND: Cart Page
     if (id === 'fullCartPage') {
         const session = JSON.parse(localStorage.getItem('active_session'));
         if (session && session.email) {
@@ -419,9 +478,11 @@ window.submitReview = async function() {
     if(!text) return showAlert("Please write a short review text.");
 
     const editingId = document.getElementById('editingReviewId').value;
+    
+    // FIX: Included projectId in the payload to ensure correct routing on the backend
     const payload = {
         productId: currentProduct.id, userName: user.name, userEmail: user.email, rating: selectedReviewStars,
-        text: text, image: selectedReviewImage, timestamp: new Date().toISOString()
+        text: text, image: selectedReviewImage, timestamp: new Date().toISOString(), projectId: PROJECT_ID 
     };
     
     if (editingId) payload.id = editingId; 
@@ -461,7 +522,7 @@ window.deleteReview = async function(id) {
             await fetch(`${API_BASE_URL}/add-review`, {
                  method: 'POST', 
                  headers: { 'Content-Type': 'application/json' }, 
-                 body: JSON.stringify({ id: id, delete: true, productId: currentProduct.id }) 
+                 body: JSON.stringify({ id: id, delete: true, productId: currentProduct.id, projectId: PROJECT_ID }) 
             });
             showToast("Review deleted");
             await loadReviewsList();
@@ -492,8 +553,6 @@ window.addToCartFromPage = function() {
     showToast(`"${currentProduct.name}" added to bag.`);
 };
 
-window.buyNowFromPage = function() { cart = []; saveCart(); window.addToCartFromPage(); openUI('fullCartPage'); };
-
 function updateCartUI() {
     const container = document.getElementById('cartItemsContainer');
     container.innerHTML = '';
@@ -501,7 +560,7 @@ function updateCartUI() {
 
     cart.forEach(item => {
         total += item.price * item.qty; count += item.qty;
-        let img = item.images && item.images.length > 0 ? item.images[0] : 'https://via.placeholder.com/150';
+        let img = item.image || (item.images && item.images.length > 0 ? item.images[0] : 'https://via.placeholder.com/150');
         container.innerHTML += `
             <div class="cart-item-row">
                 <div class="cart-img-box"><img src="${img}"></div>
@@ -548,7 +607,6 @@ window.openAccountPage = async function() {
     const session = JSON.parse(localStorage.getItem('active_session'));
     if(!session) return;
     
-    // Set local cache immediately
     document.getElementById('accName').value = session.name || "";
     document.getElementById('accEmail').value = session.email || "";
     document.getElementById('accPhone').value = session.phone || "";
@@ -558,8 +616,6 @@ window.openAccountPage = async function() {
     document.getElementById('accPincode').value = session.pincode || "";
     
     openUI('fullAccountPage');
-    
-    // SERVER FETCH ON DEMAND: Profile Page
     await initUserProfileAPI(session.email); 
 }
 
@@ -635,7 +691,7 @@ window.completeAuth = async function() {
                 const newUser = {
                     name: tempUserData.name, email: tempUserData.email, phone: tempUserData.phone,
                     address: tempUserData.address, city: tempUserData.city, state: tempUserData.state,
-                    pincode: tempUserData.pincode, timestamp: new Date().toISOString(),
+                    pincode: tempUserData.pincode, timestamp: new Date().toISOString(), projectId: PROJECT_ID,
                     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=" + tempUserData.name,
                     addresses: [], cart: []
                 };
@@ -656,9 +712,14 @@ function initUserProfileAPI(email) {
     .then(data => {
         if(data && data.email) {
             savedUserAddresses = data.addresses || []; 
+            
+            // Sync session addresses locally too
+            let session = JSON.parse(localStorage.getItem('active_session'));
+            if(session) { session.addresses = savedUserAddresses; localStorage.setItem('active_session', JSON.stringify(session)); }
+
             userAvatar = data.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`;
             document.getElementById('sidebarAvatar').src = userAvatar;
-            const session = JSON.parse(localStorage.getItem('active_session')); const firstName = session ? session.name.split(' ')[0] : 'Profile';
+            const firstName = session ? session.name.split(' ')[0] : 'Profile';
             document.getElementById('accountBtn').innerHTML = `<img src="${userAvatar}" class="nav-avatar" title="My Profile" style="margin-right: 8px;"> <span>${firstName}</span>`;
             document.querySelectorAll('.avatar-opt').forEach(el => { el.classList.remove('selected'); if(el.src === userAvatar) el.classList.add('selected'); });
             renderAddresses();
@@ -698,6 +759,11 @@ window.saveNewAddress = async function() {
     if(!add || !pin || !name || !phone) return showAlert("Name, Phone, Address and Pincode are strictly required.");
     
     savedUserAddresses.push({ name: name, phone: phone, address: add, city: city, state: state, pincode: pin });
+    
+    // FIX: Updating the Local session simultaneously
+    session.addresses = savedUserAddresses;
+    localStorage.setItem('active_session', JSON.stringify(session));
+
     try {
         updateUserDataAPI(session.email, { addresses: savedUserAddresses });
         document.getElementById('newAddName').value = ""; document.getElementById('newAddPhone').value = ""; document.getElementById('newAddText').value = ""; document.getElementById('newCity').value = ""; document.getElementById('newState').value = ""; document.getElementById('newPin').value = "";
@@ -710,6 +776,7 @@ window.removeAddress = async function(index) {
     showAlert("Are you sure you want to delete this saved location permanently?", "Confirm Deletion", true, async () => {
         const session = JSON.parse(localStorage.getItem('active_session')); 
         savedUserAddresses.splice(index, 1);
+        session.addresses = savedUserAddresses; localStorage.setItem('active_session', JSON.stringify(session));
         updateUserDataAPI(session.email, { addresses: savedUserAddresses });
         renderAddresses(); showToast("Address Removed");
     });
@@ -718,7 +785,8 @@ window.removeAddress = async function(index) {
 window.editAddress = function(index) {
     const a = savedUserAddresses[index];
     document.getElementById('newAddName').value = a.name || ""; document.getElementById('newAddPhone').value = a.phone || ""; document.getElementById('newAddText').value = a.address || ""; document.getElementById('newCity').value = a.city || ""; document.getElementById('newState').value = a.state || ""; document.getElementById('newPin').value = a.pincode || "";
-    document.getElementById('newAddressForm').style.display = 'block'; savedUserAddresses.splice(index, 1);
+    document.getElementById('newAddressForm').style.display = 'block'; 
+    savedUserAddresses.splice(index, 1);
 }
 
 window.setAsDefault = function(index) {
@@ -762,22 +830,25 @@ window.useDefaultAddress = function() {
     showToast("Profile address applied.", 1500);
 };
 
-window.openCheckout = async function() {
+// Fixed to handle opening direct from Cart vs direct from Buy Now Button
+window.openCheckoutFromCart = function() { history.back(); setTimeout(() => openCheckoutDirect(), 300); };
+window.closeCheckout = function() { history.back(); }
+
+window.openCheckoutDirect = async function() {
     if (cart.length === 0) return showAlert("Bag is empty.");
     const session = JSON.parse(localStorage.getItem('active_session'));
     if (!session) return showAlert("Please authenticate to proceed.", "Secure Checkout", false, () => document.getElementById('accountBtn').click());
     
-    history.back(); 
-    setTimeout(() => { openUI('fullCheckoutPage'); }, 300);
-
+    openUI('fullCheckoutPage');
     document.getElementById('checkoutStep1').style.display = 'block';
     document.getElementById('checkoutStep2').style.display = 'none';
     window.useDefaultAddress();
     
-    if (savedUserAddresses.length === 0) {
-        await initUserProfileAPI(session.email);
-    }
+    if (savedUserAddresses.length === 0) await initUserProfileAPI(session.email);
+    renderCheckoutAddressesList();
+};
 
+function renderCheckoutAddressesList() {
     const chkList = document.getElementById('checkoutAddressList');
     chkList.innerHTML = '';
     
@@ -792,7 +863,7 @@ window.openCheckout = async function() {
                 </div>`;
         });
     }
-};
+}
 
 window.selectCheckoutAdd = function(index) {
     const session = JSON.parse(localStorage.getItem('active_session'));
@@ -898,7 +969,7 @@ async function saveOrderToBackend(paymentId, isCOD) {
     toggleButtonState('payBtn', true, 'Authorizing...');
     try {
         await fetch(`${API_BASE_URL}/order`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderData) });
-        buildGloriousReceipt(orderData); cart = []; updateCartUI(); saveCart(); history.back(); 
+        buildGloriousReceipt(orderData); cart = []; updateCartUI(); saveCart(); closeCheckout(); 
         setTimeout(() => { openUI('overlay'); openUI('orderSuccessModal'); }, 300);
     } catch (error) { showAlert("Payment successful, but saving order failed via API. Screenshot this ID: " + paymentId, "Critical Error"); 
     } finally { toggleButtonState('payBtn', false, '<i class="fas fa-lock"></i> Authorize Payment'); }
