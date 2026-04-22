@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-    
+    <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#ffffff">
+<link rel="apple-touch-icon" href="/android-chrome-192x192.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Aryanta | Prime Exclusive</title>
@@ -51,8 +51,8 @@
             </div>
         </div>
         <nav class="panel-links">
-            <a href="index.html" class="stagger-link"><i class="fas fa-compass"></i> Discover</a>
-            <a href="#" id="sidebarAccountLink" class="stagger-link"><i class="fas fa-user-circle"></i> My Profile</a>
+            <a href="javascript:void(0)" onclick="location.href='index.html'" class="stagger-link"><i class="fas fa-compass"></i> Discover</a>
+            <a href="javascript:void(0)" id="sidebarAccountLink" class="stagger-link"><i class="fas fa-user-circle"></i> My Profile</a>
             <a href="track.html" class="stagger-link"><i class="fas fa-box-open"></i> Orders & Tracking</a>
             <a href="warrenty.html" class="stagger-link"><i class="fas fa-shield-alt"></i> Claim Warranty</a>
             <a href="support.html" class="stagger-link"><i class="fas fa-headset"></i> Concierge Support</a>
@@ -216,8 +216,10 @@
         </div>
         <div class="full-page-body product-page-body">
             <div class="product-hero">
-                <div class="product-visual prime-visual-bg">
+                <div class="product-visual prime-visual-bg" style="position: relative;">
+                    <button id="imgPrevBtn" class="slider-btn left" onclick="changeImage(-1)" style="display: none;"><i class="fas fa-chevron-left"></i></button>
                     <img id="fpImage" src="" alt="Product" class="main-prod-img">
+                    <button id="imgNextBtn" class="slider-btn right" onclick="changeImage(1)" style="display: none;"><i class="fas fa-chevron-right"></i></button>
                 </div>
                 <div class="product-data">
                     <span class="category-tag"><i class="fas fa-crown"></i> Prime Exclusive</span>
@@ -225,7 +227,7 @@
                     
                     <div class="rating-stars premium-hover" style="display: inline-flex; align-items: center; gap: 10px; background: var(--surface); padding: 8px 15px; border-radius: 100px; margin-bottom: 20px; box-shadow: var(--shadow-sm); border: 1px solid var(--border);" onclick="openUI('fullReviewPage')">
                         <span id="fpStarsAvg" style="color: #f59e0b; font-size: 16px;"></span>
-                        <span class="verified-text" id="fpRatingCount" style="margin-left: 0;">View Ratings & Reviews</span>
+                        <span class="verified-text" id="fpRatingCount" style="margin-left: 0;"></span>
                         <i class="fas fa-chevron-right" style="font-size: 12px; color: var(--primary);"></i>
                     </div>
 
@@ -319,7 +321,7 @@
                     <div class="summary-line"><span>Estimated Shipping</span> <strong style="color:var(--text-muted); font-size: 13px;">Calculated Next</strong></div>
                     <div class="divider-elegant"></div>
                     <div class="summary-line total-line"><span>Total</span> <strong id="cartTotalValue">₹0</strong></div>
-                    <button class="btn-prime w-100 btn-large mt-20 bounce-hover" onclick="openCheckout()">Secure Checkout <i class="fas fa-arrow-right" style="margin-left: 8px;"></i></button>
+                    <button class="btn-prime w-100 btn-large mt-20 bounce-hover" onclick="openCheckoutFromCart()">Secure Checkout <i class="fas fa-arrow-right" style="margin-left: 8px;"></i></button>
                 </div>
             </div>
         </div>
@@ -327,7 +329,7 @@
 
     <div class="full-page right-slide" id="fullCheckoutPage">
         <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+            <button class="btn-back premium-hover" onclick="closeCheckout()"><i class="fas fa-arrow-left"></i> Back</button>
             <h2>Secure Checkout</h2>
             <div style="width: 70px;"></div>
         </div>
@@ -434,6 +436,11 @@
             <p class="animate-up delay-1">Discover products engineered for absolute perfection.</p>
         </section>
         
+        <div class="category-scroll-wrapper">
+            <div class="category-filters" id="categoryFilters">
+                </div>
+        </div>
+
         <div class="product-list" id="productShelf"></div>
 
         <footer class="premium-footer">
@@ -442,9 +449,9 @@
                     Experience the pinnacle of luxury shopping. We are dedicated to providing exclusive, high-end products curated specifically for our discerning members, ensuring unmatched quality, deep trust, and absolute perfection in every detail.
                 </p>
                 <div class="social-links" style="display: flex; justify-content: center; gap: 25px; margin-bottom: 25px; font-size: 22px;">
-                    <a href="#" style="color: white; transition: 0.3s;"><i class="fab fa-instagram"></i></a>
-                    <a href="#" style="color: white; transition: 0.3s;"><i class="fab fa-twitter"></i></a>
-                    <a href="#" style="color: white; transition: 0.3s;"><i class="fab fa-facebook-f"></i></a>
+                    <a href="javascript:void(0)" style="color: white; transition: 0.3s;"><i class="fab fa-instagram"></i></a>
+                    <a href="javascript:void(0)" style="color: white; transition: 0.3s;"><i class="fab fa-twitter"></i></a>
+                    <a href="javascript:void(0)" style="color: white; transition: 0.3s;"><i class="fab fa-facebook-f"></i></a>
                 </div>
                 <p style="font-size: 13px; color: #94a3b8; font-family: var(--font-mono); font-weight: 600; letter-spacing: 1px;">&copy; Aryanta 2026. All rights reserved.</p>
             </div>
