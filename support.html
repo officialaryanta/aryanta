@@ -37,11 +37,26 @@
         
         .bot-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; display: flex; justify-content: center; align-items: center; margin-right: 12px; font-size: 13px; flex-shrink: 0; align-self: flex-end; }
 
-        /* Quick Replies (Strictly 4 Options Max) */
+        /* Quick Replies (Fixed Button Squeeze) */
         .chat-actions { background: var(--surface); border-top: 1px solid var(--border); padding: 15px; min-height: 70px; display: flex; flex-direction: column; justify-content: center; flex-shrink: 0; }
-        .quick-replies { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+        .quick-replies { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; }
         
-        .btn-reply { background: var(--bg-color); border: 1px solid var(--border); color: var(--text-main); padding: 12px 15px; border-radius: 12px; font-size: 13.5px; font-weight: 700; cursor: pointer; transition: var(--transition); text-align: center; }
+        .btn-reply { 
+            background: var(--bg-color); 
+            border: 1px solid var(--border); 
+            color: var(--text-main); 
+            padding: 12px 15px; 
+            border-radius: 12px; 
+            font-size: 13.5px; 
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: var(--transition); 
+            text-align: center;
+            min-height: 48px; /* Prevents squeezing too small */
+            white-space: normal; /* Allows text to wrap gracefully */
+            line-height: 1.3;
+            word-break: break-word;
+        }
         .btn-reply:hover { border-color: var(--primary); background: var(--surface); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
         .btn-reply.primary { background: var(--primary); color: white; border-color: var(--primary); }
         .btn-reply.danger { border-color: #fca5a5; color: var(--danger); background: #fef2f2; }
@@ -79,9 +94,9 @@
             .main-content, .top-bar, .side-panel, .dimmer, .toast-notification { display: none !important; }
         }
 
-        /* Mobile Layout */
+        /* Mobile Layout: Shift to 1-Column perfectly */
         @media (max-width: 768px) {
-            .quick-replies { grid-template-columns: 1fr; } /* Stack buttons vertically on small screens */
+            .quick-replies { grid-template-columns: 1fr; } /* Stack buttons vertically */
             .bubble { max-width: 90%; }
         }
     </style>
@@ -112,7 +127,7 @@
             <a href="index.html" class="stagger-link"><i class="fas fa-compass"></i> Discover</a>
             <a href="index.html" class="stagger-link" id="sidebarAccountLink"><i class="fas fa-user-circle"></i> My Profile</a>
             <a href="track.html" class="stagger-link"><i class="fas fa-box-open"></i> Orders & Tracking</a>
-            <a href="claim-warrenty.html" class="stagger-link"><i class="fas fa-shield-alt"></i> Claim Warranty</a>
+            <a href="claim-warranty.html" class="stagger-link"><i class="fas fa-shield-alt"></i> Claim Warranty</a>
             <a href="support.html" class="stagger-link" style="color: var(--primary); background: var(--bg-color); border-right: 3px solid var(--primary);"><i class="fas fa-headset"></i> Concierge Support</a>
         </nav>
         <div class="sidebar-footer">
@@ -133,11 +148,8 @@
             </div>
 
             <div class="chat-container">
-                <div class="chat-history" id="chatHistory">
-                    </div>
-                
-                <div class="chat-actions" id="chatActions">
-                    </div>
+                <div class="chat-history" id="chatHistory"></div>
+                <div class="chat-actions" id="chatActions"></div>
             </div>
         </div>
     </main>
@@ -206,9 +218,18 @@
     <script src="java.js"></script>
 
     <script>
+        // --- FIREBASE LIVE TRACKING CONFIGURATION FOR SPEED BOOST ---
+        const firebaseConfig = {
+            projectId: "aryanta-mart-a8893" 
+        };
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
+        // Chat Script Global Variables
         const chatHistory = document.getElementById('chatHistory');
         const chatActions = document.getElementById('chatActions');
-        const API_URL = "https://rough-field-c679.official-aryanta.workers.dev";
         
         let currentUser = null;
         let allMyOrders = [];
@@ -252,6 +273,7 @@
                 sidebar.classList.remove('open'); overlay.classList.remove('show');
             }
         }
+        
         window.addEventListener('popstate', () => {
             document.getElementById('sidebar').classList.remove('open');
             document.getElementById('overlay').classList.remove('show');
@@ -269,20 +291,30 @@
                 
                 await botSpeak(`Hello ${firstName}, I am your Aryanta Virtual Assistant. How can I assist you today?`);
                 showOptions(MENU_MAIN);
-                fetchUserOrders(); 
+                
+                // Trigger Firebase Live Orders (Replaces old slow fetch)
+                fetchUserOrdersLive(); 
             } else {
                 await botSpeak("Welcome to Aryanta Support. Please Sign In to access personalized features.");
                 showOptions([{ text: "Sign In", action: "sign_in", primary: true }]);
             }
         }
 
-        async function fetchUserOrders() {
-            try {
-                const res = await fetch(`${API_URL}/get-orders?email=${encodeURIComponent(currentUser.email)}`);
-                const orders = await res.json();
-                allMyOrders = orders.filter(o => o.user_email === currentUser.email);
-                allMyOrders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            } catch(e) { console.error("Database fetch failed"); }
+        // SPEED BOOST: Live streaming using Firebase instead of Cloudflare
+        function fetchUserOrdersLive() {
+            db.collection("orders")
+              .where("user_email", "==", currentUser.email)
+              .onSnapshot((snapshot) => {
+                  allMyOrders = [];
+                  snapshot.forEach((doc) => {
+                      let data = doc.data();
+                      data.id = doc.id;
+                      allMyOrders.push(data);
+                  });
+                  allMyOrders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+              }, (error) => {
+                  console.error("Firebase Streaming Error:", error);
+              });
         }
 
         async function botSpeak(htmlContent, delay = 500) {
@@ -292,7 +324,9 @@
                 chatHistory.scrollTop = chatHistory.scrollHeight;
 
                 setTimeout(() => {
-                    document.getElementById(typingId).remove();
+                    const typingElem = document.getElementById(typingId);
+                    if(typingElem) typingElem.remove();
+                    
                     chatHistory.innerHTML += `<div class="msg-row msg-bot"><div class="bot-icon"><i class="fas fa-robot"></i></div><div class="bubble">${htmlContent}</div></div>`;
                     chatHistory.scrollTop = chatHistory.scrollHeight;
                     resolve();
@@ -353,7 +387,10 @@
             
             // If cancelling, filter OUT delivered or already cancelled items
             if(purpose === 'cancel') {
-                filteredList = allMyOrders.filter(o => !o.status.toLowerCase().includes('cancel') && !o.status.toLowerCase().includes('deliver'));
+                filteredList = allMyOrders.filter(o => {
+                    const status = (o.status || "").toLowerCase();
+                    return !status.includes('cancel') && !status.includes('deliver');
+                });
             }
 
             if(filteredList.length === 0) {
@@ -365,12 +402,15 @@
             let start = page * 3;
             let slice = filteredList.slice(start, start + 3);
             
-            let options = slice.map(o => ({
-                text: `#${o.order_no} - ${o.items[0].name.substring(0, 18)}...`,
-                action: `${purpose}_select_${o.order_no}`
-            }));
+            let options = slice.map(o => {
+                let itemName = o.items && o.items[0] ? o.items[0].name : "Order Item";
+                return {
+                    text: `#${o.order_no} - ${itemName.substring(0, 18)}...`,
+                    action: `${purpose}_select_${o.order_no}`
+                };
+            });
 
-            // Force 4th Option
+            // Force 4th Option for pagination or exit
             if (start + 3 < filteredList.length) {
                 options.push({ text: "Next 3 Orders...", action: `${purpose}_page_${page + 1}`, primary: true });
             } else {
@@ -385,26 +425,29 @@
             const order = allMyOrders.find(o => o.order_no === orderNo);
             if(!order) return;
 
-            document.getElementById('invOrderNo').innerText = order.order_no;
-            document.getElementById('invDate').innerText = new Date(order.timestamp).toLocaleDateString();
+            document.getElementById('invOrderNo').innerText = order.order_no || 'N/A';
+            document.getElementById('invDate').innerText = order.timestamp ? new Date(order.timestamp).toLocaleDateString() : 'N/A';
             document.getElementById('invCustName').innerText = order.delivery_name || currentUser.name;
-            document.getElementById('invCustEmail').innerText = order.user_email;
-            document.getElementById('invAddress').innerText = order.delivery_address;
+            document.getElementById('invCustEmail').innerText = order.user_email || currentUser.email;
+            document.getElementById('invAddress').innerText = order.delivery_address || 'N/A';
             
             const tbody = document.getElementById('invTableBody');
             tbody.innerHTML = '';
-            order.items.forEach((item, index) => {
-                tbody.innerHTML += `<tr><td style="padding:10px 0;">${index + 1}</td><td><strong>${item.name}</strong></td><td style="text-align:center;">${item.qty}</td><td style="text-align:right;">₹${item.price}</td><td style="text-align:right;"><strong>₹${item.price * item.qty}</strong></td></tr>`;
-            });
+            
+            if (order.items && Array.isArray(order.items)) {
+                order.items.forEach((item, index) => {
+                    const p = item.price || 0; const q = item.qty || 1;
+                    tbody.innerHTML += `<tr><td style="padding:10px 0;">${index + 1}</td><td><strong>${item.name || 'Item'}</strong></td><td style="text-align:center;">${q}</td><td style="text-align:right;">₹${p}</td><td style="text-align:right;"><strong>₹${p * q}</strong></td></tr>`;
+                });
+            }
 
-            document.getElementById('invItemsTotal').innerText = `₹${order.financials.itemsTotal}`;
-            document.getElementById('invShipping').innerText = `₹${order.financials.shippingCost}`;
-            document.getElementById('invGrandTotal').innerText = `₹${order.financials.grandTotal}`;
+            document.getElementById('invItemsTotal').innerText = `₹${order.financials?.itemsTotal || 0}`;
+            document.getElementById('invShipping').innerText = `₹${order.financials?.shippingCost || 0}`;
+            document.getElementById('invGrandTotal').innerText = `₹${order.financials?.grandTotal || 0}`;
 
             // Trigger Print Dialog Immediately
             setTimeout(() => { window.print(); }, 500);
         }
-
 
         // --- LOGIC ROUTER ---
         async function handleUserChoice(action, text) {
@@ -420,7 +463,8 @@
             if (action.startsWith("track_select_")) {
                 let order = allMyOrders.find(o => o.order_no === action.replace("track_select_", ""));
                 let expected = order.expected_delivery ? new Date(order.expected_delivery).toLocaleDateString() : "Pending";
-                await botSpeak(`<strong>Tracking Report:</strong><div class="chat-card"><p style="font-family:monospace; font-size:12px;">#${order.order_no}</p><p style="font-weight:700;">${order.items[0].name}</p><p style="color:var(--primary); font-weight:800; font-size:12px; margin: 8px 0;">STATUS: ${order.status}</p><p style="font-size:13px;">Expected Delivery: ${expected}</p></div>`);
+                let itemName = order.items && order.items.length > 0 ? order.items[0].name : "Unknown Item";
+                await botSpeak(`<strong>Tracking Report:</strong><div class="chat-card"><p style="font-family:monospace; font-size:12px;">#${order.order_no}</p><p style="font-weight:700;">${itemName}</p><p style="color:var(--primary); font-weight:800; font-size:12px; margin: 8px 0;">STATUS: ${order.status || 'Pending'}</p><p style="font-size:13px;">Expected Delivery: ${expected}</p></div>`);
                 return showOptions(MENU_MAIN);
             }
 
@@ -435,7 +479,8 @@
             // Intercept Cancel Selection Step 1
             if (action.startsWith("cancel_select_")) {
                 window.tempCancelOrder = allMyOrders.find(o => o.order_no === action.replace("cancel_select_", ""));
-                await botSpeak(`Why do you wish to cancel <strong>${window.tempCancelOrder.items[0].name}</strong>?`);
+                let itemName = window.tempCancelOrder.items && window.tempCancelOrder.items.length > 0 ? window.tempCancelOrder.items[0].name : "Item";
+                await botSpeak(`Why do you wish to cancel <strong>${itemName}</strong>?`);
                 showOptions([
                     { text: "Changed my mind", action: "cancel_reason" },
                     { text: "Found better alternative", action: "cancel_reason" },
@@ -470,7 +515,7 @@
                 case "check_prime": await botSpeak("You are logged in as a Prime Member! Enjoy free express shipping and priority concierge support."); showOptions(MENU_MAIN); break;
                 case "call_back": await botSpeak("Confirm your phone number for the callback."); showCustomInput('tel', currentUser.phone || "", "Enter phone number", "callback_step_2"); break;
 
-                // Cancel Execution
+                // Cancel Execution (Firebase Direct Database Update for Speed)
                 case "cancel_reason":
                     window.tempCancelReason = text;
                     await botSpeak("Shipping charges are strictly non-refundable. Confirm cancellation?");
@@ -480,14 +525,18 @@
                 case "confirm_cancel":
                     await botSpeak("Processing...", 400);
                     try {
-                        const res = await fetch(`${API_URL}/update-order`, { method: 'POST', headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ id: window.tempCancelOrder.id, status: "Cancelled", reason: window.tempCancelReason, notes: "Support Bot" })
+                        // Direct Firestore update replaces Cloudflare fetch
+                        await db.collection("orders").doc(window.tempCancelOrder.id).update({
+                            status: "Cancelled",
+                            action_reason: window.tempCancelReason,
+                            action_notes: "Support Bot"
                         });
-                        if(res.ok) {
-                            window.tempCancelOrder.status = "Cancelled"; 
-                            await botSpeak(`<strong style="color:var(--danger);">Cancelled.</strong> Order #${window.tempCancelOrder.order_no} has been cancelled.`);
-                        } else throw new Error();
-                    } catch(e) { await botSpeak("Database error. Please try again."); }
+                        
+                        window.tempCancelOrder.status = "Cancelled"; 
+                        await botSpeak(`<strong style="color:var(--danger);">Cancelled.</strong> Order #${window.tempCancelOrder.order_no} has been cancelled successfully.`);
+                    } catch(e) { 
+                        await botSpeak("Database error. Please try again."); 
+                    }
                     setTimeout(() => showOptions(MENU_MAIN), 1500);
                     break;
             }
