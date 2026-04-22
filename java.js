@@ -1,6 +1,7 @@
 // --- 1. CORE CONFIGURATION ---
 const API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
 const PROJECT_ID = "aryanta-mart-a8893"; 
+const GOOGLE_CLIENT_ID = "534670405296-dat142ad15koph0aupropeau1997o1md.apps.googleusercontent.com";
 
 const RAZORPAY_KEY = "rzp_test_SfN9xZbqkMSz6G"; 
 emailjs.init("TDgNRO0CEs9rU3ozD");
@@ -8,17 +9,21 @@ emailjs.init("TDgNRO0CEs9rU3ozD");
 let allProducts = [];
 let baseCategoryProducts = []; // Used for category filtering
 let currentlyDisplayed = 0;
-const BATCH_SIZE = 10; 
+const BATCH_SIZE = 6; // Fast load batch size
 
 let cart = [];
 let currentProduct = null;
-let currentImageIndex = 0; // For product multiple images slider
-let currentCategory = 'All'; // Active category tracking
+let currentImageIndex = 0; 
+let currentCategory = 'All'; 
 let hashedOTP = "";
 let tempUserData = null; 
 let currentOrderState = { itemsTotal: 0, shippingCost: 0, grandTotal: 0 };
 let savedUserAddresses = [];
 let userAvatar = "";
+
+// Track Google Signup Flow
+let isGoogleSignup = false;
+let googleUserData = null;
 
 const BHAGALPUR_LAT = 25.2425;
 const BHAGALPUR_LON = 86.9842;
@@ -28,8 +33,20 @@ let activeOverlays = [];
 
 setTimeout(() => {
     const loader = document.getElementById('pageLoader');
-    if (loader) loader.classList.add('hidden');
+    if (loader && !localStorage.getItem('cached_products')) {
+        loader.classList.add('hidden');
+    }
 }, 800);
+
+// Close all popups, dimmers, modals securely
+window.closeAllModals = function() {
+    document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+    document.getElementById('overlay').classList.remove('show');
+    document.getElementById('sidebar').classList.remove('open');
+    document.body.style.overflow = 'auto';
+    activeOverlays = [];
+    history.pushState(null, null, window.location.pathname);
+};
 
 function openSidebar() {
     document.getElementById('sidebar').classList.add('open');
@@ -93,11 +110,11 @@ function showAlert(message, title = "Notice", showCancel = false, onConfirm = nu
 }
 function closeAlert() { document.getElementById('customAlertOverlay').style.display = 'none'; }
 
-function toggleButtonState(btnId, isLoading, defaultText) {
+function toggleButtonState(btnId, isLoading, defaultText, loadingText = "Processing...") {
     const btn = document.getElementById(btnId);
     if (!btn) return;
     if (isLoading) {
-        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Processing...';
+        btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> ${loadingText}`;
         btn.disabled = true;
     } else {
         btn.innerHTML = defaultText;
@@ -119,43 +136,83 @@ async function updateUserDataAPI(email, updateFields) {
 let scrollObserver = null;
 let isFetchingBatch = false;
 
+// MASSIVE SPEED BOOST: Load instantly from Cache, background fetch updates
 async function fetchProducts() {
+    const cached = localStorage.getItem('cached_products');
+    
+    if (cached) {
+        try {
+            allProducts = JSON.parse(cached);
+            baseCategoryProducts = allProducts;
+            document.getElementById('pageLoader').classList.add('hidden');
+            renderCategoryPills();
+            currentlyDisplayed = 0;
+            document.getElementById('productShelf').innerHTML = '';
+            loadMoreProducts(); 
+        } catch(e) {}
+    }
+
     try {
         const res = await fetch(`${API_BASE_URL}/products`);
-        allProducts = await res.json();
-        baseCategoryProducts = allProducts; 
+        const freshData = await res.json();
         
-        document.getElementById('pageLoader').classList.add('hidden');
-        renderCategoryPills();
-        
-        currentlyDisplayed = 0;
-        document.getElementById('productShelf').innerHTML = '';
-        loadMoreProducts(); 
+        if (!cached || freshData.length !== allProducts.length) {
+            allProducts = freshData;
+            baseCategoryProducts = allProducts; 
+            localStorage.setItem('cached_products', JSON.stringify(allProducts)); // Save for next visit
+            
+            document.getElementById('pageLoader').classList.add('hidden');
+            renderCategoryPills();
+            
+            currentlyDisplayed = 0;
+            document.getElementById('productShelf').innerHTML = '';
+            loadMoreProducts(); 
+        } else {
+            // Silently update cache if numbers are same
+            localStorage.setItem('cached_products', JSON.stringify(freshData));
+            allProducts = freshData;
+        }
     } catch(err) {
-        document.getElementById('pageLoader').classList.add('hidden');
-        document.getElementById('productShelf').innerHTML = '<p class="text-center" style="grid-column: 1/-1;">Premium catalog is currently refreshing.</p>';
+        if (!cached) {
+            document.getElementById('pageLoader').classList.add('hidden');
+            document.getElementById('productShelf').innerHTML = '<p class="text-center" style="grid-column: 1/-1;">Premium catalog is currently refreshing.</p>';
+        }
     }
 }
 
 function renderCategoryPills() {
-    const cats = new Set(allProducts.map(p => p.category || 'Other'));
+    let cats = Array.from(new Set(allProducts.map(p => p.category || 'Other')));
+    cats = cats.slice(0, 19); 
+
     const container = document.getElementById('categoryFilters');
-    container.innerHTML = `<button class="cat-pill active" onclick="filterCategory('All')">All</button>`;
+    container.innerHTML = `
+        <button class="cat-pill active" id="pill-All" onclick="filterCategory('All')">All</button>
+        <button class="cat-pill" id="pill-More" onclick="openCategoryModal()"><i class="fas fa-layer-group"></i> Browse Categories</button>
+    `;
+
+    const grid = document.getElementById('categoryGrid');
+    grid.innerHTML = '';
     cats.forEach(c => {
-        container.innerHTML += `<button class="cat-pill" onclick="filterCategory('${c}')">${c}</button>`;
+        grid.innerHTML += `<button class="cat-pill" style="justify-content: center; padding: 15px;" onclick="filterCategory('${c}')">${c}</button>`;
     });
 }
 
+window.openCategoryModal = function() { document.getElementById('categoryModal').style.display = 'flex'; }
+window.closeCategoryModal = function() { document.getElementById('categoryModal').style.display = 'none'; }
+
 window.filterCategory = function(cat) {
     currentCategory = cat;
-    document.querySelectorAll('.cat-pill').forEach(btn => {
-        btn.classList.remove('active');
-        if(btn.innerText === cat) btn.classList.add('active');
-    });
+    document.getElementById('pill-All').classList.remove('active');
+    document.getElementById('pill-More').classList.remove('active');
     
-    if (cat === 'All') baseCategoryProducts = allProducts;
-    else baseCategoryProducts = allProducts.filter(p => (p.category || 'Other') === cat);
-    
+    if (cat === 'All') {
+        document.getElementById('pill-All').classList.add('active');
+        baseCategoryProducts = allProducts;
+    } else {
+        document.getElementById('pill-More').classList.add('active');
+        baseCategoryProducts = allProducts.filter(p => (p.category || 'Other') === cat);
+    }
+    closeCategoryModal(); 
     const term = document.getElementById('searchInput').value.toLowerCase().trim();
     applySearchAndRender(term);
 }
@@ -172,7 +229,7 @@ function loadMoreProducts() {
     
     renderProducts(nextBatch, 'productShelf', true); 
     
-    const triggerIndex = currentlyDisplayed + 5;
+    const triggerIndex = currentlyDisplayed + Math.floor(BATCH_SIZE / 2);
     const allRenderedCards = container.querySelectorAll('.list-item-card');
 
     if (triggerIndex < allRenderedCards.length) {
@@ -233,7 +290,6 @@ function renderProducts(list, containerId, append = false) {
         if(p.isDummy) return;
         let img = p.image || (p.images && p.images.length > 0 ? p.images[0] : 'https://via.placeholder.com/300');
         let desc = p.desc ? p.desc.substring(0, 150) + '...' : 'Experience the pinnacle of craftsmanship.';
-        
         let starUI = (p.avgRating && p.avgRating !== "New") ? `<i class="fas fa-star"></i> ${p.avgRating} (${p.reviewCount})` : `<i class="fas fa-star" style="color:#cbd5e1;"></i> New`;
 
         const div = document.createElement('div');
@@ -267,7 +323,6 @@ window.openProductPage = async function(id) {
     const mainImgSrc = currentProduct.image || (currentProduct.images && currentProduct.images.length > 0 ? currentProduct.images[0] : 'https://via.placeholder.com/600');
     document.getElementById('fpImage').src = mainImgSrc;
     
-    // Toggle multi-image slider arrows
     const prevBtn = document.getElementById('imgPrevBtn');
     const nextBtn = document.getElementById('imgNextBtn');
     if (currentProduct.images && currentProduct.images.length > 1) {
@@ -318,19 +373,9 @@ window.changeImage = function(dir) {
     document.getElementById('fpImage').src = currentProduct.images[currentImageIndex];
 }
 
-// Quick Buy Actions Direct to Checkout
 window.directAddToCart = function(id) { currentProduct = allProducts.find(p => p.id === id); window.addToCartFromPage(); };
-
-window.directBuyNow = function(id) { 
-    currentProduct = allProducts.find(p => p.id === id); 
-    cart = [{ ...currentProduct, qty: 1 }]; 
-    saveCart(); updateCartUI(); openCheckoutDirect(); 
-};
-
-window.buyNowFromPage = function() { 
-    cart = [{ ...currentProduct, qty: 1 }]; 
-    saveCart(); updateCartUI(); openCheckoutDirect(); 
-};
+window.directBuyNow = function(id) { currentProduct = allProducts.find(p => p.id === id); cart = [{ ...currentProduct, qty: 1 }]; saveCart(); updateCartUI(); openCheckoutDirect(); };
+window.buyNowFromPage = function() { cart = [{ ...currentProduct, qty: 1 }]; saveCart(); updateCartUI(); openCheckoutDirect(); };
 
 // --- 5. REAL-TIME REVIEWS SYSTEM ---
 let selectedReviewStars = 0;
@@ -358,16 +403,9 @@ window.toggleReviewForm = function() {
     }
 }
 
-window.openImageZoom = function(src) {
-    const modal = document.getElementById('imageZoomModal');
-    const img = document.getElementById('zoomedImage');
-    img.src = src; currentZoom = 1; img.style.transform = `scale(${currentZoom})`; modal.style.display = 'flex';
-}
+window.openImageZoom = function(src) { const modal = document.getElementById('imageZoomModal'); const img = document.getElementById('zoomedImage'); img.src = src; currentZoom = 1; img.style.transform = `scale(${currentZoom})`; modal.style.display = 'flex'; }
 window.closeImageZoom = function() { document.getElementById('imageZoomModal').style.display = 'none'; }
-window.zoomImage = function(delta) {
-    currentZoom += delta; if(currentZoom < 0.5) currentZoom = 0.5; if(currentZoom > 4) currentZoom = 4;
-    document.getElementById('zoomedImage').style.transform = `scale(${currentZoom})`;
-}
+window.zoomImage = function(delta) { currentZoom += delta; if(currentZoom < 0.5) currentZoom = 0.5; if(currentZoom > 4) currentZoom = 4; document.getElementById('zoomedImage').style.transform = `scale(${currentZoom})`; }
 window.resetZoom = function() { currentZoom = 1; document.getElementById('zoomedImage').style.transform = `scale(1)`; }
 
 const originalOpenUI = window.openUI;
@@ -395,7 +433,6 @@ window.openUI = async function(id) {
                     const reader = new FileReader();
                     reader.readAsDataURL(this.files[0]);
                     reader.onload = (event) => {
-                        // Compress Image logic to prevent Firebase crash
                         const img = new Image();
                         img.src = event.target.result;
                         img.onload = () => {
@@ -479,7 +516,6 @@ window.submitReview = async function() {
 
     const editingId = document.getElementById('editingReviewId').value;
     
-    // FIX: Included projectId in the payload to ensure correct routing on the backend
     const payload = {
         productId: currentProduct.id, userName: user.name, userEmail: user.email, rating: selectedReviewStars,
         text: text, image: selectedReviewImage, timestamp: new Date().toISOString(), projectId: PROJECT_ID 
@@ -487,7 +523,7 @@ window.submitReview = async function() {
     
     if (editingId) payload.id = editingId; 
 
-    toggleButtonState('submitReviewBtn', true, 'Publishing...');
+    toggleButtonState('submitReviewBtn', true, '<i class="fas fa-paper-plane"></i> Publish Review', 'Publishing...');
     try {
         await fetch(`${API_BASE_URL}/add-review`, {
             method: 'POST',
@@ -590,10 +626,70 @@ window.changeQty = function(id, d) {
 };
 window.removeFromCart = function(id) { cart = cart.filter(i => i.id !== id); updateCartUI(); saveCart(); };
 
-// --- 7. AUTHENTICATION ---
+// --- 7. AUTHENTICATION & GOOGLE INTEGRATION ---
 async function secureHash(string) {
     const msgBuffer = new TextEncoder().encode(string); const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
     return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// 7a. GOOGLE IDENTITY SERVICES INIT
+window.onload = function () {
+    if(window.google) {
+        try {
+            google.accounts.id.initialize({
+                client_id: GOOGLE_CLIENT_ID,
+                callback: handleGoogleCredentialResponse
+            });
+            google.accounts.id.renderButton(
+                document.getElementById("googleAuthBtnLogin"),
+                { theme: "outline", size: "large", width: "100%", shape: "rectangular", text: "signin_with" }
+            );
+            google.accounts.id.renderButton(
+                document.getElementById("googleAuthBtnSignup"),
+                { theme: "outline", size: "large", width: "100%", shape: "rectangular", text: "signup_with" }
+            );
+        } catch(e) {
+            console.log("Ensure you added a valid Google Client ID to the JS file.", e);
+        }
+    }
+}
+
+function parseJwt(token) {
+    var base64Url = token.split('.')[1];
+    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+}
+
+// GOOGLE AUTHENTICATION LOGIC
+async function handleGoogleCredentialResponse(response) {
+    const data = parseJwt(response.credential);
+    
+    try {
+        const checkRes = await fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(data.email)}`);
+        const existingUser = await checkRes.json();
+
+        if(existingUser && existingUser.email) {
+            localStorage.setItem('active_session', JSON.stringify(existingUser));
+            showAlert(`Welcome back, ${existingUser.name.split(' ')[0]}.`, "Google Login Success");
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            isGoogleSignup = true;
+            googleUserData = { name: data.name, email: data.email, avatar: data.picture };
+            
+            document.getElementById('regName').value = data.name;
+            document.getElementById('regEmail').value = data.email;
+            document.getElementById('regEmail').readOnly = true; 
+            
+            goToStep('signup');
+            document.getElementById('signupBtn').innerText = "Complete Profile & Join Now"; 
+            showAlert("Please complete your shipping details (Phone, Address, Pincode) below to finish signing up.", "Almost Done!");
+        }
+    } catch (error) {
+        showAlert("Failed to connect to backend after Google Login.");
+    }
 }
 
 window.goToStep = function(step) { 
@@ -641,10 +737,47 @@ function checkSession() {
     }
 }
 
+// COMPLETE PROFILE FIX & STANDARD SIGNUP
 window.handleSignup = async function() {
-    tempUserData = { action: 'signup', name: document.getElementById('regName').value, email: document.getElementById('regEmail').value, phone: document.getElementById('regPhone').value, address: document.getElementById('regAddress').value, city: document.getElementById('regCity').value, state: document.getElementById('regState').value, pincode: document.getElementById('regPincode').value };
-    if (!tempUserData.name || !tempUserData.email || !tempUserData.phone || !tempUserData.pincode) return showAlert("Fill all mandatory fields including Pincode.");
+    tempUserData = { 
+        action: 'signup', 
+        name: document.getElementById('regName').value.trim(), 
+        email: document.getElementById('regEmail').value.trim(), 
+        phone: document.getElementById('regPhone').value.trim(), 
+        address: document.getElementById('regAddress').value.trim(), 
+        city: document.getElementById('regCity').value.trim(), 
+        state: document.getElementById('regState').value.trim(), 
+        pincode: document.getElementById('regPincode').value.trim() 
+    };
     
+    if (!tempUserData.name || !tempUserData.email || !tempUserData.phone || !tempUserData.pincode) {
+        return showAlert("Fill all mandatory fields including Phone and Pincode.");
+    }
+    
+    // IF GOOGLE SIGNUP -> SPINNER + SAVE -> REFRESH IMMEDIATELY
+    if (isGoogleSignup) {
+        toggleButtonState('signupBtn', true, 'Complete Profile & Join Now', 'Saving Profile...');
+        const newUser = {
+            name: tempUserData.name, email: tempUserData.email, phone: tempUserData.phone,
+            address: tempUserData.address, city: tempUserData.city, state: tempUserData.state,
+            pincode: tempUserData.pincode, timestamp: new Date().toISOString(), projectId: PROJECT_ID,
+            avatar: googleUserData.avatar,
+            addresses: [], cart: []
+        };
+        try {
+            await fetch(`${API_BASE_URL}/add-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newUser) });
+            localStorage.setItem('active_session', JSON.stringify(newUser)); 
+            
+            showToast("Profile Complete! Redirecting..."); 
+            setTimeout(() => location.reload(), 1000); 
+        } catch (error) { 
+            showAlert("Account creation failed via API. Please check your connection."); 
+            toggleButtonState('signupBtn', false, 'Complete Profile & Join Now');
+        }
+        return;
+    }
+
+    // Standard Email Registration -> Ask for OTP
     try {
         const checkRes = await fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(tempUserData.email)}`);
         const docRef = await checkRes.json();
@@ -653,7 +786,15 @@ window.handleSignup = async function() {
 
     toggleButtonState('signupBtn', true, 'Send OTP');
     const rawOTP = Math.floor(1000 + Math.random() * 9000).toString(); hashedOTP = await secureHash(rawOTP);
-    try { await emailjs.send("service_wnqvm4n", "template_5by2ldn", { to_email: tempUserData.email, to_name: tempUserData.name, otp_code: rawOTP }); showAlert("Verification code dispatched.", "Check Inbox"); goToStep('otp'); } catch (err) { showAlert("Failed to send secure email."); } finally { toggleButtonState('signupBtn', false, 'Send OTP'); }
+    try { 
+        await emailjs.send("service_wnqvm4n", "template_5by2ldn", { to_email: tempUserData.email, to_name: tempUserData.name, otp_code: rawOTP }); 
+        showAlert("Verification code dispatched.", "Check Inbox"); 
+        goToStep('otp'); 
+    } catch (err) { 
+        showAlert("Failed to send secure email."); 
+    } finally { 
+        toggleButtonState('signupBtn', false, 'Send OTP'); 
+    }
 };
 
 window.handleLogin = async function() {
@@ -713,7 +854,6 @@ function initUserProfileAPI(email) {
         if(data && data.email) {
             savedUserAddresses = data.addresses || []; 
             
-            // Sync session addresses locally too
             let session = JSON.parse(localStorage.getItem('active_session'));
             if(session) { session.addresses = savedUserAddresses; localStorage.setItem('active_session', JSON.stringify(session)); }
 
@@ -760,7 +900,6 @@ window.saveNewAddress = async function() {
     
     savedUserAddresses.push({ name: name, phone: phone, address: add, city: city, state: state, pincode: pin });
     
-    // FIX: Updating the Local session simultaneously
     session.addresses = savedUserAddresses;
     localStorage.setItem('active_session', JSON.stringify(session));
 
@@ -830,7 +969,6 @@ window.useDefaultAddress = function() {
     showToast("Profile address applied.", 1500);
 };
 
-// Fixed to handle opening direct from Cart vs direct from Buy Now Button
 window.openCheckoutFromCart = function() { history.back(); setTimeout(() => openCheckoutDirect(), 300); };
 window.closeCheckout = function() { history.back(); }
 
@@ -917,17 +1055,27 @@ window.calculateShippingAndProceed = async function() {
     } finally { toggleButtonState('calcShippingBtn', false, 'Next: Payment <i class="fas fa-arrow-right"></i>'); }
 };
 
+// FULL FIX: COD NOW CHARGES SHIPPING UPFRONT VIA RAZORPAY
 window.processPayment = function() {
+    const isCOD = document.querySelector('input[name="payMethod"]:checked').value === 'cod';
+    const amountToPay = isCOD ? currentOrderState.shippingCost : currentOrderState.grandTotal;
+
+    if (amountToPay === 0) {
+        toggleButtonState('payBtn', true, 'Processing Order...');
+        saveOrderToBackend(isCOD ? "COD_FREE_" + Date.now() : "PAID_FREE_" + Date.now(), isCOD);
+        return;
+    }
+
     toggleButtonState('payBtn', true, 'Initializing Gateway...');
     setTimeout(() => {
         const session = JSON.parse(localStorage.getItem('active_session'));
-        const isCOD = document.querySelector('input[name="payMethod"]:checked').value === 'cod';
-        const amountToCharge = isCOD ? currentOrderState.shippingCost : currentOrderState.grandTotal;
-
         const options = {
-            "key": RAZORPAY_KEY, "amount": amountToCharge * 100, "currency": "INR", "name": "Aryanta Prime",
-            "description": isCOD ? "Shipping Charge Payment" : "Full Order Payment",
-            "handler": function (response) { saveOrderToBackend(response.razorpay_payment_id, isCOD); },
+            "key": RAZORPAY_KEY, 
+            "amount": amountToPay * 100, 
+            "currency": "INR", 
+            "name": "Aryanta Prime",
+            "description": isCOD ? "Shipping Charge (COD Balance Later)" : "Full Order Payment",
+            "handler": function (response) { saveOrderToBackend(response.razorpay_payment_id, isCOD ? "Cash On Delivery" : "Online Full"); },
             "prefill": { "name": document.getElementById('chkName').value, "email": session.email, "contact": document.getElementById('chkPhone').value },
             "theme": { "color": "#0a0a0a" },
             "modal": { "ondismiss": function() { toggleButtonState('payBtn', false, '<i class="fas fa-lock"></i> Authorize Payment'); } }
@@ -939,12 +1087,7 @@ window.processPayment = function() {
                 toggleButtonState('payBtn', false, '<i class="fas fa-lock"></i> Authorize Payment'); 
                 showAlert(`Payment Failed: ${response.error.description}.`, "Transaction Failed"); 
             });
-            if (isCOD) { 
-                showAlert(`As you chose COD, you must pay the ₹${amountToCharge} shipping charge now. You will pay ₹${currentOrderState.itemsTotal} on delivery.`, "COD Policy", true, () => { 
-                    try { rzp.open(); } catch(e) { handleRzpCrash(e); }
-                }); 
-                toggleButtonState('payBtn', false, '<i class="fas fa-lock"></i> Authorize Payment'); 
-            } else { rzp.open(); }
+            rzp.open();
         } catch (error) { handleRzpCrash(error); }
     }, 100);
 };
@@ -954,7 +1097,7 @@ function handleRzpCrash(error) {
     showAlert("Failed to initialize Razorpay.", "System Error");
 }
 
-async function saveOrderToBackend(paymentId, isCOD) {
+async function saveOrderToBackend(paymentId, paymentMethodStr) {
     const session = JSON.parse(localStorage.getItem('active_session')); 
     const orderNo = "ARY-" + Date.now().toString().slice(-6) + Math.floor(Math.random() * 100); 
     const fullAddress = `${document.getElementById('chkAddress').value}, ${document.getElementById('chkCity').value} - ${document.getElementById('chkPincode').value}`;
@@ -962,7 +1105,7 @@ async function saveOrderToBackend(paymentId, isCOD) {
     const orderData = { 
         order_no: orderNo, user_email: session.email, delivery_name: document.getElementById('chkName').value, 
         delivery_phone: document.getElementById('chkPhone').value, delivery_address: fullAddress, 
-        items: cart, financials: currentOrderState, payment_method: isCOD ? "COD (Shipping Prepaid)" : "Online Full", 
+        items: cart, financials: currentOrderState, payment_method: paymentMethodStr, 
         razorpay_id: paymentId, status: "Confirmed", timestamp: new Date().toISOString() 
     };
     
@@ -971,15 +1114,29 @@ async function saveOrderToBackend(paymentId, isCOD) {
         await fetch(`${API_BASE_URL}/order`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderData) });
         buildGloriousReceipt(orderData); cart = []; updateCartUI(); saveCart(); closeCheckout(); 
         setTimeout(() => { openUI('overlay'); openUI('orderSuccessModal'); }, 300);
-    } catch (error) { showAlert("Payment successful, but saving order failed via API. Screenshot this ID: " + paymentId, "Critical Error"); 
+    } catch (error) { showAlert("Order processed but receipt save failed via API. Screenshot this ID: " + paymentId, "Warning"); 
     } finally { toggleButtonState('payBtn', false, '<i class="fas fa-lock"></i> Authorize Payment'); }
 }
 
 function buildGloriousReceipt(data) {
-    document.getElementById('recOrderNo').innerText = data.order_no; document.getElementById('recAddress').innerText = data.delivery_address; document.getElementById('recItemsTotal').innerText = `₹${data.financials.itemsTotal.toLocaleString('en-IN')}`; document.getElementById('recShipping').innerText = `₹${data.financials.shippingCost.toLocaleString('en-IN')}`; document.getElementById('recGrandTotal').innerText = `₹${data.financials.grandTotal.toLocaleString('en-IN')}`;
+    document.getElementById('recOrderNo').innerText = data.order_no; 
+    document.getElementById('recPayMethod').innerText = data.payment_method; 
+    document.getElementById('recAddress').innerText = data.delivery_address; 
+    document.getElementById('recItemsTotal').innerText = `₹${data.financials.itemsTotal.toLocaleString('en-IN')}`; 
+    document.getElementById('recShipping').innerText = `₹${data.financials.shippingCost.toLocaleString('en-IN')}`; 
+    document.getElementById('recGrandTotal').innerText = `₹${data.financials.grandTotal.toLocaleString('en-IN')}`;
+    
     const tbody = document.getElementById('recTableBody'); tbody.innerHTML = ''; let emailItemsText = ""; 
-    data.items.forEach(item => { tbody.innerHTML += `<tr><td>${item.name}</td><td class="mono-td">x${item.qty}</td><td class="text-right mono-td">₹${(item.price * item.qty).toLocaleString('en-IN')}</td></tr>`; emailItemsText += `${item.name} (x${item.qty}) - Rs.${item.price * item.qty}\n`; });
-    try { emailjs.send("service_wnqvm4n", "template_5by2ldn", { to_email: data.user_email, to_name: data.delivery_name, order_no: data.order_no, address: data.delivery_address, items_list: emailItemsText, shipping: data.financials.shippingCost, grand_total: data.financials.grandTotal }).catch(err => console.log("Receipt email failed", err)); } catch(e) {}
+    data.items.forEach(item => { 
+        tbody.innerHTML += `<tr><td>${item.name}</td><td class="mono-td">x${item.qty}</td><td class="text-right mono-td">₹${(item.price * item.qty).toLocaleString('en-IN')}</td></tr>`; 
+        emailItemsText += `${item.name} (x${item.qty}) - Rs.${item.price * item.qty}\n`; 
+    });
+    
+    try { emailjs.send("service_wnqvm4n", "template_5by2ldn", { 
+        to_email: data.user_email, to_name: data.delivery_name, order_no: data.order_no, 
+        address: data.delivery_address, items_list: emailItemsText, shipping: data.financials.shippingCost, 
+        grand_total: data.financials.grandTotal 
+    }).catch(err => console.log("Receipt email failed", err)); } catch(e) {}
 }
 
 window.closeOrderSuccess = function() { location.reload(); }
