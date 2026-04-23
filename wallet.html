@@ -1,809 +1,394 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#5f259f">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Aryanta Pay | Premium Wallet</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-database-compat.js"></script>
 
     <style>
-        /* =========================================================
-           ULTIMATE PREMIUM WALLET DESIGN
-           ========================================================= */
         :root { --brand: #5f259f; --brand-light: #7e3af2; --bg: #f8fafc; --surface: #ffffff; --text-dark: #0f172a; --text-muted: #64748b; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--bg); color: var(--text-dark); padding-top: 85px; overflow-x: hidden; }
+        body { background: var(--bg); color: var(--text-dark); padding-bottom: 50px; overflow-x: hidden; }
 
-        /* --- EXACT TOP BAR --- */
-        .top-bar { height: 75px; position: fixed; top: 0; left: 0; width: 100%; padding: 0 5%; display: flex; align-items: center; justify-content: space-between; z-index: 5000; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
-        .nav-left { display: flex; align-items: center; gap: 15px; }
-        .menu-trigger { font-size: 22px; cursor: pointer; color: var(--text-dark); transition: 0.3s; }
-        .brand-logo { font-size: 24px; font-weight: 900; cursor: pointer; letter-spacing: -1px; color: var(--text-dark); }
-        .prime-dot { color: var(--brand); }
-        .nav-actions { display: flex; align-items: center; gap: 15px; }
-        .profile-btn { display: flex; align-items: center; gap: 10px; background: transparent; border: none; font-weight: 800; font-size: 15px; color: var(--text-dark); cursor: pointer; transition: 0.3s; padding: 5px 10px; border-radius: 100px; }
-        .profile-btn:hover { background: #f1f5f9; }
-        .nav-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--brand); }
+        /* Top Navigation */
+        .top-bar { height: 75px; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: space-between; padding: 0 5%; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border); }
+        .logo { font-size: 22px; font-weight: 900; letter-spacing: -1px; }
+        .logo span { color: var(--brand); }
+        .profile-trigger { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--brand); object-fit: cover; }
 
-        /* --- EXACT SIDEBAR --- */
-        .dimmer { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); z-index: 5400; animation: fadeIn 0.3s; }
-        .dimmer.show { display: block; }
-        .side-panel { position: fixed; left: -380px; top: 0; width: 360px; height: 100%; background: var(--surface); z-index: 5500; transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column; box-shadow: 20px 0 50px rgba(0,0,0,0.1); }
-        .side-panel.open { transform: translateX(380px); }
-        .panel-header { padding: 40px 30px 20px; border-bottom: 1px solid var(--border); background: #f8fafc; }
-        .user-profile { display: flex; align-items: center; gap: 15px; }
-        .avatar-img { width: 55px; height: 55px; border-radius: 50%; border: 2px solid var(--brand); object-fit: cover; }
-        .user-greeting { display: flex; flex-direction: column; }
-        .user-greeting span { font-weight: 900; font-size: 18px; color: var(--text-dark); }
-        .user-greeting small { font-weight: 600; color: var(--text-muted); }
-        .panel-links { flex-grow: 1; padding: 20px 0; overflow-y: auto; }
-        .stagger-link { display: flex; align-items: center; gap: 15px; padding: 18px 30px; text-decoration: none; color: var(--text-dark); font-weight: 700; transition: 0.3s; font-size: 15px; }
-        .stagger-link:hover { background: #f1f5f9; color: var(--brand); padding-left: 35px; }
-        .sidebar-footer { padding: 25px 30px; text-align: center; border-top: 1px solid var(--border); }
-        .btn-sidebar-logout { width: 100%; padding: 15px; background: #fee2e2; color: var(--danger); border: 2px solid #fca5a5; border-radius: 14px; font-weight: 800; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 15px; }
+        /* Main Wallet Card */
+        .container { max-width: 600px; margin: 0 auto; padding: 20px 15px; }
+        .wallet-card { background: linear-gradient(135deg, #5f259f, #7e3af2); border-radius: 28px; padding: 35px; color: white; position: relative; overflow: hidden; box-shadow: 0 20px 40px rgba(95, 37, 159, 0.2); margin-bottom: 25px; }
+        .wallet-card::after { content: ''; position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(255,255,255,0.1); border-radius: 50%; }
+        .bal-label { font-size: 14px; font-weight: 700; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; }
+        .bal-amount { font-size: 48px; font-weight: 900; margin: 10px 0 25px; letter-spacing: -1px; }
+        .wallet-info { display: flex; align-items: center; justify-content: space-between; }
+        .wallet-id-box { background: rgba(0,0,0,0.2); padding: 10px 18px; border-radius: 100px; font-family: monospace; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .qr-thumb { background: white; padding: 5px; border-radius: 10px; width: 50px; height: 50px; cursor: pointer; }
 
-        /* --- PREMIUM WALLET INTERIOR --- */
-        .wallet-wrapper { padding: 20px 5% 60px; max-width: 900px; margin: 0 auto; animation: slideUpFade 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        /* Actions Grid */
+        .grid-8 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 30px; }
+        .action-btn { background: white; border: 1px solid var(--border); border-radius: 20px; padding: 15px 5px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .action-btn:active { transform: scale(0.95); background: #f1f5f9; }
+        .action-btn i { font-size: 22px; color: var(--brand); margin-bottom: 8px; }
+        .action-btn span { display: block; font-size: 11px; font-weight: 800; color: #475569; }
+
+        /* Digital Vouchers Section */
+        .section-header { font-size: 18px; font-weight: 900; margin: 30px 0 15px; display: flex; align-items: center; gap: 10px; }
+        .service-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .service-card { background: white; border: 1px solid var(--border); border-radius: 18px; padding: 18px 10px; text-align: center; cursor: pointer; }
+        .service-card img { width: 35px; height: 35px; margin-bottom: 8px; object-fit: contain; }
+        .service-card span { display: block; font-size: 12px; font-weight: 700; color: var(--text-dark); }
+        .coming-soon { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; position: relative; }
+        .cs-badge { position: absolute; top: 5px; right: 5px; font-size: 8px; background: var(--brand); color: white; padding: 2px 5px; border-radius: 4px; font-weight: 900; }
+
+        /* Overlays */
+        .overlay-page { position: fixed; inset: 0; background: var(--bg); z-index: 2000; transform: translateX(100%); transition: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); overflow-y: auto; }
+        .overlay-page.active { transform: translateX(0); }
+        .oh { padding: 20px; background: white; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 15px; position: sticky; top: 0; z-index: 10; }
+        .ob { padding: 25px; }
+        .back-btn { border: none; background: #f1f5f9; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 16px; }
+
+        /* Form Elements */
+        .input-group { margin-bottom: 20px; }
+        .input-label { display: block; font-size: 12px; font-weight: 800; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; }
+        .form-input { width: 100%; padding: 16px; border: 2px solid var(--border); border-radius: 15px; font-size: 16px; font-weight: 700; outline: none; transition: 0.3s; }
+        .form-input:focus { border-color: var(--brand); background: #f5f3ff; }
+        .submit-btn { width: 100%; padding: 18px; border-radius: 15px; border: none; background: var(--brand); color: white; font-size: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .receiver-preview { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: none; }
+
+        /* Fullscreen QR Modal */
+        .qr-modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+        .qr-card { background: white; padding: 30px; border-radius: 30px; max-width: 350px; width: 100%; }
+        .qr-card img { width: 100%; border-radius: 15px; margin-bottom: 20px; }
+
+        /* History */
+        .hist-item { background: white; padding: 18px; border-radius: 18px; border: 1px solid var(--border); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .hist-info h4 { font-size: 15px; font-weight: 800; margin-bottom: 4px; }
+        .hist-info p { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+        .hist-amt { font-weight: 900; font-size: 16px; }
+        .amt-credit { color: var(--success); }
+        .amt-debit { color: var(--text-dark); }
         
-        .wallet-card-premium { background: linear-gradient(-45deg, #4f46e5, #7e3af2, #5f259f, #3b82f6); background-size: 300% 300%; animation: gradientShift 10s ease infinite; border-radius: 28px; padding: 40px; color: white; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 30px; box-shadow: 0 25px 50px -12px rgba(95, 37, 159, 0.5); margin-bottom: 30px; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); }
-        @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        .wallet-card-premium::before { content: ''; position: absolute; top: -50%; right: -10%; width: 400px; height: 400px; background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%); border-radius: 50%; }
-        
-        .wcp-left { flex: 1; min-width: 250px; z-index: 2; }
-        .wcp-label { font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.9); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
-        .wcp-amount { font-size: 55px; font-weight: 900; letter-spacing: -2px; margin-bottom: 25px; line-height: 1; text-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        .wcp-id { background: rgba(0,0,0,0.3); padding: 12px 20px; border-radius: 100px; display: inline-flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; transition: 0.3s; backdrop-filter: blur(10px); }
-        
-        .wcp-right { background: rgba(255,255,255,0.95); padding: 15px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 2; box-shadow: 0 15px 25px rgba(0,0,0,0.2); transform: rotate(2deg); transition: 0.3s; position: relative; }
-        .wcp-right:hover { transform: rotate(0deg) scale(1.05); }
-        .wcp-right img { width: 110px; height: 110px; border-radius: 12px; }
-        .wcp-right span { font-size: 11px; font-weight: 900; color: var(--brand); letter-spacing: 1px; display: flex; align-items: center; gap: 5px; }
-        .dl-qr-btn { position: absolute; top: -15px; right: -15px; background: var(--text-dark); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: 0.3s; font-size: 14px; }
-        .dl-qr-btn:hover { background: var(--success); transform: scale(1.1); }
-
-        .add-funds-bar { display: flex; justify-content: space-between; align-items: center; background: #e0e7ff; padding: 15px 25px; border-radius: 20px; margin-bottom: 40px; border: 1px dashed #a5b4fc; }
-
-        /* Action Grid */
-        .action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 15px; margin-bottom: 40px; }
-        .w-action { background: #ffffff; padding: 25px 10px; border-radius: 24px; text-align: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.03); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; gap: 12px; }
-        .w-action:hover { transform: translateY(-8px); box-shadow: 0 20px 25px -5px rgba(95,37,159,0.15); border-color: var(--brand); }
-        .w-icon { width: 55px; height: 55px; background: #f3e8ff; color: var(--brand); border-radius: 16px; display: flex; justify-content: center; align-items: center; font-size: 24px; transition: 0.3s; }
-        .w-action:hover .w-icon { background: var(--brand); color: white; border-radius: 50%; }
-        .w-action span { font-weight: 800; font-size: 13px; color: var(--text-dark); }
-
-        /* Vouchers & Store */
-        .section-title { font-size: 22px; font-weight: 900; margin-bottom: 25px; color: var(--text-dark); display: flex; align-items: center; justify-content: space-between; }
-        .search-store { background: var(--surface); border: 2px solid var(--border); border-radius: 100px; padding: 12px 20px; display: flex; align-items: center; gap: 10px; width: 100%; max-width: 350px; transition: 0.3s; }
-        .search-store:focus-within { border-color: var(--brand); box-shadow: 0 4px 15px rgba(95, 37, 159, 0.1); }
-        .search-store input { border: none; outline: none; width: 100%; font-weight: 700; font-size: 14px; }
-        
-        .store-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .store-card { background: #ffffff; border: 1px solid var(--border); border-radius: 20px; padding: 20px 10px; text-align: center; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; align-items: center; gap: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
-        .store-card:hover { transform: translateY(-5px); box-shadow: 0 15px 20px rgba(95, 37, 159, 0.1); border-color: var(--brand); }
-        .store-card i { font-size: 34px; transition: 0.3s; }
-        .store-card:hover i { transform: scale(1.15); }
-        .store-card span { font-size: 12px; font-weight: 800; color: var(--text-dark); }
-        .hidden-voucher { display: none; }
-
-        /* Full Page Slides */
-        .full-page { position: fixed; top: 0; left: 0; right: 0; bottom: 0; height: 100vh; background: #f8fafc; z-index: 6000; overflow-y: auto; opacity: 0; pointer-events: none; transition: opacity 0.4s, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); transform: translateX(100%); }
-        .full-page.open { opacity: 1; pointer-events: all; transform: translateX(0); }
-        .full-page-header { position: sticky; top: 0; height: 75px; padding: 0 5%; display: flex; align-items: center; justify-content: space-between; z-index: 6010; background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
-        .fp-body { padding: 40px 5%; max-width: 600px; margin: 0 auto; }
-        
-        .modern-input { width: 100%; padding: 18px 20px; border: 2px solid var(--border); border-radius: 16px; font-size: 18px; outline: none; background: #ffffff; transition: 0.3s; font-weight: 800; color: var(--text-dark); margin-bottom: 25px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
-        .modern-input:focus { border-color: var(--brand); box-shadow: 0 0 0 5px rgba(95,37,159,0.1); }
-        .input-label { display: block; font-size: 13px; font-weight: 900; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
-
-        .btn-brand { background: var(--brand); color: white; border: none; padding: 20px 24px; border-radius: 16px; font-weight: 900; font-size: 18px; cursor: pointer; transition: 0.3s; width: 100%; display: flex; justify-content: center; align-items: center; gap: 10px; }
-        .btn-brand:hover { background: var(--brand-light); transform: translateY(-3px); box-shadow: 0 10px 20px rgba(126,58,242,0.3); }
-        
-        /* PhonePe Style History */
-        .history-list { display: flex; flex-direction: column; gap: 15px; }
-        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #ffffff; border: 1px solid var(--border); border-radius: 20px; transition: 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-        .history-item:hover { border-color: var(--brand); box-shadow: 0 10px 15px rgba(95,37,159,0.08); transform: translateY(-2px); }
-        .h-left { display: flex; align-items: center; gap: 15px; }
-        .h-icon { width: 50px; height: 50px; border-radius: 16px; display: flex; justify-content: center; align-items: center; font-size: 20px; color: white; }
-        .h-icon.credit { background: var(--success); }
-        .h-icon.debit { background: var(--text-dark); }
-        .h-title { font-weight: 900; font-size: 16px; color: var(--text-dark); margin-bottom: 4px; }
-        .h-date { font-size: 13px; color: var(--text-muted); font-weight: 600; }
-        .h-amount { font-weight: 900; font-size: 18px; text-align: right; }
-        .h-amount.credit { color: var(--success); }
-        .h-amount.debit { color: var(--text-dark); }
-
-        /* Success & Notifications */
-        .toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: #0f172a; color: white; padding: 16px 30px; border-radius: 100px; font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 9999; }
-        .toast-notification.show { bottom: 40px; }
-        
-        .success-page { background: var(--success) !important; color: white !important; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        .success-page i { font-size: 120px; margin-bottom: 20px; animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-
-        /* Invisible canvas for QR Generation */
-        #qrCanvas { display: none; }
-
-        @media (max-width: 768px) {
-            .brand-logo { font-size: 0; } .brand-logo::before { content: "A."; font-size: 22px; font-weight: 800; }
-            .action-grid { grid-template-columns: repeat(3, 1fr); }
-            .wallet-card-premium { padding: 30px 20px; flex-direction: column; text-align: center; }
-            .wcp-amount { font-size: 45px; }
-            .section-title { flex-direction: column; align-items: flex-start; }
-            .search-store { max-width: 100%; }
-        }
+        #qr-reader { border: none !important; border-radius: 20px; overflow: hidden; }
     </style>
 </head>
 <body>
 
-    <script>
-        const API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
-        const PROJECT_ID = "aryanta-mart-a8893";
-        const RAZORPAY_KEY = "rzp_test_SfN9xZbqkMSz6G"; // Your key
-        const session = JSON.parse(localStorage.getItem('active_session'));
-        if (!session || !session.email) { window.location.href = "index.html"; }
-    </script>
+    <nav class="top-bar">
+        <div class="logo">ARYANTA<span>PAY</span></div>
+        <img src="" id="topAvatar" class="profile-trigger">
+    </nav>
 
-    <header class="top-bar">
-        <div class="nav-left">
-            <div class="menu-trigger" onclick="document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show');"><i class="fas fa-bars-staggered"></i></div>
-            <div class="brand-logo" onclick="location.href='index.html'">ARYANTA<span class="prime-dot">.</span></div>
-        </div>
-        <div class="nav-actions">
-            <button class="profile-btn" onclick="location.href='index.html'">
-                <img src="" id="topAvatar" class="nav-avatar"> <span id="topName">User</span>
+    <div class="container">
+        <div class="wallet-card">
+            <p class="bal-label">Available Balance</p>
+            <h1 class="bal-amount" id="displayBalance">₹0.00</h1>
+            <div class="wallet-info">
+                <div class="wallet-id-box" onclick="copyMyID()">
+                    <i class="fas fa-wallet"></i> <span id="displayAddr">Syncing...</span> <i class="far fa-copy" style="opacity:0.5;"></i>
+                </div>
+                <img id="thumbQr" class="qr-thumb" onclick="toggleQR(true)">
+            </div>
+            <button class="submit-btn" style="background: rgba(255,255,255,0.2); margin-top: 20px; height: 50px;" onclick="openPage('pageAddFunds')">
+                <i class="fas fa-plus-circle"></i> Add Funds
             </button>
         </div>
-    </header>
 
-    <aside class="side-panel" id="sidebar">
-        <div class="panel-header">
-            <div class="user-profile">
-                <img id="sidebarAvatar" src="" alt="avatar" class="avatar-img">
-                <div class="user-greeting">
-                    <span id="sidebarUser">User</span>
-                    <small>Store Member</small>
-                </div>
-            </div>
-        </div>
-        <nav class="panel-links">
-            <a href="index.html" class="stagger-link"><i class="fas fa-compass"></i> Discover</a>
-            <a href="index.html" class="stagger-link"><i class="fas fa-user-circle"></i> My Profile</a>
-            <a href="wallet.html" class="stagger-link" style="color: var(--brand); background: rgba(95,37,159,0.05); padding-left: 35px; border-left: 4px solid var(--brand);"><i class="fas fa-wallet"></i> My Wallet</a>
-            <a href="#" onclick="showToast('Subscriptions available soon!')" class="stagger-link"><i class="fas fa-gem" style="color: #8b5cf6;"></i> My Subscriptions</a>
-            <a href="index.html" class="stagger-link"><i class="fas fa-heart"></i> My Wishlist</a>
-            <a href="track.html" class="stagger-link"><i class="fas fa-box-open"></i> My Orders</a>
-            <a href="warrenty.html" class="stagger-link"><i class="fas fa-shield-alt"></i> Warranty Claim</a>
-            <a href="support.html" class="stagger-link"><i class="fas fa-headset"></i> Help & Support</a>
-        </nav>
-        <div class="sidebar-footer">
-            <button class="btn-sidebar-logout" onclick="localStorage.removeItem('active_session'); window.location.href='index.html';"><i class="fas fa-sign-out-alt"></i> Logout</button>
-            <p style="margin-top: 15px; color: #94a3b8; font-weight: 700; font-size: 12px;">Aryanta © 2026</p>
-        </div>
-    </aside>
-    <div class="dimmer" id="overlay" onclick="closeAllPages()"></div>
-    <div id="toastNotification" class="toast-notification"><i class="fas fa-check-circle"></i> <span id="toastMessage">Notice</span></div>
-
-    <main class="wallet-wrapper">
-        
-        <div class="wallet-card-premium">
-            <div class="wcp-left">
-                <div class="wcp-label">Aryanta Pay Balance</div>
-                <div class="wcp-amount" id="walletBalanceDisplay">₹0</div>
-                <div class="wcp-id" onclick="copyWalletAddress()" title="Click to Copy">
-                    <i class="fas fa-qrcode"></i> <span id="walletAddressTxt" style="font-family: monospace;">Syncing...</span> <i class="far fa-copy" style="opacity: 0.5;"></i>
-                </div>
-            </div>
-            <div class="wcp-right">
-                <div class="dl-qr-btn" onclick="downloadQR()" title="Download QR Code"><i class="fas fa-download"></i></div>
-                <img id="walletQrImage" crossorigin="anonymous" src="https://via.placeholder.com/110" alt="Wallet QR">
-                <span><i class="fas fa-camera"></i> SCAN TO PAY</span>
-            </div>
+        <div class="grid-8">
+            <div class="action-btn" onclick="startScanner()"><i class="fas fa-qrcode"></i><span>Scan QR</span></div>
+            <div class="action-btn" onclick="openPage('pageSend')"><i class="fas fa-paper-plane"></i><span>Send Money</span></div>
+            <div class="action-btn" onclick="openPage('pageRedeem')"><i class="fas fa-tags"></i><span>Redeem Gift</span></div>
+            <div class="action-btn" onclick="openPage('pageVoucher')"><i class="fas fa-gift"></i><span>Voucher</span></div>
+            <div class="action-btn" onclick="openPage('pageBank')"><i class="fas fa-university"></i><span>To Bank</span></div>
+            <div class="action-btn" onclick="openPage('pageHistory')"><i class="fas fa-receipt"></i><span>History</span></div>
+            <div class="action-btn" onclick="openPage('pageSecurity')"><i class="fas fa-shield-halved"></i><span>Security PIN</span></div>
+            <div class="action-btn" onclick="alert('More features coming soon!')"><i class="fas fa-grid-2"></i><span>More</span></div>
         </div>
 
-        <div class="add-funds-bar">
-            <div>
-                <h4 style="font-weight: 900; font-size: 16px; color: #3730a3; margin-bottom: 4px;"><i class="fas fa-plus-circle"></i> Wallet Running Low?</h4>
-                <p style="font-size: 13px; color: #4f46e5; font-weight: 600;">Top up instantly via UPI or Card.</p>
-            </div>
-            <button class="btn-brand" style="width: auto; padding: 12px 20px; font-size: 14px;" onclick="openUI('pageAddFunds')">Add Funds</button>
+        <h3 class="section-header"><i class="fas fa-shopping-bag" style="color: var(--brand);"></i> Digital Vouchers</h3>
+        <div class="service-grid">
+            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/300/300220.png"><span>Play Store</span></div>
+            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/888/888879.png"><span>Steam</span></div>
+            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/5968/5968260.png"><span>Domino's</span></div>
+            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/5968/5968350.png"><span>Amazon Pay</span></div>
+            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/5977/5977591.png"><span>Flipkart</span></div>
+            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/825/825590.png"><span>Swiggy</span></div>
+            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/5969/5969116.png"><span>Zomato</span></div>
+            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/3163/3163508.png"><span>BookMyShow</span></div>
+            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/9103/9103286.png"><span>Myntra</span></div>
+            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/1532/1532471.png"><span>Uber</span></div>
+            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/2111/2111624.png"><span>Spotify</span></div>
+            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/732/732228.png"><span>Netflix</span></div>
+            <div class="service-card"><img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_Hotstar_logo.png"><span>Hotstar</span></div>
+            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/888/888841.png"><span>App Store</span></div>
+            <div class="service-card"><img src="https://upload.wikimedia.org/wikipedia/en/7/79/SonyLIV_logo.png"><span>SonyLIV</span></div>
         </div>
 
-        <div class="action-grid">
-            <div class="w-action" onclick="startQrScanner()">
-                <div class="w-icon" style="background:#e0e7ff; color:#4f46e5;"><i class="fas fa-qrcode"></i></div><span>Scan QR</span>
-            </div>
-            <div class="w-action" onclick="openUI('pageTransfer')">
-                <div class="w-icon" style="background:#f3e8ff; color:#5f259f;"><i class="fas fa-paper-plane"></i></div><span>Send Money</span>
-            </div>
-            <div class="w-action" onclick="openUI('pageRedeem')">
-                <div class="w-icon" style="background:#fef3c7; color:#d97706;"><i class="fas fa-gift"></i></div><span>Redeem Gift</span>
-            </div>
-            <div class="w-action" onclick="openUI('pageCreateVoucher')">
-                <div class="w-icon" style="background:#ffedd5; color:#ea580c;"><i class="fas fa-magic"></i></div><span>Create Voucher</span>
-            </div>
-            <div class="w-action" onclick="openUI('pageBank')">
-                <div class="w-icon" style="background:#dcfce3; color:#16a34a;"><i class="fas fa-university"></i></div><span>To Bank</span>
-            </div>
-            <div class="w-action" onclick="openUI('pageHistory')">
-                <div class="w-icon" style="background:#fce7f3; color:#db2777;"><i class="fas fa-receipt"></i></div><span>History</span>
-            </div>
-            <div class="w-action" onclick="openUI('pageSecurity')">
-                <div class="w-icon" style="background:#f1f5f9; color:#475569;"><i class="fas fa-shield-alt"></i></div><span>Security PIN</span>
-            </div>
-        </div>
-
-        <div class="section-title">
-            <div><i class="fas fa-store" style="color: var(--brand);"></i> Digital Vouchers</div>
-            <div class="search-store">
-                <i class="fas fa-search" style="color: var(--text-muted);"></i>
-                <input type="text" id="voucherSearch" placeholder="Search brands..." onkeyup="filterVouchers()">
-            </div>
-        </div>
-        <div class="store-grid" id="voucherGrid">
-            </div>
-        <div style="text-align: center; margin-bottom: 40px;">
-            <button class="btn-brand" style="background: white; color: var(--brand); border: 2px solid var(--border); width: auto; display: inline-flex;" id="btnMoreVouchers" onclick="showAllVouchers()">View More Vouchers <i class="fas fa-chevron-down"></i></button>
-        </div>
-
-        <div class="section-title" style="color: var(--text-muted);"><i class="fas fa-bolt"></i> Bill Payments</div>
-        <div class="store-grid" style="opacity: 0.5; pointer-events: none;">
-            <div class="store-card"><i class="fas fa-mobile-alt"></i><span>Mobile Recharge<br><small style="color:var(--brand);">Coming Soon</small></span></div>
-            <div class="store-card"><i class="fas fa-wifi"></i><span>WiFi / Broadband<br><small style="color:var(--brand);">Coming Soon</small></span></div>
-            <div class="store-card"><i class="fas fa-lightbulb"></i><span>Electricity<br><small style="color:var(--brand);">Coming Soon</small></span></div>
-        </div>
-    </main>
-
-    <canvas id="qrCanvas"></canvas>
-
-    <div class="full-page" id="pageAddFunds">
-        <div class="full-page-header"><button class="btn-back" style="background:transparent; border:none; font-size:16px; font-weight:800; cursor:pointer;" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button> <h2>Top Up Wallet</h2> <div style="width:70px;"></div></div>
-        <div class="fp-body">
-            <div style="font-size: 60px; color: #4f46e5; text-align: center; margin-bottom: 20px;"><i class="fas fa-plus-circle"></i></div>
-            <p style="text-align: center; font-weight: 700; color: var(--text-muted); margin-bottom: 30px;">Add funds securely using UPI, Credit, or Debit card.</p>
-            <label class="input-label">Amount to Add (₹)</label>
-            <input type="number" id="addFundsAmount" class="modern-input" placeholder="₹0.00" style="font-size: 40px; height: 90px; text-align: center;">
-            <button class="btn-brand" style="background: #4f46e5;" onclick="processAddFunds()"><i class="fas fa-bolt"></i> Add Funds Now</button>
+        <h3 class="section-header"><i class="fas fa-bolt" style="color: var(--brand);"></i> Bill Payments</h3>
+        <div class="service-grid">
+            <div class="service-card coming-soon"><span class="cs-badge">SOON</span><i class="fas fa-mobile-screen" style="font-size:24px; margin-bottom:8px;"></i><span>Recharge</span></div>
+            <div class="service-card coming-soon"><span class="cs-badge">SOON</span><i class="fas fa-wifi" style="font-size:24px; margin-bottom:8px;"></i><span>WiFi</span></div>
+            <div class="service-card coming-soon"><span class="cs-badge">SOON</span><i class="fas fa-lightbulb" style="font-size:24px; margin-bottom:8px;"></i><span>Electricity</span></div>
         </div>
     </div>
 
-    <div class="full-page" id="pageCreateVoucher">
-        <div class="full-page-header"><button class="btn-back" style="background:transparent; border:none; font-size:16px; font-weight:800; cursor:pointer;" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button> <h2>Create Voucher</h2> <div style="width:70px;"></div></div>
-        <div class="fp-body">
-            <div style="font-size: 60px; color: #ea580c; text-align: center; margin-bottom: 20px;"><i class="fas fa-magic"></i></div>
-            <p style="text-align: center; font-weight: 700; color: var(--text-muted); margin-bottom: 30px;">Create a secure gift card from your wallet balance to share with anyone.</p>
-            
-            <label class="input-label">Voucher Value (₹)</label>
-            <input type="number" id="cvAmount" class="modern-input" placeholder="₹0.00" style="font-size: 30px; text-align: center; margin-bottom: 20px;">
-            
-            <label class="input-label">Set a 4-Digit Security PIN</label>
-            <input type="password" id="cvPin" class="modern-input" placeholder="••••" maxlength="4" style="font-size: 30px; text-align: center; letter-spacing: 15px; margin-bottom: 30px;">
-            
-            <button class="btn-brand" style="background: #ea580c;" onclick="initiateSecureTransaction('create_voucher')"><i class="fas fa-gift"></i> Generate Voucher</button>
+    <div id="pageSend" class="overlay-page">
+        <div class="oh"><button class="back-btn" onclick="closePage('pageSend')"><i class="fas fa-arrow-left"></i></button><h2>Send Money</h2></div>
+        <div class="ob">
+            <div class="input-group">
+                <label class="input-label">Receiver Wallet ID</label>
+                <input type="text" id="targetID" class="form-input" placeholder="e.g. ARY12345ABC" oninput="lookupReceiver()">
+            </div>
+            <div id="receiverPreview" class="receiver-preview">
+                <p style="font-size:12px; color:var(--success); font-weight:800;">VERIFIED RECEIVER:</p>
+                <h3 id="receiverName" style="margin-top:5px;">User Name</h3>
+            </div>
+            <div class="input-group">
+                <label class="input-label">Amount (₹)</label>
+                <input type="number" id="sendAmount" class="form-input" placeholder="0.00">
+            </div>
+            <button class="submit-btn" onclick="executeSend()"><i class="fas fa-paper-plane"></i> Send Now</button>
         </div>
     </div>
 
-    <div class="full-page" id="pageTransfer">
-        <div class="full-page-header"><button class="btn-back" style="background:transparent; border:none; font-size:16px; font-weight:800; cursor:pointer;" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button> <h2>Send Money</h2> <div style="width:70px;"></div></div>
-        <div class="fp-body">
-            <div style="font-size: 60px; color: #5f259f; text-align: center; margin-bottom: 20px;"><i class="fas fa-paper-plane"></i></div>
-            <label class="input-label">Recipient's Wallet ID or Phone</label>
-            <input type="text" id="transferTarget" class="modern-input" placeholder="e.g. ARY987654321A" style="font-family: monospace; letter-spacing: 2px; text-align: center;">
-            <label class="input-label">Amount (₹)</label>
-            <input type="number" id="transferAmount" class="modern-input" placeholder="0.00" style="font-size: 40px; height: 90px; text-align: center;">
-            <button class="btn-brand" onclick="initiateSecureTransaction('user_transfer')">Proceed to Pay</button>
+    <div id="pageAddFunds" class="overlay-page">
+        <div class="oh"><button class="back-btn" onclick="closePage('pageAddFunds')"><i class="fas fa-arrow-left"></i></button><h2>Add Funds</h2></div>
+        <div class="ob">
+            <div class="input-group">
+                <label class="input-label">Enter Top-up Amount</label>
+                <input type="number" id="addAmtInput" class="form-input" placeholder="₹500">
+            </div>
+            <button class="submit-btn" onclick="startRazorpay()"><i class="fas fa-bolt"></i> Pay with Razorpay</button>
         </div>
     </div>
 
-    <div class="full-page" id="pageBank">
-        <div class="full-page-header"><button class="btn-back" style="background:transparent; border:none; font-size:16px; font-weight:800; cursor:pointer;" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button> <h2>Bank Withdrawal</h2> <div style="width:70px;"></div></div>
-        <div class="fp-body">
-            <div style="font-size: 60px; color: #10b981; text-align: center; margin-bottom: 20px;"><i class="fas fa-university"></i></div>
-            <div style="background: #ecfdf5; padding: 15px; border-radius: 16px; margin-bottom: 30px; font-size: 13px; color: #047857; font-weight: 800; border: 1px solid #a7f3d0; text-align: center;"><i class="fas fa-clock"></i> Arrives in 2-4 hours.</div>
-            <label class="input-label">Your UPI ID</label>
-            <input type="text" id="upiIdTarget" class="modern-input" placeholder="e.g. name@okaxis" style="text-align: center;">
-            <label class="input-label">Amount (₹)</label>
-            <input type="number" id="upiAmount" class="modern-input" placeholder="0.00" style="font-size: 40px; height: 90px; text-align: center;">
-            <button class="btn-brand" style="background: #10b981;" onclick="initiateSecureTransaction('upi_withdraw')">Initiate Withdrawal</button>
+    <div id="pageHistory" class="overlay-page">
+        <div class="oh"><button class="back-btn" onclick="closePage('pageHistory')"><i class="fas fa-arrow-left"></i></button><h2>Transaction History</h2></div>
+        <div class="ob" id="historyContainer">
+            </div>
+    </div>
+
+    <div id="pageVoucher" class="overlay-page">
+        <div class="oh"><button class="back-btn" onclick="closePage('pageVoucher')"><i class="fas fa-arrow-left"></i></button><h2>Create Voucher</h2></div>
+        <div class="ob">
+            <div class="input-group"><label class="input-label">Voucher Value</label><input type="number" id="vouchAmt" class="form-input" placeholder="₹100"></div>
+            <div class="input-group"><label class="input-label">Set 4-Digit PIN</label><input type="password" id="vouchPin" class="form-input" placeholder="••••" maxlength="4"></div>
+            <button class="submit-btn" onclick="createVoucher()">Generate Voucher</button>
         </div>
     </div>
 
-    <div class="full-page" id="pageRedeem">
-        <div class="full-page-header"><button class="btn-back" style="background:transparent; border:none; font-size:16px; font-weight:800; cursor:pointer;" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button> <h2>Redeem Gift Card</h2> <div style="width:70px;"></div></div>
-        <div class="fp-body">
-            <div style="font-size: 60px; color: #d97706; text-align: center; margin-bottom: 20px;"><i class="fas fa-gift"></i></div>
-            <label class="input-label">Gift Card Code</label>
-            <input type="text" id="gcCode" class="modern-input" placeholder="ABCD1234EFGH" style="text-transform: uppercase; font-family: monospace; letter-spacing: 3px; text-align: center;">
-            <label class="input-label">4-Digit PIN</label>
-            <input type="password" id="gcPin" class="modern-input" placeholder="••••" maxlength="4" style="text-align: center; font-size: 30px; letter-spacing: 15px;">
-            <button class="btn-brand" style="background: #d97706;" id="btnRedeem" onclick="processRedeemCard()"><i class="fas fa-unlock"></i> Claim Balance</button>
+    <div id="pageScanner" class="overlay-page" style="background: #000;">
+        <div class="oh" style="background: transparent; border: none; color: white;"><button class="back-btn" onclick="stopScanner()"><i class="fas fa-times"></i></button><h2>Scan QR Code</h2></div>
+        <div class="ob" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 70vh;">
+            <div id="qr-reader" style="width: 300px;"></div>
         </div>
     </div>
 
-    <div class="full-page" id="pageStore">
-        <div class="full-page-header"><button class="btn-back" style="background:transparent; border:none; font-size:16px; font-weight:800; cursor:pointer;" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button> <h2 id="dsTitle">Buy Voucher</h2> <div style="width:70px;"></div></div>
-        <div class="fp-body" style="text-align: center;">
-            <div id="dsIcon" style="font-size: 80px; margin-bottom: 20px;"></div>
-            <p style="font-size: 14px; color: var(--text-muted); font-weight: 700; margin-bottom: 30px;">Digital code will be saved in your order history instantly.</p>
-            <input type="number" id="dsAmount" class="modern-input" placeholder="Amount (₹)" style="text-align: center; font-size: 50px; font-weight: 900; height: 100px;">
-            <button class="btn-brand" onclick="initiateSecureTransaction('digital_purchase')"><i class="fas fa-lock"></i> Pay Securely</button>
+    <div id="qrModal" class="qr-modal" onclick="toggleQR(false)">
+        <div class="qr-card" onclick="event.stopPropagation()">
+            <h2 style="margin-bottom: 5px;">My QR Code</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Anyone can scan this to pay you</p>
+            <img id="fullQrImg" src="">
+            <div class="wallet-id-box" style="justify-content: center; background: #f1f5f9; color: var(--text-dark);">
+                <span id="qrAddrText">ID</span>
+            </div>
+            <button class="submit-btn" style="margin-top: 20px;" onclick="toggleQR(false)">Close</button>
         </div>
     </div>
-
-    <div class="full-page" id="pageSecurity">
-        <div class="full-page-header"><button class="btn-back" style="background:transparent; border:none; font-size:16px; font-weight:800; cursor:pointer;" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button> <h2>Security PIN</h2> <div style="width:70px;"></div></div>
-        <div class="fp-body" style="text-align: center;">
-            <div style="font-size: 80px; color: var(--brand); margin-bottom: 20px;"><i class="fas fa-shield-check"></i></div>
-            <h3 style="font-size: 24px; font-weight: 900; margin-bottom: 10px;">Set Transaction PIN</h3>
-            <p style="font-size: 15px; color: var(--text-muted); font-weight: 600; margin-bottom: 40px;">Create a 4-6 digit PIN for all secure transactions.</p>
-            <input type="password" id="newPinInput" class="modern-input" placeholder="••••" maxlength="6" style="text-align: center; font-size: 50px; letter-spacing: 20px; height: 100px;">
-            <button class="btn-brand" id="btnSavePin" onclick="saveTransactionPin()"><i class="fas fa-save"></i> Save Secure PIN</button>
-        </div>
-    </div>
-
-    <div class="full-page" id="pageHistory">
-        <div class="full-page-header"><button class="btn-back" style="background:transparent; border:none; font-size:16px; font-weight:800; cursor:pointer;" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button> <h2>Transactions</h2> <div style="width:70px;"></div></div>
-        <div class="fp-body" style="max-width: 800px; padding: 20px 5%;">
-            <div class="history-list" id="walletHistoryList"></div>
-        </div>
-    </div>
-
-    <div class="full-page pin-page" id="pageValidatePin" style="z-index: 7000; background: #0f172a; color: white;">
-        <div class="full-page-header" style="background: transparent; border: none;"><button class="btn-back" style="background:transparent; border:none; font-size:16px; font-weight:800; cursor:pointer; color: white;" onclick="history.back()"><i class="fas fa-times"></i> Cancel</button> <h2>Secure Auth</h2> <div style="width:70px;"></div></div>
-        <div class="fp-body" style="text-align: center; margin-top: 50px;">
-            <div style="font-size: 70px; color: #a78bfa; margin-bottom: 20px;"><i class="fas fa-lock"></i></div>
-            <h3 style="font-size: 28px; font-weight: 900; margin-bottom: 10px;">Enter Aryanta PIN</h3>
-            <p style="font-size: 16px; color: #fca5a5; font-weight: 800; margin-bottom: 40px;" id="pinPromptDesc">Verify identity to proceed.</p>
-            <input type="password" id="authPinInput" class="modern-input" placeholder="••••" maxlength="6" style="background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); color: white; text-align: center; font-size: 40px; letter-spacing: 20px; padding: 25px; border-radius: 20px;">
-            <button class="btn-brand" style="background: #7e3af2;" id="btnAuthPin" onclick="verifyPinAndExecute()"><i class="fas fa-check"></i> Verify & Pay</button>
-        </div>
-    </div>
-
-    <div class="full-page success-page" id="pageSuccess" style="z-index: 8000;">
-        <i class="fas fa-check-circle"></i>
-        <h1 style="font-size: 36px; font-weight: 900; margin-bottom: 15px;">Successful</h1>
-        <p id="successDesc" style="font-size: 18px; font-weight: 700; margin-bottom: 40px; opacity: 0.9; max-width: 400px;">Transaction completed.</p>
-        
-        <div id="voucherDisplaySection" style="display: none; background: white; color: #0f172a; padding: 25px; border-radius: 16px; margin-bottom: 40px; width: 90%; max-width: 400px; box-shadow: 0 20px 25px rgba(0,0,0,0.2);">
-            <h3 style="font-size: 14px; color: #64748b; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px;">Your Voucher Details</h3>
-            <div style="font-size: 24px; font-family: monospace; font-weight: 900; letter-spacing: 3px; color: #ea580c; border-bottom: 2px dashed #e2e8f0; padding-bottom: 15px; margin-bottom: 15px;" id="createdVCode">CODE</div>
-            <div style="font-size: 18px; font-weight: 800; color: #0f172a;">PIN: <span id="createdVPin" style="letter-spacing: 5px;">1234</span></div>
-            <p style="font-size: 12px; margin-top: 15px; font-weight: 600;">Share this with anyone to redeem ₹<span id="createdVAmt"></span>.</p>
-        </div>
-
-        <button class="btn-brand" style="background: white; color: #10b981; max-width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);" onclick="closeAllPages()"><i class="fas fa-home"></i> Done</button>
-    </div>
-
-    <div class="full-page" id="pageScanQr">
-        <div class="full-page-header"><button class="btn-back" style="background:transparent; border:none; font-size:16px; font-weight:800; cursor:pointer;" onclick="closeScannerPage()"><i class="fas fa-arrow-left"></i> Back</button> <h2>Scan QR</h2> <div style="width:70px;"></div></div>
-        <div class="fp-body" style="text-align: center;">
-            <div id="qr-reader" style="border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1);"></div>
-            <p style="font-size: 15px; color: var(--text-muted); font-weight: 800; margin-top: 25px;"><i class="fas fa-camera"></i> Point camera at Aryanta Wallet QR</p>
-        </div>
-    </div>
-
 
     <script>
-        // ==========================================
-        // SYSTEM LOGIC & VOUCHER DB
-        // ==========================================
-        let walletBalance = 0;
-        let walletTransactions = [];
-        let activeDigitalPurchase = null;
-        let userTxnPinHash = null; 
-        let pendingTransactionType = null; 
-        let html5QrcodeScanner = null;
-        let activeOverlays = [];
+        // 1. Firebase Initialization
+        const firebaseConfig = {
+            apiKey: "AIzaSyA2LFjhw79KbX8uAToobgj732aYOsuy74k",
+            authDomain: "vote-3df4d.firebaseapp.com",
+            databaseURL: "https://vote-3df4d-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "vote-3df4d",
+            storageBucket: "vote-3df4d.firebasestorage.app",
+            messagingSenderId: "39376456060",
+            appId: "1:39376456060:web:f1423fbddff9eebceb3cf9"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-        // Digital Vouchers Database (15 Items)
-        const allVouchers = [
-            { id: 'playstore', name: 'Play Store', icon: 'fab fa-google-play', color: '#0ea5e9' },
-            { id: 'steam', name: 'Steam Wallet', icon: 'fab fa-steam', color: '#1e293b' },
-            { id: 'dominos', name: 'Domino\'s', icon: 'fas fa-pizza-slice', color: '#ef4444' },
-            { id: 'amazon', name: 'Amazon Pay', icon: 'fab fa-amazon', color: '#f59e0b' },
-            { id: 'flipkart', name: 'Flipkart', icon: 'fas fa-shopping-bag', color: '#3b82f6' },
-            { id: 'swiggy', name: 'Swiggy', icon: 'fas fa-hamburger', color: '#f97316' },
-            { id: 'zomato', name: 'Zomato', icon: 'fas fa-utensils', color: '#dc2626' },
-            { id: 'bms', name: 'BookMyShow', icon: 'fas fa-ticket-alt', color: '#ec4899' },
-            { id: 'myntra', name: 'Myntra', icon: 'fas fa-tshirt', color: '#db2777' },
-            { id: 'uber', name: 'Uber', icon: 'fab fa-uber', color: '#000000' },
-            { id: 'spotify', name: 'Spotify', icon: 'fab fa-spotify', color: '#1db954' },
-            { id: 'netflix', name: 'Netflix', icon: 'fas fa-play', color: '#e50914' },
-            { id: 'hotstar', name: 'Hotstar', icon: 'fas fa-star', color: '#0284c7' },
-            { id: 'appstore', name: 'App Store', icon: 'fab fa-apple', color: '#333333' },
-            { id: 'sonyliv', name: 'SonyLIV', icon: 'fas fa-tv', color: '#f59e0b' }
-        ];
-
-        // --- Render Vouchers ---
-        function renderVouchers(limit = 6, filter = "") {
-            const grid = document.getElementById('voucherGrid');
-            grid.innerHTML = "";
-            let count = 0;
-            allVouchers.forEach(v => {
-                if(filter && !v.name.toLowerCase().includes(filter.toLowerCase())) return;
-                if(count >= limit && !filter) return;
-                
-                grid.innerHTML += `
-                    <div class="store-card" onclick="openDigitalPurchase('${v.name}', '${v.id}')">
-                        <i class="${v.icon}" style="color: ${v.color};"></i>
-                        <span>${v.name}</span>
-                    </div>
-                `;
-                count++;
-            });
-            
-            // Toggle View More button
-            const btn = document.getElementById('btnMoreVouchers');
-            if(filter || limit >= allVouchers.length) btn.style.display = 'none';
-            else btn.style.display = 'inline-flex';
-        }
-        function showAllVouchers() { renderVouchers(allVouchers.length); }
-        function filterVouchers() { const val = document.getElementById('voucherSearch').value; renderVouchers(15, val); }
-
-        // --- Tab Navigation ---
-        function openUI(id) {
-            document.getElementById(id).classList.add('open');
-            activeOverlays.push(id);
-            history.pushState({ui: id}, "");
-        }
-        window.addEventListener('popstate', (e) => {
-            if(activeOverlays.length > 0) {
-                const id = activeOverlays.pop();
-                document.getElementById(id).classList.remove('open');
-                if(id === 'pageScanQr' && html5QrcodeScanner) { html5QrcodeScanner.clear(); html5QrcodeScanner = null; }
-            } else {
-                document.getElementById('sidebar').classList.remove('open');
-                document.getElementById('overlay').classList.remove('show');
-            }
-        });
-        function closeAllPages() {
-            activeOverlays.forEach(id => document.getElementById(id).classList.remove('open'));
-            activeOverlays = [];
-            history.pushState(null, null, window.location.pathname);
-            if(html5QrcodeScanner) { html5QrcodeScanner.clear(); html5QrcodeScanner = null; }
-            
-            // Reset Success State
-            document.getElementById('voucherDisplaySection').style.display = 'none';
-        }
-        function showSuccessPage(desc) { document.getElementById('successDesc').innerText = desc; openUI('pageSuccess'); }
-        function showToast(msg) { document.getElementById('toastMessage').innerText = msg; const toast = document.getElementById('toastNotification'); toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3500); }
-        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
-        function closeAllModals() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
-
-        // --- Core Init ---
-        async function secureHash(string) { const msgBuffer = new TextEncoder().encode(string); const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer); return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join(''); }
-
-        async function initWallet() {
-            renderVouchers(); // Init vouchers
-            try {
-                const res = await fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(session.email)}`);
-                const data = await res.json();
-                document.getElementById('topName').innerText = session.name.split(' ')[0];
-                document.getElementById('sidebarUser').innerText = session.name;
-                const avatar = session.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.email}`;
-                document.getElementById('topAvatar').src = avatar; document.getElementById('sidebarAvatar').src = avatar;
-                
-                if (!data.walletAddress) {
-                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; let addr = 'ARY';
-                    for (let i = 0; i < 14; i++) addr += chars.charAt(Math.floor(Math.random() * chars.length));
-                    data.walletAddress = addr;
-                    await fetch(`${API_BASE_URL}/update-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: session.email, updates: { walletAddress: addr }, projectId: PROJECT_ID }) });
-                }
-                
-                document.getElementById('walletAddressTxt').innerText = data.walletAddress;
-                // Add crossOrigin anonymous to allow canvas downloading later
-                document.getElementById('walletQrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${data.walletAddress}`;
-                
-                walletBalance = data.wallet !== undefined ? Number(data.wallet) : 0;
-                document.getElementById('walletBalanceDisplay').innerText = `₹${walletBalance.toLocaleString('en-IN')}`;
-                
-                userTxnPinHash = data.txnPin || null;
-                walletTransactions = data.transactions || [];
-                renderHistory();
-            } catch(e) { showToast("Sync Error: Check connection."); }
-        }
-
-        // --- Premium QR Download (Paytm Style) ---
-        function downloadQR() {
-            showToast("Generating Premium QR...");
-            const canvas = document.getElementById('qrCanvas');
-            canvas.width = 600; canvas.height = 800;
-            const ctx = canvas.getContext('2d');
-
-            // Draw Background Gradient
-            const grd = ctx.createLinearGradient(0, 0, 0, 800);
-            grd.addColorStop(0, "#5f259f");
-            grd.addColorStop(1, "#3b82f6");
-            ctx.fillStyle = grd; ctx.fillRect(0, 0, 600, 800);
-
-            // Draw Header Text
-            ctx.fillStyle = "#ffffff";
-            ctx.textAlign = "center";
-            ctx.font = "bold 40px 'Plus Jakarta Sans', sans-serif";
-            ctx.fillText("ARYANTA PAY", 300, 90);
-            
-            ctx.font = "bold 24px sans-serif";
-            ctx.fillText(session.name.toUpperCase(), 300, 140);
-            ctx.font = "18px monospace";
-            ctx.fillStyle = "#fde047";
-            ctx.fillText("ID: " + document.getElementById('walletAddressTxt').innerText, 300, 170);
-
-            // Draw White QR Container
-            ctx.fillStyle = "#ffffff";
-            ctx.shadowColor = "rgba(0,0,0,0.3)";
-            ctx.shadowBlur = 30;
-            ctx.beginPath(); ctx.roundRect(100, 220, 400, 400, 30); ctx.fill();
-            ctx.shadowBlur = 0; // Reset shadow
-
-            // Draw actual QR image onto canvas
-            const qrImg = document.getElementById('walletQrImage');
-            
-            // Allow image to load cross-origin
-            const tempImg = new Image();
-            tempImg.crossOrigin = "Anonymous";
-            tempImg.onload = function() {
-                ctx.drawImage(tempImg, 130, 250, 340, 340);
-                
-                // Footer
-                ctx.fillStyle = "#ffffff";
-                ctx.font = "bold 22px sans-serif";
-                ctx.fillText("Scan to pay securely via Aryanta Wallet", 300, 700);
-
-                // Trigger Download
-                const link = document.createElement('a');
-                link.download = `Aryanta_QR_${session.name.split(' ')[0]}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            };
-            tempImg.src = qrImg.src;
-        }
-
-        // --- Add Funds (Razorpay) ---
-        function processAddFunds() {
-            const amt = Number(document.getElementById('addFundsAmount').value);
-            if(amt < 10) return showToast("Minimum ₹10 required.");
-            
-            const options = {
-                key: RAZORPAY_KEY,
-                amount: amt * 100,
-                currency: "INR",
-                name: "Aryanta Top-Up",
-                description: "Wallet Add Funds",
-                handler: async function(response) {
-                    const txnId = "TOP" + Date.now().toString().slice(-8);
-                    walletBalance += amt;
-                    walletTransactions.push({ id: txnId, type: 'credit', amount: amt, desc: `Added via UPI/Card`, date: new Date().toISOString() });
-                    await syncWalletToCloud();
-                    document.getElementById('walletBalanceDisplay').innerText = `₹${walletBalance.toLocaleString('en-IN')}`;
-                    renderHistory();
-                    document.getElementById('addFundsAmount').value = '';
-                    showSuccessPage(`₹${amt} added to your wallet!`);
-                },
-                prefill: { name: session.name, email: session.email }
-            };
-            new Razorpay(options).open();
-        }
-
-        // --- QR Scanner ---
-        function startQrScanner() {
-            openUI('pageScanQr');
-            html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
-            html5QrcodeScanner.render((decodedText) => {
-                closeScannerPage(); document.getElementById('transferTarget').value = decodedText; openUI('pageTransfer');
-                showToast("Wallet Address Scanned!");
-            }, (err) => {});
-        }
-        function closeScannerPage() { if(html5QrcodeScanner) { html5QrcodeScanner.clear(); html5QrcodeScanner = null; } history.back(); }
-
-        // --- Redeem & Delete Card ---
-        async function processRedeemCard() {
-            const code = document.getElementById('gcCode').value.toUpperCase().trim();
-            const pin = document.getElementById('gcPin').value.trim();
-            if(!code || !pin) return showToast("Enter both Code and PIN.");
-            
-            const btn = document.getElementById('btnRedeem');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...'; btn.disabled = true;
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/validate-coupon`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: code, pin: pin, userEmail: session.email }) });
-                const result = await response.json();
-
-                if (result.valid) {
-                    const amount = result.discountAmount; const txnId = "RDM" + Date.now().toString().slice(-8);
-                    walletBalance += amount;
-                    walletTransactions.push({ id: txnId, type: 'credit', amount: amount, desc: `Gift Card Redeemed`, date: new Date().toISOString() });
-                    await syncWalletToCloud();
-                    
-                    // Simulate calling worker to delete/mark used
-                    // We send a mock request to the backend indicating this gift card is used
-                    fetch(`${API_BASE_URL}/add-review`, { method: 'POST', body: JSON.stringify({ delete: true, id: code, isGiftCard: true }) }).catch(e=>{});
-
-                    document.getElementById('walletBalanceDisplay').innerText = `₹${walletBalance.toLocaleString('en-IN')}`; renderHistory();
-                    document.getElementById('gcCode').value = ''; document.getElementById('gcPin').value = '';
-                    showSuccessPage(`₹${amount} added to your wallet!`);
-                } else { showToast(result.message || "Invalid or used Gift Card."); }
-            } catch (e) { showToast("Network Error."); } 
-            finally { btn.innerHTML = '<i class="fas fa-unlock"></i> Claim Balance'; btn.disabled = false; }
-        }
-
-        // --- Security PIN ---
-        async function saveTransactionPin() {
-            const pin = document.getElementById('newPinInput').value;
-            if(pin.length < 4) return showToast("PIN must be at least 4 digits.");
-            
-            const btn = document.getElementById('btnSavePin'); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...'; btn.disabled = true;
-            const hashedPin = await secureHash(pin);
-            try {
-                await fetch(`${API_BASE_URL}/update-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: session.email, updates: { txnPin: hashedPin }, projectId: PROJECT_ID }) });
-                userTxnPinHash = hashedPin;
-                document.getElementById('newPinInput').value = '';
-                showSuccessPage("Security PIN set successfully!");
-            } catch(e) { showToast("Failed to save PIN."); } 
-            finally { btn.innerHTML = '<i class="fas fa-save"></i> Save Secure PIN'; btn.disabled = false; }
-        }
-
-        // --- Transactions Gateway ---
-        function initiateSecureTransaction(type) {
-            let amount = 0;
-            if(type === 'user_transfer') {
-                const target = document.getElementById('transferTarget').value.trim(); amount = Number(document.getElementById('transferAmount').value);
-                if (!target || amount <= 0) return showToast("Enter recipient and amount.");
-                if (amount > walletBalance) return showToast("Insufficient Funds.");
-                document.getElementById('pinPromptDesc').innerText = `Paying ₹${amount} to ${target}`;
-            } 
-            else if(type === 'upi_withdraw') {
-                const upi = document.getElementById('upiIdTarget').value.trim(); amount = Number(document.getElementById('upiAmount').value);
-                if (!upi.includes('@')) return showToast("Valid UPI ID required.");
-                if (amount <= 0 || amount > walletBalance) return showToast("Insufficient Funds.");
-                document.getElementById('pinPromptDesc').innerText = `Withdrawing ₹${amount} to Bank`;
-            }
-            else if(type === 'digital_purchase') {
-                amount = Number(document.getElementById('dsAmount').value);
-                if(amount < 10) return showToast("Minimum ₹10 required.");
-                if (walletBalance < amount) return showToast("Insufficient Funds.");
-                document.getElementById('pinPromptDesc').innerText = `Paying ₹${amount} for ${activeDigitalPurchase.name}`;
-            }
-            else if(type === 'create_voucher') {
-                amount = Number(document.getElementById('cvAmount').value);
-                const p = document.getElementById('cvPin').value;
-                if(amount < 10) return showToast("Minimum ₹10 required.");
-                if(p.length !== 4) return showToast("Set a 4-digit PIN.");
-                if (walletBalance < amount) return showToast("Insufficient Funds.");
-                document.getElementById('pinPromptDesc').innerText = `Creating Voucher of ₹${amount}`;
-            }
-
-            if(!userTxnPinHash) { showToast("Security Alert: Setup a PIN first."); return openUI('pageSecurity'); }
-            pendingTransactionType = type; document.getElementById('authPinInput').value = ''; openUI('pageValidatePin');
-        }
-
-        async function verifyPinAndExecute() {
-            const enteredPin = document.getElementById('authPinInput').value;
-            if(enteredPin.length < 4) return showToast("Enter valid PIN.");
-            
-            const btn = document.getElementById('btnAuthPin'); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...'; btn.disabled = true;
-            const hashedAttempt = await secureHash(enteredPin);
-            
-            if (hashedAttempt === userTxnPinHash) {
-                btn.innerHTML = '<i class="fas fa-check"></i> Verify & Pay'; btn.disabled = false;
-                
-                if(pendingTransactionType === 'user_transfer') await executeUserTransfer();
-                if(pendingTransactionType === 'upi_withdraw') await executeUpiWithdraw();
-                if(pendingTransactionType === 'digital_purchase') await executeDigitalPurchase();
-                if(pendingTransactionType === 'create_voucher') await executeCreateVoucher();
-                
-                pendingTransactionType = null;
-            } else {
-                showToast("Incorrect Security PIN. Try again.");
-                btn.innerHTML = '<i class="fas fa-check"></i> Verify & Pay'; btn.disabled = false; document.getElementById('authPinInput').value = '';
-            }
-        }
-
-        async function syncWalletToCloud() { await fetch(`${API_BASE_URL}/update-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: session.email, updates: { wallet: walletBalance, transactions: walletTransactions }, projectId: PROJECT_ID }) }); }
-
-        async function executeUserTransfer() {
-            const target = document.getElementById('transferTarget').value.trim(); const amount = Number(document.getElementById('transferAmount').value);
-            const txnId = "TXN" + Date.now().toString().slice(-8);
-            walletBalance -= amount; walletTransactions.push({ id: txnId, type: 'debit', amount: amount, desc: `Paid to ${target}`, date: new Date().toISOString() });
-            await syncWalletToCloud();
-            document.getElementById('walletBalanceDisplay').innerText = `₹${walletBalance.toLocaleString('en-IN')}`; renderHistory();
-            document.getElementById('transferTarget').value = ''; document.getElementById('transferAmount').value = '';
-            showSuccessPage(`₹${amount} safely sent to ${target}.`);
-        }
-
-        async function executeUpiWithdraw() {
-            const upi = document.getElementById('upiIdTarget').value.trim(); const amount = Number(document.getElementById('upiAmount').value);
-            const txnId = "WDL" + Date.now().toString().slice(-8);
-            walletBalance -= amount; walletTransactions.push({ id: txnId, type: 'debit', amount: amount, desc: `Withdrawn to ${upi}`, date: new Date().toISOString() });
-            await syncWalletToCloud();
-            await fetch(`${API_BASE_URL}/callback_requests`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: session.name, user_email: session.email, phone: upi, description: `WITHDRAWAL: Rs.${amount} to UPI: ${upi}. Pay manually.`, status: 'Pending', timestamp: new Date().toISOString(), projectId: PROJECT_ID }) });
-            document.getElementById('walletBalanceDisplay').innerText = `₹${walletBalance.toLocaleString('en-IN')}`; renderHistory();
-            document.getElementById('upiIdTarget').value = ''; document.getElementById('upiAmount').value = '';
-            showSuccessPage(`Withdrawal of ₹${amount} initiated. Reflects in 2-4 hrs.`);
-        }
-
-        async function executeDigitalPurchase() {
-            const amount = Number(document.getElementById('dsAmount').value); const txnId = "DIG" + Date.now().toString().slice(-8);
-            walletBalance -= amount; walletTransactions.push({ id: txnId, type: 'debit', amount: amount, desc: `Bought ${activeDigitalPurchase.name}`, date: new Date().toISOString() });
-            await syncWalletToCloud();
-            await fetch(`${API_BASE_URL}/order`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order_no: "DIG-" + Date.now().toString().slice(-6), user_email: session.email, delivery_name: session.name, delivery_phone: 'Digital Delivery', delivery_address: 'Digital Delivery to Email', items: [{ name: activeDigitalPurchase.name, qty: 1, price: amount }], financials: { itemsTotal: amount, shippingCost: 0, grandTotal: amount, discount: 0, finalPayable: amount }, payment_method: "Aryanta Pay Wallet", razorpay_id: txnId, status: "Confirmed", timestamp: new Date().toISOString() }) });
-            document.getElementById('walletBalanceDisplay').innerText = `₹${walletBalance.toLocaleString('en-IN')}`; renderHistory();
-            document.getElementById('dsAmount').value = '';
-            showSuccessPage(`${activeDigitalPurchase.name} voucher sent to email.`);
-        }
-
-        async function executeCreateVoucher() {
-            const amount = Number(document.getElementById('cvAmount').value);
-            const pin = document.getElementById('cvPin').value;
-            const txnId = "VOC" + Date.now().toString().slice(-8);
-
-            // Generate Code
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; let code = '';
-            for(let i=0; i<12; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
-
-            walletBalance -= amount; walletTransactions.push({ id: txnId, type: 'debit', amount: amount, desc: `Created Gift Voucher`, date: new Date().toISOString() });
-            await syncWalletToCloud();
-
-            // Setup Success Screen with Code
-            document.getElementById('cvAmount').value = ''; document.getElementById('cvPin').value = '';
-            document.getElementById('walletBalanceDisplay').innerText = `₹${walletBalance.toLocaleString('en-IN')}`; renderHistory();
-            
-            document.getElementById('voucherDisplaySection').style.display = 'block';
-            document.getElementById('createdVCode').innerText = code;
-            document.getElementById('createdVPin').innerText = pin;
-            document.getElementById('createdVAmt').innerText = amount;
-            
-            showSuccessPage(`Voucher created successfully!`);
-        }
-
-        // --- Utils ---
-        function copyWalletAddress() { navigator.clipboard.writeText(document.getElementById('walletAddressTxt').innerText); showToast("Wallet ID copied to clipboard!"); }
-        function generateReferralLink() { const addr = document.getElementById('walletAddressTxt').innerText; if(addr && addr !== "Loading...") { navigator.clipboard.writeText(`${window.location.origin}/?ref=${addr}`); showToast("Referral link copied!"); } }
-
-        function openDigitalPurchase(name, id) {
-            activeDigitalPurchase = allVouchers.find(v => v.id === id) || {name: name};
-            document.getElementById('dsTitle').innerText = `Buy ${activeDigitalPurchase.name}`;
-            document.getElementById('dsAmount').value = ''; document.getElementById('dsWalletBal').innerText = `₹${walletBalance.toLocaleString('en-IN')}`;
-            document.getElementById('dsIcon').innerHTML = `<i class="${activeDigitalPurchase.icon}" style="color:${activeDigitalPurchase.color}"></i>`;
-            openUI('pageStore');
-        }
-
-        function renderHistory() {
-            const list = document.getElementById('walletHistoryList'); list.innerHTML = "";
-            if (walletTransactions.length === 0) { list.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:30px; font-weight:700;">No transactions found.</div>'; return; }
-            
-            const sorted = [...walletTransactions].sort((a,b) => new Date(b.date) - new Date(a.date));
-            sorted.forEach(t => {
-                const isC = t.type === 'credit';
-                let iHtml = '';
-                if(t.desc.includes('Withdraw')) iHtml = '<i class="fas fa-university"></i>';
-                else if (t.desc.includes('Voucher') || t.desc.includes('Bought')) iHtml = '<i class="fas fa-store"></i>';
-                else if (isC) iHtml = '<i class="fas fa-arrow-down"></i>';
-                else iHtml = '<i class="fas fa-paper-plane"></i>';
-
-                const s = isC ? '+' : '-';
-                const d = new Date(t.date).toLocaleDateString('en-IN', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
-                
-                list.innerHTML += `
-                <div class="history-item">
-                    <div class="h-left">
-                        <div class="h-icon ${t.type}">${iHtml}</div>
-                        <div>
-                            <div class="h-title">${t.desc}</div>
-                            <div class="h-date">${d} &bull; ${t.id}</div>
-                        </div>
-                    </div>
-                    <div class="h-amount ${t.type}">${s}₹${Number(t.amount).toLocaleString('en-IN')}</div>
-                </div>`;
-            });
-        }
+        // 2. Global State
+        const session = JSON.parse(localStorage.getItem('active_session'));
+        if(!session) window.location.href = "index.html";
+        const safeEmail = session.email.replace(/[.#$\[\]]/g, '_');
         
-        initWallet();
+        let myBalance = 0;
+        let myWalletID = "";
+        let scanner = null;
+        let targetReceiver = null;
+
+        // 3. UI Control
+        function openPage(id) { document.getElementById(id).classList.add('active'); }
+        function closePage(id) { document.getElementById(id).classList.remove('active'); }
+        function toggleQR(show) { document.getElementById('qrModal').style.display = show ? 'flex' : 'none'; }
+        function copyMyID() { navigator.clipboard.writeText(myWalletID); alert("ID Copied!"); }
+
+        // 4. Realtime Listeners
+        function initApp() {
+            document.getElementById('topAvatar').src = session.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.email}`;
+            
+            const userRef = db.ref('users/' + safeEmail);
+            
+            // Check/Create User
+            userRef.once('value').then(snap => {
+                if(!snap.exists()) {
+                    const newID = "ARY" + Math.random().toString(36).substring(2, 10).toUpperCase();
+                    userRef.set({ name: session.name, email: session.email, walletAddress: newID, walletBalance: 0 });
+                }
+            });
+
+            // Listen for balance/ID changes
+            userRef.on('value', snap => {
+                const data = snap.val();
+                if(data) {
+                    myBalance = data.walletBalance || 0;
+                    myWalletID = data.walletAddress;
+                    document.getElementById('displayBalance').innerText = `₹${myBalance.toLocaleString('en-IN', {minimumFractionDigits:2})}`;
+                    document.getElementById('displayAddr').innerText = myWalletID;
+                    document.getElementById('qrAddrText').innerText = myWalletID;
+                    
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${myWalletID}`;
+                    document.getElementById('thumbQr').src = qrUrl;
+                    document.getElementById('fullQrImg').src = qrUrl;
+                }
+            });
+
+            // Listen for Transactions
+            db.ref('users/' + safeEmail + '/transactions').on('value', snap => {
+                const container = document.getElementById('historyContainer');
+                container.innerHTML = "";
+                const txns = [];
+                snap.forEach(child => { txns.push(child.val()); });
+                txns.reverse().forEach(t => {
+                    const isCredit = t.type === 'credit';
+                    container.innerHTML += `
+                        <div class="hist-item">
+                            <div class="hist-info">
+                                <h4>${t.desc}</h4>
+                                <p>${new Date(t.date).toLocaleString()}</p>
+                            </div>
+                            <div class="hist-amt ${isCredit ? 'amt-credit' : 'amt-debit'}">
+                                ${isCredit ? '+' : '-'}₹${t.amount}
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        // 5. Smart Scanner Logic
+        function startScanner() {
+            openPage('pageScanner');
+            scanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 });
+            scanner.render((text) => {
+                stopScanner();
+                document.getElementById('targetID').value = text;
+                openPage('pageSend');
+                lookupReceiver();
+            });
+        }
+        function stopScanner() {
+            if(scanner) { scanner.clear(); scanner = null; }
+            closePage('pageScanner');
+        }
+
+        // 6. Smart Lookup
+        async function lookupReceiver() {
+            const id = document.getElementById('targetID').value.trim();
+            const preview = document.getElementById('receiverPreview');
+            if(id.length < 5) { preview.style.display = 'none'; return; }
+
+            db.ref('users').orderByChild('walletAddress').equalTo(id).once('value', snap => {
+                if(snap.exists()) {
+                    const key = Object.keys(snap.val())[0];
+                    const data = snap.val()[key];
+                    targetReceiver = { key: key, name: data.name, balance: data.walletBalance };
+                    document.getElementById('receiverName').innerText = data.name;
+                    preview.style.display = 'block';
+                } else {
+                    preview.style.display = 'none';
+                    targetReceiver = null;
+                }
+            });
+        }
+
+        // 7. Transactions
+        async function executeSend() {
+            const amt = parseFloat(document.getElementById('sendAmount').value);
+            if(!targetReceiver) return alert("Select a valid user");
+            if(amt <= 0 || amt > myBalance) return alert("Invalid amount or low balance");
+
+            // Update Receiver
+            db.ref('users/' + targetReceiver.key).update({ walletBalance: targetReceiver.balance + amt });
+            db.ref('users/' + targetReceiver.key + '/transactions').push({
+                type: 'credit', amount: amt, desc: `Received from ${session.name}`, date: Date.now()
+            });
+
+            // Update Me
+            db.ref('users/' + safeEmail).update({ walletBalance: myBalance - amt });
+            db.ref('users/' + safeEmail + '/transactions').push({
+                type: 'debit', amount: amt, desc: `Paid to ${targetReceiver.name}`, date: Date.now()
+            });
+
+            alert("Transfer Successful!");
+            closePage('pageSend');
+            document.getElementById('sendAmount').value = "";
+            document.getElementById('targetID').value = "";
+        }
+
+        // 8. Razorpay
+        function startRazorpay() {
+            const amt = parseFloat(document.getElementById('addAmtInput').value);
+            if(amt < 10) return alert("Min ₹10 required");
+
+            const options = {
+                "key": "rzp_test_YOUR_KEY", // Replace with your key
+                "amount": amt * 100,
+                "name": "Aryanta Pay",
+                "handler": function (response) {
+                    db.ref('users/' + safeEmail).update({ walletBalance: myBalance + amt });
+                    db.ref('users/' + safeEmail + '/transactions').push({
+                        type: 'credit', amount: amt, desc: "Wallet Top-up", date: Date.now()
+                    });
+                    alert("Added Successfully!");
+                    closePage('pageAddFunds');
+                }
+            };
+            const rzp = new Razorpay(options);
+            rzp.open();
+        }
+
+        // 9. Vouchers
+        function createVoucher() {
+            const amt = parseFloat(document.getElementById('vouchAmt').value);
+            const pin = document.getElementById('vouchPin').value;
+            if(amt > myBalance) return alert("Insufficient Balance");
+            if(pin.length !== 4) return alert("PIN must be 4 digits");
+
+            const code = "GIFT-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+            
+            db.ref('vouchers/' + code).set({ amount: amt, pin: pin, creator: session.name });
+            db.ref('users/' + safeEmail).update({ walletBalance: myBalance - amt });
+            db.ref('users/' + safeEmail + '/transactions').push({
+                type: 'debit', amount: amt, desc: `Created Voucher ${code}`, date: Date.now()
+            });
+
+            alert(`Voucher Created!\nCode: ${code}\nPIN: ${pin}`);
+            closePage('pageVoucher');
+        }
+
+        initApp();
     </script>
 </body>
 </html>
