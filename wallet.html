@@ -13,379 +13,283 @@
     <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-database-compat.js"></script>
 
     <style>
-        :root { --brand: #5f259f; --brand-light: #7e3af2; --bg: #f8fafc; --surface: #ffffff; --text-dark: #0f172a; --text-muted: #64748b; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; }
+        :root { --brand: #5f259f; --brand-light: #7e3af2; --bg: #f8fafc; --surface: #ffffff; --text: #0f172a; --border: #e2e8f0; --success: #10b981; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: var(--text-dark); padding-bottom: 50px; overflow-x: hidden; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 50px; }
 
-        /* Top Navigation */
-        .top-bar { height: 75px; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: space-between; padding: 0 5%; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border); }
-        .logo { font-size: 22px; font-weight: 900; letter-spacing: -1px; }
-        .logo span { color: var(--brand); }
-        .profile-trigger { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--brand); object-fit: cover; }
+        /* Navigation */
+        .top-nav { height: 70px; background: white; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+        .logo { font-weight: 900; font-size: 22px; color: var(--brand); letter-spacing: -1px; }
 
-        /* Main Wallet Card */
-        .container { max-width: 600px; margin: 0 auto; padding: 20px 15px; }
-        .wallet-card { background: linear-gradient(135deg, #5f259f, #7e3af2); border-radius: 28px; padding: 35px; color: white; position: relative; overflow: hidden; box-shadow: 0 20px 40px rgba(95, 37, 159, 0.2); margin-bottom: 25px; }
-        .wallet-card::after { content: ''; position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(255,255,255,0.1); border-radius: 50%; }
-        .bal-label { font-size: 14px; font-weight: 700; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; }
-        .bal-amount { font-size: 48px; font-weight: 900; margin: 10px 0 25px; letter-spacing: -1px; }
-        .wallet-info { display: flex; align-items: center; justify-content: space-between; }
-        .wallet-id-box { background: rgba(0,0,0,0.2); padding: 10px 18px; border-radius: 100px; font-family: monospace; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; }
-        .qr-thumb { background: white; padding: 5px; border-radius: 10px; width: 50px; height: 50px; cursor: pointer; }
+        /* Wallet Card */
+        .main-container { max-width: 500px; margin: 0 auto; padding: 20px; }
+        .balance-card { background: linear-gradient(135deg, #5f259f, #8b5cf6); border-radius: 24px; padding: 30px; color: white; margin-bottom: 25px; box-shadow: 0 15px 35px rgba(95, 37, 159, 0.2); }
+        .bal-label { font-size: 12px; font-weight: 800; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; }
+        .bal-value { font-size: 42px; font-weight: 900; margin: 5px 0 20px; }
+        .wallet-id { background: rgba(255,255,255,0.15); padding: 8px 15px; border-radius: 100px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
 
-        /* Actions Grid */
-        .grid-8 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 30px; }
-        .action-btn { background: white; border: 1px solid var(--border); border-radius: 20px; padding: 15px 5px; text-align: center; cursor: pointer; transition: 0.2s; }
-        .action-btn:active { transform: scale(0.95); background: #f1f5f9; }
-        .action-btn i { font-size: 22px; color: var(--brand); margin-bottom: 8px; }
-        .action-btn span { display: block; font-size: 11px; font-weight: 800; color: #475569; }
+        /* Main Action Grid */
+        .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 30px; }
+        .action-item { background: white; border-radius: 18px; padding: 15px 5px; text-align: center; border: 1px solid var(--border); cursor: pointer; transition: 0.2s; }
+        .action-item:active { transform: scale(0.95); }
+        .action-item i { font-size: 20px; color: var(--brand); margin-bottom: 8px; }
+        .action-item span { display: block; font-size: 10px; font-weight: 800; color: #64748b; }
 
-        /* Digital Vouchers Section */
-        .section-header { font-size: 18px; font-weight: 900; margin: 30px 0 15px; display: flex; align-items: center; gap: 10px; }
-        .service-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .service-card { background: white; border: 1px solid var(--border); border-radius: 18px; padding: 18px 10px; text-align: center; cursor: pointer; }
-        .service-card img { width: 35px; height: 35px; margin-bottom: 8px; object-fit: contain; }
-        .service-card span { display: block; font-size: 12px; font-weight: 700; color: var(--text-dark); }
-        .coming-soon { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; position: relative; }
-        .cs-badge { position: absolute; top: 5px; right: 5px; font-size: 8px; background: var(--brand); color: white; padding: 2px 5px; border-radius: 4px; font-weight: 900; }
+        /* Digital Vouchers */
+        .section-title { font-size: 16px; font-weight: 900; margin: 25px 0 15px; display: flex; align-items: center; gap: 8px; }
+        .voucher-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .voucher-item { background: white; border: 1px solid var(--border); border-radius: 16px; padding: 15px 10px; text-align: center; cursor: pointer; }
+        .voucher-item img { width: 35px; height: 35px; object-fit: contain; margin-bottom: 8px; }
+        .voucher-item span { display: block; font-size: 11px; font-weight: 700; color: var(--text); }
 
         /* Overlays */
-        .overlay-page { position: fixed; inset: 0; background: var(--bg); z-index: 2000; transform: translateX(100%); transition: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); overflow-y: auto; }
-        .overlay-page.active { transform: translateX(0); }
-        .oh { padding: 20px; background: white; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 15px; position: sticky; top: 0; z-index: 10; }
-        .ob { padding: 25px; }
-        .back-btn { border: none; background: #f1f5f9; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 16px; }
+        .overlay { position: fixed; inset: 0; background: var(--bg); z-index: 1000; transform: translateX(100%); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow-y: auto; }
+        .overlay.active { transform: translateX(0); }
+        .overlay-header { padding: 20px; background: white; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 15px; position: sticky; top: 0; }
+        .overlay-body { padding: 25px; }
 
-        /* Form Elements */
-        .input-group { margin-bottom: 20px; }
-        .input-label { display: block; font-size: 12px; font-weight: 800; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; }
-        .form-input { width: 100%; padding: 16px; border: 2px solid var(--border); border-radius: 15px; font-size: 16px; font-weight: 700; outline: none; transition: 0.3s; }
-        .form-input:focus { border-color: var(--brand); background: #f5f3ff; }
-        .submit-btn { width: 100%; padding: 18px; border-radius: 15px; border: none; background: var(--brand); color: white; font-size: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .receiver-preview { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: none; }
+        /* Inputs & Buttons */
+        .m-input { width: 100%; padding: 16px; border-radius: 14px; border: 2px solid var(--border); font-size: 16px; font-weight: 700; margin-bottom: 15px; outline: none; transition: 0.3s; }
+        .m-input:focus { border-color: var(--brand); background: #f5f3ff; }
+        .btn-pay { width: 100%; padding: 18px; border-radius: 14px; border: none; background: var(--brand); color: white; font-size: 16px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 20px rgba(95, 37, 159, 0.1); }
 
-        /* Fullscreen QR Modal */
-        .qr-modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
-        .qr-card { background: white; padding: 30px; border-radius: 30px; max-width: 350px; width: 100%; }
-        .qr-card img { width: 100%; border-radius: 15px; margin-bottom: 20px; }
-
-        /* History */
-        .hist-item { background: white; padding: 18px; border-radius: 18px; border: 1px solid var(--border); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-        .hist-info h4 { font-size: 15px; font-weight: 800; margin-bottom: 4px; }
-        .hist-info p { font-size: 12px; color: var(--text-muted); font-weight: 600; }
-        .hist-amt { font-weight: 900; font-size: 16px; }
-        .amt-credit { color: var(--success); }
-        .amt-debit { color: var(--text-dark); }
-        
-        #qr-reader { border: none !important; border-radius: 20px; overflow: hidden; }
+        .hist-card { background: white; padding: 15px; border-radius: 15px; border: 1px solid var(--border); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        #reader { width: 100%; border-radius: 20px; overflow: hidden; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-    <nav class="top-bar">
+    <nav class="top-nav">
         <div class="logo">ARYANTA<span>PAY</span></div>
-        <img src="" id="topAvatar" class="profile-trigger">
+        <i class="fas fa-circle-user" style="font-size: 26px; color: var(--brand);"></i>
     </nav>
 
-    <div class="container">
-        <div class="wallet-card">
-            <p class="bal-label">Available Balance</p>
-            <h1 class="bal-amount" id="displayBalance">₹0.00</h1>
-            <div class="wallet-info">
-                <div class="wallet-id-box" onclick="copyMyID()">
-                    <i class="fas fa-wallet"></i> <span id="displayAddr">Syncing...</span> <i class="far fa-copy" style="opacity:0.5;"></i>
-                </div>
-                <img id="thumbQr" class="qr-thumb" onclick="toggleQR(true)">
+    <div class="main-container">
+        <div class="balance-card">
+            <p class="bal-label">Wallet Balance</p>
+            <h1 class="bal-value" id="dispBal">₹0.00</h1>
+            <div class="wallet-id" onclick="copyMyID()">
+                <i class="fas fa-wallet"></i> <span id="dispID">Syncing...</span> <i class="far fa-copy" style="opacity:0.5;"></i>
             </div>
-            <button class="submit-btn" style="background: rgba(255,255,255,0.2); margin-top: 20px; height: 50px;" onclick="openPage('pageAddFunds')">
-                <i class="fas fa-plus-circle"></i> Add Funds
-            </button>
+            <button onclick="openPage('pageAdd')" style="width:100%; margin-top:20px; padding:12px; border-radius:12px; border:1px solid rgba(255,255,255,0.4); background:transparent; color:white; font-weight:700; cursor:pointer;">+ Add Money</button>
         </div>
 
-        <div class="grid-8">
-            <div class="action-btn" onclick="startScanner()"><i class="fas fa-qrcode"></i><span>Scan QR</span></div>
-            <div class="action-btn" onclick="openPage('pageSend')"><i class="fas fa-paper-plane"></i><span>Send Money</span></div>
-            <div class="action-btn" onclick="openPage('pageRedeem')"><i class="fas fa-tags"></i><span>Redeem Gift</span></div>
-            <div class="action-btn" onclick="openPage('pageVoucher')"><i class="fas fa-gift"></i><span>Voucher</span></div>
-            <div class="action-btn" onclick="openPage('pageBank')"><i class="fas fa-university"></i><span>To Bank</span></div>
-            <div class="action-btn" onclick="openPage('pageHistory')"><i class="fas fa-receipt"></i><span>History</span></div>
-            <div class="action-btn" onclick="openPage('pageSecurity')"><i class="fas fa-shield-halved"></i><span>Security PIN</span></div>
-            <div class="action-btn" onclick="alert('More features coming soon!')"><i class="fas fa-grid-2"></i><span>More</span></div>
+        <div class="action-grid">
+            <div class="action-item" onclick="startScanner()"><i class="fas fa-qrcode"></i><span>Scan QR</span></div>
+            <div class="action-item" onclick="openPage('pageSend')"><i class="fas fa-paper-plane"></i><span>Send Money</span></div>
+            <div class="action-item" onclick="openPage('pageRedeem')"><i class="fas fa-gift"></i><span>Redeem Gift</span></div>
+            <div class="action-item" onclick="openPage('pageVoucher')"><i class="fas fa-ticket"></i><span>Create Voucher</span></div>
+            <div class="action-item" onclick="alert('Bank Transfer: Coming Soon')"><i class="fas fa-university"></i><span>To Bank</span></div>
+            <div class="action-item" onclick="openPage('pageHistory')"><i class="fas fa-history"></i><span>History</span></div>
+            <div class="action-item" onclick="openPage('pagePin')"><i class="fas fa-lock"></i><span>Security PIN</span></div>
+            <div class="action-item" onclick="alert('More Services')"><i class="fas fa-grid"></i><span>More</span></div>
         </div>
 
-        <h3 class="section-header"><i class="fas fa-shopping-bag" style="color: var(--brand);"></i> Digital Vouchers</h3>
-        <div class="service-grid">
-            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/300/300220.png"><span>Play Store</span></div>
-            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/888/888879.png"><span>Steam</span></div>
-            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/5968/5968260.png"><span>Domino's</span></div>
-            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/5968/5968350.png"><span>Amazon Pay</span></div>
-            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/5977/5977591.png"><span>Flipkart</span></div>
-            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/825/825590.png"><span>Swiggy</span></div>
-            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/5969/5969116.png"><span>Zomato</span></div>
-            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/3163/3163508.png"><span>BookMyShow</span></div>
-            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/9103/9103286.png"><span>Myntra</span></div>
-            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/1532/1532471.png"><span>Uber</span></div>
-            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/2111/2111624.png"><span>Spotify</span></div>
-            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/732/732228.png"><span>Netflix</span></div>
-            <div class="service-card"><img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_Hotstar_logo.png"><span>Hotstar</span></div>
-            <div class="service-card"><img src="https://cdn-icons-png.flaticon.com/128/888/888841.png"><span>App Store</span></div>
-            <div class="service-card"><img src="https://upload.wikimedia.org/wikipedia/en/7/79/SonyLIV_logo.png"><span>SonyLIV</span></div>
-        </div>
+        <h3 class="section-title"><i class="fas fa-shopping-cart"></i> Digital Vouchers</h3>
+        <div class="voucher-grid" id="voucherGrid">
+            </div>
 
-        <h3 class="section-header"><i class="fas fa-bolt" style="color: var(--brand);"></i> Bill Payments</h3>
-        <div class="service-grid">
-            <div class="service-card coming-soon"><span class="cs-badge">SOON</span><i class="fas fa-mobile-screen" style="font-size:24px; margin-bottom:8px;"></i><span>Recharge</span></div>
-            <div class="service-card coming-soon"><span class="cs-badge">SOON</span><i class="fas fa-wifi" style="font-size:24px; margin-bottom:8px;"></i><span>WiFi</span></div>
-            <div class="service-card coming-soon"><span class="cs-badge">SOON</span><i class="fas fa-lightbulb" style="font-size:24px; margin-bottom:8px;"></i><span>Electricity</span></div>
+        <h3 class="section-title"><i class="fas fa-bolt"></i> Bill Payments</h3>
+        <div class="voucher-grid">
+            <div class="voucher-item" style="opacity:0.6;"><i class="fas fa-mobile-screen" style="font-size:24px; color:var(--brand);"></i><br><span>Mobile Recharge</span></div>
+            <div class="voucher-item" style="opacity:0.6;"><i class="fas fa-wifi" style="font-size:24px; color:var(--brand);"></i><br><span>Broadband</span></div>
+            <div class="voucher-item" style="opacity:0.6;"><i class="fas fa-lightbulb" style="font-size:24px; color:var(--brand);"></i><br><span>Electricity</span></div>
         </div>
     </div>
 
-    <div id="pageSend" class="overlay-page">
-        <div class="oh"><button class="back-btn" onclick="closePage('pageSend')"><i class="fas fa-arrow-left"></i></button><h2>Send Money</h2></div>
-        <div class="ob">
-            <div class="input-group">
-                <label class="input-label">Receiver Wallet ID</label>
-                <input type="text" id="targetID" class="form-input" placeholder="e.g. ARY12345ABC" oninput="lookupReceiver()">
-            </div>
-            <div id="receiverPreview" class="receiver-preview">
-                <p style="font-size:12px; color:var(--success); font-weight:800;">VERIFIED RECEIVER:</p>
-                <h3 id="receiverName" style="margin-top:5px;">User Name</h3>
-            </div>
-            <div class="input-group">
-                <label class="input-label">Amount (₹)</label>
-                <input type="number" id="sendAmount" class="form-input" placeholder="0.00">
-            </div>
-            <button class="submit-btn" onclick="executeSend()"><i class="fas fa-paper-plane"></i> Send Now</button>
+    <div id="pageAdd" class="overlay">
+        <div class="overlay-header"><i class="fas fa-arrow-left" onclick="closePage('pageAdd')"></i><h3>Add Funds</h3></div>
+        <div class="overlay-body">
+            <input type="number" id="addAmt" class="m-input" placeholder="Amount (₹)">
+            <button class="btn-pay" onclick="payWithRazorpay()">Pay via Razorpay</button>
         </div>
     </div>
 
-    <div id="pageAddFunds" class="overlay-page">
-        <div class="oh"><button class="back-btn" onclick="closePage('pageAddFunds')"><i class="fas fa-arrow-left"></i></button><h2>Add Funds</h2></div>
-        <div class="ob">
-            <div class="input-group">
-                <label class="input-label">Enter Top-up Amount</label>
-                <input type="number" id="addAmtInput" class="form-input" placeholder="₹500">
-            </div>
-            <button class="submit-btn" onclick="startRazorpay()"><i class="fas fa-bolt"></i> Pay with Razorpay</button>
+    <div id="pageRedeem" class="overlay">
+        <div class="overlay-header"><i class="fas fa-arrow-left" onclick="closePage('pageRedeem')"></i><h3>Redeem Voucher</h3></div>
+        <div class="overlay-body">
+            <input type="text" id="redCode" class="m-input" placeholder="Enter Gift Code (e.g. ARY-XXXX)">
+            <input type="password" id="redPin" class="m-input" placeholder="Enter 4-Digit PIN" maxlength="4">
+            <button class="btn-pay" onclick="redeemVoucher()">Verify & Redeem</button>
         </div>
     </div>
 
-    <div id="pageHistory" class="overlay-page">
-        <div class="oh"><button class="back-btn" onclick="closePage('pageHistory')"><i class="fas fa-arrow-left"></i></button><h2>Transaction History</h2></div>
-        <div class="ob" id="historyContainer">
-            </div>
-    </div>
-
-    <div id="pageVoucher" class="overlay-page">
-        <div class="oh"><button class="back-btn" onclick="closePage('pageVoucher')"><i class="fas fa-arrow-left"></i></button><h2>Create Voucher</h2></div>
-        <div class="ob">
-            <div class="input-group"><label class="input-label">Voucher Value</label><input type="number" id="vouchAmt" class="form-input" placeholder="₹100"></div>
-            <div class="input-group"><label class="input-label">Set 4-Digit PIN</label><input type="password" id="vouchPin" class="form-input" placeholder="••••" maxlength="4"></div>
-            <button class="submit-btn" onclick="createVoucher()">Generate Voucher</button>
+    <div id="pageVoucher" class="overlay">
+        <div class="overlay-header"><i class="fas fa-arrow-left" onclick="closePage('pageVoucher')"></i><h3>Create Voucher</h3></div>
+        <div class="overlay-body">
+            <input type="number" id="vouchAmt" class="m-input" placeholder="Voucher Value (₹)">
+            <input type="password" id="vouchPin" class="m-input" placeholder="Set 4-Digit Security PIN" maxlength="4">
+            <button class="btn-pay" onclick="processCreateVoucher()">Generate Voucher</button>
         </div>
     </div>
 
-    <div id="pageScanner" class="overlay-page" style="background: #000;">
-        <div class="oh" style="background: transparent; border: none; color: white;"><button class="back-btn" onclick="stopScanner()"><i class="fas fa-times"></i></button><h2>Scan QR Code</h2></div>
-        <div class="ob" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 70vh;">
-            <div id="qr-reader" style="width: 300px;"></div>
+    <div id="pageSend" class="overlay">
+        <div class="overlay-header"><i class="fas fa-arrow-left" onclick="closePage('pageSend')"></i><h3>Send Money</h3></div>
+        <div class="overlay-body">
+            <input type="text" id="targetID" class="m-input" placeholder="Recipient Wallet ID">
+            <input type="number" id="sendAmt" class="m-input" placeholder="Amount (₹)">
+            <button class="btn-pay" onclick="sendMoney()">Transfer Now</button>
         </div>
     </div>
 
-    <div id="qrModal" class="qr-modal" onclick="toggleQR(false)">
-        <div class="qr-card" onclick="event.stopPropagation()">
-            <h2 style="margin-bottom: 5px;">My QR Code</h2>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Anyone can scan this to pay you</p>
-            <img id="fullQrImg" src="">
-            <div class="wallet-id-box" style="justify-content: center; background: #f1f5f9; color: var(--text-dark);">
-                <span id="qrAddrText">ID</span>
-            </div>
-            <button class="submit-btn" style="margin-top: 20px;" onclick="toggleQR(false)">Close</button>
-        </div>
+    <div id="pageHistory" class="overlay">
+        <div class="overlay-header"><i class="fas fa-arrow-left" onclick="closePage('pageHistory')"></i><h3>Transaction History</h3></div>
+        <div class="overlay-body" id="histList"></div>
     </div>
 
     <script>
-        // 1. Firebase Initialization
+        // 1. Config
+        const rzpKey = "rzp_test_Sh3VV40UnZbbVd";
         const firebaseConfig = {
             apiKey: "AIzaSyA2LFjhw79KbX8uAToobgj732aYOsuy74k",
             authDomain: "vote-3df4d.firebaseapp.com",
             databaseURL: "https://vote-3df4d-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "vote-3df4d",
-            storageBucket: "vote-3df4d.firebasestorage.app",
-            messagingSenderId: "39376456060",
-            appId: "1:39376456060:web:f1423fbddff9eebceb3cf9"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
-        // 2. Global State
         const session = JSON.parse(localStorage.getItem('active_session'));
-        if(!session) window.location.href = "index.html";
-        const safeEmail = session.email.replace(/[.#$\[\]]/g, '_');
-        
-        let myBalance = 0;
-        let myWalletID = "";
-        let scanner = null;
-        let targetReceiver = null;
+        if(!session) window.location.href="index.html";
+        const safeE = session.email.replace(/[.#$\[\]]/g, '_');
 
-        // 3. UI Control
+        let myBal = 0;
+        let myID = "";
+
+        // UI Helpers
         function openPage(id) { document.getElementById(id).classList.add('active'); }
         function closePage(id) { document.getElementById(id).classList.remove('active'); }
-        function toggleQR(show) { document.getElementById('qrModal').style.display = show ? 'flex' : 'none'; }
-        function copyMyID() { navigator.clipboard.writeText(myWalletID); alert("ID Copied!"); }
+        function copyMyID() { navigator.clipboard.writeText(myID); alert("ID Copied!"); }
 
-        // 4. Realtime Listeners
+        // Render Vouchers
+        const svcs = ["Play Store", "Steam Wallet", "Domino's", "Amazon Pay", "Flipkart", "Swiggy", "Zomato", "BookMyShow", "Myntra", "Uber", "Spotify", "Netflix", "Hotstar", "App Store", "SonyLIV"];
+        const vGrid = document.getElementById('voucherGrid');
+        svcs.forEach(s => {
+            vGrid.innerHTML += `
+                <div class="voucher-item" onclick="alert('Buying ${s} Gift Card...')">
+                    <img src="https://cdn-icons-png.flaticon.com/128/300/300220.png" style="filter: hue-rotate(${Math.random()*360}deg);">
+                    <span>${s}</span>
+                </div>
+            `;
+        });
+
+        // 2. Data Logic
         function initApp() {
-            document.getElementById('topAvatar').src = session.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.email}`;
-            
-            const userRef = db.ref('users/' + safeEmail);
-            
-            // Check/Create User
-            userRef.once('value').then(snap => {
-                if(!snap.exists()) {
-                    const newID = "ARY" + Math.random().toString(36).substring(2, 10).toUpperCase();
-                    userRef.set({ name: session.name, email: session.email, walletAddress: newID, walletBalance: 0 });
-                }
-            });
-
-            // Listen for balance/ID changes
-            userRef.on('value', snap => {
+            db.ref('users/' + safeE).on('value', snap => {
                 const data = snap.val();
                 if(data) {
-                    myBalance = data.walletBalance || 0;
-                    myWalletID = data.walletAddress;
-                    document.getElementById('displayBalance').innerText = `₹${myBalance.toLocaleString('en-IN', {minimumFractionDigits:2})}`;
-                    document.getElementById('displayAddr').innerText = myWalletID;
-                    document.getElementById('qrAddrText').innerText = myWalletID;
-                    
-                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${myWalletID}`;
-                    document.getElementById('thumbQr').src = qrUrl;
-                    document.getElementById('fullQrImg').src = qrUrl;
+                    myBal = data.walletBalance || 0;
+                    myID = data.walletAddress;
+                    document.getElementById('dispBal').innerText = `₹${myBal.toLocaleString('en-IN', {minimumFractionDigits:2})}`;
+                    document.getElementById('dispID').innerText = myID;
                 }
             });
 
-            // Listen for Transactions
-            db.ref('users/' + safeEmail + '/transactions').on('value', snap => {
-                const container = document.getElementById('historyContainer');
-                container.innerHTML = "";
-                const txns = [];
-                snap.forEach(child => { txns.push(child.val()); });
-                txns.reverse().forEach(t => {
-                    const isCredit = t.type === 'credit';
-                    container.innerHTML += `
-                        <div class="hist-item">
-                            <div class="hist-info">
-                                <h4>${t.desc}</h4>
-                                <p>${new Date(t.date).toLocaleString()}</p>
-                            </div>
-                            <div class="hist-amt ${isCredit ? 'amt-credit' : 'amt-debit'}">
-                                ${isCredit ? '+' : '-'}₹${t.amount}
-                            </div>
+            db.ref('users/' + safeE + '/transactions').on('value', snap => {
+                const list = document.getElementById('histList');
+                list.innerHTML = "";
+                snap.forEach(child => {
+                    const t = child.val();
+                    list.innerHTML += `
+                        <div class="hist-card">
+                            <div><div style="font-weight:800;">${t.desc}</div><div style="font-size:11px; color:#64748b;">${new Date(t.date).toLocaleString()}</div></div>
+                            <div style="font-weight:900; color:${t.type=='credit'?'#10b981':'#0f172a'}">₹${t.amount}</div>
                         </div>
                     `;
                 });
             });
         }
 
-        // 5. Smart Scanner Logic
-        function startScanner() {
-            openPage('pageScanner');
-            scanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 });
-            scanner.render((text) => {
-                stopScanner();
-                document.getElementById('targetID').value = text;
-                openPage('pageSend');
-                lookupReceiver();
-            });
-        }
-        function stopScanner() {
-            if(scanner) { scanner.clear(); scanner = null; }
-            closePage('pageScanner');
-        }
-
-        // 6. Smart Lookup
-        async function lookupReceiver() {
-            const id = document.getElementById('targetID').value.trim();
-            const preview = document.getElementById('receiverPreview');
-            if(id.length < 5) { preview.style.display = 'none'; return; }
-
-            db.ref('users').orderByChild('walletAddress').equalTo(id).once('value', snap => {
-                if(snap.exists()) {
-                    const key = Object.keys(snap.val())[0];
-                    const data = snap.val()[key];
-                    targetReceiver = { key: key, name: data.name, balance: data.walletBalance };
-                    document.getElementById('receiverName').innerText = data.name;
-                    preview.style.display = 'block';
-                } else {
-                    preview.style.display = 'none';
-                    targetReceiver = null;
-                }
-            });
-        }
-
-        // 7. Transactions
-        async function executeSend() {
-            const amt = parseFloat(document.getElementById('sendAmount').value);
-            if(!targetReceiver) return alert("Select a valid user");
-            if(amt <= 0 || amt > myBalance) return alert("Invalid amount or low balance");
-
-            // Update Receiver
-            db.ref('users/' + targetReceiver.key).update({ walletBalance: targetReceiver.balance + amt });
-            db.ref('users/' + targetReceiver.key + '/transactions').push({
-                type: 'credit', amount: amt, desc: `Received from ${session.name}`, date: Date.now()
-            });
-
-            // Update Me
-            db.ref('users/' + safeEmail).update({ walletBalance: myBalance - amt });
-            db.ref('users/' + safeEmail + '/transactions').push({
-                type: 'debit', amount: amt, desc: `Paid to ${targetReceiver.name}`, date: Date.now()
-            });
-
-            alert("Transfer Successful!");
-            closePage('pageSend');
-            document.getElementById('sendAmount').value = "";
-            document.getElementById('targetID').value = "";
-        }
-
-        // 8. Razorpay
-        function startRazorpay() {
-            const amt = parseFloat(document.getElementById('addAmtInput').value);
-            if(amt < 10) return alert("Min ₹10 required");
+        // 3. RAZORPAY TOPUP
+        function payWithRazorpay() {
+            const amt = document.getElementById('addAmt').value;
+            if(amt < 1) return alert("Enter valid amount");
 
             const options = {
-                "key": "rzp_test_YOUR_KEY", // Replace with your key
+                "key": rzpKey,
                 "amount": amt * 100,
                 "name": "Aryanta Pay",
+                "description": "Wallet Top-up",
                 "handler": function (response) {
-                    db.ref('users/' + safeEmail).update({ walletBalance: myBalance + amt });
-                    db.ref('users/' + safeEmail + '/transactions').push({
-                        type: 'credit', amount: amt, desc: "Wallet Top-up", date: Date.now()
+                    const newBal = parseFloat(myBal) + parseFloat(amt);
+                    db.ref('users/' + safeE).update({ walletBalance: newBal });
+                    db.ref('users/' + safeE + '/transactions').push({
+                        type: 'credit', amount: amt, desc: 'Added via Razorpay', date: Date.now()
                     });
                     alert("Added Successfully!");
-                    closePage('pageAddFunds');
+                    closePage('pageAdd');
                 }
             };
             const rzp = new Razorpay(options);
             rzp.open();
         }
 
-        // 9. Vouchers
-        function createVoucher() {
+        // 4. VOUCHER CREATION
+        function processCreateVoucher() {
             const amt = parseFloat(document.getElementById('vouchAmt').value);
             const pin = document.getElementById('vouchPin').value;
-            if(amt > myBalance) return alert("Insufficient Balance");
-            if(pin.length !== 4) return alert("PIN must be 4 digits");
+            if(amt > myBal) return alert("Insufficient Balance");
+            if(pin.length !== 4) return alert("Set a 4-Digit PIN");
 
-            const code = "GIFT-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+            const code = "ARY-" + Math.random().toString(36).substr(2, 6).toUpperCase();
             
-            db.ref('vouchers/' + code).set({ amount: amt, pin: pin, creator: session.name });
-            db.ref('users/' + safeEmail).update({ walletBalance: myBalance - amt });
-            db.ref('users/' + safeEmail + '/transactions').push({
-                type: 'debit', amount: amt, desc: `Created Voucher ${code}`, date: Date.now()
+            db.ref('vouchers/' + code).set({
+                code: code, amount: amt, pin: pin, status: 'active', creator: session.name
+            });
+            db.ref('users/' + safeE).update({ walletBalance: myBal - amt });
+            db.ref('users/' + safeE + '/transactions').push({
+                type: 'debit', amount: amt, desc: `Created Voucher: ${code}`, date: Date.now()
             });
 
             alert(`Voucher Created!\nCode: ${code}\nPIN: ${pin}`);
             closePage('pageVoucher');
+        }
+
+        // 5. REDEEM VOUCHER (PIN Required)
+        async function redeemVoucher() {
+            const code = document.getElementById('redCode').value.trim();
+            const pin = document.getElementById('redPin').value.trim();
+
+            const snap = await db.ref('vouchers/' + code).once('value');
+            if(!snap.exists()) return alert("Invalid Voucher Code");
+
+            const data = snap.val();
+            if(data.status !== 'active') return alert("Voucher already used");
+            if(data.pin !== pin) return alert("Incorrect Security PIN");
+
+            // Success
+            const val = data.amount;
+            db.ref('vouchers/' + code).update({ status: 'used', redeemedBy: session.name });
+            db.ref('users/' + safeE).update({ walletBalance: myBal + val });
+            db.ref('users/' + safeE + '/transactions').push({
+                type: 'credit', amount: val, desc: `Redeemed Voucher ${code}`, date: Date.now()
+            });
+
+            alert(`Successfully Redeemed ₹${val}!`);
+            closePage('pageRedeem');
+        }
+
+        // 6. SEND MONEY
+        async function sendMoney() {
+            const target = document.getElementById('targetID').value.trim();
+            const amt = parseFloat(document.getElementById('sendAmt').value);
+            if(amt > myBal) return alert("Insufficient Balance");
+
+            const snap = await db.ref('users').orderByChild('walletAddress').equalTo(target).once('value');
+            if(snap.exists()) {
+                const recKey = Object.keys(snap.val())[0];
+                const recData = snap.val()[recKey];
+                
+                db.ref('users/' + safeE).update({ walletBalance: myBal - amt });
+                db.ref('users/' + recKey).update({ walletBalance: (recData.walletBalance || 0) + amt });
+                
+                db.ref('users/'+safeE+'/transactions').push({ type: 'debit', amount: amt, desc: `Sent to ${recData.name}`, date: Date.now() });
+                db.ref('users/'+recKey+'/transactions').push({ type: 'credit', amount: amt, desc: `Received from ${session.name}`, date: Date.now() });
+                
+                alert("Transfer Successful!");
+                closePage('pageSend');
+            } else {
+                alert("User Not Found");
+            }
         }
 
         initApp();
