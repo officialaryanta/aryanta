@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="apple-touch-icon" href="/android-chrome-192x192.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aryanta | My Wishlist</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+    <div id="pageLoader" class="page-loader">
+        <div class="spinner"></div>
+        <p class="loader-text" style="font-weight: 700; letter-spacing: 2px;">LOADING WISHLIST</p>
+    </div>
+
+    <header class="top-bar glass-effect">
+        <div class="nav-left">
+            <div class="menu-trigger" onclick="openSidebar()"><i class="fas fa-bars-staggered"></i></div>
+            <div class="brand-logo" onclick="location.href='index.html'">ARYANTA<span class="prime-dot">.</span></div>
+        </div>
+        
+        <div class="nav-actions">
+            <button class="login-trigger premium-hover" id="accountBtn">Sign In</button>
+            <div class="cart-icon" onclick="openUI('fullCartPage')">
+                <i class="fas fa-shopping-bag"></i>
+                <span class="badge" id="cartBadge" style="opacity: 0; transform: scale(0);">0</span>
+            </div>
+        </div>
+    </header>
+
+    <aside class="side-panel" id="sidebar">
+        <div class="panel-header">
+            <div class="user-profile">
+                <img id="sidebarAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Guest" alt="avatar" class="avatar-img">
+                <div class="user-greeting">
+                    <span id="sidebarUser">Welcome Guest</span>
+                    <small id="sidebarRole">Store Member</small>
+                </div>
+            </div>
+        </div>
+        <nav class="panel-links">
+            <a href="index.html" class="stagger-link"><i class="fas fa-compass"></i> Discover</a>
+            <a href="javascript:void(0)" id="sidebarAccountLink" class="stagger-link"><i class="fas fa-user-circle"></i> My Profile</a>
+            <a href="wishlist.html" class="stagger-link"><i class="fas fa-heart"></i> My Wishlist</a>
+            <a href="track.html" class="stagger-link"><i class="fas fa-box-open"></i> My Orders</a>
+            <a href="warrenty.html" class="stagger-link"><i class="fas fa-shield-alt"></i> Warranty Claim</a>
+            <a href="support.html" class="stagger-link"><i class="fas fa-headset"></i> Help & Support</a>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="btn-sidebar-logout bounce-hover" id="sidebarLogoutBtn" onclick="logOut()" style="display:none;">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+            <p style="margin-top: 15px;">Aryanta © 2026</p>
+        </div>
+    </aside>
+
+    <div class="dimmer" id="overlay" onclick="closeAllModals()"></div>
+
+    <div id="toastNotification" class="toast-notification">
+        <i class="fas fa-check-circle"></i> <span id="toastMessage">Action successful</span>
+    </div>
+
+    <div class="custom-alert-overlay" id="customAlertOverlay" style="display: none;">
+        <div class="custom-alert-box">
+            <div class="alert-icon-wrapper"><i class="fas fa-info-circle"></i></div>
+            <h3 id="alertTitle">Notice</h3>
+            <p id="alertMessage">Message goes here.</p>
+            <div class="alert-actions">
+                <button class="btn-cancel" id="alertCancelBtn" onclick="closeAlert(false)" style="display:none;">Cancel</button>
+                <button class="btn-prime-alert" id="alertOkBtn" onclick="closeAlert(true)">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="swipeGalleryModal" style="z-index: 7000; background: rgba(0,0,0,0.95); display: none; flex-direction: column;">
+        <span class="exit-modal" onclick="closeSwipeGallery()" style="color: white; right: 20px; top: 20px; z-index: 7001;"><i class="fas fa-times"></i></span>
+        <div id="swipeGalleryContainer" style="width: 100%; flex-grow: 1; display: flex; justify-content: center; align-items: center; touch-action: none; cursor: grab;">
+            <img id="swipeGalleryImg" src="" style="max-width: 100%; max-height: 80vh; object-fit: contain; transition: transform 0.2s ease-out; user-select: none;">
+        </div>
+        <div id="swipeGalleryThumbnails" class="thumbnail-container swipe-thumbnails"></div>
+    </div>
+
+    <div class="modal" id="imageZoomModal" style="z-index: 6000; background: rgba(10,10,10,0.95); display: none; flex-direction: column;">
+        <span class="exit-modal" onclick="closeImageZoom()" style="color: white; right: 30px; top: 30px; z-index: 6001;"><i class="fas fa-times"></i></span>
+        <div style="flex-grow: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; width: 100%;">
+            <img id="zoomedImage" src="" style="width: 100%; height: 100%; object-fit: contain; transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); transform: scale(1); border-radius: 8px;">
+        </div>
+    </div>
+
+    <div class="full-page right-slide" id="fullProductPage">
+        <div class="full-page-header glass-effect">
+            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+            <div class="cart-icon" onclick="openUI('fullCartPage')" style="margin-right: 15px;">
+                <i class="fas fa-shopping-bag"></i>
+                <span class="badge" id="fpCartBadge" style="opacity: 0; transform: scale(0);">0</span>
+            </div>
+        </div>
+        <div class="full-page-body product-page-body">
+            <div class="product-hero">
+                <div class="product-visual prime-visual-bg" style="position: relative; flex-direction: column; padding: 40px;">
+                    <div style="width: 100%; display: flex; justify-content: center;">
+                        <img id="fpImage" src="" alt="Product" class="main-prod-img" onclick="openSwipeGallery()" style="cursor: pointer;">
+                    </div>
+                    <div id="fpThumbnails" class="thumbnail-container"></div>
+                </div>
+
+                <div class="product-data">
+                    <div class="flex-row-between w-100">
+                        <span class="category-tag"><i class="fas fa-crown"></i> Aryanta Quality</span>
+                        <div style="display: flex; gap: 15px; font-size: 20px;">
+                            <i class="fas fa-share-nodes premium-hover" onclick="shareProduct()" style="color: var(--text-muted);" title="Share"></i>
+                            <i class="far fa-heart premium-hover" id="fpWishlistBtn" onclick="toggleWishlistFromPage()" style="color: var(--danger);" title="Save to Wishlist"></i>
+                        </div>
+                    </div>
+
+                    <h1 id="fpName" class="display-title">Product Name</h1>
+                    
+                    <div class="rating-stars premium-hover" style="display: inline-flex; align-items: center; gap: 10px; background: var(--surface); padding: 8px 15px; border-radius: 100px; margin-bottom: 10px; box-shadow: var(--shadow-sm); border: 1px solid var(--border);" onclick="openUI('fullReviewPage')">
+                        <span id="fpStarsAvg" style="color: #f59e0b; font-size: 16px;"></span>
+                        <span class="verified-text" id="fpRatingCount" style="margin-left: 0;"></span>
+                        <i class="fas fa-chevron-right" style="font-size: 12px; color: var(--primary);"></i>
+                    </div>
+
+                    <div class="seller-info" style="margin-bottom: 20px; font-size: 14px; color: var(--text-muted);">
+                        Sold by: <strong id="fpSellerName" style="color: var(--primary);">Aryanta Retail</strong> 
+                        <span class="verified-badge" style="color: var(--success); margin-left: 8px;"><i class="fas fa-check-circle"></i> Verified Seller</span>
+                    </div>
+
+                    <div class="price-block">
+                        <h2 id="fpPrice" class="display-price">₹0</h2>
+                        <span class="inclusive-taxes">Inclusive of all taxes</span>
+                    </div>
+                    
+                    <div class="divider-elegant"></div>
+                    <p id="fpDesc" class="display-desc">Description goes here.</p>
+                    
+                    <div id="fpWarrantyBox" class="warranty-box" style="display: none; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 12px; margin-bottom: 25px; color: #166534; font-weight: 600;">
+                        <i class="fas fa-shield-check" style="font-size: 18px; margin-right: 8px;"></i> 
+                        <span id="fpWarrantyText">1 Year Brand Warranty</span>
+                    </div>
+
+                    <div class="action-dock">
+                        <button class="btn-add-cart" id="addToBagBtn" onclick="addToCartFromPage()"><i class="fas fa-shopping-bag"></i> Add to Bag</button>
+                        <button class="btn-buy-now bounce-hover" onclick="buyNowFromPage()"><i class="fas fa-bolt"></i> Buy Now</button>
+                    </div>
+                    <div class="trust-badges">
+                        <div class="badge-item"><i class="fas fa-shield-check"></i> <span>Secure Payment</span></div>
+                        <div class="badge-item"><i class="fas fa-shipping-fast"></i> <span>Fast Shipping</span></div>
+                        <div class="badge-item"><i class="fas fa-undo"></i> <span>7 Days Return</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="related-section mt-40 fade-in-up">
+                <h3 class="section-title" style="text-align: center; margin-bottom: 30px; font-size: 28px;">More Like This</h3>
+                <div id="relatedProductsShelf" class="product-list" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="full-page right-slide" id="fullReviewPage">
+         <div class="full-page-header glass-effect">
+            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+            <h2>Customer Reviews</h2>
+            <div style="width: 60px;"></div>
+        </div>
+        <div class="full-page-body" style="padding: 30px 5%; max-width: 900px; margin: 0 auto;">
+            
+            <div class="panel-box mb-15 review-header-card">
+                <img id="revProdImg" src="" class="rev-prod-img" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px;">
+                <div style="flex-grow: 1;">
+                    <h3 id="revProdName" style="margin-bottom: 5px; font-size: 18px;">Product</h3>
+                    <div style="font-size: 28px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 10px;">
+                        <span id="revScore">0.0</span> 
+                        <span id="revStars" style="color: #f59e0b; font-size: 20px;"></span>
+                    </div>
+                    <p class="sub-text" id="revCount" style="margin-top: 5px;">0 reviews</p>
+                </div>
+                <button class="btn-prime bounce-hover" onclick="toggleReviewForm()"><i class="fas fa-pen"></i> Write Review</button>
+            </div>
+
+            <div id="reviewFormContainer" class="panel-box mb-15 slide-down" style="display: none; background: #f8fafc; border: 2px solid var(--border);">
+                <div class="flex-row-between" style="margin-bottom: 15px;">
+                    <h3 style="font-size: 18px;">Share Your Experience</h3>
+                    <button class="btn-mini" onclick="toggleReviewForm()"><i class="fas fa-times"></i></button>
+                </div>
+                <div id="starSelector" style="font-size: 32px; color: #cbd5e1; margin-bottom: 20px; cursor: pointer; display: flex; gap: 8px; justify-content: center;">
+                    <i class="fas fa-star" onclick="setReviewStars(1)"></i><i class="fas fa-star" onclick="setReviewStars(2)"></i><i class="fas fa-star" onclick="setReviewStars(3)"></i><i class="fas fa-star" onclick="setReviewStars(4)"></i><i class="fas fa-star" onclick="setReviewStars(5)"></i>
+                </div>
+                <textarea id="revText" class="modern-input" placeholder="What did you love about it? (Optional: Tell us more...)" style="min-height: 120px; resize: none;"></textarea>
+                
+                <input type="file" id="revImage" accept="image/*" style="display: none;">
+                <div class="drop-zone" id="revDropZone" style="padding: 25px; text-align: center; border: 2px dashed var(--border); border-radius: 16px; margin-bottom: 20px; cursor: pointer; transition: 0.3s; background: var(--surface);">
+                    <i class="fas fa-camera" style="font-size: 28px; color: var(--text-muted); margin-bottom: 10px;"></i> 
+                    <div style="font-size: 15px; font-weight: 600; color: var(--primary);">Attach a Photo</div>
+                </div>
+
+                <input type="hidden" id="editingReviewId" value="">
+                <button class="btn-prime w-100 bounce-hover" id="submitReviewBtn" onclick="submitReview()"><i class="fas fa-paper-plane"></i> Submit Review</button>
+            </div>
+
+            <div id="reviewsList" class="mt-20"></div>
+        </div>
+    </div>
+
+    <div class="full-page right-slide" id="fullCartPage">
+        <div class="full-page-header glass-effect">
+            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+            <h2>Your Bag</h2>
+            <div style="width: 70px;"></div>
+        </div>
+        <div class="full-page-body cart-body">
+            <div class="cart-layout">
+                <div class="cart-items-container" id="cartItemsContainer"></div>
+                <div class="cart-summary-panel">
+                    <h3>Order Summary</h3>
+                    <div class="summary-line"><span>Subtotal</span> <strong id="cartSubtotal">₹0</strong></div>
+                    <div class="summary-line"><span>Shipping</span> <strong style="color:var(--text-muted); font-size: 13px;">Calculated Next</strong></div>
+                    <div class="divider-elegant"></div>
+                    <div class="summary-line total-line"><span>Total</span> <strong id="cartTotalValue">₹0</strong></div>
+                    <button class="btn-prime w-100 btn-large mt-20 bounce-hover" onclick="openCheckoutFromCart()">Checkout <i class="fas fa-arrow-right" style="margin-left: 8px;"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="full-page right-slide" id="fullCheckoutPage">
+        <div class="full-page-header glass-effect">
+            <button class="btn-back premium-hover" onclick="closeCheckout()"><i class="fas fa-arrow-left"></i> Back</button>
+            <h2>Checkout</h2>
+            <div style="width: 70px;"></div>
+        </div>
+        <div class="full-page-body checkout-body" style="padding: 40px 5%; max-width: 800px; margin: 0 auto;">
+            
+            <div id="checkoutStep1" class="fade-view step-container premium-checkout-panel">
+                <div class="step-indicator">Step 1 of 2: Shipping</div>
+                <div class="flex-row-between" style="margin-bottom: 25px;">
+                    <h2 style="margin: 0;">Delivery Details</h2>
+                    <button class="btn-outline btn-mini" onclick="useDefaultAddress()" title="Use profile default address"><i class="fas fa-undo"></i> Default Address</button>
+                </div>
+                
+                <div class="checkout-input-grid">
+                    <div class="input-group"><label>Name</label><input type="text" id="chkName" class="modern-input" placeholder="Full Name"></div>
+                    <div class="input-group"><label>Phone Number</label><input type="tel" id="chkPhone" class="modern-input" placeholder="Mobile No."></div>
+                </div>
+                <div class="input-group w-100"><label>Address</label><textarea id="chkAddress" class="modern-input" placeholder="Complete Address"></textarea></div>
+                <div class="checkout-input-grid">
+                    <div class="input-group"><label>City</label><input type="text" id="chkCity" class="modern-input" placeholder="City"></div>
+                    <div class="input-group"><label>Pincode</label><input type="text" id="chkPincode" class="modern-input" placeholder="Pincode"></div>
+                </div>
+                <div class="saved-addresses" id="checkoutAddressList" style="margin-top: 30px;"></div>
+                <button class="btn-prime w-100 btn-large mt-20 bounce-hover" id="calcShippingBtn" onclick="calculateShippingAndProceed()">Next Step <i class="fas fa-arrow-right"></i></button>
+            </div>
+
+            <div id="checkoutStep2" class="fade-view step-container premium-checkout-panel" style="display:none;">
+                <div class="step-indicator">Step 2 of 2: Payment</div>
+                <h2 style="margin-bottom: 20px;">Review & Pay</h2>
+                
+                <div class="mini-receipt">
+                    <div class="summary-line"><span>Items:</span> <strong id="sumItems">₹0</strong></div>
+                    <div class="summary-line"><span>Shipping:</span> <strong id="sumShipping">₹0</strong></div>
+                    <div class="divider-elegant" style="margin: 15px 0;"></div>
+                    <div class="summary-line total-line"><span>Total:</span> <strong id="sumTotal" style="color:var(--primary);">₹0</strong></div>
+                </div>
+
+                <h3 class="mt-20 mb-15" style="font-size: 18px;">Select Payment Method</h3>
+                <div class="payment-options">
+                    <label class="pay-radio premium-radio">
+                        <input type="radio" name="payMethod" value="online" checked>
+                        <div class="radio-content">
+                            <strong><i class="fas fa-credit-card"></i> Pay Online</strong><br>
+                            <span>100% Secure transaction.</span>
+                        </div>
+                    </label>
+                    <label class="pay-radio premium-radio">
+                        <input type="radio" name="payMethod" value="cod">
+                        <div class="radio-content">
+                            <strong><i class="fas fa-money-bill-wave"></i> Cash on Delivery</strong><br>
+                            <span style="color: var(--danger); font-weight: 600;">Only shipping fee charged now.</span>
+                        </div>
+                    </label>
+                </div>
+                <div class="action-row mt-20" style="display: flex; gap: 15px;">
+                    <button class="btn-cancel w-100" onclick="document.getElementById('checkoutStep2').style.display='none'; document.getElementById('checkoutStep1').style.display='block';">Back</button>
+                    <button class="btn-prime w-100 bounce-hover" id="payBtn" onclick="processPayment()"><i class="fas fa-lock"></i> Pay Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="main-content">
+        <section class="hero-section" style="padding: 40px 20px 20px;">
+            <h1 class="animate-up" style="font-size: clamp(2rem, 5vw, 3.5rem);">My Wishlist</h1>
+            <p class="animate-up delay-1">The items you've saved for later.</p>
+        </section>
+
+        <div class="product-list" id="wishlistShelf"></div>
+
+        <div id="productShelf" style="display:none;"></div>
+        <div id="categoryFilters" style="display:none;"></div>
+        <button id="loadMoreBtn" style="display:none;"></button>
+
+        <footer class="premium-footer" style="margin-top: 50px;">
+            <div style="max-width: 800px; margin: 0 auto;">
+                <p style="font-size: 15px; line-height: 1.8; font-weight: 500; margin-bottom: 25px; color: #e2e8f0;">
+                  Experience shopping at its finest. We offer carefully selected high-quality products for our valued customers.
+                </p>
+                <div class="social-links" style="display: flex; justify-content: center; gap: 25px; margin-bottom: 25px; font-size: 22px;">
+                    <a href="https://instagram.com/official.aryanta" target="_blank" style="color: white; transition: 0.3s;"><i class="fab fa-instagram"></i></a>
+                    <a href="https://x.com/officialaryanta" target="_blank" style="color: white; transition: 0.3s;"><i class="fab fa-twitter"></i></a>
+                    <a href="https://www.facebook.com/share/1E8hFiNnmw/" target="_blank" style="color: white; transition: 0.3s;"><i class="fab fa-facebook-f"></i></a>
+                </div>
+                <p style="font-size: 13px; color: #94a3b8; font-family: var(--font-mono); font-weight: 600; letter-spacing: 1px;">&copy; Aryanta 2026. All rights reserved.</p>
+            </div>
+        </footer>
+    </main>
+
+    <script src="java.js"></script>
+    <script>
+        // Specific logic to render ONLY the wishlist items without infinite scroll
+        function renderWishlistPage() {
+            const shelf = document.getElementById('wishlistShelf');
+            
+            // Wait for user session/wishlist initialization
+            if (!localStorage.getItem('active_session')) {
+                shelf.innerHTML = `
+                    <div class="panel-box text-center w-100" style="grid-column: 1/-1; padding: 50px;">
+                        <i class="fas fa-lock" style="font-size: 40px; color: var(--border); margin-bottom: 15px;"></i>
+                        <p style="font-size: 18px; font-weight: 600; color: var(--text-muted);">Please Sign In to view your wishlist.</p>
+                        <button class="btn-prime mt-20" onclick="document.getElementById('accountBtn').click()" style="margin: 0 auto;">Sign In Now</button>
+                    </div>`;
+                return;
+            }
+
+            if (wishlist.length === 0) {
+                shelf.innerHTML = `
+                    <div class="panel-box text-center w-100" style="grid-column: 1/-1; padding: 50px;">
+                        <i class="far fa-heart" style="font-size: 40px; color: var(--border); margin-bottom: 15px;"></i>
+                        <p style="font-size: 18px; font-weight: 600; color: var(--text-muted);">Your wishlist is currently empty.</p>
+                        <button class="btn-prime mt-20" onclick="location.href='index.html'" style="margin: 0 auto;">Discover Products</button>
+                    </div>`;
+                return;
+            }
+
+            // Filter allProducts using the wishlist array
+            const savedItems = allProducts.filter(p => wishlist.includes(p.id));
+            shelf.innerHTML = '';
+            
+            savedItems.forEach(p => {
+                let img = p.image || (p.images && p.images.length > 0 ? p.images[0] : 'https://via.placeholder.com/300');
+                let starUI = (p.avgRating && p.avgRating !== "New") ? `<i class="fas fa-star"></i> ${p.avgRating} (${p.reviewCount})` : `<i class="fas fa-star" style="color:#cbd5e1;"></i> New`;
+                let sellerText = p.sellerName ? `Sold by ${p.sellerName}` : "Sold by Aryanta Retail";
+
+                const div = document.createElement('div');
+                div.className = 'list-item-card';
+                div.style.cursor = 'pointer'; 
+                
+                // Clicking opens the identical full product page via java.js
+                div.onclick = () => openProductPage(p.id);
+                
+                div.innerHTML = `
+                    <div class="list-image"><img src="${img}" alt="${p.name}"></div>
+                    <div class="list-info" style="position: relative;">
+                        
+                        <button onclick="event.stopPropagation(); removeFromWishlistPage('${p.id}')" style="position: absolute; top: 0; right: 0; background: #fee2e2; border: none; color: var(--danger); font-size: 12px; cursor: pointer; font-weight: 800; padding: 6px 12px; border-radius: 8px; transition: 0.3s;"><i class="fas fa-times"></i> Drop</button>
+                        
+                        <h4 style="padding-right: 70px;">${p.name}</h4>
+                        <div class="stars" id="stars-${p.id}">${starUI} <span style="font-size: 11px; margin-left: 8px; color: var(--text-muted); font-weight: normal;">${sellerText}</span></div>
+                        <div class="price">₹${Number(p.price).toLocaleString('en-IN')}</div>
+                        <div class="list-actions">
+                            <button class="btn-list-add" onclick="event.stopPropagation(); directAddToCart('${p.id}')">Add to Cart</button>
+                            <button class="btn-list-buy" onclick="event.stopPropagation(); directBuyNow('${p.id}')">Buy Now</button>
+                        </div>
+                    </div>`;
+                shelf.appendChild(div);
+            });
+        }
+
+        // Specific function to remove from wishlist dynamically on this page
+        window.removeFromWishlistPage = function(id) {
+            wishlist = wishlist.filter(item => item !== id);
+            saveWishlist(); // Sync with backend & localStorage via java.js
+            renderWishlistPage(); // Re-render the UI instantly
+            showToast("Removed from Wishlist");
+        }
+
+        // Polling to ensure java.js finishes downloading products and syncing user data
+        let checkDataInterval = setInterval(() => {
+            if (allProducts && allProducts.length > 0) {
+                clearInterval(checkDataInterval);
+                renderWishlistPage();
+                document.getElementById('pageLoader').classList.add('hidden');
+            }
+        }, 200);
+
+        // Fallback to hide loader if user has slow connection
+        setTimeout(() => { document.getElementById('pageLoader').classList.add('hidden'); }, 3000);
+    </script>
+</body>
+</html>
