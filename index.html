@@ -2,508 +2,597 @@
 <html lang="en">
 <head>
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#ffffff">
-    <link rel="apple-touch-icon" href="/android-chrome-192x192.png">
+    <meta name="theme-color" content="#5f259f">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aryanta | Store</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <title>Aryanta Pay | Premium Wallet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css"> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+    <style>
+        /* =========================================================
+           CORE WALLET & FULL PAGE STYLES
+           ========================================================= */
+        body { background-color: #f8fafc; color: #0f172a; padding-top: 75px; overflow-x: hidden; margin: 0; }
+        
+        /* Premium Wallet Card */
+        .wallet-wrapper { padding: 20px 5% 60px; max-width: 900px; margin: 0 auto; animation: slideUpFade 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        .wallet-card-premium { background: linear-gradient(-45deg, #4f46e5, #7e3af2, #5f259f, #3b82f6); background-size: 300% 300%; animation: gradientShift 10s ease infinite; border-radius: 28px; padding: 40px; color: white; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 30px; box-shadow: 0 25px 50px -12px rgba(95, 37, 159, 0.5); margin-bottom: 40px; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); }
+        @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .wallet-card-premium::before { content: ''; position: absolute; top: -50%; right: -10%; width: 400px; height: 400px; background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%); border-radius: 50%; }
+        
+        .wcp-left { flex: 1; min-width: 250px; z-index: 2; }
+        .wcp-label { font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.9); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+        .wcp-amount { font-size: 55px; font-weight: 900; letter-spacing: -2px; margin-bottom: 25px; line-height: 1; text-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .wcp-id { background: rgba(0,0,0,0.3); padding: 12px 20px; border-radius: 100px; display: inline-flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; transition: 0.3s; backdrop-filter: blur(10px); }
+        .wcp-id:hover { background: rgba(0,0,0,0.5); transform: translateY(-2px); }
+        .wcp-id span { font-family: 'Space Mono', monospace; letter-spacing: 1px; color: #fde047; }
+
+        .wcp-right { background: rgba(255,255,255,0.95); padding: 15px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 2; box-shadow: 0 15px 25px rgba(0,0,0,0.2); transform: rotate(2deg); transition: 0.3s; }
+        .wcp-right:hover { transform: rotate(0deg) scale(1.05); }
+        .wcp-right img { width: 110px; height: 110px; border-radius: 12px; }
+        .wcp-right span { font-size: 11px; font-weight: 900; color: #5f259f; letter-spacing: 1px; }
+
+        /* Action Grid */
+        .action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 15px; margin-bottom: 45px; }
+        .w-action { background: #ffffff; padding: 25px 10px; border-radius: 24px; text-align: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.03); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .w-action:hover { transform: translateY(-8px); box-shadow: 0 20px 25px -5px rgba(95,37,159,0.15); border-color: #5f259f; }
+        .w-icon { width: 55px; height: 55px; background: #f3e8ff; color: #5f259f; border-radius: 16px; display: flex; justify-content: center; align-items: center; font-size: 24px; transition: 0.3s; }
+        .w-action:hover .w-icon { background: #5f259f; color: white; border-radius: 50%; }
+        .w-action span { font-weight: 800; font-size: 13px; color: #0f172a; }
+
+        /* Store Grid */
+        .section-title { font-size: 20px; font-weight: 900; margin-bottom: 25px; color: #0f172a; display: flex; align-items: center; gap: 12px; }
+        .store-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; margin-bottom: 40px; }
+        .store-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 25px 10px; text-align: center; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; align-items: center; gap: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+        .store-card:hover { transform: translateY(-5px); box-shadow: 0 15px 20px rgba(95, 37, 159, 0.1); border-color: #5f259f; }
+        .store-card i { font-size: 38px; transition: 0.3s; }
+        .store-card:hover i { transform: scale(1.15); }
+        .store-card span { font-size: 13px; font-weight: 800; color: #0f172a; }
+
+        /* Full Pages (Replaces Popups) */
+        .full-page { position: fixed; top: 0; left: 0; right: 0; bottom: 0; height: 100vh; background: #f8fafc; z-index: 6000; overflow-y: auto; opacity: 0; pointer-events: none; transition: opacity 0.4s, transform 0.4s; transform: translateX(100%); }
+        .full-page.open { opacity: 1; pointer-events: all; transform: translateX(0); }
+        .full-page-header { position: sticky; top: 0; height: 75px; padding: 0 5%; display: flex; align-items: center; justify-content: space-between; z-index: 6010; background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid #e2e8f0; }
+        .fp-body { padding: 40px 5%; max-width: 600px; margin: 0 auto; }
+        
+        .modern-input { width: 100%; padding: 18px 20px; border: 2px solid #e2e8f0; border-radius: 16px; font-size: 18px; outline: none; background: #ffffff; transition: 0.3s; font-weight: 800; color: #0f172a; margin-bottom: 25px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .modern-input:focus { border-color: #5f259f; box-shadow: 0 0 0 5px rgba(95,37,159,0.1); }
+        .input-label { display: block; font-size: 13px; font-weight: 900; color: #64748b; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .btn-brand { background: #5f259f; color: white; border: none; padding: 20px 24px; border-radius: 16px; font-weight: 900; font-size: 18px; cursor: pointer; transition: 0.3s; width: 100%; display: flex; justify-content: center; align-items: center; gap: 10px; }
+        .btn-brand:hover { background: #7e3af2; transform: translateY(-3px); box-shadow: 0 10px 20px rgba(126,58,242,0.3); }
+
+        /* History Items */
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; border: 1px solid #e2e8f0; border-radius: 20px; margin-bottom: 15px; transition: 0.3s; background: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        .history-item:hover { border-color: #5f259f; transform: translateX(5px); box-shadow: 0 10px 15px rgba(95,37,159,0.05); }
+        .h-icon { width: 50px; height: 50px; border-radius: 16px; display: flex; justify-content: center; align-items: center; font-size: 22px; flex-shrink: 0; margin-right: 15px; }
+        .h-icon.credit { background: #dcfce3; color: #16a34a; }
+        .h-icon.debit { background: #fee2e2; color: #dc2626; }
+        .h-details { flex-grow: 1; text-align: left; }
+        .h-title { font-weight: 900; font-size: 16px; margin-bottom: 4px; color: #0f172a; }
+        .h-date { font-size: 13px; color: #64748b; font-weight: 700;}
+        .h-amount { font-weight: 900; font-size: 20px; }
+        .h-amount.credit { color: #16a34a; }
+        .h-amount.debit { color: #dc2626; }
+
+        /* Toast Notifications */
+        .toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: #0f172a; color: white; padding: 16px 30px; border-radius: 100px; font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 9999; }
+        .toast-notification.show { bottom: 40px; }
+
+        /* PIN Page Specific */
+        .pin-page { background: #0f172a !important; color: white !important; }
+        .pin-page .full-page-header { background: transparent !important; border: none !important; color: white !important; }
+        .pin-page .btn-back { color: white !important; }
+        .pin-page .modern-input { background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); color: white; text-align: center; font-size: 40px; letter-spacing: 20px; padding: 25px; border-radius: 20px; }
+        .pin-page .modern-input:focus { border-color: #7e3af2; box-shadow: 0 0 0 5px rgba(126,58,242,0.3); }
+        .pin-page .modern-input::placeholder { color: rgba(255,255,255,0.2); }
+
+        /* Success Page Specific */
+        .success-page { background: #10b981 !important; color: white !important; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .success-page i { font-size: 100px; margin-bottom: 20px; animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        @media (max-width: 768px) {
+            .brand-logo { font-size: 0; } .brand-logo::before { content: "A."; font-size: 22px; font-weight: 800; }
+            .action-grid { grid-template-columns: repeat(3, 1fr); }
+            .wallet-card-premium { padding: 30px 20px; }
+            .wcp-amount { font-size: 40px; }
+            .nav-search { display: none !important; }
+        }
+        @media (max-width: 450px) {
+            .action-grid { grid-template-columns: repeat(2, 1fr); }
+            .wcp-right { display: none; }
+        }
+    </style>
 </head>
 <body>
 
-    <div id="pageLoader" class="page-loader">
-        <div class="spinner"></div>
-        <p class="loader-text" style="font-weight: 700; letter-spacing: 2px;">ARYANTA STORE</p>
-    </div>
+    <script>
+        const API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
+        const PROJECT_ID = "aryanta-mart-a8893";
+        const session = JSON.parse(localStorage.getItem('active_session'));
+        if (!session || !session.email) { window.location.href = "index.html"; }
+    </script>
 
-    <header class="top-bar glass-effect">
+    <header class="top-bar">
         <div class="nav-left">
             <div class="menu-trigger" onclick="openSidebar()"><i class="fas fa-bars-staggered"></i></div>
             <div class="brand-logo" onclick="location.href='index.html'">ARYANTA<span class="prime-dot">.</span></div>
         </div>
-        
-        <div class="nav-search ai-search-bar" style="position: relative;">
-            <i class="fas fa-search ai-icon" style="color: #64748b; animation: none;"></i>
-            <input type="text" id="searchInput" autocomplete="off" spellcheck="false" placeholder="Search for products...">
-            <div id="searchDropdown" class="search-dropdown"></div>
+        <div class="nav-search" style="display: flex; align-items: center; gap: 10px; background: #f1f5f9; border-radius: 12px; padding: 10px 15px; width: 100%; max-width: 400px; opacity: 0.5; pointer-events: none;">
+            <i class="fas fa-search" style="color: #64748b;"></i><input type="text" placeholder="Search disabled in wallet..." style="border: none; background: transparent; outline: none; width: 100%; font-size: 14px; font-weight: 600;">
         </div>
-        
         <div class="nav-actions">
-            <button class="login-trigger premium-hover" id="accountBtn">Sign In</button>
-            <div class="cart-icon" onclick="openUI('fullCartPage')">
-                <i class="fas fa-shopping-bag"></i>
-                <span class="badge" id="cartBadge" style="opacity: 0; transform: scale(0);">0</span>
-            </div>
+            <button class="profile-btn" onclick="location.href='index.html'" style="display: flex; align-items: center; gap: 10px; background: transparent; border: none; font-weight: 800; font-size: 15px; color: #0f172a; cursor: pointer;">
+                <img src="" id="topAvatar" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid #5f259f; margin-right: 8px;"> <span id="topName">User</span>
+            </button>
         </div>
     </header>
 
     <aside class="side-panel" id="sidebar">
         <div class="panel-header">
             <div class="user-profile">
-                <img id="sidebarAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Guest" alt="avatar" class="avatar-img">
+                <img id="sidebarAvatar" src="" alt="avatar" class="avatar-img">
                 <div class="user-greeting">
-                    <span id="sidebarUser">Welcome Guest</span>
-                    <small id="sidebarRole">Store Member</small>
+                    <span id="sidebarUser">User</span>
+                    <small>Store Member</small>
                 </div>
             </div>
         </div>
         <nav class="panel-links">
-            <a href="javascript:void(0)" onclick="location.href='index.html'" class="stagger-link"><i class="fas fa-compass"></i> Discover</a>
-            <a href="javascript:void(0)" id="sidebarAccountLink" class="stagger-link"><i class="fas fa-user-circle"></i> My Profile</a>
+            <a href="index.html" class="stagger-link"><i class="fas fa-compass"></i> Discover</a>
+            <a href="index.html" class="stagger-link"><i class="fas fa-user-circle"></i> My Profile</a>
+            <a href="wallet.html" class="stagger-link" style="color: #5f259f; background: rgba(95,37,159,0.05); padding-left: 35px; border-left: 4px solid #5f259f;"><i class="fas fa-wallet"></i> My Wallet</a>
+            <a href="#" onclick="showToast('Subscriptions available soon!')" class="stagger-link"><i class="fas fa-gem" style="color: #8b5cf6;"></i> My Subscriptions</a>
+            <a href="index.html" class="stagger-link"><i class="fas fa-heart"></i> My Wishlist</a>
             <a href="track.html" class="stagger-link"><i class="fas fa-box-open"></i> My Orders</a>
             <a href="warrenty.html" class="stagger-link"><i class="fas fa-shield-alt"></i> Warranty Claim</a>
             <a href="support.html" class="stagger-link"><i class="fas fa-headset"></i> Help & Support</a>
         </nav>
         <div class="sidebar-footer">
-            <button class="btn-sidebar-logout bounce-hover" id="sidebarLogoutBtn" onclick="logOut()" style="display:none;">
+            <button class="btn-sidebar-logout" onclick="localStorage.removeItem('active_session'); window.location.href='index.html';">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </button>
-            <p style="margin-top: 15px;">Aryanta © 2026</p>
+            <p style="margin-top: 15px; color: #94a3b8; font-weight: 700; font-size: 12px;">Aryanta © 2026</p>
         </div>
     </aside>
-
     <div class="dimmer" id="overlay" onclick="closeAllModals()"></div>
 
-    <div id="toastNotification" class="toast-notification">
-        <i class="fas fa-check-circle"></i> <span id="toastMessage">Action successful</span>
-    </div>
+    <div id="toastNotification" class="toast-notification"><i class="fas fa-check-circle"></i> <span id="toastMessage">Action successful</span></div>
 
-    <div class="custom-alert-overlay" id="customAlertOverlay" style="display: none;">
-        <div class="custom-alert-box">
-            <div class="alert-icon-wrapper"><i class="fas fa-info-circle"></i></div>
-            <h3 id="alertTitle">Notice</h3>
-            <p id="alertMessage">Message goes here.</p>
-            <div class="alert-actions">
-                <button class="btn-cancel" id="alertCancelBtn" onclick="closeAlert(false)" style="display:none;">Cancel</button>
-                <button class="btn-prime-alert" id="alertOkBtn" onclick="closeAlert(true)">Got it</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="categoryModal" style="display: none; z-index: 4000; align-items: flex-end;">
-        <div class="modal-content bottom-sheet" style="border-radius: 24px 24px 0 0; width: 100%; max-width: 600px; padding: 30px; margin: 0 auto; max-height: 80vh;">
-            <div class="flex-row-between mb-15" style="border-bottom: 1px solid var(--border); padding-bottom: 15px;">
-                <h3 style="font-size: 20px; font-weight: 800;">Browse Categories</h3>
-                <button class="btn-mini" onclick="closeCategoryModal()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="category-grid" id="categoryGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; overflow-y: auto; max-height: 60vh; padding-top: 10px;"></div>
-        </div>
-    </div>
-
-    <div class="modal" id="swipeGalleryModal" style="z-index: 7000; background: rgba(0,0,0,0.95); display: none; flex-direction: column;">
-        <span class="exit-modal" onclick="closeSwipeGallery()" style="color: white; right: 20px; top: 20px; z-index: 7001;"><i class="fas fa-times"></i></span>
-        <div id="swipeGalleryContainer" style="width: 100%; flex-grow: 1; display: flex; justify-content: center; align-items: center; touch-action: none; cursor: grab;">
-            <img id="swipeGalleryImg" src="" style="max-width: 100%; max-height: 80vh; object-fit: contain; transition: transform 0.2s ease-out; user-select: none;">
-        </div>
-        <div id="swipeGalleryThumbnails" class="thumbnail-container swipe-thumbnails"></div>
-    </div>
-
-    <div class="modal" id="imageZoomModal" style="z-index: 6000; background: rgba(10,10,10,0.95); display: none; flex-direction: column;">
-        <span class="exit-modal" onclick="closeImageZoom()" style="color: white; right: 30px; top: 30px; z-index: 6001;"><i class="fas fa-times"></i></span>
-        <div style="flex-grow: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; width: 100%;">
-            <img id="zoomedImage" src="" style="width: 100%; height: 100%; object-fit: contain; transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); transform: scale(1); border-radius: 8px;">
-        </div>
-        <div style="padding: 30px; display: flex; justify-content: center; gap: 20px; z-index: 6001;">
-            <button class="btn-zoom" onclick="zoomImage(0.25)" style="background: white; border: none; padding: 10px 15px; border-radius: 8px;"><i class="fas fa-search-plus"></i></button>
-            <button class="btn-zoom" onclick="zoomImage(-0.25)" style="background: white; border: none; padding: 10px 15px; border-radius: 8px;"><i class="fas fa-search-minus"></i></button>
-            <button class="btn-zoom" onclick="resetZoom()" style="background: white; border: none; padding: 10px 15px; border-radius: 8px;"><i class="fas fa-compress"></i></button>
-        </div>
-    </div>
-
-    <div class="modal" id="authModal" style="display: none;">
-        <div class="modal-content auth-content premium-auth-card">
-            <span class="exit-modal" onclick="closeAllModals()"><i class="fas fa-times"></i></span>
-            
-            <div class="auth-brand-header">
-                <h2>ARYANTA<span class="prime-dot">.</span></h2>
-            </div>
-
-            <div id="loginView" class="fade-view">
-                <h3 class="auth-title">Welcome Back</h3>
-                <p class="auth-subtitle">Sign in to your account.</p>
-
-                <div id="googleAuthBtnLogin" style="display: flex; justify-content: center; margin-bottom: 20px;"></div>
-                
-                <div class="divider-elegant text-center"><span class="bg-surface px-10" style="color:var(--text-muted); font-size:12px;">OR LOGIN WITH OTP</span></div>
-
-                <div class="input-group-auth">
-                    <i class="fas fa-envelope icon"></i>
-                    <input type="email" id="loginEmail" class="auth-input" placeholder="Email Address">
-                </div>
-                <button class="btn-prime w-100 bounce-hover" id="loginBtn" onclick="handleLogin()" style="padding: 18px; font-size: 16px;">Send OTP</button>
-                <p class="switch-prompt">New to Aryanta? <span onclick="goToStep('signup')">Create an account</span></p>
-            </div>
-            
-            <div id="signupView" class="fade-view" style="display:none;">
-                <h3 class="auth-title">Join Us</h3>
-                <p class="auth-subtitle" id="signupSubtitle">Create an account to start shopping.</p>
-
-                <div id="googleAuthBtnSignup" style="display: flex; justify-content: center; margin-bottom: 20px;"></div>
-
-                <div class="divider-elegant text-center"><span class="bg-surface px-10" style="color:var(--text-muted); font-size:12px;">OR REGISTER MANUALLY</span></div>
-                
-                <div class="auth-scroll-container">
-                    <div class="input-group-auth"><i class="fas fa-user icon"></i><input type="text" id="regName" class="auth-input" placeholder="Full Name" required></div>
-                    <div class="input-group-auth"><i class="fas fa-envelope icon"></i><input type="email" id="regEmail" class="auth-input" placeholder="Email Address" required></div>
-                    <div class="input-group-auth"><i class="fas fa-phone icon"></i><input type="tel" id="regPhone" class="auth-input" placeholder="Phone Number" required></div>
-                    <div class="input-group-auth"><i class="fas fa-map-marker-alt icon"></i><input type="text" id="regAddress" class="auth-input" placeholder="Street Address"></div>
-                    <div class="input-row" style="gap: 10px; display: flex;">
-                        <div class="input-group-auth" style="margin-bottom:0; flex: 1;"><input type="text" id="regCity" class="auth-input" placeholder="City" style="padding-left:15px;"></div>
-                        <div class="input-group-auth" style="margin-bottom:0; flex: 1;"><input type="text" id="regState" class="auth-input" placeholder="State" style="padding-left:15px;"></div>
-                    </div>
-                    <div class="input-group-auth mt-10"><i class="fas fa-map-pin icon"></i><input type="text" id="regPincode" class="auth-input" placeholder="Pincode (Mandatory)"></div>
-                </div>
-
-                <button class="btn-prime w-100 bounce-hover mt-10" id="signupBtn" onclick="handleSignup()" style="padding: 18px; font-size: 16px;">Send OTP</button>
-                <p class="switch-prompt">Already a member? <span onclick="goToStep('login')">Sign In</span></p>
-            </div>
-            
-            <div id="otpView" class="fade-view" style="display:none;">
-                <h3 class="auth-title">Enter OTP</h3>
-                <p class="auth-subtitle">Enter the 4-digit code sent to your email.</p>
-                <div class="otp-container" id="otpInputs">
-                    <input type="text" class="otp-box-premium" maxlength="1"><input type="text" class="otp-box-premium" maxlength="1">
-                    <input type="text" class="otp-box-premium" maxlength="1"><input type="text" class="otp-box-premium" maxlength="1">
-                </div>
-                <button class="btn-prime w-100 bounce-hover" onclick="completeAuth()" style="padding: 18px; font-size: 16px;">Verify & Proceed <i class="fas fa-arrow-right" style="margin-left: 8px;"></i></button>
-            </div>
-        </div>
-    </div>
-
-    <div class="full-page" id="fullAccountPage">
-        <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
-            <h2>My Profile</h2>
-            <button class="btn-logout-header premium-hover" onclick="logOut()"><i class="fas fa-power-off"></i> Logout</button>
-        </div>
-        <div class="full-page-body account-body">
-            <div class="account-grid">
-                <div class="profile-card panel-box">
-                    <h3>Personal Information</h3>
-                    <div class="avatar-selection">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" class="avatar-opt" onclick="selectAvatar(this.src)">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" class="avatar-opt" onclick="selectAvatar(this.src)">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Jack" class="avatar-opt" onclick="selectAvatar(this.src)">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Luna" class="avatar-opt" onclick="selectAvatar(this.src)">
-                    </div>
-                    
-                    <div class="input-row" style="display: flex; gap: 15px;">
-                        <div class="form-group w-100"><label>Full Name</label><input type="text" id="accName" class="modern-input editable-input"></div>
-                        <div class="form-group w-100"><label>Email Address</label><input type="text" id="accEmail" class="modern-input read-only-input" readonly></div>
-                    </div>
-                    <div class="form-group"><label>Phone Number</label><input type="text" id="accPhone" class="modern-input editable-input"></div>
-                    
-                    <h4 class="section-divider-title">Default Address</h4>
-                    <div class="form-group"><label>Street Address</label><input type="text" id="accAddress" class="modern-input editable-input"></div>
-                    <div class="input-row" style="display: flex; gap: 15px;">
-                        <div class="form-group w-100"><label>City</label><input type="text" id="accCity" class="modern-input editable-input"></div>
-                        <div class="form-group w-100"><label>State</label><input type="text" id="accState" class="modern-input editable-input"></div>
-                        <div class="form-group w-100"><label>Pincode</label><input type="text" id="accPincode" class="modern-input editable-input"></div>
-                    </div>
-                    
-                    <button class="btn-prime w-100 mt-10 bounce-hover" onclick="saveProfileDetails()"><i class="fas fa-save"></i> Save Profile Details</button>
-                </div>
-                
-                <div class="address-card panel-box">
-                    <div class="flex-row-between" style="margin-bottom: 25px;">
-                        <h3 style="margin: 0;">Address Book</h3>
-                        <button class="btn-outline btn-mini" onclick="document.getElementById('newAddressForm').style.display='block'"><i class="fas fa-plus"></i> Add New</button>
-                    </div>
-                    
-                    <div id="addressList" class="address-list"></div>
-                    
-                    <div id="newAddressForm" class="premium-form-card" style="display:none; margin-top:20px;">
-                        <h4 style="margin-bottom: 15px; font-size: 15px;">Add New Address</h4>
-                        <div class="input-row" style="display: flex; gap: 10px;">
-                            <input type="text" id="newAddName" class="modern-input" placeholder="Recipient Name">
-                            <input type="tel" id="newAddPhone" class="modern-input" placeholder="Phone Number">
-                        </div>
-                        <textarea id="newAddText" class="modern-input" placeholder="Full Street Address"></textarea>
-                        <div class="input-row" style="display: flex; gap: 10px;">
-                            <input type="text" id="newCity" class="modern-input" placeholder="City">
-                            <input type="text" id="newState" class="modern-input" placeholder="State">
-                            <input type="text" id="newPin" class="modern-input" placeholder="Pincode">
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <button class="btn-cancel w-100" onclick="document.getElementById('newAddressForm').style.display='none'">Cancel</button>
-                            <button class="btn-prime w-100 bounce-hover" onclick="saveNewAddress()"><i class="fas fa-save"></i> Save</button>
-                        </div>
-                    </div>
+    <main class="wallet-wrapper">
+        <div class="wallet-card-premium">
+            <div class="wcp-left">
+                <div class="wcp-label">Aryanta Pay Balance</div>
+                <div class="wcp-amount" id="walletBalanceDisplay">₹0</div>
+                <div class="wcp-id" onclick="copyWalletAddress()" title="Click to Copy">
+                    <i class="fas fa-qrcode"></i> <span id="walletAddressTxt">Syncing...</span> <i class="far fa-copy" style="opacity: 0.5;"></i>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <div class="full-page right-slide" id="fullProductPage">
-        <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
-            <div class="cart-icon" onclick="openUI('fullCartPage')" style="margin-right: 15px;">
-                <i class="fas fa-shopping-bag"></i>
-                <span class="badge" id="fpCartBadge" style="opacity: 0; transform: scale(0);">0</span>
+            <div class="wcp-right">
+                <img id="walletQrImage" src="https://via.placeholder.com/110" alt="Wallet QR">
+                <span>SCAN & PAY</span>
             </div>
         </div>
-        <div class="full-page-body product-page-body">
-            <div class="product-hero">
-                <div class="product-visual prime-visual-bg" style="position: relative; flex-direction: column; padding: 40px;">
-                    <div style="width: 100%; display: flex; justify-content: center;">
-                        <img id="fpImage" src="" alt="Product" class="main-prod-img" onclick="openSwipeGallery()" style="cursor: pointer;">
-                    </div>
-                    <div id="fpThumbnails" class="thumbnail-container"></div>
-                </div>
 
-                <div class="product-data">
-                    <span class="category-tag"><i class="fas fa-crown"></i> Aryanta Quality</span>
-                    <h1 id="fpName" class="display-title">Product Name</h1>
-                    
-                    <div class="rating-stars premium-hover" style="display: inline-flex; align-items: center; gap: 10px; background: var(--surface); padding: 8px 15px; border-radius: 100px; margin-bottom: 20px; box-shadow: var(--shadow-sm); border: 1px solid var(--border);" onclick="openUI('fullReviewPage')">
-                        <span id="fpStarsAvg" style="color: #f59e0b; font-size: 16px;"></span>
-                        <span class="verified-text" id="fpRatingCount" style="margin-left: 0;"></span>
-                        <i class="fas fa-chevron-right" style="font-size: 12px; color: var(--primary);"></i>
-                    </div>
-
-                    <div class="price-block">
-                        <h2 id="fpPrice" class="display-price">₹0</h2>
-                        <span class="inclusive-taxes">Inclusive of all taxes</span>
-                    </div>
-                    
-                    <div class="divider-elegant"></div>
-                    <p id="fpDesc" class="display-desc">Description goes here.</p>
-                    
-                    <div class="action-dock">
-                        <button class="btn-add-cart" id="addToBagBtn" onclick="addToCartFromPage()"><i class="fas fa-shopping-bag"></i> Add to Bag</button>
-                        <button class="btn-buy-now bounce-hover" onclick="buyNowFromPage()"><i class="fas fa-bolt"></i> Buy Now</button>
-                    </div>
-                    <div class="trust-badges">
-                        <div class="badge-item"><i class="fas fa-shield-check"></i> <span>Secure Payment</span></div>
-                        <div class="badge-item"><i class="fas fa-shipping-fast"></i> <span>Fast Shipping</span></div>
-                        <div class="badge-item"><i class="fas fa-undo"></i> <span>7 Days Return</span></div>
-                        <div class="badge-item"><i class="fas fa-shield-alt"></i> <span>Product Warranty</span></div>
-                    </div>
-                </div>
+        <div class="action-grid">
+            <div class="w-action" onclick="startQrScanner()">
+                <div class="w-icon" style="background:#e0e7ff; color:#4f46e5;"><i class="fas fa-qrcode"></i></div><span>Scan QR</span>
             </div>
-            <div class="related-section mt-40 fade-in-up">
-                <h3 class="section-title" style="text-align: center; margin-bottom: 30px; font-size: 28px;">More Like This</h3>
-                <div id="relatedProductsShelf" class="product-list" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));"></div>
+            <div class="w-action" onclick="openUI('pageTransfer')">
+                <div class="w-icon" style="background:#f3e8ff; color:#5f259f;"><i class="fas fa-paper-plane"></i></div><span>Send Money</span>
+            </div>
+            <div class="w-action" onclick="openUI('pageRedeem')">
+                <div class="w-icon" style="background:#fef3c7; color:#d97706;"><i class="fas fa-gift"></i></div><span>Redeem</span>
+            </div>
+            <div class="w-action" onclick="openUI('pageBank')">
+                <div class="w-icon" style="background:#dcfce3; color:#16a34a;"><i class="fas fa-university"></i></div><span>To Bank</span>
+            </div>
+            <div class="w-action" onclick="openUI('pageHistory')">
+                <div class="w-icon" style="background:#fce7f3; color:#db2777;"><i class="fas fa-receipt"></i></div><span>History</span>
+            </div>
+            <div class="w-action" onclick="openUI('pageSecurity')">
+                <div class="w-icon" style="background:#f1f5f9; color:#475569;"><i class="fas fa-shield-alt"></i></div><span>Security PIN</span>
             </div>
         </div>
-    </div>
 
-    <div class="full-page right-slide" id="fullReviewPage">
-         <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
-            <h2>Customer Reviews</h2>
-            <div style="width: 60px;"></div>
-        </div>
-        <div class="full-page-body" style="padding: 30px 5%; max-width: 900px; margin: 0 auto;">
-            
-            <div class="panel-box mb-15 review-header-card">
-                <img id="revProdImg" src="" class="rev-prod-img" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px;">
-                <div style="flex-grow: 1;">
-                    <h3 id="revProdName" style="margin-bottom: 5px; font-size: 18px;">Product</h3>
-                    <div style="font-size: 28px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 10px;">
-                        <span id="revScore">0.0</span> 
-                        <span id="revStars" style="color: #f59e0b; font-size: 20px;"></span>
-                    </div>
-                    <p class="sub-text" id="revCount" style="margin-top: 5px;">0 reviews</p>
-                </div>
-                <button class="btn-prime bounce-hover" onclick="toggleReviewForm()"><i class="fas fa-pen"></i> Write Review</button>
+        <div style="background: linear-gradient(135deg, #fdf4ff, #fae8ff); border: 2px solid #f5d0fe; border-radius: 28px; padding: 35px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; margin-bottom: 45px; box-shadow: 0 10px 25px -5px rgba(162, 28, 175, 0.1);">
+            <div>
+                <h3 style="color: #a21caf; font-size: 22px; font-weight: 900; margin-bottom: 8px;"><i class="fas fa-gift" style="margin-right: 5px;"></i> Refer & Earn ₹70</h3>
+                <p style="font-size: 15px; color: #701a75; font-weight: 600;">Invite friends using your link. Get ₹70 when they join & order!</p>
             </div>
-
-            <div id="reviewFormContainer" class="panel-box mb-15 slide-down" style="display: none; background: #f8fafc; border: 2px solid var(--border);">
-                <div class="flex-row-between" style="margin-bottom: 15px;">
-                    <h3 style="font-size: 18px;">Share Your Experience</h3>
-                    <button class="btn-mini" onclick="toggleReviewForm()"><i class="fas fa-times"></i></button>
-                </div>
-                <div id="starSelector" style="font-size: 32px; color: #cbd5e1; margin-bottom: 20px; cursor: pointer; display: flex; gap: 8px; justify-content: center;">
-                    <i class="fas fa-star" onclick="setReviewStars(1)"></i>
-                    <i class="fas fa-star" onclick="setReviewStars(2)"></i>
-                    <i class="fas fa-star" onclick="setReviewStars(3)"></i>
-                    <i class="fas fa-star" onclick="setReviewStars(4)"></i>
-                    <i class="fas fa-star" onclick="setReviewStars(5)"></i>
-                </div>
-                <textarea id="revText" class="modern-input" placeholder="What did you love about it? (Optional: Tell us more...)" style="min-height: 120px; resize: none;"></textarea>
-                
-                <input type="file" id="revImage" accept="image/*" style="display: none;">
-                <div class="drop-zone" id="revDropZone" style="padding: 25px; text-align: center; border: 2px dashed var(--border); border-radius: 16px; margin-bottom: 20px; cursor: pointer; transition: 0.3s; background: var(--surface);">
-                    <i class="fas fa-camera" style="font-size: 28px; color: var(--text-muted); margin-bottom: 10px;"></i> 
-                    <div style="font-size: 15px; font-weight: 600; color: var(--primary);">Attach a Photo</div>
-                </div>
-
-                <input type="hidden" id="editingReviewId" value="">
-                <button class="btn-prime w-100 bounce-hover" id="submitReviewBtn" onclick="submitReview()"><i class="fas fa-paper-plane"></i> Submit Review</button>
-            </div>
-
-            <div id="reviewsList" class="mt-20"></div>
-        </div>
-    </div>
-
-    <div class="full-page right-slide" id="fullCartPage">
-        <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
-            <h2>Your Bag</h2>
-            <div style="width: 70px;"></div>
-        </div>
-        <div class="full-page-body cart-body">
-            <div class="cart-layout">
-                <div class="cart-items-container" id="cartItemsContainer"></div>
-                <div class="cart-summary-panel">
-                    <h3>Order Summary</h3>
-                    <div class="summary-line"><span>Subtotal</span> <strong id="cartSubtotal">₹0</strong></div>
-                    <div class="summary-line"><span>Shipping</span> <strong style="color:var(--text-muted); font-size: 13px;">Calculated Next</strong></div>
-                    <div class="divider-elegant"></div>
-                    <div class="summary-line total-line"><span>Total</span> <strong id="cartTotalValue">₹0</strong></div>
-                    <button class="btn-prime w-100 btn-large mt-20 bounce-hover" onclick="openCheckoutFromCart()">Checkout <i class="fas fa-arrow-right" style="margin-left: 8px;"></i></button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="full-page right-slide" id="fullCheckoutPage">
-        <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="closeCheckout()"><i class="fas fa-arrow-left"></i> Back</button>
-            <h2>Checkout</h2>
-            <div style="width: 70px;"></div>
-        </div>
-        <div class="full-page-body checkout-body" style="padding: 40px 5%; max-width: 800px; margin: 0 auto;">
-            
-            <div id="checkoutStep1" class="fade-view step-container premium-checkout-panel">
-                <div class="step-indicator">Step 1 of 2: Shipping</div>
-                <div class="flex-row-between" style="margin-bottom: 25px;">
-                    <h2 style="margin: 0;">Delivery Details</h2>
-                    <button class="btn-outline btn-mini" onclick="useDefaultAddress()" title="Use profile default address"><i class="fas fa-undo"></i> Default Address</button>
-                </div>
-                
-                <div class="checkout-input-grid">
-                    <div class="input-group"><label>Name</label><input type="text" id="chkName" class="modern-input" placeholder="Full Name"></div>
-                    <div class="input-group"><label>Phone Number</label><input type="tel" id="chkPhone" class="modern-input" placeholder="Mobile No."></div>
-                </div>
-                <div class="input-group w-100"><label>Address</label><textarea id="chkAddress" class="modern-input" placeholder="Complete Address"></textarea></div>
-                <div class="checkout-input-grid">
-                    <div class="input-group"><label>City</label><input type="text" id="chkCity" class="modern-input" placeholder="City"></div>
-                    <div class="input-group"><label>Pincode</label><input type="text" id="chkPincode" class="modern-input" placeholder="Pincode"></div>
-                </div>
-
-                <div class="saved-addresses" id="checkoutAddressList" style="margin-top: 30px;"></div>
-
-                <button class="btn-prime w-100 btn-large mt-20 bounce-hover" id="calcShippingBtn" onclick="calculateShippingAndProceed()">Next Step <i class="fas fa-arrow-right"></i></button>
-            </div>
-
-            <div id="checkoutStep2" class="fade-view step-container premium-checkout-panel" style="display:none;">
-                <div class="step-indicator">Step 2 of 2: Payment</div>
-                <h2 style="margin-bottom: 20px;">Review & Pay</h2>
-                
-                <div class="mini-receipt">
-                    <div class="summary-line"><span>Items:</span> <strong id="sumItems">₹0</strong></div>
-                    <div class="summary-line"><span>Shipping:</span> <strong id="sumShipping">₹0</strong></div>
-                    <div class="divider-elegant" style="margin: 15px 0;"></div>
-                    <div class="summary-line total-line"><span>Total:</span> <strong id="sumTotal" style="color:var(--primary);">₹0</strong></div>
-                </div>
-
-                <h3 class="mt-20 mb-15" style="font-size: 18px;">Select Payment Method</h3>
-                <div class="payment-options">
-                    <label class="pay-radio premium-radio">
-                        <input type="radio" name="payMethod" value="online" checked>
-                        <div class="radio-content">
-                            <strong><i class="fas fa-credit-card"></i> Pay Online</strong><br>
-                            <span>100% Secure transaction.</span>
-                        </div>
-                    </label>
-                    <label class="pay-radio premium-radio">
-                        <input type="radio" name="payMethod" value="cod">
-                        <div class="radio-content">
-                            <strong><i class="fas fa-money-bill-wave"></i> Cash on Delivery</strong><br>
-                            <span style="color: var(--danger); font-weight: 600;">Only shipping fee charged now.</span>
-                        </div>
-                    </label>
-                </div>
-
-                <div class="action-row mt-20" style="display: flex; gap: 15px;">
-                    <button class="btn-cancel w-100" onclick="document.getElementById('checkoutStep2').style.display='none'; document.getElementById('checkoutStep1').style.display='block';">Back</button>
-                    <button class="btn-prime w-100 bounce-hover" id="payBtn" onclick="processPayment()"><i class="fas fa-lock"></i> Pay Now</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="orderSuccessModal" style="z-index: 5000;">
-        <div class="modal-content success-content receipt-wrapper" style="text-align: center;">
-            <div class="success-animation-container">
-                <i class="fas fa-check-circle" style="font-size: 70px; color: var(--success); margin-bottom: 20px; animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></i>
-            </div>
-            <h1 class="success-title" style="color:var(--primary); font-size:32px;">Order Confirmed</h1>
-            <p class="success-subtitle" style="color:var(--text-muted); font-weight:600; margin-bottom:30px;">Your order has been placed.</p>
-            
-            <div class="physical-receipt-slip slide-up-receipt">
-                <div class="receipt-cutout top"></div>
-                <div class="receipt-header-brand">
-                    <h2>ARYANTA</h2>
-                    <p>Order Summary</p>
-                </div>
-                <div class="receipt-meta">
-                    <p><span>Order No:</span> <strong id="recOrderNo"></strong></p>
-                    <p><span>Payment Method:</span> <strong id="recPayMethod"></strong></p>
-                    <p><span>Shipping To:</span> <strong id="recAddress" style="text-align: right; max-width: 60%;"></strong></p>
-                </div>
-                <div class="receipt-divider-dashed"></div>
-                <table class="receipt-table-modern">
-                    <thead><tr><th>Details</th><th>Qty</th><th class="text-right">Amount</th></tr></thead>
-                    <tbody id="recTableBody"></tbody>
-                </table>
-                <div class="receipt-divider-dashed"></div>
-                <div class="receipt-totals-modern">
-                    <div class="calc-row"><span>Subtotal</span> <span id="recItemsTotal"></span></div>
-                    <div class="calc-row"><span>Shipping</span> <span id="recShipping"></span></div>
-                    <div class="calc-row grand-calc"><span>Total</span> <span id="recGrandTotal"></span></div>
-                </div>
-                <div class="receipt-cutout bottom"></div>
-            </div>
-            
-            <button class="btn-prime w-100 btn-large mt-20" onclick="closeOrderSuccess()"><i class="fas fa-shopping-bag"></i> Continue Shopping</button>
-        </div>
-    </div>
-
-    <main class="main-content">
-        <section class="hero-section">
-            <h1 class="animate-up">Welcome to Aryanta.</h1>
-            <p class="animate-up delay-1">Discover the best products hand-picked for you.</p>
-        </section>
-        
-        <div class="category-scroll-wrapper">
-            <div class="category-filters" id="categoryFilters"></div>
+            <button class="btn-brand" style="background: #a21caf; width: auto; padding: 18px 30px;" onclick="generateReferralLink()">Share Link <i class="fas fa-share-nodes"></i></button>
         </div>
 
-        <div class="product-list" id="productShelf"></div>
-
-        <footer class="premium-footer">
-            <div style="max-width: 800px; margin: 0 auto;">
-                <p style="font-size: 15px; line-height: 1.8; font-weight: 500; margin-bottom: 25px; color: #e2e8f0;">
-                  Experience shopping at its finest. We offer carefully selected high-quality products for our valued customers.
-                </p>
-                <div class="social-links" style="display: flex; justify-content: center; gap: 25px; margin-bottom: 25px; font-size: 22px;">
-    
-    <a href="https://instagram.com/official.aryanta" target="_blank" style="color: white; transition: 0.3s;">
-        <i class="fab fa-instagram"></i>
-    </a>
-
-    <a href="https://x.com/officialaryanta" target="_blank" style="color: white; transition: 0.3s;">
-        <i class="fab fa-twitter"></i>
-    </a>
-
-    <a href="https://www.facebook.com/share/1E8hFiNnmw/" target="_blank" style="color: white; transition: 0.3s;">
-        <i class="fab fa-facebook-f"></i>
-    </a>
-
-</div>
-                <p style="font-size: 13px; color: #94a3b8; font-family: var(--font-mono); font-weight: 600; letter-spacing: 1px;">&copy; Aryanta 2026. All rights reserved.</p>
-            </div>
-        </footer>
+        <h3 class="section-title"><i class="fas fa-store" style="color: #5f259f;"></i> Digital Vouchers</h3>
+        <div class="store-grid">
+            <div class="store-card" onclick="openDigitalPurchase('Play Store', 'playstore')"><i class="fab fa-google-play" style="color: #0ea5e9;"></i><span>Play Store</span></div>
+            <div class="store-card" onclick="openDigitalPurchase('Steam Wallet', 'steam')"><i class="fab fa-steam" style="color: #1e293b;"></i><span>Steam</span></div>
+            <div class="store-card" onclick="openDigitalPurchase('Domino\'s', 'dominos')"><i class="fas fa-pizza-slice" style="color: #ef4444;"></i><span>Domino's</span></div>
+            <div class="store-card" onclick="openDigitalPurchase('Amazon Pay', 'amazon')"><i class="fab fa-amazon" style="color: #f59e0b;"></i><span>Amazon Pay</span></div>
+            <div class="store-card" onclick="openDigitalPurchase('Flipkart', 'flipkart')"><i class="fas fa-shopping-bag" style="color: #3b82f6;"></i><span>Flipkart</span></div>
+            <div class="store-card" onclick="openDigitalPurchase('Swiggy', 'swiggy')"><i class="fas fa-hamburger" style="color: #f97316;"></i><span>Swiggy</span></div>
+        </div>
     </main>
 
-    <script src="java.js"></script>
+    <div class="full-page" id="pageTransfer">
+        <div class="full-page-header"><button class="btn-back" style="background:transparent; border:none; font-size:16px; font-weight:800; cursor:pointer;" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button> <h2>Send Money</h2> <div style="width:70px;"></div></div>
+        <div class="fp-body">
+            <div style="font-size: 60px; color: #5f259f; text-align: center; margin-bottom: 20px;"><i class="fas fa-paper-plane"></i></div>
+            <label class="input-label">Recipient's Wallet ID</label>
+            <input type="text" id="transferTarget" class="modern-input" placeholder="e.g. ARY987654321A" style="font-family: monospace; letter-spacing: 2px;">
+            <label class="input-label">Amount (₹)</label>
+            <input type="number" id="transferAmount" class="modern-input" placeholder="0.00" style="font-size: 40px; height: 90px; text-align: center;">
+            <button class="btn-brand" onclick="initiateSecureTransaction('user_transfer')">Proceed to Pay</button>
+        </div>
+    </div>
+
+    <div class="full-page" id="pageBank">
+        <div class="full-page-header"><button class="btn-back" style="background:transparent; border:none; font-size:16px; font-weight:800; cursor:pointer;" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button> <h2>Bank Withdrawal</h2> <div style="width:70px;"></div></div>
+        <div class="fp-body">
+            <div style="font-size: 60px; color: #10b981; text-align: center; margin-bottom: 20px;"><i class="fas fa-university"></i></div>
+            <div style="background: #ecfdf5; padding: 15px; border-radius: 16px; margin-bottom: 30px; font-size: 13px; color: #047857; font-weight: 800; border: 1px solid #a7f3d0; text-align: center;"><i class="fas fa-clock"></i> Arrives in 2-4 hours.</div>
+            <label class="input-label">Your UPI ID</label>
+            <input type="text" id="upiIdTarget" class="modern-input" placeholder="e.g. name@okaxis">
+            <label class="input-label">Amount (₹)</label>
+            <input type="number" id="upiAmount" class="modern-input" placeholder="0.00" style="font-size: 40px; height: 90px; text-align: center;">
+            <button class="btn-brand" style="background: #10b981;" onclick="initiateSecureTransaction('upi_withdraw')">Initiate Withdrawal</button>
+        </div>
+    </div>
+
+    <div class="full-page" id="pageRedeem">
+        <div class="full-page-header"><button class="btn-back" style="background:transparent; border:none; font-size:16px; font-weight:800; cursor:pointer;" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button> <h2>Redeem Card</h2> <div style="width:70px;"></div></div>
+        <div class="fp-body">
+            <div style="font-size: 60px; color: #d97706; text-align: center; margin-bottom: 20px;"><i class="fas fa-gift"></i></div>
+            <p style="text-align: center; font-size: 14px; color: var(--text-muted); font-weight: 700; margin-bottom: 30px;">Enter the secure Code and PIN.</p>
+            <label class="input-label">Gift Card Code</label>
+            <input type="text" id="gcCode" class="modern-input" placeholder="ABCD1234EFGH" style="text-transform: uppercase; font-family: monospace; letter-spacing: 3px; text-align: center;">
+            <label class="input-label">4-Digit PIN</label>
+            <input type="password" id="gcPin" class="modern-input" placeholder="••••" maxlength="4" style="text-align: center; font-size: 30px; letter-spacing: 15px;">
+            <button class="btn-brand" style="background: #d97706;" id="btnRedeem" onclick="processRedeemCard()"><i class="fas fa-unlock"></i> Redeem Balance</button>
+        </div>
+    </div>
+
+    <div class="full-page" id="pageStore">
+        <div class="full-page-header"><button class="btn-back" style="background:transparent; border:none; font-size:16px; font-weight:800; cursor:pointer;" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button> <h2 id="dsTitle">Buy Voucher</h2> <div style="width:70px;"></div></div>
+        <div class="fp-body" style="text-align: center;">
+            <div id="dsIcon" style="font-size: 80px; margin-bottom: 20px;"></div>
+            <p style="font-size: 14px; color: var(--text-muted); font-weight: 700; margin-bottom: 30px;">Digital code will be saved in your order history.</p>
+            <input type="number" id="dsAmount" class="modern-input" placeholder="Amount (₹)" style="text-align: center; font-size: 50px; font-weight: 900; height: 100px;">
+            <div style="display: flex; justify-content: space-between; font-size: 16px; margin-bottom: 30px; font-weight: 800; color: var(--text-muted);">
+                <span>Wallet Balance:</span> <span id="dsWalletBal" style="color: var(--brand);">₹0</span>
+            </div>
+            <button class="btn-brand" onclick="initiateSecureTransaction('digital_purchase')"><i class="fas fa-lock"></i> Pay Securely</button>
+        </div>
+    </div>
+
+    <div class="full-page" id="pageSecurity">
+        <div class="full-page-header"><button class="btn-back" style="background:transparent; border:none; font-size:16px; font-weight:800; cursor:pointer;" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button> <h2>Security PIN</h2> <div style="width:70px;"></div></div>
+        <div class="fp-body" style="text-align: center;">
+            <div style="font-size: 80px; color: var(--brand); margin-bottom: 20px;"><i class="fas fa-shield-check"></i></div>
+            <h3 style="font-size: 24px; font-weight: 900; margin-bottom: 10px;">Set Transaction PIN</h3>
+            <p style="font-size: 15px; color: var(--text-muted); font-weight: 600; margin-bottom: 40px;">Create a 4-6 digit PIN for all secure transactions.</p>
+            <input type="password" id="newPinInput" class="modern-input" placeholder="••••" maxlength="6" style="text-align: center; font-size: 50px; letter-spacing: 20px; height: 100px;">
+            <button class="btn-brand" id="btnSavePin" onclick="saveTransactionPin()"><i class="fas fa-save"></i> Save Secure PIN</button>
+        </div>
+    </div>
+
+    <div class="full-page" id="pageHistory">
+        <div class="full-page-header"><button class="btn-back" style="background:transparent; border:none; font-size:16px; font-weight:800; cursor:pointer;" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button> <h2>Transactions</h2> <div style="width:70px;"></div></div>
+        <div class="fp-body" style="max-width: 800px;">
+            <div class="history-list" id="walletHistoryList" style="padding-bottom: 50px;"></div>
+        </div>
+    </div>
+
+    <div class="full-page pin-page" id="pageValidatePin" style="z-index: 7000;">
+        <div class="full-page-header"><button class="btn-back" style="background:transparent; border:none; font-size:16px; font-weight:800; cursor:pointer;" onclick="history.back()"><i class="fas fa-arrow-left"></i> Cancel</button> <h2>Secure Auth</h2> <div style="width:70px;"></div></div>
+        <div class="fp-body" style="text-align: center; margin-top: 50px;">
+            <div style="font-size: 70px; color: #a78bfa; margin-bottom: 20px;"><i class="fas fa-lock"></i></div>
+            <h3 style="font-size: 28px; font-weight: 900; margin-bottom: 10px;">Enter Aryanta PIN</h3>
+            <p style="font-size: 16px; color: #fca5a5; font-weight: 800; margin-bottom: 40px;" id="pinPromptDesc">Verify identity to proceed.</p>
+            <input type="password" id="authPinInput" class="modern-input" placeholder="••••" maxlength="6">
+            <button class="btn-brand" style="background: #7e3af2;" id="btnAuthPin" onclick="verifyPinAndExecute()"><i class="fas fa-check"></i> Verify & Pay</button>
+        </div>
+    </div>
+
+    <div class="full-page success-page" id="pageSuccess" style="z-index: 8000;">
+        <i class="fas fa-check-circle"></i>
+        <h1 style="font-size: 32px; font-weight: 900; margin-bottom: 10px;">Successful</h1>
+        <p id="successDesc" style="font-size: 18px; font-weight: 600; margin-bottom: 40px; opacity: 0.9;">Transaction completed.</p>
+        <button class="btn-brand" style="background: white; color: #10b981; max-width: 300px;" onclick="closeAllPages()"><i class="fas fa-home"></i> Done</button>
+    </div>
+
+    <div class="full-page" id="pageScanQr">
+        <div class="full-page-header"><button class="btn-back" style="background:transparent; border:none; font-size:16px; font-weight:800; cursor:pointer;" onclick="closeScannerPage()"><i class="fas fa-arrow-left"></i> Back</button> <h2>Scan to Pay</h2> <div style="width:70px;"></div></div>
+        <div class="fp-body" style="text-align: center;">
+            <div id="qr-reader"></div>
+            <p style="font-size: 15px; color: var(--text-muted); font-weight: 700; margin-top: 20px;">Point camera at an Aryanta Wallet QR.</p>
+        </div>
+    </div>
+
+
+    <script>
+        let walletBalance = 0;
+        let walletTransactions = [];
+        let activeDigitalPurchase = null;
+        let userTxnPinHash = null; 
+        let pendingTransactionType = null; 
+        let html5QrcodeScanner = null;
+        let activeOverlays = [];
+
+        // --- Tab Navigation Logic (No Popups) ---
+        function openUI(id) {
+            document.getElementById(id).classList.add('open');
+            activeOverlays.push(id);
+            history.pushState({ui: id}, "");
+        }
+
+        window.addEventListener('popstate', (e) => {
+            if(activeOverlays.length > 0) {
+                const id = activeOverlays.pop();
+                document.getElementById(id).classList.remove('open');
+                if(id === 'pageScanQr' && html5QrcodeScanner) { html5QrcodeScanner.clear(); html5QrcodeScanner = null; }
+            } else {
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('overlay').classList.remove('show');
+            }
+        });
+
+        function closeAllPages() {
+            activeOverlays.forEach(id => document.getElementById(id).classList.remove('open'));
+            activeOverlays = [];
+            history.pushState(null, null, window.location.pathname);
+            if(html5QrcodeScanner) { html5QrcodeScanner.clear(); html5QrcodeScanner = null; }
+        }
+
+        function showSuccessPage(desc) {
+            document.getElementById('successDesc').innerText = desc;
+            openUI('pageSuccess');
+        }
+
+        function showToast(msg) {
+            document.getElementById('toastMessage').innerText = msg;
+            const toast = document.getElementById('toastNotification');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3500);
+        }
+
+        function openSidebar() {
+            document.getElementById('sidebar').classList.add('open');
+            document.getElementById('overlay').classList.add('show');
+        }
+        function closeAllModals() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('show');
+        }
+
+        // --- Hashing & Data Sync ---
+        async function secureHash(string) {
+            const msgBuffer = new TextEncoder().encode(string);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function initWallet() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(session.email)}`);
+                const data = await res.json();
+                
+                document.getElementById('topName').innerText = session.name.split(' ')[0];
+                document.getElementById('sidebarUser').innerText = session.name;
+                const avatar = session.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.email}`;
+                document.getElementById('topAvatar').src = avatar;
+                document.getElementById('sidebarAvatar').src = avatar;
+                
+                if (!data.walletAddress) {
+                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; let addr = 'ARY';
+                    for (let i = 0; i < 14; i++) addr += chars.charAt(Math.floor(Math.random() * chars.length));
+                    data.walletAddress = addr;
+                    await fetch(`${API_BASE_URL}/update-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: session.email, updates: { walletAddress: addr }, projectId: PROJECT_ID }) });
+                }
+                
+                document.getElementById('walletAddressTxt').innerText = data.walletAddress;
+                document.getElementById('walletQrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${data.walletAddress}`;
+                
+                walletBalance = data.wallet !== undefined ? Number(data.wallet) : 0;
+                document.getElementById('walletBalanceDisplay').innerText = `₹${walletBalance.toLocaleString('en-IN')}`;
+                
+                userTxnPinHash = data.txnPin || null;
+                walletTransactions = data.transactions || [];
+                renderHistory();
+            } catch(e) { showToast("Error syncing wallet data."); }
+        }
+
+        // --- QR Scanner ---
+        function startQrScanner() {
+            openUI('pageScanQr');
+            html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
+            html5QrcodeScanner.render((decodedText) => {
+                closeScannerPage();
+                document.getElementById('transferTarget').value = decodedText;
+                openUI('pageTransfer');
+                showToast("Wallet Address Scanned!");
+            }, (err) => {});
+        }
+        function closeScannerPage() {
+            if(html5QrcodeScanner) { html5QrcodeScanner.clear(); html5QrcodeScanner = null; }
+            history.back();
+        }
+
+        // --- Redeem Card ---
+        async function processRedeemCard() {
+            const code = document.getElementById('gcCode').value.toUpperCase().trim();
+            const pin = document.getElementById('gcPin').value.trim();
+            if(!code || !pin) return showToast("Enter both Code and PIN.");
+            
+            const btn = document.getElementById('btnRedeem');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...'; btn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/validate-coupon`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code, pin: pin, userEmail: session.email })
+                });
+                const result = await response.json();
+
+                if (result.valid) {
+                    const amount = result.discountAmount;
+                    const txnId = "RDM" + Date.now().toString().slice(-8);
+                    
+                    walletBalance += amount;
+                    walletTransactions.push({ id: txnId, type: 'credit', amount: amount, desc: `Gift Card Redeemed`, date: new Date().toISOString() });
+                    await syncWalletToCloud();
+                    
+                    document.getElementById('walletBalanceDisplay').innerText = `₹${walletBalance.toLocaleString('en-IN')}`;
+                    renderHistory();
+                    
+                    document.getElementById('gcCode').value = ''; document.getElementById('gcPin').value = '';
+                    showSuccessPage(`₹${amount} added to your wallet!`);
+                } else {
+                    showToast(result.message || "Invalid or used Gift Card.");
+                }
+            } catch (e) { showToast("Network Error."); } 
+            finally { btn.innerHTML = '<i class="fas fa-unlock"></i> Redeem Balance'; btn.disabled = false; }
+        }
+
+        // --- Security PIN ---
+        function openSecuritySettings() { document.getElementById('newPinInput').value = ''; openUI('pageSecurity'); }
+
+        async function saveTransactionPin() {
+            const pin = document.getElementById('newPinInput').value;
+            if(pin.length < 4) return showToast("PIN must be at least 4 digits.");
+            
+            const btn = document.getElementById('btnSavePin');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...'; btn.disabled = true;
+
+            const hashedPin = await secureHash(pin);
+            try {
+                await fetch(`${API_BASE_URL}/update-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: session.email, updates: { txnPin: hashedPin }, projectId: PROJECT_ID }) });
+                userTxnPinHash = hashedPin;
+                showSuccessPage("Security PIN set successfully!");
+            } catch(e) { showToast("Failed to save PIN."); } 
+            finally { btn.innerHTML = '<i class="fas fa-save"></i> Save Secure PIN'; btn.disabled = false; }
+        }
+
+        // --- Transactions Gateway ---
+        function initiateSecureTransaction(type) {
+            let amount = 0;
+            if(type === 'user_transfer') {
+                const target = document.getElementById('transferTarget').value.trim(); amount = Number(document.getElementById('transferAmount').value);
+                if (!target || amount <= 0) return showToast("Enter recipient and amount.");
+                if (amount > walletBalance) return showToast("Insufficient Funds.");
+                document.getElementById('pinPromptDesc').innerText = `Paying ₹${amount} to ${target}`;
+            } 
+            else if(type === 'upi_withdraw') {
+                const upi = document.getElementById('upiIdTarget').value.trim(); amount = Number(document.getElementById('upiAmount').value);
+                if (!upi.includes('@')) return showToast("Valid UPI ID required.");
+                if (amount <= 0 || amount > walletBalance) return showToast("Insufficient Funds.");
+                document.getElementById('pinPromptDesc').innerText = `Withdrawing ₹${amount} to Bank`;
+            }
+            else if(type === 'digital_purchase') {
+                amount = Number(document.getElementById('dsAmount').value);
+                if(amount < 10) return showToast("Minimum ₹10 required.");
+                if (walletBalance < amount) return showToast("Insufficient Funds.");
+                document.getElementById('pinPromptDesc').innerText = `Paying ₹${amount} for ${activeDigitalPurchase.title}`;
+            }
+
+            if(!userTxnPinHash) {
+                showToast("Security Alert: Setup a PIN first.");
+                return openSecuritySettings();
+            }
+
+            pendingTransactionType = type; document.getElementById('authPinInput').value = ''; openUI('pageValidatePin');
+        }
+
+        async function verifyPinAndExecute() {
+            const enteredPin = document.getElementById('authPinInput').value;
+            if(enteredPin.length < 4) return showToast("Enter valid PIN.");
+            
+            const btn = document.getElementById('btnAuthPin');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...'; btn.disabled = true;
+
+            const hashedAttempt = await secureHash(enteredPin);
+            if (hashedAttempt === userTxnPinHash) {
+                btn.innerHTML = '<i class="fas fa-check"></i> Verify & Pay'; btn.disabled = false;
+                
+                if(pendingTransactionType === 'user_transfer') await executeUserTransfer();
+                if(pendingTransactionType === 'upi_withdraw') await executeUpiWithdraw();
+                if(pendingTransactionType === 'digital_purchase') await executeDigitalPurchase();
+                pendingTransactionType = null;
+            } else {
+                showToast("Incorrect Security PIN. Try again.");
+                btn.innerHTML = '<i class="fas fa-check"></i> Verify & Pay'; btn.disabled = false; document.getElementById('authPinInput').value = '';
+            }
+        }
+
+        async function syncWalletToCloud() { 
+            await fetch(`${API_BASE_URL}/update-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: session.email, updates: { wallet: walletBalance, transactions: walletTransactions }, projectId: PROJECT_ID }) }); 
+        }
+
+        async function executeUserTransfer() {
+            const target = document.getElementById('transferTarget').value.trim(); const amount = Number(document.getElementById('transferAmount').value);
+            const txnId = "TXN" + Date.now().toString().slice(-8);
+            walletBalance -= amount; walletTransactions.push({ id: txnId, type: 'debit', amount: amount, desc: `Paid to ${target}`, date: new Date().toISOString() });
+            await syncWalletToCloud();
+            document.getElementById('walletBalanceDisplay').innerText = `₹${walletBalance.toLocaleString('en-IN')}`; renderHistory();
+            
+            document.getElementById('transferTarget').value = ''; document.getElementById('transferAmount').value = '';
+            showSuccessPage(`₹${amount} safely sent to ${target}.`);
+        }
+
+        async function executeUpiWithdraw() {
+            const upi = document.getElementById('upiIdTarget').value.trim(); const amount = Number(document.getElementById('upiAmount').value);
+            const txnId = "WDL" + Date.now().toString().slice(-8);
+            walletBalance -= amount; walletTransactions.push({ id: txnId, type: 'debit', amount: amount, desc: `Withdrawn to ${upi}`, date: new Date().toISOString() });
+            await syncWalletToCloud();
+            await fetch(`${API_BASE_URL}/callback_requests`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: session.name, user_email: session.email, phone: upi, description: `WITHDRAWAL: Rs.${amount} to UPI: ${upi}. Pay manually.`, status: 'Pending', timestamp: new Date().toISOString(), projectId: PROJECT_ID }) });
+            document.getElementById('walletBalanceDisplay').innerText = `₹${walletBalance.toLocaleString('en-IN')}`; renderHistory();
+            
+            document.getElementById('upiIdTarget').value = ''; document.getElementById('upiAmount').value = '';
+            showSuccessPage(`Withdrawal of ₹${amount} initiated. Reflects in 2-4 hrs.`);
+        }
+
+        async function executeDigitalPurchase() {
+            const amount = Number(document.getElementById('dsAmount').value); const txnId = "DIG" + Date.now().toString().slice(-8);
+            walletBalance -= amount; walletTransactions.push({ id: txnId, type: 'debit', amount: amount, desc: `Bought ${activeDigitalPurchase.title}`, date: new Date().toISOString() });
+            await syncWalletToCloud();
+            await fetch(`${API_BASE_URL}/order`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order_no: "DIG-" + Date.now().toString().slice(-6), user_email: session.email, delivery_name: session.name, delivery_phone: 'Digital Delivery', delivery_address: 'Digital Delivery to Email', items: [{ name: activeDigitalPurchase.title, qty: 1, price: amount }], financials: { itemsTotal: amount, shippingCost: 0, grandTotal: amount, discount: 0, finalPayable: amount }, payment_method: "Aryanta Pay Wallet", razorpay_id: txnId, status: "Confirmed", timestamp: new Date().toISOString() }) });
+            document.getElementById('walletBalanceDisplay').innerText = `₹${walletBalance.toLocaleString('en-IN')}`; renderHistory();
+            
+            document.getElementById('dsAmount').value = '';
+            showSuccessPage(`${activeDigitalPurchase.title} voucher sent to email.`);
+        }
+
+        // Utils
+        function copyWalletAddress() { navigator.clipboard.writeText(document.getElementById('walletAddressTxt').innerText); showToast("Wallet ID copied to clipboard!"); }
+        function generateReferralLink() { const addr = document.getElementById('walletAddressTxt').innerText; if(addr && addr !== "Loading...") { navigator.clipboard.writeText(`${window.location.origin}/?ref=${addr}`); showToast("Referral link copied!"); } }
+
+        function openDigitalPurchase(title, type) {
+            activeDigitalPurchase = { title, type }; document.getElementById('dsTitle').innerText = title; document.getElementById('dsAmount').value = ''; document.getElementById('dsWalletBal').innerText = `₹${walletBalance.toLocaleString('en-IN')}`;
+            let icon = '';
+            if(type === 'playstore') icon = '<i class="fab fa-google-play" style="color: #0ea5e9;"></i>';
+            else if(type === 'steam') icon = '<i class="fab fa-steam" style="color: #1e293b;"></i>';
+            else if(type === 'dominos') icon = '<i class="fas fa-pizza-slice" style="color: #ef4444;"></i>';
+            else if(type === 'amazon') icon = '<i class="fab fa-amazon" style="color: #f59e0b;"></i>';
+            else if(type === 'flipkart') icon = '<i class="fas fa-shopping-bag" style="color: #3b82f6;"></i>';
+            else if(type === 'swiggy') icon = '<i class="fas fa-hamburger" style="color: #f97316;"></i>';
+            document.getElementById('dsIcon').innerHTML = icon; openUI('pageStore');
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('walletHistoryList'); list.innerHTML = "";
+            if (walletTransactions.length === 0) { list.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:40px; font-weight:800; font-size:16px;">No transactions found.</div>'; return; }
+            const sorted = [...walletTransactions].sort((a,b) => new Date(b.date) - new Date(a.date));
+            sorted.forEach(t => {
+                const isC = t.type === 'credit'; const i = isC ? '<i class="fas fa-arrow-down"></i>' : '<i class="fas fa-arrow-up"></i>'; const s = isC ? '+' : '-';
+                const d = new Date(t.date).toLocaleDateString('en-IN', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
+                list.innerHTML += `<div class="history-item"><div style="display:flex; align-items:center;"><div class="h-icon ${t.type}">${i}</div><div class="h-details"><div class="h-title">${t.desc}</div><div class="h-date">${d} &bull; ${t.id}</div></div></div><div class="h-amount ${t.type}">${s}₹${Number(t.amount).toLocaleString('en-IN')}</div></div>`;
+            });
+        }
+        
+        initWallet();
+    </script>
 </body>
 </html>
