@@ -7,9 +7,9 @@ const RAZORPAY_KEY = "rzp_test_SfN9xZbqkMSz6G";
 emailjs.init("TDgNRO0CEs9rU3ozD");
 
 let allProducts = [];
-let baseCategoryProducts = []; // Used for category filtering
+let baseCategoryProducts = []; 
 let currentlyDisplayed = 0;
-const BATCH_SIZE = 6; // Fast load batch size
+const BATCH_SIZE = 20; 
 
 let cart = [];
 let currentProduct = null;
@@ -21,7 +21,6 @@ let currentOrderState = { itemsTotal: 0, shippingCost: 0, grandTotal: 0 };
 let savedUserAddresses = [];
 let userAvatar = "";
 
-// Track Google Signup Flow
 let isGoogleSignup = false;
 let googleUserData = null;
 
@@ -38,7 +37,6 @@ setTimeout(() => {
     }
 }, 800);
 
-// Close all popups, dimmers, modals securely
 window.closeAllModals = function() {
     document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     document.getElementById('overlay').classList.remove('show');
@@ -136,7 +134,6 @@ async function updateUserDataAPI(email, updateFields) {
 let scrollObserver = null;
 let isFetchingBatch = false;
 
-// MASSIVE SPEED BOOST: Load instantly from Cache, background fetch updates
 async function fetchProducts() {
     const cached = localStorage.getItem('cached_products');
     
@@ -159,7 +156,7 @@ async function fetchProducts() {
         if (!cached || freshData.length !== allProducts.length) {
             allProducts = freshData;
             baseCategoryProducts = allProducts; 
-            localStorage.setItem('cached_products', JSON.stringify(allProducts)); // Save for next visit
+            localStorage.setItem('cached_products', JSON.stringify(allProducts));
             
             document.getElementById('pageLoader').classList.add('hidden');
             renderCategoryPills();
@@ -168,14 +165,13 @@ async function fetchProducts() {
             document.getElementById('productShelf').innerHTML = '';
             loadMoreProducts(); 
         } else {
-            // Silently update cache if numbers are same
             localStorage.setItem('cached_products', JSON.stringify(freshData));
             allProducts = freshData;
         }
     } catch(err) {
         if (!cached) {
             document.getElementById('pageLoader').classList.add('hidden');
-            document.getElementById('productShelf').innerHTML = '<p class="text-center" style="grid-column: 1/-1;">Premium catalog is currently refreshing.</p>';
+            document.getElementById('productShelf').innerHTML = '<p class="text-center" style="grid-column: 1/-1;">Loading products...</p>';
         }
     }
 }
@@ -187,7 +183,7 @@ function renderCategoryPills() {
     const container = document.getElementById('categoryFilters');
     container.innerHTML = `
         <button class="cat-pill active" id="pill-All" onclick="filterCategory('All')">All</button>
-        <button class="cat-pill" id="pill-More" onclick="openCategoryModal()"><i class="fas fa-layer-group"></i> Browse Categories</button>
+        <button class="cat-pill" id="pill-More" onclick="openCategoryModal()"><i class="fas fa-layer-group"></i> Categories</button>
     `;
 
     const grid = document.getElementById('categoryGrid');
@@ -245,6 +241,18 @@ function loadMoreProducts() {
     isFetchingBatch = false;
 }
 
+function fuzzyMatch(str, pattern) {
+    pattern = pattern.toLowerCase();
+    str = str.toLowerCase();
+    let patternIdx = 0;
+    let strIdx = 0;
+    while (patternIdx < pattern.length && strIdx < str.length) {
+        if (pattern[patternIdx] === str[strIdx]) patternIdx++;
+        strIdx++;
+    }
+    return patternIdx === pattern.length;
+}
+
 function applySearchAndRender(term) {
     if (!term) {
         if (scrollObserver) scrollObserver.disconnect();
@@ -257,24 +265,32 @@ function applySearchAndRender(term) {
         let score = 0;
         const nameStr = p.name.toLowerCase();
         const descStr = (p.desc || "").toLowerCase();
-        searchTerms.forEach(t => { if(nameStr.includes(t)) score += 3; if(descStr.includes(t)) score += 1; });
+        const catStr = (p.category || "").toLowerCase();
+        
+        searchTerms.forEach(t => { 
+            if(nameStr.includes(t)) score += 5; 
+            else if(fuzzyMatch(nameStr, t)) score += 3;
+            if(catStr.includes(t)) score += 3;
+            if(descStr.includes(t)) score += 1; 
+        });
         return { ...p, score };
     }).filter(p => p.score > 0).sort((a,b) => b.score - a.score);
     
     if (scrollObserver) scrollObserver.disconnect();
-    renderProducts(filtered, 'productShelf', false); 
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    const searchInput = document.getElementById('searchInput');
-    let searchTimeout;
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => { applySearchAndRender(e.target.value.toLowerCase().trim()); }, 300); 
-        });
+    
+    if (filtered.length === 0) {
+        showToast(`No matches for "${term}". Showing all items.`);
+        baseCategoryProducts = allProducts; 
+        currentlyDisplayed = 0;
+        document.getElementById('productShelf').innerHTML = '';
+        loadMoreProducts(); 
+    } else {
+        baseCategoryProducts = filtered;
+        currentlyDisplayed = 0;
+        document.getElementById('productShelf').innerHTML = '';
+        loadMoreProducts();
     }
-});
+}
 
 function renderProducts(list, containerId, append = false) {
     const container = document.getElementById(containerId);
@@ -282,60 +298,62 @@ function renderProducts(list, containerId, append = false) {
     if(!append) container.innerHTML = '';
     
     if(list.length === 0 && !append) {
-        container.innerHTML = '<p class="text-center" style="grid-column: 1/-1; padding: 40px; color: var(--text-muted);">No collections match your query.</p>';
+        container.innerHTML = '<p class="text-center" style="grid-column: 1/-1; padding: 40px; color: var(--text-muted);">No products match your query.</p>';
         return;
     }
     
     list.forEach((p, index) => {
         if(p.isDummy) return;
         let img = p.image || (p.images && p.images.length > 0 ? p.images[0] : 'https://via.placeholder.com/300');
-        let desc = p.desc ? p.desc.substring(0, 150) + '...' : 'Experience the pinnacle of craftsmanship.';
+        let desc = p.desc ? p.desc.substring(0, 150) + '...' : 'High-quality product selected for you.';
         let starUI = (p.avgRating && p.avgRating !== "New") ? `<i class="fas fa-star"></i> ${p.avgRating} (${p.reviewCount})` : `<i class="fas fa-star" style="color:#cbd5e1;"></i> New`;
 
         const div = document.createElement('div');
         div.className = 'list-item-card';
+        div.style.cursor = 'pointer'; 
+        
+        div.onclick = () => openProductPage(p.id);
         
         div.innerHTML = `
-            <div class="list-image" onclick="openProductPage('${p.id}')"><img src="${img}" alt="${p.name}"></div>
+            <div class="list-image"><img src="${img}" alt="${p.name}"></div>
             <div class="list-info">
-                <h4 onclick="openProductPage('${p.id}')">${p.name}</h4>
-                <div class="stars" id="stars-${p.id}" onclick="openProductPage('${p.id}')">${starUI}</div>
-                <p onclick="openProductPage('${p.id}')">${desc}</p>
+                <h4>${p.name}</h4>
+                <div class="stars" id="stars-${p.id}">${starUI}</div>
+                <p>${desc}</p>
                 <div class="price">₹${Number(p.price).toLocaleString('en-IN')}</div>
                 <div class="list-actions">
-                    <button class="btn-list-add" onclick="directAddToCart('${p.id}')">Add to Cart</button>
-                    <button class="btn-list-buy" onclick="directBuyNow('${p.id}')">Buy Now</button>
+                    <button class="btn-list-add" onclick="event.stopPropagation(); directAddToCart('${p.id}')">Add to Cart</button>
+                    <button class="btn-list-buy" onclick="event.stopPropagation(); directBuyNow('${p.id}')">Buy Now</button>
                 </div>
             </div>`;
         container.appendChild(div);
     });
 }
 
-// --- 4. PRODUCT PAGE (ON-DEMAND FETCHING & MULTI IMAGE) ---
+// --- 4. PRODUCT PAGE & INFINITE SUGGESTIONS ---
+let relatedDisplayed = 0;
+let relatedObserver = null;
+let isFetchingRelated = false;
+
 window.openProductPage = async function(id) {
     currentProduct = allProducts.find(p => p.id === id);
     currentImageIndex = 0;
     
     document.getElementById('fpName').innerText = currentProduct.name;
-    document.getElementById('fpDesc').innerText = currentProduct.desc || "Experience the pinnacle of craftsmanship. Engineered for the modern elite with uncompromising quality.";
+    document.getElementById('fpDesc').innerText = currentProduct.desc || "High-quality product selected for you.";
     document.getElementById('fpPrice').innerText = `₹${Number(currentProduct.price).toLocaleString('en-IN')}`;
     
     const mainImgSrc = currentProduct.image || (currentProduct.images && currentProduct.images.length > 0 ? currentProduct.images[0] : 'https://via.placeholder.com/600');
     document.getElementById('fpImage').src = mainImgSrc;
     
-    const prevBtn = document.getElementById('imgPrevBtn');
-    const nextBtn = document.getElementById('imgNextBtn');
-    if (currentProduct.images && currentProduct.images.length > 1) {
-        prevBtn.style.display = 'flex'; nextBtn.style.display = 'flex';
-    } else {
-        prevBtn.style.display = 'none'; nextBtn.style.display = 'none';
-    }
+    renderProductThumbnails();
 
     document.getElementById('fpStarsAvg').innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
     document.getElementById('fpRatingCount').innerText = `Loading...`;
 
-    let similar = allProducts.filter(p => p.id !== currentProduct.id).slice(0, 25);
-    renderProducts(similar, 'relatedProductsShelf', false);
+    relatedDisplayed = 0;
+    document.getElementById('relatedProductsShelf').innerHTML = '';
+    loadMoreRelated();
     
     openUI('fullProductPage');
     document.getElementById('fullProductPage').scrollTo(0,0);
@@ -365,12 +383,119 @@ window.openProductPage = async function(id) {
     }
 };
 
-window.changeImage = function(dir) {
-    if (!currentProduct || !currentProduct.images || currentProduct.images.length <= 1) return;
-    currentImageIndex += dir;
-    if(currentImageIndex >= currentProduct.images.length) currentImageIndex = 0;
-    if(currentImageIndex < 0) currentImageIndex = currentProduct.images.length - 1;
+function renderProductThumbnails() {
+    const container = document.getElementById('fpThumbnails');
+    const imgs = currentProduct.images || [currentProduct.image];
+    
+    if (imgs.length <= 1) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    container.style.display = 'flex';
+    container.innerHTML = imgs.map((img, index) => `
+        <img src="${img}" class="thumbnail-img ${index === currentImageIndex ? 'active' : ''}" 
+             onclick="selectProductImage(${index}); event.stopPropagation();">
+    `).join('');
+}
+
+window.selectProductImage = function(index) {
+    if (!currentProduct || !currentProduct.images) return;
+    currentImageIndex = index;
     document.getElementById('fpImage').src = currentProduct.images[currentImageIndex];
+    renderProductThumbnails(); 
+}
+
+function loadMoreRelated() {
+    if (isFetchingRelated || !currentProduct) return;
+    isFetchingRelated = true;
+
+    const similar = allProducts.filter(p => p.id !== currentProduct.id);
+    const nextBatch = similar.slice(relatedDisplayed, relatedDisplayed + BATCH_SIZE);
+    
+    if(nextBatch.length === 0) { isFetchingRelated = false; return; }
+    
+    renderProducts(nextBatch, 'relatedProductsShelf', true);
+    
+    const container = document.getElementById('relatedProductsShelf');
+    const allCards = container.querySelectorAll('.list-item-card');
+    const triggerIndex = relatedDisplayed + Math.floor(BATCH_SIZE / 2);
+    
+    if(triggerIndex < allCards.length) {
+        if(relatedObserver) relatedObserver.disconnect();
+        relatedObserver = new IntersectionObserver((entries) => {
+            if(entries[0].isIntersecting) loadMoreRelated();
+        }, { rootMargin: "300px" });
+        relatedObserver.observe(allCards[triggerIndex]);
+    }
+    
+    relatedDisplayed += BATCH_SIZE;
+    isFetchingRelated = false;
+}
+
+// --- FULL SCREEN SWIPE GALLERY FIX WITH THUMBNAILS ---
+let touchStartX = 0;
+let touchEndX = 0;
+let swipeImgIndex = 0;
+
+window.openSwipeGallery = function() {
+    if(!currentProduct) return;
+    swipeImgIndex = currentImageIndex;
+    updateSwipeGallery();
+    document.getElementById('swipeGalleryModal').style.display = 'flex';
+}
+
+window.closeSwipeGallery = function() {
+    document.getElementById('swipeGalleryModal').style.display = 'none';
+    selectProductImage(swipeImgIndex);
+}
+
+function updateSwipeGallery() {
+    const imgs = currentProduct.images || [currentProduct.image];
+    document.getElementById('swipeGalleryImg').src = imgs[swipeImgIndex];
+    
+    const thumbContainer = document.getElementById('swipeGalleryThumbnails');
+    if (imgs.length > 1) {
+        thumbContainer.style.display = 'flex';
+        thumbContainer.innerHTML = imgs.map((img, i) => `
+            <img src="${img}" class="thumbnail-img ${i === swipeImgIndex ? 'active' : ''}" 
+                 onclick="selectSwipeThumbnail(${i}); event.stopPropagation();">
+        `).join('');
+    } else {
+        thumbContainer.style.display = 'none';
+    }
+}
+
+window.selectSwipeThumbnail = function(index) {
+    swipeImgIndex = index;
+    updateSwipeGallery();
+}
+
+const swipeContainer = document.getElementById('swipeGalleryContainer');
+
+swipeContainer.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].clientX;
+}, { passive: true });
+
+swipeContainer.addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].clientX;
+    handleSwipe();
+}, { passive: true });
+
+function handleSwipe() {
+    const imgs = currentProduct.images || [currentProduct.image];
+    if(imgs.length <= 1) return;
+    
+    const swipeThreshold = 40; 
+    
+    if (touchStartX - touchEndX > swipeThreshold) { 
+        swipeImgIndex = (swipeImgIndex + 1) % imgs.length;
+        updateSwipeGallery();
+    }
+    if (touchEndX - touchStartX > swipeThreshold) { 
+        swipeImgIndex = (swipeImgIndex - 1 + imgs.length) % imgs.length;
+        updateSwipeGallery();
+    }
 }
 
 window.directAddToCart = function(id) { currentProduct = allProducts.find(p => p.id === id); window.addToCartFromPage(); };
@@ -417,7 +542,7 @@ window.openUI = async function(id) {
         document.getElementById('revProdName').innerText = currentProduct.name;
         document.getElementById('revProdImg').src = currentProduct.image || (currentProduct.images && currentProduct.images.length > 0 ? currentProduct.images[0] : 'https://via.placeholder.com/150');
         document.getElementById('revScore').innerText = currentProduct.avgRating === "New" ? "0.0" : currentProduct.avgRating;
-        document.getElementById('revCount').innerText = `${currentProduct.reviewCount} verified ratings`;
+        document.getElementById('revCount').innerText = `${currentProduct.reviewCount} reviews`;
         
         let starsHTML = "";
         const avg = parseFloat(currentProduct.avgRating) || 0;
@@ -444,7 +569,7 @@ window.openUI = async function(id) {
                             const ctx = canvas.getContext('2d');
                             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                             selectedReviewImage = canvas.toDataURL('image/jpeg', 0.8);
-                            revDropZone.innerHTML = `<img src="${selectedReviewImage}" style="max-height: 120px; border-radius: 12px; box-shadow: var(--shadow-sm);"><div style="color:var(--success); font-weight:800; font-size:13px; margin-top:10px;"><i class="fas fa-check-circle"></i> Image Attached Successfully</div>`;
+                            revDropZone.innerHTML = `<img src="${selectedReviewImage}" style="max-height: 120px; width: 100%; object-fit: cover; border-radius: 12px; box-shadow: var(--shadow-sm);"><div style="color:var(--success); font-weight:800; font-size:13px; margin-top:10px;"><i class="fas fa-check-circle"></i> Image Attached</div>`;
                         }
                     };
                 }
@@ -468,7 +593,7 @@ window.openUI = async function(id) {
 async function loadReviewsList() {
     const list = document.getElementById('reviewsList');
     const session = JSON.parse(localStorage.getItem('active_session'));
-    list.innerHTML = '<p class="sub-text text-center"><i class="fas fa-spinner fa-spin"></i> Loading premium feedback...</p>';
+    list.innerHTML = '<p class="sub-text text-center"><i class="fas fa-spinner fa-spin"></i> Loading reviews...</p>';
     try {
         const res = await fetch(`${API_BASE_URL}/reviews?productId=${currentProduct.id}`);
         const reviewsData = await res.json();
@@ -523,7 +648,7 @@ window.submitReview = async function() {
     
     if (editingId) payload.id = editingId; 
 
-    toggleButtonState('submitReviewBtn', true, '<i class="fas fa-paper-plane"></i> Publish Review', 'Publishing...');
+    toggleButtonState('submitReviewBtn', true, '<i class="fas fa-paper-plane"></i> Submit Review', 'Submitting...');
     try {
         await fetch(`${API_BASE_URL}/add-review`, {
             method: 'POST',
@@ -535,7 +660,7 @@ window.submitReview = async function() {
         
         await window.openProductPage(currentProduct.id);
         await loadReviewsList();
-    } catch(e) { showAlert("Error submitting review. Please try again."); } finally { toggleButtonState('submitReviewBtn', false, '<i class="fas fa-paper-plane"></i> Publish Review'); }
+    } catch(e) { showAlert("Error submitting review. Please try again."); } finally { toggleButtonState('submitReviewBtn', false, '<i class="fas fa-paper-plane"></i> Submit Review'); }
 };
 
 window.editReview = function(data) {
@@ -544,7 +669,7 @@ window.editReview = function(data) {
     setReviewStars(data.rating);
     selectedReviewImage = data.image || null;
     if(selectedReviewImage) {
-        document.getElementById('revDropZone').innerHTML = `<img src="${selectedReviewImage}" style="max-height: 120px; border-radius: 12px;"><div style="color:var(--success); font-weight:800; font-size:13px; margin-top:10px;"><i class="fas fa-check-circle"></i> Image Attached</div>`;
+        document.getElementById('revDropZone').innerHTML = `<img src="${selectedReviewImage}" style="max-height: 120px; width: 100%; object-fit: cover; border-radius: 12px;"><div style="color:var(--success); font-weight:800; font-size:13px; margin-top:10px;"><i class="fas fa-check-circle"></i> Image Attached</div>`;
     } else {
         document.getElementById('revDropZone').innerHTML = `<i class="fas fa-camera" style="font-size: 28px; color: var(--text-muted); margin-bottom: 10px;"></i> <div style="font-size: 15px; font-weight: 600; color: var(--primary);">Attach a Photo</div>`;
     }
@@ -584,8 +709,13 @@ window.addToCartFromPage = function() {
     existing ? existing.qty += 1 : cart.push({ ...currentProduct, qty: 1 });
     saveCart(); updateCartUI();
     
+    // Animate global and page-specific cart badges
     const badge = document.getElementById('cartBadge');
-    badge.classList.add('show'); badge.style.transform = 'scale(1.3)'; setTimeout(() => badge.style.transform = 'scale(1)', 200);
+    if (badge) { badge.classList.add('show'); badge.style.transform = 'scale(1.3)'; setTimeout(() => badge.style.transform = 'scale(1)', 200); }
+    
+    const fpBadge = document.getElementById('fpCartBadge');
+    if (fpBadge) { fpBadge.classList.add('show'); fpBadge.style.transform = 'scale(1.3)'; setTimeout(() => fpBadge.style.transform = 'scale(1)', 200); }
+
     showToast(`"${currentProduct.name}" added to bag.`);
 };
 
@@ -613,9 +743,20 @@ function updateCartUI() {
             </div>`;
     });
 
-    if(cart.length === 0) container.innerHTML = '<div class="panel-box text-center"><i class="fas fa-shopping-bag" style="font-size:40px; color:var(--border); margin-bottom:15px;"></i><p style="font-size:18px; font-weight:600; color:var(--text-muted);">Your shopping bag is empty.</p></div>';
+    if(cart.length === 0) container.innerHTML = '<div class="panel-box text-center"><i class="fas fa-shopping-bag" style="font-size:40px; color:var(--border); margin-bottom:15px;"></i><p style="font-size:18px; font-weight:600; color:var(--text-muted);">Your bag is empty.</p></div>';
+    
     document.getElementById('cartBadge').innerText = count;
-    if(count > 0) document.getElementById('cartBadge').classList.add('show'); else document.getElementById('cartBadge').classList.remove('show');
+    const fpBadge = document.getElementById('fpCartBadge');
+    if (fpBadge) fpBadge.innerText = count;
+
+    if(count > 0) {
+        document.getElementById('cartBadge').classList.add('show');
+        if (fpBadge) fpBadge.classList.add('show');
+    } else {
+        document.getElementById('cartBadge').classList.remove('show');
+        if (fpBadge) fpBadge.classList.remove('show');
+    }
+    
     document.getElementById('cartSubtotal').innerText = `₹${total.toLocaleString('en-IN')}`; document.getElementById('cartTotalValue').innerText = `₹${total.toLocaleString('en-IN')}`;
     currentOrderState.itemsTotal = total;
 }
@@ -632,7 +773,6 @@ async function secureHash(string) {
     return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// 7a. GOOGLE IDENTITY SERVICES INIT
 window.onload = function () {
     if(window.google) {
         try {
@@ -663,7 +803,6 @@ function parseJwt(token) {
     return JSON.parse(jsonPayload);
 }
 
-// GOOGLE AUTHENTICATION LOGIC
 async function handleGoogleCredentialResponse(response) {
     const data = parseJwt(response.credential);
     
@@ -673,7 +812,7 @@ async function handleGoogleCredentialResponse(response) {
 
         if(existingUser && existingUser.email) {
             localStorage.setItem('active_session', JSON.stringify(existingUser));
-            showAlert(`Welcome back, ${existingUser.name.split(' ')[0]}.`, "Google Login Success");
+            showAlert(`Welcome back, ${existingUser.name.split(' ')[0]}.`, "Login Success");
             setTimeout(() => location.reload(), 1500);
         } else {
             isGoogleSignup = true;
@@ -684,8 +823,8 @@ async function handleGoogleCredentialResponse(response) {
             document.getElementById('regEmail').readOnly = true; 
             
             goToStep('signup');
-            document.getElementById('signupBtn').innerText = "Complete Profile & Join Now"; 
-            showAlert("Please complete your shipping details (Phone, Address, Pincode) below to finish signing up.", "Almost Done!");
+            document.getElementById('signupBtn').innerText = "Complete Profile"; 
+            showAlert("Please complete your delivery details (Phone, Address, Pincode) below to finish signing up.", "Almost Done!");
         }
     } catch (error) {
         showAlert("Failed to connect to backend after Google Login.");
@@ -721,7 +860,7 @@ function checkSession() {
     
     if (session && session.email) {
         document.getElementById('sidebarUser').innerText = session.name;
-        document.getElementById('sidebarRole').innerText = "Prime Member";
+        document.getElementById('sidebarRole').innerText = "Member";
         document.getElementById('sidebarLogoutBtn').style.display = "flex"; 
         
         let avatar = session.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.email}`;
@@ -731,13 +870,17 @@ function checkSession() {
         
         bootLocalCart(); 
     } else {
-        document.getElementById('sidebarUser').innerText = 'Welcome Guest'; document.getElementById('sidebarRole').innerText = "Sign in to access Prime"; document.getElementById('sidebarLogoutBtn').style.display = "none";
-        accBtn.innerHTML = 'Sign In'; accBtn.onclick = () => { openUI('overlay'); openUI('authModal'); goToStep('login'); }; document.getElementById('sidebarAccountLink').onclick = (e) => { e.preventDefault(); accBtn.click(); };
+        document.getElementById('sidebarUser').innerText = 'Welcome Guest'; 
+        document.getElementById('sidebarRole').innerText = "Sign in to access features"; 
+        document.getElementById('sidebarLogoutBtn').style.display = "none";
+        
+        accBtn.innerHTML = 'Sign In'; 
+        accBtn.onclick = () => { openUI('overlay'); openUI('authModal'); goToStep('login'); }; 
+        document.getElementById('sidebarAccountLink').onclick = (e) => { e.preventDefault(); accBtn.click(); };
         bootLocalCart(); 
     }
 }
 
-// COMPLETE PROFILE FIX & STANDARD SIGNUP
 window.handleSignup = async function() {
     tempUserData = { 
         action: 'signup', 
@@ -754,9 +897,8 @@ window.handleSignup = async function() {
         return showAlert("Fill all mandatory fields including Phone and Pincode.");
     }
     
-    // IF GOOGLE SIGNUP -> SPINNER + SAVE -> REFRESH IMMEDIATELY
     if (isGoogleSignup) {
-        toggleButtonState('signupBtn', true, 'Complete Profile & Join Now', 'Saving Profile...');
+        toggleButtonState('signupBtn', true, 'Complete Profile', 'Saving Profile...');
         const newUser = {
             name: tempUserData.name, email: tempUserData.email, phone: tempUserData.phone,
             address: tempUserData.address, city: tempUserData.city, state: tempUserData.state,
@@ -772,12 +914,11 @@ window.handleSignup = async function() {
             setTimeout(() => location.reload(), 1000); 
         } catch (error) { 
             showAlert("Account creation failed via API. Please check your connection."); 
-            toggleButtonState('signupBtn', false, 'Complete Profile & Join Now');
+            toggleButtonState('signupBtn', false, 'Complete Profile');
         }
         return;
     }
 
-    // Standard Email Registration -> Ask for OTP
     try {
         const checkRes = await fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(tempUserData.email)}`);
         const docRef = await checkRes.json();
@@ -800,13 +941,13 @@ window.handleSignup = async function() {
 window.handleLogin = async function() {
     const email = document.getElementById('loginEmail').value.trim(); 
     if(!email) return showAlert("Enter your registered email.");
-    toggleButtonState('loginBtn', true, 'Send Secure OTP');
+    toggleButtonState('loginBtn', true, 'Send OTP');
     
     try {
         const res = await fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(email)}`);
         const data = await res.json();
         if (!data || !data.email) { 
-            toggleButtonState('loginBtn', false, 'Send Secure OTP'); 
+            toggleButtonState('loginBtn', false, 'Send OTP'); 
             showAlert("Email not found. Please create an account."); 
             return goToStep('signup'); 
         }
@@ -814,7 +955,7 @@ window.handleLogin = async function() {
         tempUserData = { action: 'login', ...data }; 
         const rawOTP = Math.floor(1000 + Math.random() * 9000).toString(); hashedOTP = await secureHash(rawOTP);
         await emailjs.send("service_wnqvm4n", "template_5by2ldn", { to_email: email, to_name: tempUserData.name, otp_code: rawOTP }); goToStep('otp');
-    } catch(err) { showAlert("Cloudflare connection failed."); } finally { toggleButtonState('loginBtn', false, 'Send Secure OTP'); }
+    } catch(err) { showAlert("Cloudflare connection failed."); } finally { toggleButtonState('loginBtn', false, 'Send OTP'); }
 };
 
 const otpInputs = document.querySelectorAll('.otp-box-premium');
@@ -840,7 +981,7 @@ window.completeAuth = async function() {
                 tempUserData = newUser;
             }
             localStorage.setItem('active_session', JSON.stringify(tempUserData)); 
-            showAlert(`Welcome to Prime, ${tempUserData.name.split(' ')[0]}.`, "Authentication Success"); 
+            showAlert(`Welcome, ${tempUserData.name.split(' ')[0]}.`, "Authentication Success"); 
             setTimeout(() => location.reload(), 1500);
         } catch (error) { showAlert("Account creation failed via API. Please check your connection."); }
     } else { showAlert("Invalid Verification Code."); }
@@ -889,7 +1030,7 @@ window.saveProfileDetails = async function() {
         document.getElementById('sidebarUser').innerText = session.name;
         document.getElementById('accountBtn').innerHTML = `<img src="${userAvatar}" class="nav-avatar" title="My Profile" style="margin-right: 8px;"> <span>${session.name.split(' ')[0]}</span>`;
         document.getElementById('sidebarAvatar').src = userAvatar;
-        showAlert("Your personal identity details have been updated and securely saved.", "Profile Saved Successfully"); 
+        showAlert("Your details have been updated.", "Profile Saved"); 
     } catch(e) { showAlert("Error saving profile. Please check your connection."); }
 };
 
@@ -907,12 +1048,12 @@ window.saveNewAddress = async function() {
         updateUserDataAPI(session.email, { addresses: savedUserAddresses });
         document.getElementById('newAddName').value = ""; document.getElementById('newAddPhone').value = ""; document.getElementById('newAddText').value = ""; document.getElementById('newCity').value = ""; document.getElementById('newState').value = ""; document.getElementById('newPin').value = "";
         document.getElementById('newAddressForm').style.display = 'none'; renderAddresses(); 
-        showAlert("Your new shipping address was saved successfully to your address book.", "Location Saved");
+        showAlert("New shipping address was saved successfully.", "Location Saved");
     } catch(e) { showAlert("Failed to save address."); }
 };
 
 window.removeAddress = async function(index) {
-    showAlert("Are you sure you want to delete this saved location permanently?", "Confirm Deletion", true, async () => {
+    showAlert("Are you sure you want to delete this address permanently?", "Confirm Deletion", true, async () => {
         const session = JSON.parse(localStorage.getItem('active_session')); 
         savedUserAddresses.splice(index, 1);
         session.addresses = savedUserAddresses; localStorage.setItem('active_session', JSON.stringify(session));
@@ -934,7 +1075,7 @@ window.setAsDefault = function(index) {
     document.getElementById('accCity').value = a.city || "";
     document.getElementById('accState').value = a.state || "";
     document.getElementById('accPincode').value = a.pincode || "";
-    saveProfileDetails(); showToast("Address set as Primary Default.", 1500);
+    saveProfileDetails(); showToast("Address set as Default.", 1500);
 }
 
 function renderAddresses() {
@@ -957,7 +1098,7 @@ function renderAddresses() {
 
 window.logOut = function() { localStorage.removeItem('active_session'); location.reload(); }
 
-// --- 9. PREMIUM CHECKOUT ---
+// --- 9. CHECKOUT ---
 window.useDefaultAddress = function() {
     const session = JSON.parse(localStorage.getItem('active_session'));
     if(!session) return;
@@ -975,7 +1116,7 @@ window.closeCheckout = function() { history.back(); }
 window.openCheckoutDirect = async function() {
     if (cart.length === 0) return showAlert("Bag is empty.");
     const session = JSON.parse(localStorage.getItem('active_session'));
-    if (!session) return showAlert("Please authenticate to proceed.", "Secure Checkout", false, () => document.getElementById('accountBtn').click());
+    if (!session) return showAlert("Please Login to proceed.", "Secure Checkout", false, () => document.getElementById('accountBtn').click());
     
     openUI('fullCheckoutPage');
     document.getElementById('checkoutStep1').style.display = 'block';
@@ -1023,7 +1164,7 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 window.calculateShippingAndProceed = async function() {
     const pincode = document.getElementById('chkPincode').value;
     if(!pincode) return showAlert("Pincode is mandatory for shipping calculation.");
-    toggleButtonState('calcShippingBtn', true, 'Calculating Logistics...');
+    toggleButtonState('calcShippingBtn', true, 'Calculating...');
 
     try {
         const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${pincode},+India`);
@@ -1052,10 +1193,9 @@ window.calculateShippingAndProceed = async function() {
         document.getElementById('sumItems').innerText = `₹${currentOrderState.itemsTotal.toLocaleString('en-IN')}`;
         document.getElementById('sumShipping').innerText = `₹60`; document.getElementById('sumTotal').innerText = `₹${currentOrderState.grandTotal.toLocaleString('en-IN')}`;
         document.getElementById('checkoutStep1').style.display = 'none'; document.getElementById('checkoutStep2').style.display = 'block';
-    } finally { toggleButtonState('calcShippingBtn', false, 'Next: Payment <i class="fas fa-arrow-right"></i>'); }
+    } finally { toggleButtonState('calcShippingBtn', false, 'Next Step <i class="fas fa-arrow-right"></i>'); }
 };
 
-// FULL FIX: COD NOW CHARGES SHIPPING UPFRONT VIA RAZORPAY
 window.processPayment = function() {
     const isCOD = document.querySelector('input[name="payMethod"]:checked').value === 'cod';
     const amountToPay = isCOD ? currentOrderState.shippingCost : currentOrderState.grandTotal;
@@ -1073,18 +1213,18 @@ window.processPayment = function() {
             "key": RAZORPAY_KEY, 
             "amount": amountToPay * 100, 
             "currency": "INR", 
-            "name": "Aryanta Prime",
+            "name": "Aryanta",
             "description": isCOD ? "Shipping Charge (COD Balance Later)" : "Full Order Payment",
             "handler": function (response) { saveOrderToBackend(response.razorpay_payment_id, isCOD ? "Cash On Delivery" : "Online Full"); },
             "prefill": { "name": document.getElementById('chkName').value, "email": session.email, "contact": document.getElementById('chkPhone').value },
             "theme": { "color": "#0a0a0a" },
-            "modal": { "ondismiss": function() { toggleButtonState('payBtn', false, '<i class="fas fa-lock"></i> Authorize Payment'); } }
+            "modal": { "ondismiss": function() { toggleButtonState('payBtn', false, '<i class="fas fa-lock"></i> Pay Now'); } }
         };
         
         try {
             const rzp = new Razorpay(options); 
             rzp.on('payment.failed', function (response) { 
-                toggleButtonState('payBtn', false, '<i class="fas fa-lock"></i> Authorize Payment'); 
+                toggleButtonState('payBtn', false, '<i class="fas fa-lock"></i> Pay Now'); 
                 showAlert(`Payment Failed: ${response.error.description}.`, "Transaction Failed"); 
             });
             rzp.open();
@@ -1093,7 +1233,7 @@ window.processPayment = function() {
 };
 
 function handleRzpCrash(error) {
-    toggleButtonState('payBtn', false, '<i class="fas fa-lock"></i> Authorize Payment');
+    toggleButtonState('payBtn', false, '<i class="fas fa-lock"></i> Pay Now');
     showAlert("Failed to initialize Razorpay.", "System Error");
 }
 
@@ -1109,13 +1249,13 @@ async function saveOrderToBackend(paymentId, paymentMethodStr) {
         razorpay_id: paymentId, status: "Confirmed", timestamp: new Date().toISOString() 
     };
     
-    toggleButtonState('payBtn', true, 'Authorizing...');
+    toggleButtonState('payBtn', true, 'Processing...');
     try {
         await fetch(`${API_BASE_URL}/order`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderData) });
         buildGloriousReceipt(orderData); cart = []; updateCartUI(); saveCart(); closeCheckout(); 
         setTimeout(() => { openUI('overlay'); openUI('orderSuccessModal'); }, 300);
     } catch (error) { showAlert("Order processed but receipt save failed via API. Screenshot this ID: " + paymentId, "Warning"); 
-    } finally { toggleButtonState('payBtn', false, '<i class="fas fa-lock"></i> Authorize Payment'); }
+    } finally { toggleButtonState('payBtn', false, '<i class="fas fa-lock"></i> Pay Now'); }
 }
 
 function buildGloriousReceipt(data) {
@@ -1144,3 +1284,75 @@ window.closeOrderSuccess = function() { location.reload(); }
 // INIT
 checkSession(); 
 fetchProducts();
+
+// 🔍 SEARCH SYSTEM
+const searchInput = document.getElementById("searchInput");
+const dropdown = document.getElementById("searchDropdown");
+
+let timeout;
+
+searchInput.addEventListener("input", function () {
+    clearTimeout(timeout);
+
+    timeout = setTimeout(() => {
+        const query = this.value.toLowerCase().trim();
+
+        if (query === "") {
+            dropdown.innerHTML = "";
+            dropdown.style.display = "none";
+            baseCategoryProducts = allProducts;
+        } else {
+           const filtered = allProducts.filter(p =>
+                p.name.toLowerCase().includes(query)
+            );
+
+            if (filtered.length === 0) {
+                baseCategoryProducts = allProducts;
+            } else {
+                baseCategoryProducts = filtered;
+            }
+
+           dropdown.innerHTML = filtered.slice(0, 5).map(p => {
+               let imgUrl = p.image || (p.images && p.images.length > 0 ? p.images[0] : 'https://via.placeholder.com/50');
+               return `
+                <div class="search-item" data-id="${p.id}" style="display: flex; align-items: center; gap: 10px;">
+                    <img src="${imgUrl}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px;">
+                    <span style="font-weight: 600; font-size: 14px; white-space: normal;">${p.name}</span>
+                </div>
+            `}).join("");
+
+            dropdown.style.display = "block";
+            baseCategoryProducts = filtered;
+        }
+
+        currentlyDisplayed = 0;
+        document.getElementById("productShelf").innerHTML = "";
+        loadMoreProducts();
+
+    }, 300);
+});
+
+// Added event listener to open product upon search item click
+document.addEventListener("click", function(e) {
+    const item = e.target.closest(".search-item");
+
+    if (item) {
+        const productId = item.getAttribute("data-id");
+        document.getElementById("searchInput").value = "";
+        document.getElementById("searchDropdown").style.display = "none";
+        
+        baseCategoryProducts = allProducts;
+        currentlyDisplayed = 0;
+        document.getElementById("productShelf").innerHTML = "";
+        loadMoreProducts();
+
+        openProductPage(productId); // Open the product directly
+    }
+});
+
+window.addEventListener("scroll", function() {
+    const dropdown = document.getElementById("searchDropdown");
+    if (dropdown) {
+        dropdown.style.display = "none";
+    }
+});
