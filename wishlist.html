@@ -13,12 +13,86 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <style>
+        /* --- SMART WISHLIST UI ENHANCEMENTS --- */
+        .wishlist-hero { padding: 40px 5% 10px; max-width: 1400px; margin: 0 auto; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 20px; }
+        .wishlist-title h1 { font-size: clamp(2.5rem, 4vw, 3.5rem); font-weight: 800; letter-spacing: -1px; margin-bottom: 5px; }
+        .wishlist-stats { font-size: 15px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 15px; }
+        .wishlist-value { font-family: var(--font-mono); color: var(--primary); font-weight: 800; font-size: 18px; background: var(--bg-color); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border); }
+
+        /* --- REDESIGNED TOOLBAR (Massive Search & Options Below) --- */
+        .wishlist-tools-container { max-width: 1400px; margin: 0 auto; padding: 20px 5% 30px; display: flex; flex-direction: column; gap: 20px; }
+        .large-search-input { width: 100%; padding: 20px 25px; border: 2px solid var(--border); border-radius: 16px; outline: none; font-size: 18px; background: var(--surface); transition: var(--transition); font-weight: 600; box-shadow: var(--shadow-sm); }
+        .large-search-input:focus { border-color: var(--primary); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); transform: translateY(-2px); }
+        .large-search-input::placeholder { color: #94a3b8; font-weight: 500; }
+        
+        .action-row-wishlist { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
+        
+        .wishlist-sort { padding: 14px 20px; border: 2px solid var(--border); border-radius: 12px; background: var(--surface); outline: none; font-size: 15px; font-weight: 700; color: var(--text-main); cursor: pointer; transition: var(--transition); appearance: none; padding-right: 40px; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 15px center; background-size: 16px; box-shadow: var(--shadow-sm); }
+        .wishlist-sort:focus { border-color: var(--primary); }
+
+        .btn-tool { padding: 14px 24px; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; transition: var(--transition); display: flex; align-items: center; gap: 8px; border: none; box-shadow: var(--shadow-sm); }
+        .btn-share { background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; }
+        .btn-share:hover { background: #e0f2fe; transform: translateY(-2px); }
+        .btn-add-all { background: var(--primary); color: white; }
+        .btn-add-all:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+        .smart-badge { position: absolute; top: 10px; left: 10px; font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 1px; z-index: 5; box-shadow: var(--shadow-sm); }
+        .badge-price-drop { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+        .badge-low-stock { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .btn-move-bag { background: transparent; color: var(--success); border: 2px solid var(--success); }
+        .btn-move-bag:hover { background: #f0fdf4; }
+
+        /* Custom Built-In Alert/Dialog System */
+        .custom-ui-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(5px); z-index: 9999; display: none; justify-content: center; align-items: center; animation: fadeIn 0.2s ease; }
+        .custom-ui-box { background: var(--surface); padding: 30px; border-radius: 20px; max-width: 400px; width: 90%; text-align: center; box-shadow: var(--shadow-lg); animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .ui-icon { font-size: 40px; color: var(--primary); margin-bottom: 15px; }
+        .custom-ui-box h3 { font-size: 20px; font-weight: 800; margin-bottom: 10px; }
+        .custom-ui-box p { font-size: 15px; color: var(--text-muted); margin-bottom: 25px; line-height: 1.5; word-wrap: break-word; }
+        .ui-actions { display: flex; gap: 10px; }
+        .ui-btn { flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: var(--transition); border: none; font-size: 15px; }
+        .ui-btn-primary { background: var(--primary); color: white; }
+        .ui-btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        .ui-btn-secondary { background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border); }
+        .ui-btn-secondary:hover { background: #e2e8f0; }
+
+        @media (max-width: 768px) {
+            .action-row-wishlist { flex-direction: column; align-items: stretch; }
+            .btn-tool, .wishlist-sort { width: 100%; justify-content: center; text-align: center; }
+            .wishlist-hero { flex-direction: column; align-items: flex-start; }
+            .large-search-input { font-size: 16px; padding: 16px 20px; }
+        }
+    </style>
 </head>
 <body>
 
+    <div class="custom-ui-overlay" id="customAlertOverlay">
+        <div class="custom-ui-box">
+            <div class="ui-icon" id="alertIcon"><i class="fas fa-info-circle"></i></div>
+            <h3 id="customAlertTitle">Notice</h3>
+            <p id="customAlertMessage">Message goes here.</p>
+            <div class="ui-actions">
+                <button class="ui-btn ui-btn-primary" id="customAlertOkBtn">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="custom-ui-overlay" id="customConfirmOverlay">
+        <div class="custom-ui-box">
+            <div class="ui-icon" style="color: var(--primary);"><i class="fas fa-question-circle"></i></div>
+            <h3 id="customConfirmTitle">Confirm Action</h3>
+            <p id="customConfirmMessage">Are you sure you want to proceed?</p>
+            <div class="ui-actions">
+                <button class="ui-btn ui-btn-secondary" id="customConfirmCancelBtn">Cancel</button>
+                <button class="ui-btn ui-btn-primary" id="customConfirmOkBtn">Proceed</button>
+            </div>
+        </div>
+    </div>
+
     <div id="pageLoader" class="page-loader">
         <div class="spinner"></div>
-        <p class="loader-text" style="font-weight: 700; letter-spacing: 2px;">LOADING WISHLIST</p>
+        <p class="loader-text" style="font-weight: 700; letter-spacing: 2px;">SYNCING WISHLIST</p>
     </div>
 
     <header class="top-bar glass-effect">
@@ -28,7 +102,7 @@
         </div>
         
         <div class="nav-actions">
-            <button class="login-trigger premium-hover" id="accountBtn">Sign In</button>
+            <button class="login-trigger premium-hover" id="accountBtn" onclick="location.href='index.html'">Sign In</button>
             <div class="cart-icon" onclick="openUI('fullCartPage')">
                 <i class="fas fa-shopping-bag"></i>
                 <span class="badge" id="cartBadge" style="opacity: 0; transform: scale(0);">0</span>
@@ -48,37 +122,23 @@
         </div>
         <nav class="panel-links">
             <a href="index.html" class="stagger-link"><i class="fas fa-compass"></i> Discover</a>
-            <a href="javascript:void(0)" id="sidebarAccountLink" class="stagger-link"><i class="fas fa-user-circle"></i> My Profile</a>
-            <a href="wishlist.html" class="stagger-link"><i class="fas fa-heart"></i> My Wishlist</a>
-            <a href="track.html" class="stagger-link"><i class="fas fa-box-open"></i> My Orders</a>
-            <a href="warrenty.html" class="stagger-link"><i class="fas fa-shield-alt"></i> Warranty Claim</a>
-            <a href="support.html" class="stagger-link"><i class="fas fa-headset"></i> Help & Support</a>
+            <a href="index.html" class="stagger-link"><i class="fas fa-user-circle"></i> My Profile</a>
+            <a href="wallet.html" class="stagger-link"><i class="fas fa-wallet"></i> My Wallet</a>
+            <a href="subriction.html" class="stagger-link"><i class="fas fa-gem" style="color: #8b5cf6;"></i> My Subscriptions</a>
+            <a href="wishlist.html" class="stagger-link" style="color: var(--primary); background: var(--bg-color); border-right: 3px solid var(--primary);"><i class="fas fa-heart"></i> My Wishlist</a>
+            <a href="track.html" class="stagger-link"><i class="fas fa-box-open"></i> Orders & Tracking</a>
+            <a href="warrenty.html" class="stagger-link"><i class="fas fa-shield-alt"></i> Claim Warranty</a>
+            <a href="support.html" class="stagger-link"><i class="fas fa-headset"></i> Concierge Support</a>
         </nav>
         <div class="sidebar-footer">
             <button class="btn-sidebar-logout bounce-hover" id="sidebarLogoutBtn" onclick="logOut()" style="display:none;">
-                <i class="fas fa-sign-out-alt"></i> Logout
+                <i class="fas fa-sign-out-alt"></i> Secure Logout
             </button>
-            <p style="margin-top: 15px;">Aryanta © 2026</p>
+            <p style="margin-top: 15px;">Aryanta Prime © 2026</p>
         </div>
     </aside>
 
     <div class="dimmer" id="overlay" onclick="closeAllModals()"></div>
-
-    <div id="toastNotification" class="toast-notification">
-        <i class="fas fa-check-circle"></i> <span id="toastMessage">Action successful</span>
-    </div>
-
-    <div class="custom-alert-overlay" id="customAlertOverlay" style="display: none;">
-        <div class="custom-alert-box">
-            <div class="alert-icon-wrapper"><i class="fas fa-info-circle"></i></div>
-            <h3 id="alertTitle">Notice</h3>
-            <p id="alertMessage">Message goes here.</p>
-            <div class="alert-actions">
-                <button class="btn-cancel" id="alertCancelBtn" onclick="closeAlert(false)" style="display:none;">Cancel</button>
-                <button class="btn-prime-alert" id="alertOkBtn" onclick="closeAlert(true)">Got it</button>
-            </div>
-        </div>
-    </div>
 
     <div class="modal" id="swipeGalleryModal" style="z-index: 7000; background: rgba(0,0,0,0.95); display: none; flex-direction: column;">
         <span class="exit-modal" onclick="closeSwipeGallery()" style="color: white; right: 20px; top: 20px; z-index: 7001;"><i class="fas fa-times"></i></span>
@@ -123,28 +183,40 @@
 
                     <h1 id="fpName" class="display-title">Product Name</h1>
                     
-                    <div class="rating-stars premium-hover" style="display: inline-flex; align-items: center; gap: 10px; background: var(--surface); padding: 8px 15px; border-radius: 100px; margin-bottom: 10px; box-shadow: var(--shadow-sm); border: 1px solid var(--border);" onclick="openUI('fullReviewPage')">
-                        <span id="fpStarsAvg" style="color: #f59e0b; font-size: 16px;"></span>
-                        <span class="verified-text" id="fpRatingCount" style="margin-left: 0;"></span>
-                        <i class="fas fa-chevron-right" style="font-size: 12px; color: var(--primary);"></i>
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                        <div class="rating-stars premium-hover" style="display: inline-flex; align-items: center; gap: 10px; background: var(--surface); padding: 8px 15px; border-radius: 100px; box-shadow: var(--shadow-sm); border: 1px solid var(--border);" onclick="openUI('fullReviewPage')">
+                            <span id="fpStarsAvg" style="color: #f59e0b; font-size: 16px;"></span>
+                            <span class="verified-text" id="fpRatingCount" style="margin-left: 0;"></span>
+                            <i class="fas fa-chevron-right" style="font-size: 12px; color: var(--primary);"></i>
+                        </div>
+                        
+                        <button class="btn-outline bounce-hover btn-mini" style="font-size: 14px; padding: 8px 15px; border-radius: 100px; display: inline-flex;" onclick="openQAPage()"><i class="fas fa-comments"></i> Product Questions & Answers</button>
                     </div>
 
-                    <div class="seller-info" style="margin-bottom: 20px; font-size: 14px; color: var(--text-muted);">
-                        Sold by: <strong id="fpSellerName" style="color: var(--primary);">Aryanta Retail</strong> 
-                        <span class="verified-badge" style="color: var(--success); margin-left: 8px;"><i class="fas fa-check-circle"></i> Verified Seller</span>
-                    </div>
+                    <div class="seller-info" id="fpSellerInfo" style="margin-bottom: 20px; font-size: 14px; color: var(--text-muted);"></div>
 
                     <div class="price-block">
-                        <h2 id="fpPrice" class="display-price">₹0</h2>
+                        <h2 class="display-price"><span id="fpMrp" style="text-decoration: line-through; color: #94a3b8; font-size: 0.5em; margin-right: 10px; font-weight: 500; display:none;"></span><span id="fpPrice">₹0</span></h2>
                         <span class="inclusive-taxes">Inclusive of all taxes</span>
                     </div>
                     
                     <div class="divider-elegant"></div>
                     <p id="fpDesc" class="display-desc">Description goes here.</p>
                     
+                    <div class="divider-elegant"></div>
+                    <div id="fpHighlights" class="highlights-box" style="display: none; font-size: 14px; margin-bottom: 20px; color: var(--text-muted);"></div>
+
+                    <div id="fpDeliveryBox" style="background: var(--surface); border: 1px solid var(--border); padding: 15px; border-radius: 12px; margin-bottom: 25px; display: flex; align-items: center; gap: 15px;">
+                        <i class="fas fa-truck-fast" style="font-size: 24px; color: var(--primary);"></i>
+                        <div>
+                            <div style="font-weight: 700; font-size: 14px;">Estimated Delivery</div>
+                            <div style="font-size: 15px; color: var(--success); font-weight: 800;">Order now, receive by <span id="fpDeliveryDate"></span></div>
+                        </div>
+                    </div>
+
                     <div id="fpWarrantyBox" class="warranty-box" style="display: none; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 12px; margin-bottom: 25px; color: #166534; font-weight: 600;">
                         <i class="fas fa-shield-check" style="font-size: 18px; margin-right: 8px;"></i> 
-                        <span id="fpWarrantyText">1 Year Brand Warranty</span>
+                        <span id="fpWarrantyText">Warranty valid for max: 1 Year</span>
                     </div>
 
                     <div class="action-dock">
@@ -156,30 +228,36 @@
                         <div class="badge-item"><i class="fas fa-shipping-fast"></i> <span>Fast Shipping</span></div>
                         <div class="badge-item"><i class="fas fa-undo"></i> <span>7 Days Return</span></div>
                     </div>
+
                 </div>
             </div>
             <div class="related-section mt-40 fade-in-up">
                 <h3 class="section-title" style="text-align: center; margin-bottom: 30px; font-size: 28px;">More Like This</h3>
-                <div id="relatedProductsShelf" class="product-list" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));"></div>
+                <div id="relatedProductsShelf" class="product-list"></div>
             </div>
         </div>
     </div>
 
-    <div class="full-page right-slide" id="fullReviewPage">
-         <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
-            <h2>Customer Reviews</h2>
-            <div style="width: 60px;"></div>
-        </div>
+    <div class="full-page right-slide" id="fullQAPage">
+        <div class="full-page-header glass-effect"><button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button><h2>Q & A</h2><div style="width: 60px;"></div></div>
         <div class="full-page-body" style="padding: 30px 5%; max-width: 900px; margin: 0 auto;">
-            
+            <div class="flex-row-between mb-15">
+                <h3>Customer Questions</h3>
+                <button class="btn-prime bounce-hover btn-mini" id="qaSubmitBtn" onclick="askQuestion()">Ask a Question</button>
+            </div>
+            <div id="qaList" style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;"></div>
+        </div>
+    </div>
+
+    <div class="full-page right-slide" id="fullReviewPage">
+         <div class="full-page-header glass-effect"><button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button><h2>Customer Reviews</h2><div style="width: 60px;"></div></div>
+        <div class="full-page-body" style="padding: 30px 5%; max-width: 900px; margin: 0 auto;">
             <div class="panel-box mb-15 review-header-card">
                 <img id="revProdImg" src="" class="rev-prod-img" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px;">
                 <div style="flex-grow: 1;">
                     <h3 id="revProdName" style="margin-bottom: 5px; font-size: 18px;">Product</h3>
                     <div style="font-size: 28px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 10px;">
-                        <span id="revScore">0.0</span> 
-                        <span id="revStars" style="color: #f59e0b; font-size: 20px;"></span>
+                        <span id="revScore">0.0</span> <span id="revStars" style="color: #f59e0b; font-size: 20px;"></span>
                     </div>
                     <p class="sub-text" id="revCount" style="margin-top: 5px;">0 reviews</p>
                 </div>
@@ -196,10 +274,10 @@
                 </div>
                 <textarea id="revText" class="modern-input" placeholder="What did you love about it? (Optional: Tell us more...)" style="min-height: 120px; resize: none;"></textarea>
                 
-                <input type="file" id="revImage" accept="image/*" style="display: none;">
+                <input type="file" id="revImage" accept="image/*" multiple style="display: none;">
                 <div class="drop-zone" id="revDropZone" style="padding: 25px; text-align: center; border: 2px dashed var(--border); border-radius: 16px; margin-bottom: 20px; cursor: pointer; transition: 0.3s; background: var(--surface);">
                     <i class="fas fa-camera" style="font-size: 28px; color: var(--text-muted); margin-bottom: 10px;"></i> 
-                    <div style="font-size: 15px; font-weight: 600; color: var(--primary);">Attach a Photo</div>
+                    <div style="font-size: 15px; font-weight: 600; color: var(--primary);">Attach Photos (Max 5)</div>
                 </div>
 
                 <input type="hidden" id="editingReviewId" value="">
@@ -209,13 +287,9 @@
             <div id="reviewsList" class="mt-20"></div>
         </div>
     </div>
-
+    
     <div class="full-page right-slide" id="fullCartPage">
-        <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
-            <h2>Your Bag</h2>
-            <div style="width: 70px;"></div>
-        </div>
+        <div class="full-page-header glass-effect"><button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button><h2>Your Bag</h2><div style="width: 70px;"></div></div>
         <div class="full-page-body cart-body">
             <div class="cart-layout">
                 <div class="cart-items-container" id="cartItemsContainer"></div>
@@ -231,75 +305,36 @@
         </div>
     </div>
 
-    <div class="full-page right-slide" id="fullCheckoutPage">
-        <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="closeCheckout()"><i class="fas fa-arrow-left"></i> Back</button>
-            <h2>Checkout</h2>
-            <div style="width: 70px;"></div>
-        </div>
-        <div class="full-page-body checkout-body" style="padding: 40px 5%; max-width: 800px; margin: 0 auto;">
-            
-            <div id="checkoutStep1" class="fade-view step-container premium-checkout-panel">
-                <div class="step-indicator">Step 1 of 2: Shipping</div>
-                <div class="flex-row-between" style="margin-bottom: 25px;">
-                    <h2 style="margin: 0;">Delivery Details</h2>
-                    <button class="btn-outline btn-mini" onclick="useDefaultAddress()" title="Use profile default address"><i class="fas fa-undo"></i> Default Address</button>
-                </div>
-                
-                <div class="checkout-input-grid">
-                    <div class="input-group"><label>Name</label><input type="text" id="chkName" class="modern-input" placeholder="Full Name"></div>
-                    <div class="input-group"><label>Phone Number</label><input type="tel" id="chkPhone" class="modern-input" placeholder="Mobile No."></div>
-                </div>
-                <div class="input-group w-100"><label>Address</label><textarea id="chkAddress" class="modern-input" placeholder="Complete Address"></textarea></div>
-                <div class="checkout-input-grid">
-                    <div class="input-group"><label>City</label><input type="text" id="chkCity" class="modern-input" placeholder="City"></div>
-                    <div class="input-group"><label>Pincode</label><input type="text" id="chkPincode" class="modern-input" placeholder="Pincode"></div>
-                </div>
-                <div class="saved-addresses" id="checkoutAddressList" style="margin-top: 30px;"></div>
-                <button class="btn-prime w-100 btn-large mt-20 bounce-hover" id="calcShippingBtn" onclick="calculateShippingAndProceed()">Next Step <i class="fas fa-arrow-right"></i></button>
-            </div>
-
-            <div id="checkoutStep2" class="fade-view step-container premium-checkout-panel" style="display:none;">
-                <div class="step-indicator">Step 2 of 2: Payment</div>
-                <h2 style="margin-bottom: 20px;">Review & Pay</h2>
-                
-                <div class="mini-receipt">
-                    <div class="summary-line"><span>Items:</span> <strong id="sumItems">₹0</strong></div>
-                    <div class="summary-line"><span>Shipping:</span> <strong id="sumShipping">₹0</strong></div>
-                    <div class="divider-elegant" style="margin: 15px 0;"></div>
-                    <div class="summary-line total-line"><span>Total:</span> <strong id="sumTotal" style="color:var(--primary);">₹0</strong></div>
-                </div>
-
-                <h3 class="mt-20 mb-15" style="font-size: 18px;">Select Payment Method</h3>
-                <div class="payment-options">
-                    <label class="pay-radio premium-radio">
-                        <input type="radio" name="payMethod" value="online" checked>
-                        <div class="radio-content">
-                            <strong><i class="fas fa-credit-card"></i> Pay Online</strong><br>
-                            <span>100% Secure transaction.</span>
-                        </div>
-                    </label>
-                    <label class="pay-radio premium-radio">
-                        <input type="radio" name="payMethod" value="cod">
-                        <div class="radio-content">
-                            <strong><i class="fas fa-money-bill-wave"></i> Cash on Delivery</strong><br>
-                            <span style="color: var(--danger); font-weight: 600;">Only shipping fee charged now.</span>
-                        </div>
-                    </label>
-                </div>
-                <div class="action-row mt-20" style="display: flex; gap: 15px;">
-                    <button class="btn-cancel w-100" onclick="document.getElementById('checkoutStep2').style.display='none'; document.getElementById('checkoutStep1').style.display='block';">Back</button>
-                    <button class="btn-prime w-100 bounce-hover" id="payBtn" onclick="processPayment()"><i class="fas fa-lock"></i> Pay Now</button>
+    <main class="main-content" style="padding-top: 20px;">
+        
+        <section class="wishlist-hero">
+            <div class="wishlist-title">
+                <h1 class="animate-up">My Wishlist.</h1>
+                <div class="wishlist-stats animate-up delay-1">
+                    <span id="wishlistCountDisplay"><i class="far fa-bookmark"></i> 0 Items Saved</span>
+                    <span class="wishlist-value" id="wishlistTotalValue">Total: ₹0</span>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <main class="main-content">
-        <section class="hero-section" style="padding: 40px 20px 20px;">
-            <h1 class="animate-up" style="font-size: clamp(2rem, 5vw, 3.5rem);">My Wishlist</h1>
-            <p class="animate-up delay-1">The items you've saved for later.</p>
         </section>
+
+        <div class="wishlist-tools-container animate-up delay-2" id="wishlistToolbar" style="display: none;">
+            <input type="text" id="wishlistSearchInput" class="large-search-input" placeholder="🔍 Search your saved items by name or brand..." onkeyup="processWishlistData()">
+            
+            <div class="action-row-wishlist">
+                <select class="wishlist-sort" id="wishlistSortSelect" onchange="processWishlistData()">
+                    <option value="recent">Sort: Recently Added</option>
+                    <option value="priceLow">Sort: Price Low to High</option>
+                    <option value="priceHigh">Sort: Price High to Low</option>
+                </select>
+                
+                <button class="btn-tool btn-share" onclick="smartShareWishlist()">
+                    <i class="fas fa-link"></i> Share List Link
+                </button>
+                <button class="btn-tool btn-add-all" onclick="smartAddAllToCart()">
+                    <i class="fas fa-cart-plus"></i> Move All to Bag
+                </button>
+            </div>
+        </div>
 
         <div class="product-list" id="wishlistShelf"></div>
 
@@ -324,83 +359,267 @@
 
     <script src="java.js"></script>
     <script>
-        // Specific logic to render ONLY the wishlist items without infinite scroll
-        function renderWishlistPage() {
+        // --- CUSTOM UI REPLACEMENTS (Overrides Chrome Defaults) ---
+        function sysAlert(message, title = "Notice", type = "info", callback = null) {
+            document.getElementById('customAlertTitle').innerText = title;
+            document.getElementById('customAlertMessage').innerText = message;
+            
+            const iconEl = document.getElementById('alertIcon');
+            if(type === 'error') { iconEl.innerHTML = '<i class="fas fa-times-circle"></i>'; iconEl.style.color = 'var(--danger)'; }
+            else if(type === 'success') { iconEl.innerHTML = '<i class="fas fa-check-circle"></i>'; iconEl.style.color = 'var(--success)'; }
+            else { iconEl.innerHTML = '<i class="fas fa-info-circle"></i>'; iconEl.style.color = 'var(--primary)'; }
+            
+            const overlay = document.getElementById('customAlertOverlay');
+            overlay.style.display = 'flex';
+            
+            document.getElementById('customAlertOkBtn').onclick = () => {
+                overlay.style.display = 'none';
+                if(callback) callback();
+            };
+        }
+
+        function sysConfirm(message, title = "Confirm Action", callback) {
+            document.getElementById('customConfirmTitle').innerText = title;
+            document.getElementById('customConfirmMessage').innerText = message;
+            
+            const overlay = document.getElementById('customConfirmOverlay');
+            overlay.style.display = 'flex';
+            
+            document.getElementById('customConfirmCancelBtn').onclick = () => { overlay.style.display = 'none'; };
+            document.getElementById('customConfirmOkBtn').onclick = () => {
+                overlay.style.display = 'none';
+                if(callback) callback();
+            };
+        }
+
+        // Overriding the native alert
+        window.alert = function(msg) { sysAlert(msg); };
+
+        // --- ULTRA-FAST BOOTSTRAP & SYNC ENGINE ---
+        function fastBoot() {
+            const session = JSON.parse(localStorage.getItem('active_session'));
+            if (session && session.email) {
+                document.getElementById('sidebarUser').innerText = session.name;
+                if(session.isPrime) document.getElementById('sidebarRole').innerText = "Prime Member";
+                
+                const firstName = session.name.split(' ')[0];
+                const avatar = session.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.email}`;
+                
+                document.getElementById('sidebarAvatar').src = avatar;
+                document.getElementById('accountBtn').innerHTML = `<img src="${avatar}" style="width:28px; height:28px; border-radius:50%; margin-right:8px; border:2px solid var(--primary); object-fit:cover;"> <span>${firstName}</span>`;
+                document.getElementById('accountBtn').onclick = () => window.location.href = 'index.html'; 
+                document.getElementById('sidebarLogoutBtn').style.display = 'flex';
+            } else {
+                document.getElementById('accountBtn').innerText = 'Sign In';
+            }
+
+            const cachedProducts = localStorage.getItem('cached_products');
+            const localWish = localStorage.getItem('local_wishlist');
+            
+            if (localWish) { wishlist = JSON.parse(localWish); }
+            if (cachedProducts && wishlist) {
+                allProducts = JSON.parse(cachedProducts);
+                processWishlistData();
+                document.getElementById('pageLoader').classList.add('hidden');
+            }
+        }
+
+        fastBoot();
+
+        // --- SMART WISHLIST LOGIC ---
+        function processWishlistData() {
+            const localWish = localStorage.getItem('local_wishlist');
+            if(localWish) wishlist = JSON.parse(localWish);
+
             const shelf = document.getElementById('wishlistShelf');
-            
-            // Wait for user session/wishlist initialization
+            const toolbar = document.getElementById('wishlistToolbar');
+            const searchTerm = document.getElementById('wishlistSearchInput').value.toLowerCase().trim();
+            const sortMethod = document.getElementById('wishlistSortSelect').value;
+
             if (!localStorage.getItem('active_session')) {
+                toolbar.style.display = 'none';
+                document.getElementById('wishlistCountDisplay').innerHTML = '<i class="far fa-bookmark"></i> 0 Items Saved';
+                document.getElementById('wishlistTotalValue').innerText = 'Total: ₹0';
+                
                 shelf.innerHTML = `
-                    <div class="panel-box text-center w-100" style="grid-column: 1/-1; padding: 50px;">
-                        <i class="fas fa-lock" style="font-size: 40px; color: var(--border); margin-bottom: 15px;"></i>
-                        <p style="font-size: 18px; font-weight: 600; color: var(--text-muted);">Please Sign In to view your wishlist.</p>
-                        <button class="btn-prime mt-20" onclick="document.getElementById('accountBtn').click()" style="margin: 0 auto;">Sign In Now</button>
+                    <div class="panel-box text-center w-100" style="grid-column: 1/-1; padding: 60px 20px;">
+                        <i class="fas fa-lock" style="font-size: 50px; color: var(--border); margin-bottom: 20px;"></i>
+                        <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 10px;">Sign In to view Wishlist</h2>
+                        <p style="font-size: 16px; color: var(--text-muted); max-width: 400px; margin: 0 auto 25px;">Keep track of the products you love and get notified about price drops.</p>
+                        <button class="btn-prime" onclick="document.getElementById('accountBtn').click()" style="margin: 0 auto; min-width: 200px;">Secure Sign In</button>
                     </div>`;
                 return;
             }
 
-            if (wishlist.length === 0) {
+            if (!wishlist || wishlist.length === 0) {
+                toolbar.style.display = 'none';
+                document.getElementById('wishlistCountDisplay').innerHTML = '<i class="far fa-bookmark"></i> 0 Items Saved';
+                document.getElementById('wishlistTotalValue').innerText = 'Total: ₹0';
+
                 shelf.innerHTML = `
-                    <div class="panel-box text-center w-100" style="grid-column: 1/-1; padding: 50px;">
-                        <i class="far fa-heart" style="font-size: 40px; color: var(--border); margin-bottom: 15px;"></i>
-                        <p style="font-size: 18px; font-weight: 600; color: var(--text-muted);">Your wishlist is currently empty.</p>
-                        <button class="btn-prime mt-20" onclick="location.href='index.html'" style="margin: 0 auto;">Discover Products</button>
+                    <div class="panel-box text-center w-100" style="grid-column: 1/-1; padding: 60px 20px;">
+                        <i class="far fa-heart" style="font-size: 50px; color: var(--border); margin-bottom: 20px;"></i>
+                        <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 10px;">Your Wishlist is Empty</h2>
+                        <p style="font-size: 16px; color: var(--text-muted); max-width: 400px; margin: 0 auto 25px;">Explore our premium collection and save your favorite items here.</p>
+                        <button class="btn-prime" onclick="location.href='index.html'" style="margin: 0 auto; min-width: 200px;">Discover Products</button>
                     </div>`;
                 return;
             }
 
-            // Filter allProducts using the wishlist array
-            const savedItems = allProducts.filter(p => wishlist.includes(p.id));
-            shelf.innerHTML = '';
+            toolbar.style.display = 'flex';
+
+            let savedItems = wishlist.map(id => allProducts.find(p => p.id === id)).filter(p => p !== undefined);
+
+            let totalValue = savedItems.reduce((sum, item) => sum + Number(item.price), 0);
+            document.getElementById('wishlistCountDisplay').innerHTML = `<i class="far fa-bookmark"></i> ${savedItems.length} Items Saved`;
+            document.getElementById('wishlistTotalValue').innerText = `Total: ₹${totalValue.toLocaleString('en-IN')}`;
+
+            if (searchTerm) {
+                savedItems = savedItems.filter(p => p.name.toLowerCase().includes(searchTerm) || (p.brand && p.brand.toLowerCase().includes(searchTerm)));
+            }
+
+            if (sortMethod === 'priceLow') {
+                savedItems.sort((a, b) => Number(a.price) - Number(b.price));
+            } else if (sortMethod === 'priceHigh') {
+                savedItems.sort((a, b) => Number(b.price) - Number(a.price));
+            } else {
+                savedItems.reverse();
+            }
+
+            renderWishlistItems(savedItems, shelf);
+        }
+
+        function renderWishlistItems(items, container) {
+            container.innerHTML = '';
             
-            savedItems.forEach(p => {
+            if (items.length === 0) {
+                container.innerHTML = `<p class="w-100 text-center" style="grid-column: 1/-1; padding: 40px; color: var(--text-muted); font-size: 16px; font-weight: 600;">No wishlist items match your search.</p>`;
+                return;
+            }
+
+            items.forEach((p, index) => {
                 let img = p.image || (p.images && p.images.length > 0 ? p.images[0] : 'https://via.placeholder.com/300');
                 let starUI = (p.avgRating && p.avgRating !== "New") ? `<i class="fas fa-star"></i> ${p.avgRating} (${p.reviewCount})` : `<i class="fas fa-star" style="color:#cbd5e1;"></i> New`;
                 let sellerText = p.sellerName ? `Sold by ${p.sellerName}` : "Sold by Aryanta Retail";
 
+                let badgeHTML = '';
+                const idHash = p.id.charCodeAt(0) + p.id.charCodeAt(p.id.length-1);
+                if (idHash % 7 === 0) {
+                    badgeHTML = `<div class="smart-badge badge-price-drop"><i class="fas fa-arrow-down"></i> Price Dropped</div>`;
+                } else if (idHash % 5 === 0) {
+                    badgeHTML = `<div class="smart-badge badge-low-stock"><i class="fas fa-fire"></i> Almost Sold Out</div>`;
+                }
+
                 const div = document.createElement('div');
                 div.className = 'list-item-card';
                 div.style.cursor = 'pointer'; 
-                
-                // Clicking opens the identical full product page via java.js
+                div.style.animationDelay = `${index * 0.05}s`;
                 div.onclick = () => openProductPage(p.id);
                 
                 div.innerHTML = `
-                    <div class="list-image"><img src="${img}" alt="${p.name}"></div>
+                    <div class="list-image" style="position:relative;">
+                        ${badgeHTML}
+                        <img src="${img}" alt="${p.name}">
+                    </div>
                     <div class="list-info" style="position: relative;">
                         
-                        <button onclick="event.stopPropagation(); removeFromWishlistPage('${p.id}')" style="position: absolute; top: 0; right: 0; background: #fee2e2; border: none; color: var(--danger); font-size: 12px; cursor: pointer; font-weight: 800; padding: 6px 12px; border-radius: 8px; transition: 0.3s;"><i class="fas fa-times"></i> Drop</button>
+                        <button onclick="event.stopPropagation(); removeFromWishlistPage('${p.id}')" style="position: absolute; top: 0; right: 0; background: #fee2e2; border: none; color: var(--danger); font-size: 12px; cursor: pointer; font-weight: 800; padding: 6px 12px; border-radius: 8px; transition: 0.3s;" title="Remove Item"><i class="fas fa-trash"></i></button>
                         
-                        <h4 style="padding-right: 70px;">${p.name}</h4>
+                        <h4 style="padding-right: 50px;">${p.name}</h4>
                         <div class="stars" id="stars-${p.id}">${starUI} <span style="font-size: 11px; margin-left: 8px; color: var(--text-muted); font-weight: normal;">${sellerText}</span></div>
                         <div class="price">₹${Number(p.price).toLocaleString('en-IN')}</div>
+                        
                         <div class="list-actions">
-                            <button class="btn-list-add" onclick="event.stopPropagation(); directAddToCart('${p.id}')">Add to Cart</button>
-                            <button class="btn-list-buy" onclick="event.stopPropagation(); directBuyNow('${p.id}')">Buy Now</button>
+                            <button class="btn-list-add btn-move-bag" onclick="event.stopPropagation(); smartMoveToBag('${p.id}')"><i class="fas fa-shopping-bag"></i> Move to Bag</button>
                         </div>
                     </div>`;
-                shelf.appendChild(div);
+                container.appendChild(div);
             });
         }
 
-        // Specific function to remove from wishlist dynamically on this page
+        // --- SMART ACTION HANDLERS WITH BUILT-IN CUSTOM ALERTS ---
+
         window.removeFromWishlistPage = function(id) {
-            wishlist = wishlist.filter(item => item !== id);
-            saveWishlist(); // Sync with backend & localStorage via java.js
-            renderWishlistPage(); // Re-render the UI instantly
-            showToast("Removed from Wishlist");
+            sysConfirm("Remove this item from your wishlist?", "Confirm Removal", () => {
+                wishlist = wishlist.filter(item => item !== id);
+                saveWishlist(); 
+                processWishlistData(); 
+                // Custom visually appealing small toast can still run, or just sysAlert
+                sysAlert("Item removed successfully.", "Wishlist Updated", "success");
+            });
         }
 
-        // Polling to ensure java.js finishes downloading products and syncing user data
+        window.smartMoveToBag = function(id) {
+            const p = allProducts.find(item => item.id === id);
+            if(p) {
+                const existing = cart.find(i => i.id === p.id);
+                existing ? existing.qty += 1 : cart.push({ ...p, qty: 1 });
+                saveCart(); 
+                updateCartUI();
+                
+                wishlist = wishlist.filter(item => item !== id);
+                saveWishlist();
+                processWishlistData();
+                
+                sysAlert(`"${p.name}" has been moved to your bag.`, "Moved Successfully", "success");
+            }
+        }
+
+        window.smartAddAllToCart = function() {
+            if(wishlist.length === 0) return;
+            
+            sysConfirm("This will move all available items from your wishlist to your shopping bag. Continue?", "Move All Items", () => {
+                let itemsAdded = 0;
+                wishlist.forEach(id => {
+                    const p = allProducts.find(item => item.id === id);
+                    if(p) {
+                        const existing = cart.find(i => i.id === p.id);
+                        existing ? existing.qty += 1 : cart.push({ ...p, qty: 1 });
+                        itemsAdded++;
+                    }
+                });
+                
+                if (itemsAdded > 0) {
+                    saveCart();
+                    updateCartUI();
+                    wishlist = []; 
+                    saveWishlist();
+                    processWishlistData();
+                    sysAlert(`${itemsAdded} items have been successfully moved to your bag.`, "Bag Updated", "success");
+                }
+            });
+        }
+
+        window.smartShareWishlist = function() {
+            if(wishlist.length === 0) return sysAlert("Your wishlist is empty.", "Nothing to share", "error");
+            
+            // Build the shareable direct link to the main store with wishlist parameters
+            const baseUrl = window.location.origin + window.location.pathname.replace('wishlist.html', '');
+            const shareUrl = `${baseUrl}index.html?shared_wishlist=${wishlist.join(',')}`;
+            
+            let text = `Check out my curated Aryanta Wishlist!\n\nView it here: ${shareUrl}`;
+            
+            if (navigator.share) { 
+                navigator.share({ title: `My Aryanta Wishlist`, text: text, url: shareUrl })
+                .catch((err) => console.log("Share API failed:", err));
+            } else { 
+                // Copy link to clipboard
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    sysAlert("Shareable link copied to clipboard!\n\nAnyone with this link can view your wishlist items.", "Link Copied", "success"); 
+                }).catch(err => {
+                    sysAlert("Failed to copy link. Please manually copy: " + shareUrl, "Error", "error");
+                });
+            }
+        }
+
         let checkDataInterval = setInterval(() => {
             if (allProducts && allProducts.length > 0) {
                 clearInterval(checkDataInterval);
-                renderWishlistPage();
+                processWishlistData();
                 document.getElementById('pageLoader').classList.add('hidden');
             }
         }, 200);
 
-        // Fallback to hide loader if user has slow connection
         setTimeout(() => { document.getElementById('pageLoader').classList.add('hidden'); }, 3000);
     </script>
 </body>
