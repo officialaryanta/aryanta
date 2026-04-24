@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Concierge Support | Aryanta Prime</title>
     
     <link rel="stylesheet" href="style.css">
@@ -10,103 +10,126 @@
     
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
         /* --- STRICT NO-SCROLL APP LAYOUT --- */
         html, body { margin: 0; padding: 0; height: 100vh; overflow: hidden; background: var(--bg-color); }
+        * { box-sizing: border-box; }
         
-        .main-content { padding-top: 70px; height: 100vh; display: flex; flex-direction: column; }
+        .main-content { padding-top: 60px; height: 100vh; display: flex; flex-direction: column; }
         
-        .support-wrapper { flex-grow: 1; max-width: 800px; margin: 0 auto; width: 100%; padding: 15px 5%; display: flex; flex-direction: column; max-height: calc(100vh - 70px); }
+        .support-wrapper { flex-grow: 1; max-width: 800px; margin: 0 auto; width: 100%; padding: 10px 5%; display: flex; flex-direction: column; max-height: calc(100vh - 60px); }
         
-        .chat-header { text-align: center; margin-bottom: 15px; flex-shrink: 0; }
-        .chat-header h1 { font-size: 26px; font-weight: 800; letter-spacing: -1px; }
+        .chat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; padding: 0 10px; }
+        .chat-header-text h1 { font-size: 22px; font-weight: 800; letter-spacing: -1px; margin: 0; display: flex; align-items: center; gap: 8px; }
+        .agent-status { font-size: 11px; font-weight: 700; color: var(--success); background: #ecfdf5; padding: 4px 10px; border-radius: 100px; border: 1px solid #a7f3d0; display: flex; align-items: center; gap: 5px; }
+        .agent-status i { font-size: 8px; }
         
-        .chat-container { flex-grow: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 24px; box-shadow: var(--shadow-md); display: flex; flex-direction: column; overflow: hidden; position: relative; margin-bottom: 15px; }
+        .chat-container { flex-grow: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; overflow: hidden; position: relative; margin-bottom: 10px; }
         
-        .chat-history { flex-grow: 1; padding: 20px 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: #f8fafc; scroll-behavior: smooth; }
+        .chat-history { flex-grow: 1; padding: 20px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: #f8fafc; scroll-behavior: smooth; }
         
         /* Message Bubbles */
         .msg-row { display: flex; width: 100%; animation: chatPop 0.3s ease-out forwards; opacity: 0; transform: translateY(15px); }
         .msg-bot { justify-content: flex-start; }
         .msg-user { justify-content: flex-end; }
         
-        .bubble { max-width: 85%; padding: 14px 18px; border-radius: 18px; font-size: 14.5px; line-height: 1.5; position: relative; box-shadow: var(--shadow-sm); word-wrap: break-word; }
+        .bubble { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.02); word-wrap: break-word; }
         .msg-bot .bubble { background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
         .msg-user .bubble { background: var(--primary); color: white; border-bottom-right-radius: 4px; }
         
-        .bot-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; display: flex; justify-content: center; align-items: center; margin-right: 12px; font-size: 13px; flex-shrink: 0; align-self: flex-end; }
+        .bot-icon { width: 30px; height: 30px; border-radius: 50%; background: var(--primary); color: white; display: flex; justify-content: center; align-items: center; margin-right: 10px; font-size: 12px; flex-shrink: 0; align-self: flex-end; box-shadow: var(--shadow-sm); }
 
-        /* Quick Replies (Fixed Button Squeeze) */
-        .chat-actions { background: var(--surface); border-top: 1px solid var(--border); padding: 15px; min-height: 70px; display: flex; flex-direction: column; justify-content: center; flex-shrink: 0; }
-        .quick-replies { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; }
+        /* AMAZON STYLE INTERACTIVE CARDS IN CHAT */
+        .interactive-card { display: flex; gap: 12px; align-items: center; border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-top: 10px; background: var(--surface); box-shadow: var(--shadow-sm); text-align: left; cursor: pointer; transition: 0.2s; }
+        .interactive-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.05); }
+        .interactive-card img { width: 65px; height: 65px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0; background: #fff; }
+        .interactive-card .card-details { flex: 1; min-width: 0; }
+        .interactive-card h4 { font-size: 13px; font-weight: 700; margin: 0 0 4px 0; color: var(--text-main); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
+        .interactive-card .price { font-size: 15px; font-weight: 800; margin: 0 0 4px 0; color: var(--primary); }
+        .interactive-card .status { font-size: 11px; font-weight: 800; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; }
+        .interactive-card .meta { font-size: 11px; color: var(--text-muted); margin: 4px 0 0 0; font-family: monospace; }
+
+        /* Compact Adaptive Quick Replies */
+        .chat-actions { background: var(--surface); border-top: 1px solid var(--border); padding: 12px; flex-shrink: 0; }
+        .quick-replies { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%; }
         
         .btn-reply { 
-            background: var(--bg-color); 
-            border: 1px solid var(--border); 
-            color: var(--text-main); 
-            padding: 12px 15px; 
-            border-radius: 12px; 
-            font-size: 13.5px; 
-            font-weight: 700; 
-            cursor: pointer; 
-            transition: var(--transition); 
-            text-align: center;
-            min-height: 48px; 
-            white-space: normal; 
-            line-height: 1.3;
-            word-break: break-word;
+            background: var(--bg-color); border: 1px solid var(--border); color: var(--text-main); 
+            padding: 10px 8px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; 
+            transition: var(--transition); text-align: center; min-height: 42px; white-space: normal; 
+            line-height: 1.2; word-break: break-word; display: flex; align-items: center; justify-content: center; gap: 5px;
         }
-        .btn-reply:hover { border-color: var(--primary); background: var(--surface); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+        .btn-reply:hover { border-color: var(--primary); background: var(--surface); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
         .btn-reply.primary { background: var(--primary); color: white; border-color: var(--primary); }
         .btn-reply.danger { border-color: #fca5a5; color: var(--danger); background: #fef2f2; }
 
-        /* Internal Chat Elements */
-        .chat-card { border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-top: 10px; background: var(--bg-color); }
-        
         @keyframes chatPop { to { opacity: 1; transform: translateY(0); } }
 
         /* Typing Indicator */
-        .typing-indicator { display: flex; gap: 5px; padding: 5px; }
-        .dot { width: 7px; height: 7px; background: var(--text-muted); border-radius: 50%; animation: blink 1.4s infinite both; }
+        .typing-indicator { display: flex; gap: 4px; padding: 4px; align-items: center; height: 15px; }
+        .dot { width: 6px; height: 6px; background: #94a3b8; border-radius: 50%; animation: blink 1.4s infinite both; }
         .dot:nth-child(2) { animation-delay: 0.2s; }
         .dot:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes blink { 0% { opacity: 0.2; } 20% { opacity: 1; } 100% { opacity: 0.2; } }
+        @keyframes blink { 0% { opacity: 0.2; transform: scale(0.8); } 20% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0.2; transform: scale(0.8); } }
         
-        /* Custom Inputs */
-        .chat-input-wrapper { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+        .chat-input-wrapper { display: flex; flex-direction: column; gap: 8px; width: 100%; }
         
-        /* --- INVOICE PRINT STYLES --- */
-        .invoice-hidden-container { display: none; }
-        .invoice-box { border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; background: var(--bg-color); text-align: left; }
-        .invoice-box-title { font-size: 12px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-        .invoice-info-text { font-size: 14px; margin-bottom: 6px; color: var(--text-main); font-weight: 500; }
-        .invoice-address-grid { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 10px; }
-        .invoice-address-grid .invoice-box { flex: 1; min-width: 250px; margin-bottom: 0; }
-        
-        @media print {
-            @page { size: A4; margin: 10mm; }
-            body { background: white; overflow: visible; height: auto; }
-            body * { visibility: hidden; }
-            
-            .invoice-hidden-container { display: block !important; position: absolute; left: 0; top: 0; width: 100%; background: white; z-index: 9999; }
-            .invoice-hidden-container * { visibility: visible; }
-            .main-content, .top-bar, .side-panel, .dimmer, .toast-notification { display: none !important; }
-        }
+        /* Custom Built-In Alert/Dialog System */
+        .custom-ui-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(5px); z-index: 9999; display: none; justify-content: center; align-items: center; animation: fadeIn 0.2s ease; }
+        .custom-ui-box { background: var(--surface); padding: 30px; border-radius: 20px; max-width: 400px; width: 90%; text-align: center; box-shadow: var(--shadow-lg); animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .ui-icon { font-size: 40px; color: var(--primary); margin-bottom: 15px; }
+        .custom-ui-box h3 { font-size: 20px; font-weight: 800; margin-bottom: 10px; }
+        .custom-ui-box p { font-size: 15px; color: var(--text-muted); margin-bottom: 25px; line-height: 1.5; }
+        .ui-actions { display: flex; gap: 10px; }
+        .ui-btn { flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: var(--transition); border: none; font-size: 15px; }
+        .ui-btn-primary { background: var(--primary); color: white; }
+        .ui-btn-secondary { background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border); }
 
-        /* Mobile Layout */
-        @media (max-width: 768px) {
-            .quick-replies { grid-template-columns: 1fr; } 
-            .bubble { max-width: 90%; }
+        /* Off-Screen Print Area for HTML2PDF */
+        #printArea { position: absolute; left: -9999px; top: -9999px; width: 800px; background: white; color: black; z-index: -1; }
+
+        @media (max-width: 600px) {
+            .bubble { max-width: 90%; font-size: 13px; }
+            .btn-reply { font-size: 12px; padding: 8px; min-height: 40px; }
+            .chat-history { padding: 15px 15px; }
+            /* Mobile Logo Transformation */
+            .desktop-logo-text { display: none; }
         }
     </style>
 </head>
 <body>
 
+    <div class="custom-ui-overlay" id="customAlertOverlay">
+        <div class="custom-ui-box">
+            <div class="ui-icon" id="alertIcon"><i class="fas fa-info-circle"></i></div>
+            <h3 id="customAlertTitle">Notice</h3>
+            <p id="customAlertMessage">Message goes here.</p>
+            <div class="ui-actions">
+                <button class="ui-btn ui-btn-primary" id="customAlertOkBtn">Got it</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="custom-ui-overlay" id="customConfirmOverlay">
+        <div class="custom-ui-box">
+            <div class="ui-icon" style="color: var(--primary);"><i class="fas fa-question-circle"></i></div>
+            <h3 id="customConfirmTitle">Confirm Action</h3>
+            <p id="customConfirmMessage">Are you sure you want to proceed?</p>
+            <div class="ui-actions">
+                <button class="ui-btn ui-btn-secondary" id="customConfirmCancelBtn">Cancel</button>
+                <button class="ui-btn ui-btn-primary" id="customConfirmOkBtn">Proceed</button>
+            </div>
+        </div>
+    </div>
+
     <header class="top-bar glass-effect">
         <div class="nav-left">
             <div class="menu-trigger" id="menuBtn" onclick="toggleSidebar()"><i class="fas fa-bars-staggered"></i></div>
-            <div class="brand-logo" onclick="location.href='index.html'">ARYANTA<span class="prime-dot">.</span></div>
+            <div class="brand-logo" onclick="location.href='index.html'">
+                <span class="desktop-logo-text">ARYANT</span>A<span class="prime-dot">.</span>
+            </div>
         </div>
         <div class="nav-actions">
             <button class="login-trigger premium-hover" id="accountBtn">Sign In</button>
@@ -126,6 +149,9 @@
         <nav class="panel-links">
             <a href="index.html" class="stagger-link"><i class="fas fa-compass"></i> Discover</a>
             <a href="index.html" class="stagger-link" id="sidebarAccountLink"><i class="fas fa-user-circle"></i> My Profile</a>
+            <a href="wallet.html" class="stagger-link"><i class="fas fa-wallet"></i> My Wallet</a>
+            <a href="subriction.html" class="stagger-link"><i class="fas fa-gem" style="color: #8b5cf6;"></i> My Subscriptions</a>
+            <a href="wishlist.html" class="stagger-link"><i class="fas fa-heart"></i> My Wishlist</a>
             <a href="track.html" class="stagger-link"><i class="fas fa-box-open"></i> Orders & Tracking</a>
             <a href="warrenty.html" class="stagger-link"><i class="fas fa-shield-alt"></i> Claim Warranty</a>
             <a href="support.html" class="stagger-link" style="color: var(--primary); background: var(--bg-color); border-right: 3px solid var(--primary);"><i class="fas fa-headset"></i> Concierge Support</a>
@@ -136,15 +162,15 @@
         </div>
     </aside>
 
-    <div class="dimmer" id="overlay" onclick="toggleSidebar()"></div>
-
-    <div id="productShelf" style="display:none;"></div><div id="cartItemsContainer" style="display:none;"></div><span id="cartBadge" style="display:none;"></span><div id="cartSubtotal" style="display:none;"></div><div id="cartTotalValue" style="display:none;"></div><div class="modal" id="authModal" style="display:none;"></div><div class="custom-alert-overlay" id="customAlertOverlay" style="display:none;"></div>
+    <div class="dimmer" id="overlay" onclick="closeSidebar()"></div>
 
     <main class="main-content">
         <div class="support-wrapper">
             <div class="chat-header">
-                <h1>Aryanta Assistant</h1>
-                <p class="sub-text">AI-powered premium support.</p>
+                <div class="chat-header-text">
+                    <h1>Concierge</h1>
+                </div>
+                <div class="agent-status"><i class="fas fa-circle"></i> AI Assistant</div>
             </div>
 
             <div class="chat-container">
@@ -154,133 +180,100 @@
         </div>
     </main>
 
-    <div class="invoice-hidden-container" id="printInvoiceArea">
-        <div style="padding: 40px; max-width: 800px; margin: 0 auto; background: white;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 15px;">
-                <div>
-                    <h2 style="font-size: 32px; font-weight: 800; letter-spacing: 2px; color: #000; margin-bottom: 5px;">ARYANTA.</h2>
-                    <p style="color: #666; font-weight: 700; letter-spacing: 1px; font-size: 13px;">TAX INVOICE</p>
-                </div>
-                <div style="text-align: right;">
-                    <p style="font-size: 12px; color: #666; font-weight: 700; text-transform: uppercase;">Invoice Number</p>
-                    <h3 id="invOrderNo" style="font-family: monospace; font-size: 18px; color: #000;">---</h3>
-                </div>
-            </div>
-            
-            <div class="invoice-address-grid">
-                <div class="invoice-box">
-                    <div class="invoice-box-title">Issued By</div>
-                     <p style="font-size: 14px; margin: 0 0 5px 0;"><strong>Aryanta E-Commerce</strong></p>
-                    <p style="font-size: 14px; margin: 0 0 5px 0;">Bhagalpur Bihar INDIA</p>
-                    <p style="font-size: 14px; margin: 0 0 5px 0;">06414054676</p>
-                    <p style="font-size: 14px; margin: 0 0 5px 0;">support@aryanta.com</p>
-                    <p style="font-size: 12px; color: #666; margin: 10px 0 0 0;">------------</p>
-                </div>
-                <div class="invoice-box">
-                    <div class="invoice-box-title">Billed & Shipped To</div>
-                    <p class="invoice-info-text"><strong id="invCustName">---</strong></p>
-                    <p class="invoice-info-text" id="invCustEmail">---</p>
-                    <p class="invoice-info-text" id="invAddress" style="line-height: 1.5; margin-top:5px;">---</p>
-                    <p class="invoice-info-text" style="margin-top: 10px;"><strong>Order Date:</strong> <span id="invDate">---</span></p>
-                </div>
-            </div>
-
-            <div class="invoice-box" style="margin-top: 20px;">
-                <div class="invoice-box-title">Order Ledger</div>
-                <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid #ddd;">
-                            <th style="padding: 10px 0;">#</th>
-                            <th style="padding: 10px 0;">Item Description</th>
-                            <th style="padding: 10px 0; text-align: center;">Qty</th>
-                            <th style="padding: 10px 0; text-align: right;">Unit Price</th>
-                            <th style="padding: 10px 0; text-align: right;">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody id="invTableBody"></tbody>
-                </table>
-                
-                <div style="display: flex; justify-content: flex-end; margin-top: 20px; border-top: 1px dashed #ddd; padding-top: 15px;">
-                    <div style="width: 320px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span>Subtotal:</span> <span id="invItemsTotal"></span></div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span>Shipping:</span> <span id="invShipping"></span></div>
-                        <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 18px; margin-top: 10px; border-top: 2px solid #000; padding-top: 10px;">
-                            <span>Grand Total:</span> <span id="invGrandTotal"></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div style="text-align: center; margin-top: 30px; font-size: 11px; color: #666;">
-                <p>This is a computer-generated invoice and does not require a physical signature.</p>
-            </div>
-        </div>
-    </div>
+    <div id="printArea"></div>
 
     <script src="java.js"></script>
 
     <script>
-        // --- FIREBASE LIVE TRACKING CONFIGURATION FOR SPEED BOOST ---
-        const firebaseConfig = {
-            projectId: "aryanta-mart-a8893" 
-        };
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
+        function sysAlert(message, title = "Notice", type = "info", callback = null) {
+            document.getElementById('customAlertTitle').innerText = title;
+            document.getElementById('customAlertMessage').innerText = message;
+            const iconEl = document.getElementById('alertIcon');
+            if(type === 'error') { iconEl.innerHTML = '<i class="fas fa-times-circle"></i>'; iconEl.style.color = 'var(--danger)'; }
+            else if(type === 'success') { iconEl.innerHTML = '<i class="fas fa-check-circle"></i>'; iconEl.style.color = 'var(--success)'; }
+            else { iconEl.innerHTML = '<i class="fas fa-info-circle"></i>'; iconEl.style.color = 'var(--primary)'; }
+            
+            const overlay = document.getElementById('customAlertOverlay');
+            overlay.style.display = 'flex';
+            document.getElementById('customAlertOkBtn').onclick = () => {
+                overlay.style.display = 'none';
+                if(callback) callback();
+            };
         }
+
+        function sysConfirm(message, title = "Confirm Action", callback) {
+            document.getElementById('customConfirmTitle').innerText = title;
+            document.getElementById('customConfirmMessage').innerText = message;
+            
+            const overlay = document.getElementById('customConfirmOverlay');
+            overlay.style.display = 'flex';
+            
+            document.getElementById('customConfirmCancelBtn').onclick = () => { overlay.style.display = 'none'; };
+            document.getElementById('customConfirmOkBtn').onclick = () => {
+                overlay.style.display = 'none';
+                if(callback) callback(true);
+            };
+        }
+
+        window.alert = function(msg) { sysAlert(msg); };
+
+        const firebaseConfig = { projectId: "aryanta-mart-a8893" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // Chat Script Global Variables
         const chatHistory = document.getElementById('chatHistory');
         const chatActions = document.getElementById('chatActions');
         
         let currentUser = null;
         let allMyOrders = [];
-        let allMyRefunds = []; // NEW: Added global array for refunds
+        let allMyRefunds = [];
+        let allMyClaims = []; 
+        let botSpeed = 250; 
 
-        // STRICT 4-ITEM MENUS
+        // MENUS
         const MENU_MAIN = [
-            { text: "Where is my order?", action: "track_order" },
+            { text: "Where is my order?", action: "track_order", primary: true },
             { text: "Cancel my order", action: "start_cancel" },
-            { text: "Refund status", action: "refund_status" },
+            { text: "Refunds & Claims", action: "show_menu_claims" },
             { text: "More Options...", action: "show_menu_2" }
         ];
 
         const MENU_2 = [
-            { text: "Report delivery delay", action: "report_delay" },
-            { text: "Modify shipping address", action: "mod_address" },
-            { text: "Report missing item", action: "missing_item" },
+            { text: "Get a call back", action: "call_back", primary: true },
+            { text: "My Wallet Amount", action: "check_wallet" },
+            { text: "Download Slips/Invoices", action: "download_slips" },
             { text: "More Options...", action: "show_menu_3" }
         ];
 
         const MENU_3 = [
-            { text: "Exchange policy", action: "exchange_policy" },
-            { text: "Download Invoice", action: "start_invoice" },
-            { text: "Claim my warranty", action: "claim_warranty" },
+            { text: "Modify Shipping Address", action: "mod_address" },
+            { text: "Add Delivery Instructions", action: "add_delivery_instr" },
+            { text: "Update Phone Number", action: "update_phone" },
             { text: "More Options...", action: "show_menu_4" }
         ];
 
         const MENU_4 = [
-            { text: "Payment issue", action: "payment_issue" },
-            { text: "Check Prime membership", action: "check_prime" },
-            { text: "Get a call back", action: "call_back" },
+            { text: "Exchange policy", action: "exchange_policy" },
+            { text: "Payment issues", action: "payment_issue" },
+            { text: "Delete My Account", action: "delete_account", danger: true },
             { text: "← Main Menu", action: "show_main" }
         ];
 
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            if (!sidebar.classList.contains('open')) {
-                sidebar.classList.add('open'); overlay.classList.add('show');
-                history.pushState({ sidebarOpen: true }, "");
-            } else {
-                sidebar.classList.remove('open'); overlay.classList.remove('show');
-            }
-        }
+        const MENU_CLAIMS = [
+            { text: "Check Refund Status", action: "refund_status" },
+            { text: "Check Warranty Status", action: "warranty_status" },
+            { text: "Claim Warranty", action: "claim_warranty", primary: true },
+            { text: "← Back", action: "show_main" }
+        ];
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('show'); }
+        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
         
-        window.addEventListener('popstate', () => {
-            document.getElementById('sidebar').classList.remove('open');
-            document.getElementById('overlay').classList.remove('show');
-        });
+        function scrollToBottom() {
+            setTimeout(() => {
+                chatHistory.scrollTo({ top: chatHistory.scrollHeight, behavior: 'smooth' });
+            }, 100);
+        }
 
         async function initChat() {
             currentUser = JSON.parse(localStorage.getItem('active_session'));
@@ -289,65 +282,52 @@
                 const accBtn = document.getElementById('accountBtn');
                 const firstName = currentUser.name.split(' ')[0];
                 const savedAvatar = currentUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.email}`;
-                accBtn.innerHTML = `<img src="${savedAvatar}" class="nav-avatar" style="margin-right:8px;"> <span>${firstName}</span>`;
-                accBtn.onclick = null;
+                accBtn.innerHTML = `<img src="${savedAvatar}" style="width:26px; height:26px; border-radius:50%; margin-right:6px; object-fit:cover;"> <span>${firstName}</span>`;
+                accBtn.onclick = () => window.location.href = 'index.html';
                 
-                await botSpeak(`Hello ${firstName}, I am your Aryanta Virtual Assistant. How can I assist you today?`);
-                showOptions(MENU_MAIN);
-                
-                // Trigger Firebase Live Queries
+                document.getElementById('sidebarUser').innerText = currentUser.name;
+                document.getElementById('sidebarAvatar').src = savedAvatar;
+
                 fetchUserDataLive(); 
+
+                await botSpeak(`Hello ${firstName}, I am your Aryanta Concierge. How can I assist you today?`);
+                showOptions(MENU_MAIN);
             } else {
                 await botSpeak("Welcome to Aryanta Support. Please Sign In to access personalized features.");
                 showOptions([{ text: "Sign In", action: "sign_in", primary: true }]);
             }
         }
 
-        // SPEED BOOST: Live streaming using Firebase for both Orders AND Refunds
         function fetchUserDataLive() {
-            // Live Orders
-            db.collection("orders")
-              .where("user_email", "==", currentUser.email)
-              .onSnapshot((snapshot) => {
-                  allMyOrders = [];
-                  snapshot.forEach((doc) => {
-                      let data = doc.data();
-                      data.id = doc.id;
-                      allMyOrders.push(data);
-                  });
-                  allMyOrders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-              }, (error) => {
-                  console.error("Firebase Streaming Error:", error);
-              });
-
-            // Live Refunds
-            db.collection("refunds")
-              .where("customer_email", "==", currentUser.email)
-              .onSnapshot((snapshot) => {
-                  allMyRefunds = [];
-                  snapshot.forEach((doc) => {
-                      let data = doc.data();
-                      data.id = doc.id;
-                      allMyRefunds.push(data);
-                  });
-                  allMyRefunds.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-              }, (error) => {
-                  console.error("Firebase Refunds Error:", error);
-              });
+            db.collection("orders").where("user_email", "==", currentUser.email).onSnapshot(s => {
+                allMyOrders = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+            });
+            db.collection("refunds").where("customer_email", "==", currentUser.email).onSnapshot(s => {
+                allMyRefunds = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+            });
+            db.collection("warranty_claims").where("user_email", "==", currentUser.email).onSnapshot(s => {
+                allMyClaims = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+            });
         }
 
-        async function botSpeak(htmlContent, delay = 500) {
+        async function botSpeak(htmlContent, delayOverride = null) {
             return new Promise(resolve => {
+                const delay = delayOverride || botSpeed;
                 const typingId = "typing-" + Date.now();
+
                 chatHistory.innerHTML += `<div class="msg-row msg-bot" id="${typingId}"><div class="bot-icon"><i class="fas fa-robot"></i></div><div class="bubble"><div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></div>`;
-                chatHistory.scrollTop = chatHistory.scrollHeight;
+                scrollToBottom();
 
                 setTimeout(() => {
                     const typingElem = document.getElementById(typingId);
                     if(typingElem) typingElem.remove();
                     
                     chatHistory.innerHTML += `<div class="msg-row msg-bot"><div class="bot-icon"><i class="fas fa-robot"></i></div><div class="bubble">${htmlContent}</div></div>`;
-                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                    
+                    const images = chatHistory.querySelectorAll('img');
+                    images.forEach(img => img.onload = scrollToBottom);
+                    
+                    scrollToBottom();
                     resolve();
                 }, delay);
             });
@@ -355,7 +335,7 @@
 
         function userSpeak(text) {
             chatHistory.innerHTML += `<div class="msg-row msg-user"><div class="bubble">${text}</div></div>`;
-            chatHistory.scrollTop = chatHistory.scrollHeight;
+            scrollToBottom();
         }
 
         function showOptions(optionsArray) {
@@ -368,14 +348,16 @@
             });
             html += '</div>';
             chatActions.innerHTML = html;
+            scrollToBottom();
         }
 
-        function showCustomInput(type, defaultValue, placeholder, nextAction) {
+        function showCustomInput(type, placeholder, nextAction) {
             let html = `<div class="chat-input-wrapper">`;
-            if (type === 'textarea') html += `<textarea id="chatInputVal" class="modern-input" placeholder="${placeholder}" style="min-height:80px;"></textarea>`;
-            else html += `<input type="${type}" id="chatInputVal" class="modern-input" value="${defaultValue}" placeholder="${placeholder}">`;
-            html += `<button class="btn-prime w-100" onclick="submitCustomInput('${nextAction}')">Submit <i class="fas fa-check"></i></button></div>`;
+            if (type === 'textarea') html += `<textarea id="chatInputVal" class="modern-input" placeholder="${placeholder}" style="min-height:60px; font-size:13px; padding:10px; margin-bottom:0;"></textarea>`;
+            else html += `<input type="${type}" id="chatInputVal" class="modern-input" placeholder="${placeholder}" style="margin-bottom:0;">`;
+            html += `<button class="btn-prime w-100" style="margin:0;" onclick="submitCustomInput('${nextAction}')">Submit <i class="fas fa-check"></i></button></div>`;
             chatActions.innerHTML = html;
+            scrollToBottom();
         }
 
         window.submitCustomInput = async function(action) {
@@ -384,11 +366,39 @@
             chatActions.innerHTML = "";
             userSpeak(val);
             
-            if (action === 'callback_step_2') {
+            if (action === 'submit_mod_address') {
+                await botSpeak("Updating address in our database...", 400);
+                try {
+                    await db.collection("orders").doc(window.tempTargetOrder.id).update({ delivery_address: val });
+                    await botSpeak(`<i class="fas fa-check-circle" style="color:var(--success);"></i> Address successfully updated for order #${window.tempTargetOrder.order_no}.`);
+                } catch(e) { await botSpeak("Failed to update database."); }
+                showOptions(MENU_MAIN);
+            }
+            else if (action === 'submit_del_instr') {
+                await botSpeak("Saving delivery instructions...", 400);
+                try {
+                    await db.collection("orders").doc(window.tempTargetOrder.id).update({ delivery_instructions: val });
+                    await botSpeak(`<i class="fas fa-check-circle" style="color:var(--success);"></i> Instructions added to order #${window.tempTargetOrder.order_no}. Logistics team has been notified.`);
+                } catch(e) { await botSpeak("Failed to update database."); }
+                showOptions(MENU_MAIN);
+            }
+            else if (action === 'submit_update_phone') {
+                await botSpeak("Updating profile records...", 400);
+                try {
+                    const users = await db.collection("users").where("email", "==", currentUser.email).get();
+                    users.forEach(doc => doc.ref.update({ phone: val }));
+                    currentUser.phone = val;
+                    localStorage.setItem('active_session', JSON.stringify(currentUser));
+                    await botSpeak(`<i class="fas fa-check-circle" style="color:var(--success);"></i> Phone number updated to ${val}.`);
+                } catch(e) { await botSpeak("Failed to update database."); }
+                showOptions(MENU_MAIN);
+            }
+            else if (action === 'callback_step_2') {
                 window.tempCallbackPhone = val;
                 await botSpeak("Please briefly describe why you need a call back.");
-                showCustomInput('textarea', '', 'Reason for callback...', 'callback_step_3');
-            } else if (action === 'callback_step_3') {
+                showCustomInput('textarea', 'Reason for callback...', 'callback_step_3');
+            } 
+            else if (action === 'callback_step_3') {
                 await botSpeak("Submitting request...", 400);
                 try {
                     await db.collection('callback_requests').add({
@@ -400,99 +410,84 @@
             }
         }
 
-        // --- DYNAMIC DATABASE PAGINATOR (ORDERS) ---
-        function showOrderSelection(page, purpose) {
+        async function showOrderSelection(page, purpose) {
             let filteredList = allMyOrders;
             
-            // If cancelling, filter OUT delivered or already cancelled items
+            if(purpose === 'mod_address') {
+                filteredList = allMyOrders.filter(o => {
+                    const status = (o.status||"").toLowerCase();
+                    return status.includes('pending') || status.includes('process');
+                });
+                if(filteredList.length === 0) {
+                    await botSpeak("You have no eligible orders. Orders that are already shipped, delivered, or cancelled cannot have their addresses modified.");
+                    return showOptions(MENU_MAIN);
+                }
+            }
+            
             if(purpose === 'cancel') {
                 filteredList = allMyOrders.filter(o => {
-                    const status = (o.status || "").toLowerCase();
-                    return !status.includes('cancel') && !status.includes('deliver') && !status.includes('return');
+                    const status = (o.status||"").toLowerCase();
+                    return !status.includes('cancel') && !status.includes('deliver');
                 });
             }
-
-            if(filteredList.length === 0) {
-                botSpeak(purpose === 'cancel' ? "You have no active orders eligible for cancellation." : "No orders found.");
-                showOptions(MENU_MAIN);
-                return;
-            }
-
-            let start = page * 3;
-            let slice = filteredList.slice(start, start + 3);
             
-            let options = slice.map(o => {
-                let itemName = o.items && o.items[0] ? o.items[0].name : "Order Item";
-                return {
-                    text: `#${o.order_no} - ${itemName.substring(0, 18)}...`,
-                    action: `${purpose}_select_${o.order_no}`
-                };
+            if(filteredList.length === 0) { await botSpeak("No relevant orders found."); return showOptions(MENU_MAIN); }
+
+            let start = page * 3, slice = filteredList.slice(start, start + 3);
+            
+            let cardsHtml = `<div style="display:flex; flex-direction:column; gap:10px;">`;
+            slice.forEach(o => {
+                let item = o.items && o.items[0] ? o.items[0] : {};
+                let img = item.image || (item.images ? item.images[0] : "https://via.placeholder.com/60");
+                let price = o.financials?.grandTotal || item.price || 0;
+                let dateStr = o.timestamp ? new Date(o.timestamp).toLocaleDateString() : 'N/A';
+                
+                cardsHtml += `
+                <div class="interactive-card" onclick="handleUserChoice('${purpose}_select_${o.order_no}', 'Selected Order #${o.order_no}')">
+                    <img src="${img}">
+                    <div class="card-details">
+                        <h4>${item.name || "Order Item"}</h4>
+                        <p class="price">₹${Number(price).toLocaleString('en-IN')}</p>
+                        <p class="meta">Order Date: ${dateStr}</p>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color:#cbd5e1; margin-left:10px;"></i>
+                </div>`;
             });
+            cardsHtml += `</div>`;
 
-            // Force 4th Option for pagination or exit
-            if (start + 3 < filteredList.length) {
-                options.push({ text: "Next 3 Orders...", action: `${purpose}_page_${page + 1}`, primary: true });
-            } else {
-                options.push({ text: "← Main Menu", action: "show_main" });
-            }
+            await botSpeak(`Please select an order from your history:<br><br>${cardsHtml}`);
 
+            let options = [];
+            if (start + 3 < filteredList.length) options.push({ text: "Next 3...", action: `${purpose}_page_${page + 1}`, primary: true });
+            options.push({ text: "← Main Menu", action: "show_main" });
             showOptions(options);
         }
 
-        // --- NEW: DYNAMIC DATABASE PAGINATOR (REFUNDS) ---
-        function showRefundSelection(page) {
-            if(allMyRefunds.length === 0) {
-                botSpeak("You currently have no active or past refund requests.");
-                showOptions(MENU_MAIN);
-                return;
-            }
-
-            let start = page * 3;
-            let slice = allMyRefunds.slice(start, start + 3);
+        async function showRefundSelection(page) {
+            if(allMyRefunds.length === 0) { await botSpeak("No active refunds found."); return showOptions(MENU_CLAIMS); }
+            let start = page * 3, slice = allMyRefunds.slice(start, start + 3);
             
-            let options = slice.map(r => {
-                return {
-                    text: `Refund for #${r.order_no || r.claim_id}`,
-                    action: `refund_select_${r.id}`
-                };
+            let cardsHtml = `<div style="display:flex; flex-direction:column; gap:10px;">`;
+            slice.forEach(r => {
+                cardsHtml += `
+                <div class="interactive-card" onclick="handleUserChoice('refund_select_${r.id}', 'Selected Refund #${r.order_no || r.claim_id}')">
+                    <div style="width:50px; height:50px; background:#eff6ff; border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--primary); font-size:24px;"><i class="fas fa-undo"></i></div>
+                    <div class="card-details">
+                        <h4>Refund Ref: #${r.order_no || r.claim_id}</h4>
+                        <p class="price">₹${(r.refundAmount || 0).toLocaleString('en-IN')}</p>
+                        <p class="meta" style="color:${r.status==='Completed'?'var(--success)':'#d97706'}">${r.status}</p>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color:#cbd5e1; margin-left:10px;"></i>
+                </div>`;
             });
+            cardsHtml += `</div>`;
 
-            // Add Pagination Option
-            if (start + 3 < allMyRefunds.length) {
-                options.push({ text: "Next 3 Refunds...", action: `refund_page_${page + 1}`, primary: true });
-            } else {
-                options.push({ text: "← Main Menu", action: "show_main" });
-            }
+            await botSpeak(`Select a refund request to view details:<br><br>${cardsHtml}`);
 
+            let options = [];
+            if (start + 3 < allMyRefunds.length) options.push({ text: "Next...", action: `refund_page_${page + 1}`, primary: true });
+            options.push({ text: "← Back", action: "show_menu_claims" });
             showOptions(options);
-        }
-
-        // --- INVOICE GENERATOR ---
-        function generateAndPrintInvoice(orderNo) {
-            const order = allMyOrders.find(o => o.order_no === orderNo);
-            if(!order) return;
-
-            document.getElementById('invOrderNo').innerText = order.order_no || 'N/A';
-            document.getElementById('invDate').innerText = order.timestamp ? new Date(order.timestamp).toLocaleDateString() : 'N/A';
-            document.getElementById('invCustName').innerText = order.delivery_name || currentUser.name;
-            document.getElementById('invCustEmail').innerText = order.user_email || currentUser.email;
-            document.getElementById('invAddress').innerText = order.delivery_address || 'N/A';
-            
-            const tbody = document.getElementById('invTableBody');
-            tbody.innerHTML = '';
-            
-            if (order.items && Array.isArray(order.items)) {
-                order.items.forEach((item, index) => {
-                    const p = item.price || 0; const q = item.qty || 1;
-                    tbody.innerHTML += `<tr><td style="padding:10px 0;">${index + 1}</td><td><strong>${item.name || 'Item'}</strong></td><td style="text-align:center;">${q}</td><td style="text-align:right;">₹${p}</td><td style="text-align:right;"><strong>₹${p * q}</strong></td></tr>`;
-                });
-            }
-
-            document.getElementById('invItemsTotal').innerText = `₹${order.financials?.itemsTotal || 0}`;
-            document.getElementById('invShipping').innerText = `₹${order.financials?.shippingCost || 0}`;
-            document.getElementById('invGrandTotal').innerText = `₹${order.financials?.grandTotal || 0}`;
-
-            setTimeout(() => { window.print(); }, 500);
         }
 
         // --- LOGIC ROUTER ---
@@ -500,127 +495,304 @@
             if (!action.includes("show_") && !action.includes("_page_")) userSpeak(text);
             chatActions.innerHTML = ""; 
 
-            // Intercept Pagination
             if (action.startsWith("track_page_")) return showOrderSelection(parseInt(action.split("_")[2]), "track");
             if (action.startsWith("cancel_page_")) return showOrderSelection(parseInt(action.split("_")[2]), "cancel");
             if (action.startsWith("invoice_page_")) return showOrderSelection(parseInt(action.split("_")[2]), "invoice");
+            if (action.startsWith("warrslip_page_")) return showOrderSelection(parseInt(action.split("_")[2]), "warrslip");
             if (action.startsWith("refund_page_")) return showRefundSelection(parseInt(action.split("_")[2]));
+            if (action.startsWith("mod_address_page_")) return showOrderSelection(parseInt(action.split("_")[3]), "mod_address");
+            if (action.startsWith("del_instr_page_")) return showOrderSelection(parseInt(action.split("_")[3]), "del_instr");
 
-            // Intercept Tracking Selection
             if (action.startsWith("track_select_")) {
                 let order = allMyOrders.find(o => o.order_no === action.replace("track_select_", ""));
+                let item = order.items && order.items[0] ? order.items[0] : {};
                 let expected = order.expected_delivery ? new Date(order.expected_delivery).toLocaleDateString() : "Pending";
-                let itemName = order.items && order.items.length > 0 ? order.items[0].name : "Unknown Item";
-                await botSpeak(`<strong>Tracking Report:</strong><div class="chat-card"><p style="font-family:monospace; font-size:12px;">#${order.order_no}</p><p style="font-weight:700;">${itemName}</p><p style="color:var(--primary); font-weight:800; font-size:12px; margin: 8px 0;">STATUS: ${order.status || 'Pending'}</p><p style="font-size:13px;">Expected Delivery: ${expected}</p></div>`);
-                return showOptions(MENU_MAIN);
-            }
-
-            // Intercept Invoice Selection
-            if (action.startsWith("invoice_select_")) {
-                await botSpeak("Generating your secure Tax Invoice. The download/print window will open momentarily.");
-                generateAndPrintInvoice(action.replace("invoice_select_", ""));
-                setTimeout(() => { showOptions(MENU_MAIN); }, 1500);
+                
+                await botSpeak(`<strong>Tracking Report:</strong><div class="chat-card" style="margin-top:10px;"><p style="font-family:monospace; font-size:12px;">#${order.order_no}</p><p style="font-weight:700; font-size:14px; margin:5px 0;">${item.name || "Item"}</p><p style="color:var(--primary); font-weight:800; font-size:13px; margin: 8px 0;">STATUS: ${order.status || 'Pending'}</p><p style="font-size:12px; margin-bottom:10px;">Expected: ${expected}</p></div>`);
+                
+                showOptions([
+                    { text: "Cancel this item", action: `cancel_select_${order.order_no}`, danger: true },
+                    { text: "Main Menu", action: "show_main", primary: true }
+                ]);
                 return;
             }
 
-            // Intercept Refund Selection
             if (action.startsWith("refund_select_")) {
                 let refund = allMyRefunds.find(r => r.id === action.replace("refund_select_", ""));
                 let statusColor = refund.status === 'Completed' ? 'var(--success)' : '#d97706';
-                let amount = refund.refundAmount || 0;
-                
-                await botSpeak(`<strong>Refund Status:</strong><div class="chat-card">
-                    <p style="font-family:monospace; font-size:12px;">#${refund.order_no || refund.claim_id}</p>
-                    <p style="font-weight:700; margin-bottom:5px;">${refund.type}</p>
-                    <p style="font-size:14px; margin: 8px 0;">Amount: <strong style="font-size:18px;">₹${amount.toLocaleString('en-IN')}</strong></p>
-                    <p style="color:${statusColor}; font-weight:800; font-size:14px; text-transform:uppercase;">${refund.status}</p>
-                    ${refund.status === 'Pending' ? '<p style="font-size:11px; color:var(--text-muted); margin-top:5px;">Usually reflects in 5-7 business days once completed by Admin.</p>' : ''}
-                </div>`);
-                return showOptions(MENU_MAIN);
+                await botSpeak(`<strong>Refund Status:</strong><div class="chat-card"><p style="font-family:monospace; font-size:12px;">Ref: #${refund.order_no || refund.claim_id}</p><p style="font-size:14px; margin: 8px 0;">Amount: <strong>₹${(refund.refundAmount||0).toLocaleString('en-IN')}</strong></p><p style="color:${statusColor}; font-weight:800; font-size:13px;">${refund.status}</p></div>`);
+                return showOptions(MENU_CLAIMS);
             }
 
-            // Intercept Cancel Selection Step 1
             if (action.startsWith("cancel_select_")) {
                 window.tempCancelOrder = allMyOrders.find(o => o.order_no === action.replace("cancel_select_", ""));
-                let itemName = window.tempCancelOrder.items && window.tempCancelOrder.items.length > 0 ? window.tempCancelOrder.items[0].name : "Item";
-                await botSpeak(`Why do you wish to cancel <strong>${itemName}</strong>?`);
+                await botSpeak(`Why do you wish to cancel this order?`);
+                showOptions([{ text: "Changed mind", action: "cancel_reason" }, { text: "Mistake", action: "cancel_reason" }, { text: "Main Menu", action: "show_main" }]);
+                return;
+            }
+
+            if (action.startsWith("mod_address_select_")) {
+                window.tempTargetOrder = allMyOrders.find(o => o.order_no === action.replace("mod_address_select_", ""));
+                await botSpeak(`Enter the new complete delivery address for Order #${window.tempTargetOrder.order_no}:`);
+                return showCustomInput('textarea', 'Full new address...', 'submit_mod_address');
+            }
+
+            if (action.startsWith("del_instr_select_")) {
+                window.tempTargetOrder = allMyOrders.find(o => o.order_no === action.replace("del_instr_select_", ""));
+                await botSpeak(`Enter the delivery instructions (e.g. Leave at back door, Call before arriving):`);
+                return showCustomInput('textarea', 'Instructions...', 'submit_del_instr');
+            }
+
+            if (action.startsWith("invoice_select_") || action.startsWith("warrslip_select_")) {
+                let orderNo = action.replace("invoice_select_", "").replace("warrslip_select_", "");
+                let isInvoice = action.startsWith("invoice_select_");
+                generateUniversalSlip(orderNo, isInvoice);
+                
+                await botSpeak(`<strong>Your document is ready.</strong><br>Click the button below to download it directly as a PDF.`);
                 showOptions([
-                    { text: "Changed my mind", action: "cancel_reason" },
-                    { text: "Found better alternative", action: "cancel_reason" },
-                    { text: "Placed by mistake", action: "cancel_reason" },
-                    { text: "← Main Menu", action: "show_main" }
+                    { text: "📥 Download PDF", action: "trigger_download", primary: true },
+                    { text: "Main Menu", action: "show_main" }
                 ]);
                 return;
             }
 
             switch(action) {
-                // Menus
                 case "show_main": showOptions(MENU_MAIN); break;
+                case "show_menu_claims": showOptions(MENU_CLAIMS); break;
                 case "show_menu_2": showOptions(MENU_2); break;
                 case "show_menu_3": showOptions(MENU_3); break;
                 case "show_menu_4": showOptions(MENU_4); break;
                 case "sign_in": window.location.href = "index.html"; break;
                 
-                // Track, Cancel & Refund Triggers
+                // HTML2PDF DOWNLOAD SYSTEM
+                case "trigger_download": 
+                    await botSpeak("Downloading your document...", 400);
+                    const element = document.getElementById('printArea');
+                    element.style.display = 'block';
+                    html2pdf().set({
+                        margin: 10,
+                        filename: 'Aryanta_Document.pdf',
+                        image: { type: 'jpeg', quality: 0.98 },
+                        html2canvas: { scale: 2 },
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    }).from(element).save().then(() => {
+                        element.style.display = 'none';
+                        showOptions(MENU_MAIN);
+                    });
+                    break;
+
                 case "track_order": await botSpeak("Which order would you like to track?"); showOrderSelection(0, "track"); break;
                 case "start_cancel": await botSpeak("Select an active order to cancel:"); showOrderSelection(0, "cancel"); break;
-                case "refund_status": await botSpeak("Which refund request would you like to check?"); showRefundSelection(0); break;
-                case "start_invoice": await botSpeak("Which order's invoice do you need?"); showOrderSelection(0, "invoice"); break;
+                case "mod_address": await botSpeak("Select an eligible order to change its address:"); showOrderSelection(0, "mod_address"); break;
+                case "add_delivery_instr": await botSpeak("Select an order to add delivery instructions:"); showOrderSelection(0, "del_instr"); break;
+                
+                case "check_wallet": 
+                    try {
+                        const userDoc = await db.collection('users').where('email','==',currentUser.email).get();
+                        let bal = 0;
+                        if(!userDoc.empty) bal = userDoc.docs[0].data().walletBalance || 0;
+                        await botSpeak(`Your current Aryanta Wallet Balance is: <strong style="font-size:20px; color:var(--primary);">₹${bal.toLocaleString('en-IN')}</strong>`);
+                    } catch(e) { await botSpeak("Could not retrieve wallet balance at this time."); }
+                    showOptions(MENU_MAIN);
+                    break;
 
-                // FAQs
-                case "report_delay": await botSpeak("We have expedited your shipping with our logistics partner. You'll receive an SMS update shortly."); showOptions(MENU_MAIN); break;
-                case "mod_address": await botSpeak("Addresses can only be modified before dispatch via the 'Orders & Tracking' page."); showOptions([{ text: "Go to Tracking", action: "go_track", primary:true }, { text: "Main Menu", action: "show_main" }]); break;
-                case "missing_item": await botSpeak("Please initiate a 'Return' request from the Tracking page. We will review packing footage instantly."); showOptions(MENU_MAIN); break;
-                case "exchange_policy": await botSpeak("We offer a 7-day no-questions-asked replacement for defects, and 14 days for size exchanges."); showOptions(MENU_MAIN); break;
+                case "call_back":
+                    await botSpeak("Confirm your phone number for the callback.");
+                    showCustomInput('tel', currentUser.phone || "", "Enter phone number", "callback_step_2");
+                    break;
+
+                case "update_phone":
+                    await botSpeak("What is your new primary phone number?");
+                    showCustomInput('tel', 'e.g. 9876543210', 'submit_update_phone');
+                    break;
+
+                case "delete_account":
+                    await botSpeak("We are sorry to see you go. Why do you want to delete your account?");
+                    showOptions([
+                        { text: "Privacy Concerns", action: "del_acc_reason" },
+                        { text: "Not using it anymore", action: "del_acc_reason" },
+                        { text: "Other", action: "del_acc_reason" },
+                        { text: "Nevermind, Keep it", action: "show_main", primary: true }
+                    ]);
+                    break;
+                
+                case "del_acc_reason":
+                    await botSpeak("<strong style='color:var(--danger);'>WARNING:</strong> This action is irreversible. All your wallet balance, order history, active claims, and saved data will be permanently wiped from our databases. Proceed?");
+                    showOptions([
+                        { text: "Yes, Delete Permanently", action: "confirm_delete_account", danger: true },
+                        { text: "Cancel", action: "show_main", primary: true }
+                    ]);
+                    break;
+
+                case "confirm_delete_account":
+                    await botSpeak("Executing complete database wipe...", 400);
+                    try {
+                        const email = currentUser.email;
+                        const batch = db.batch();
+                        
+                        // Wipe Users
+                        const uDocs = await db.collection("users").where("email", "==", email).get();
+                        uDocs.forEach(doc => batch.delete(doc.ref));
+                        
+                        // Wipe Orders
+                        const oDocs = await db.collection("orders").where("user_email", "==", email).get();
+                        oDocs.forEach(doc => batch.delete(doc.ref));
+                        
+                        // Wipe Refunds
+                        const rDocs = await db.collection("refunds").where("customer_email", "==", email).get();
+                        rDocs.forEach(doc => batch.delete(doc.ref));
+                        
+                        // Wipe Claims
+                        const cDocs = await db.collection("warranty_claims").where("user_email", "==", email).get();
+                        cDocs.forEach(doc => batch.delete(doc.ref));
+                        
+                        // Wipe Callbacks
+                        const cbDocs = await db.collection("callback_requests").where("user_email", "==", email).get();
+                        cbDocs.forEach(doc => batch.delete(doc.ref));
+
+                        await batch.commit();
+
+                        await botSpeak("Account and all associated data permanently deleted. Logging you out...");
+                        setTimeout(() => {
+                            localStorage.removeItem('active_session');
+                            localStorage.removeItem('local_cart');
+                            localStorage.removeItem('local_wishlist');
+                            window.location.href = 'index.html';
+                        }, 2500);
+                    } catch(e) {
+                        await botSpeak("Database operation failed. Contact admin.");
+                        showOptions(MENU_MAIN);
+                    }
+                    break;
+
+                case "refund_status": await botSpeak("Which refund request?"); showRefundSelection(0); break;
+                case "warranty_status": window.location.href = "warrenty.html"; break;
                 case "claim_warranty": window.location.href = "warrenty.html"; break;
-                case "go_track": window.location.href = "track.html"; break;
-                case "payment_issue": await botSpeak("Failed payments usually reverse automatically within 48 hours via your bank."); showOptions(MENU_MAIN); break;
-                case "check_prime": await botSpeak("You are logged in as a Prime Member! Enjoy free express shipping and priority concierge support."); showOptions(MENU_MAIN); break;
-                case "call_back": await botSpeak("Confirm your phone number for the callback."); showCustomInput('tel', currentUser.phone || "", "Enter phone number", "callback_step_2"); break;
+                case "exchange_policy": await botSpeak("We offer a 7-day replacement for defects, and 14 days for size exchanges."); showOptions(MENU_MAIN); break;
+                case "payment_issue": await botSpeak("Failed payments reverse automatically within 48 hours via your bank."); showOptions(MENU_MAIN); break;
 
-                // Cancel Execution
+                case "download_slips":
+                    await botSpeak("What type of document do you need?");
+                    showOptions([
+                        { text: "Tax Invoice", action: "start_invoice" },
+                        { text: "Warranty Slip", action: "start_warrslip" },
+                        { text: "Back", action: "show_main" }
+                    ]);
+                    break;
+                
+                case "start_invoice": await botSpeak("Which order's invoice?"); showOrderSelection(0, "invoice"); break;
+                case "start_warrslip": await botSpeak("Which order's warranty slip?"); showOrderSelection(0, "warrslip"); break;
+
                 case "cancel_reason":
                     window.tempCancelReason = text;
-                    await botSpeak("Shipping charges are strictly non-refundable. Confirm cancellation?");
-                    showOptions([ { text: "Yes, Cancel Order", action: "confirm_cancel", danger: true }, { text: "No, Keep It", action: "show_main" } ]);
+                    await botSpeak("Confirm cancellation? Shipping is non-refundable.");
+                    showOptions([ { text: "Yes, Cancel", action: "confirm_cancel", danger: true }, { text: "No", action: "show_main" } ]);
                     break;
 
                 case "confirm_cancel":
-                    await botSpeak("Processing...", 400);
+                    await botSpeak("Processing cancellation...", 400);
                     try {
-                        // Creating the Refund Entry
-                        const refundData = {
-                            type: 'Order Cancellation',
-                            order_id: window.tempCancelOrder.id,
-                            order_no: window.tempCancelOrder.order_no || window.tempCancelOrder.id,
-                            customer_name: window.tempCancelOrder.delivery_name || currentUser.name,
-                            customer_email: currentUser.email,
-                            customer_phone: window.tempCancelOrder.delivery_phone || currentUser.phone || '',
-                            itemsTotal: window.tempCancelOrder.financials?.itemsTotal || 0,
-                            shippingCost: window.tempCancelOrder.financials?.shippingCost || 0,
-                            refundAmount: window.tempCancelOrder.financials?.grandTotal || 0,
-                            status: 'Pending',
-                            timestamp: new Date().toISOString()
-                        };
-                        await db.collection("refunds").add(refundData);
-
-                        // Updating the Order Status
-                        await db.collection("orders").doc(window.tempCancelOrder.id).update({
-                            status: "Cancelled",
-                            action_reason: window.tempCancelReason,
-                            action_notes: "Support Bot"
+                        await db.collection("refunds").add({
+                            type: 'Order Cancellation', order_id: window.tempCancelOrder.id, order_no: window.tempCancelOrder.order_no || window.tempCancelOrder.id,
+                            customer_name: currentUser.name, customer_email: currentUser.email,
+                            refundAmount: window.tempCancelOrder.financials?.grandTotal || 0, status: 'Pending', timestamp: new Date().toISOString()
                         });
+                        await db.collection("orders").doc(window.tempCancelOrder.id).update({ status: "Cancelled", action_reason: window.tempCancelReason, action_notes: "Support Bot" });
                         
-                        window.tempCancelOrder.status = "Cancelled"; 
-                        await botSpeak(`<strong style="color:var(--danger);">Cancelled.</strong> Order #${window.tempCancelOrder.order_no} has been cancelled successfully.<br>Your refund request has been initiated.`);
-                    } catch(e) { 
-                        await botSpeak("Database error. Please try again."); 
-                    }
-                    setTimeout(() => showOptions(MENU_MAIN), 2500);
+                        await botSpeak(`<strong style="color:var(--danger);"><i class="fas fa-check-circle"></i> Cancelled.</strong><br>Order #${window.tempCancelOrder.order_no} cancelled. Refund initiated.`);
+                    } catch(e) { await botSpeak("Error. Please try again."); }
+                    setTimeout(() => showOptions(MENU_MAIN), 2000);
                     break;
             }
         }
-        setTimeout(initChat, 300);
+
+        // --- UNIVERSAL SLIP GENERATOR ---
+        function generateUniversalSlip(orderNo, isInvoice) {
+            const order = allMyOrders.find(o => o.order_no === orderNo);
+            if(!order) return;
+            
+            const pArea = document.getElementById('printArea');
+            let dateStr = order.timestamp ? new Date(order.timestamp).toLocaleDateString() : 'N/A';
+            let name = order.delivery_name || currentUser.name;
+            let email = order.user_email || currentUser.email;
+            let address = order.delivery_address || 'N/A';
+
+            if(isInvoice) {
+                let tbodyHtml = '';
+                if (order.items && Array.isArray(order.items)) {
+                    order.items.forEach((item, index) => {
+                        const p = item.price || 0; const q = item.qty || 1;
+                        tbodyHtml += `<tr><td style="padding:10px 5px;">${index + 1}</td><td style="padding:10px 5px;"><strong>${item.name || 'Item'}</strong></td><td style="text-align:center;">${q}</td><td style="text-align:right;">₹${p}</td><td style="text-align:right;"><strong>₹${p * q}</strong></td></tr>`;
+                    });
+                }
+                pArea.innerHTML = `
+                <div style="padding: 40px; max-width: 800px; margin: 0 auto; background: white; font-family: sans-serif;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 15px;">
+                        <div><h2 style="font-size: 32px; font-weight: 800; letter-spacing: 2px; color: #000; margin:0;">ARYANTA.</h2><p style="color: #666; font-weight: 700; letter-spacing: 1px; font-size: 13px; margin:5px 0 0 0;">TAX INVOICE</p></div>
+                        <div style="text-align: right;"><p style="font-size: 12px; color: #666; font-weight: 700; text-transform: uppercase; margin:0;">Invoice No</p><h3 style="font-family: monospace; font-size: 18px; color: #000; margin:5px 0 0 0;">${order.order_no}</h3></div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div style="border: 1px solid #ccc; border-radius: 8px; padding: 20px;">
+                            <div style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #666; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Issued By</div>
+                            <p style="font-size: 14px; margin: 0 0 5px 0;"><strong>Aryanta E-Commerce</strong></p>
+                            <p style="font-size: 14px; margin: 0 0 5px 0;">Bhagalpur Bihar INDIA</p><p style="font-size: 14px; margin: 0;">support@aryanta.com</p>
+                        </div>
+                        <div style="border: 1px solid #ccc; border-radius: 8px; padding: 20px;">
+                            <div style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #666; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Billed To</div>
+                            <p style="font-size: 15px; margin: 0 0 5px 0;"><strong>${name}</strong></p>
+                            <p style="font-size: 13px; margin: 0 0 5px 0;">${email}</p><p style="font-size: 13px; margin: 0 0 10px 0;">${address}</p>
+                            <p style="font-size: 13px; margin: 0;"><strong>Date:</strong> ${dateStr}</p>
+                        </div>
+                    </div>
+                    <div style="border: 1px solid #ccc; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+                            <thead><tr style="border-bottom: 2px solid #ccc;"><th style="padding: 10px 5px;">#</th><th style="padding: 10px 5px;">Item</th><th style="padding: 10px 5px; text-align: center;">Qty</th><th style="padding: 10px 5px; text-align: right;">Price</th><th style="padding: 10px 5px; text-align: right;">Total</th></tr></thead>
+                            <tbody>${tbodyHtml}</tbody>
+                        </table>
+                        <div style="display: flex; justify-content: flex-end; margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 15px;">
+                            <div style="width: 300px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span>Subtotal:</span> <span>₹${order.financials?.itemsTotal||0}</span></div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span>Shipping:</span> <span>₹${order.financials?.shippingCost||0}</span></div>
+                                <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 18px; margin-top: 10px; border-top: 2px solid #000; padding-top: 10px;"><span>Grand Total:</span> <span>₹${order.financials?.grandTotal||0}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            } else {
+                let itemName = order.items && order.items[0] ? order.items[0].name : "Item";
+                pArea.innerHTML = `
+                <div style="padding: 40px; font-family: sans-serif; background: #fff;">
+                    <div style="text-align: center; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin-bottom: 20px; background: #f8fafc;">
+                        <h2 style="font-size: 26px; font-weight: 800; letter-spacing: 2px; color: #000; margin:0;">ARYANTA CARE</h2>
+                        <p style="font-size: 12px; color: #64748b; font-weight: 700; letter-spacing: 1px; margin: 8px 0 0 0;">OFFICIAL WARRANTY ELIGIBILITY SLIP</p>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div style="border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px;">
+                            <p style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #4f46e5; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; margin-top:0;">Customer Details</p>
+                            <p style="font-size: 15px; font-weight: 700; margin: 0 0 5px 0;">${name}</p>
+                            <p style="font-size: 13px; margin: 0 0 5px 0;">${email}</p><p style="font-size: 13px; margin: 0;">${address}</p>
+                        </div>
+                        <div style="border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px;">
+                            <p style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #4f46e5; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; margin-top:0;">Product Details</p>
+                            <p style="font-size: 15px; font-weight: 700; margin: 0 0 8px 0;">${itemName}</p>
+                            <p style="font-size: 13px; margin: 0 0 5px 0;"><strong>Serial No:</strong> ${order.serial_no || 'N/A'}</p>
+                            <p style="font-size: 13px; margin: 0;"><strong>Order No:</strong> ${order.order_no}</p>
+                        </div>
+                    </div>
+                    <div style="border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px;">
+                        <p style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #4f46e5; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; margin-top:0;">Warranty Validity</p>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <span style="font-size: 14px; font-weight: 700;">Valid From:</span><span style="font-size: 14px; font-weight: 600;">${order.warranty_start || 'N/A'}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="font-size: 14px; font-weight: 700;">Valid Until:</span><span style="font-size: 14px; font-weight: 600;">${order.warranty_end || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>`;
+            }
+        }
+
+        setTimeout(initChat, 200);
     </script>
 </body>
 </html>
