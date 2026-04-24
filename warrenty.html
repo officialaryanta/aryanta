@@ -15,6 +15,7 @@
 
     <style>
         /* Premium Tabs Layout */
+        body { transition: filter 0.3s ease; }
         .warranty-container { max-width: 900px; margin: 0 auto; padding: 40px 5%; }
         .tab-header { display: flex; gap: 20px; border-bottom: 2px solid var(--border); margin-bottom: 40px; }
         .tab-btn { background: transparent; border: none; font-size: 16px; font-weight: 800; color: var(--text-muted); padding: 15px 5px; cursor: pointer; transition: var(--transition); border-bottom: 3px solid transparent; margin-bottom: -2px; }
@@ -28,6 +29,18 @@
         .warranty-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 40px; box-shadow: var(--shadow-sm); margin-bottom: 25px; }
         .panel-title { font-size: 22px; font-weight: 800; margin-bottom: 20px; }
         
+        /* Options Selection Grids */
+        .logistics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .logistics-card { border: 2px solid var(--border); border-radius: 12px; padding: 20px; cursor: pointer; transition: 0.3s; background: var(--surface); text-align: center; }
+        .logistics-card.selected { border-color: var(--primary); background: #f8fafc; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .logistics-card i { font-size: 24px; color: var(--primary); margin-bottom: 10px; }
+
+        /* Blurred Background State */
+        .blurred { filter: blur(10px) grayscale(10%); pointer-events: none; user-select: none; transition: filter 0.4s ease; }
+
+        /* Declarations Box */
+        .declaration-box { background: #fff1f2; border: 1px solid #fecaca; padding: 20px; border-radius: 12px; margin-bottom: 25px; }
+
         /* Multimedia Drop Zones */
         .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; margin-bottom: 25px; }
         .drop-zone { border: 2px dashed var(--border); border-radius: 16px; padding: 30px 15px; text-align: center; cursor: pointer; transition: var(--transition); background: var(--bg-color); position: relative; overflow: hidden; }
@@ -44,36 +57,76 @@
         .invoice-info-text { font-size: 15px; margin-bottom: 10px; color: var(--text-main); font-weight: 600; display: flex; align-items: center; }
         .invoice-info-text i { color: var(--text-muted); width: 25px; text-align: left; }
 
-        /* Glorious Slip UI */
+        /* Smart Timeline for History */
+        .warr-timeline { display: flex; justify-content: space-between; position: relative; margin: 30px 0 10px; }
+        .warr-timeline::before { content: ''; position: absolute; top: 15px; left: 20px; right: 20px; height: 3px; background: var(--border); z-index: 1; }
+        .warr-step { position: relative; z-index: 2; text-align: center; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .warr-icon { width: 32px; height: 32px; background: var(--surface); border: 2px solid var(--border); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: var(--text-muted); font-size: 12px; transition: 0.3s; }
+        .warr-label { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+        
+        .warr-step.completed .warr-icon { background: var(--success); border-color: var(--success); color: white; }
+        .warr-step.completed .warr-label { color: var(--success); }
+        .warr-step.active .warr-icon { background: var(--primary); border-color: var(--primary); color: white; box-shadow: 0 0 0 4px rgba(10,10,10,0.1); }
+        .warr-step.active .warr-label { color: var(--primary); }
+        .warr-step.rejected .warr-icon { background: var(--danger); border-color: var(--danger); color: white; }
+        .warr-step.rejected .warr-label { color: var(--danger); }
+
+        /* Physical Slip Generation */
         .physical-receipt-slip { background: #fff; position: relative; padding: 0; text-align: left; margin-bottom: 25px; }
-        
-        /* Status colors */
-        .status-progress { color: #d97706; background: #fef3c7; padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 800; text-transform: uppercase; }
-        .status-rejected { color: #991b1b; background: #fee2e2; padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 800; text-transform: uppercase; }
-        .status-approved { color: #166534; background: #dcfce3; padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 800; text-transform: uppercase; }
-        
-        /* Verification Box */
         .auth-box { background: #eff6ff; border: 1px solid #bfdbfe; padding: 25px; border-radius: 16px; margin-top: 25px; animation: slideUpFade 0.4s ease; }
+
+        /* Custom Built-In Alert/Dialog System */
+        .custom-ui-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(5px); z-index: 9999; display: none; justify-content: center; align-items: center; animation: fadeIn 0.2s ease; }
+        .custom-ui-box { background: var(--surface); padding: 30px; border-radius: 20px; max-width: 400px; width: 90%; text-align: center; box-shadow: var(--shadow-lg); animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .ui-icon { font-size: 40px; color: var(--primary); margin-bottom: 15px; }
+        .custom-ui-box h3 { font-size: 20px; font-weight: 800; margin-bottom: 10px; }
+        .custom-ui-box p { font-size: 15px; color: var(--text-muted); margin-bottom: 25px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
+        .ui-actions { display: flex; gap: 10px; }
+        .ui-btn { flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: var(--transition); border: none; font-size: 15px; }
+        .ui-btn-primary { background: var(--primary); color: white; }
+        .ui-btn-secondary { background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border); }
 
         /* Print Styles */
         #printArea { display: none; }
         @media print {
             body * { visibility: hidden !important; }
-            #printableSlip, #printableSlip * { visibility: visible !important; }
             #printArea, #printArea * { visibility: visible !important; }
-            #printableSlip { position: absolute; left: 0; top: 0; width: 100%; }
             #printArea { position: absolute; left: 0; top: 0; width: 100%; display: block !important; }
             .no-print { display: none !important; }
-            .main-content, .top-bar, .side-panel, .dimmer, .tab-header { display: none !important; }
+            .main-content, .top-bar, .side-panel, .dimmer, .tab-header, .warranty-container { display: none !important; }
         }
 
         @media (max-width: 600px) {
             .upload-grid { grid-template-columns: 1fr; }
             .split-grid-mobile { grid-template-columns: 1fr !important; }
+            .logistics-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
+
+    <div class="custom-ui-overlay" id="customAlertOverlay">
+        <div class="custom-ui-box">
+            <div class="ui-icon" id="alertIcon"><i class="fas fa-info-circle"></i></div>
+            <h3 id="customAlertTitle">Notice</h3>
+            <p id="customAlertMessage">Message goes here.</p>
+            <div class="ui-actions">
+                <button class="ui-btn ui-btn-primary" id="customAlertOkBtn">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="custom-ui-overlay" id="customConfirmOverlay">
+        <div class="custom-ui-box">
+            <div class="ui-icon" style="color: var(--primary);"><i class="fas fa-question-circle"></i></div>
+            <h3 id="customConfirmTitle">Confirm Action</h3>
+            <p id="customConfirmMessage">Are you sure you want to proceed?</p>
+            <div class="ui-actions">
+                <button class="ui-btn ui-btn-secondary" id="customConfirmCancelBtn">Cancel</button>
+                <button class="ui-btn ui-btn-primary" id="customConfirmOkBtn">Proceed</button>
+            </div>
+        </div>
+    </div>
 
     <div id="pageLoader" class="page-loader" style="display:none;"></div>
 
@@ -83,7 +136,7 @@
             <div class="brand-logo" onclick="location.href='index.html'">ARYANTA<span class="prime-dot">.</span></div>
         </div>
         <div class="nav-actions">
-            <button class="login-trigger premium-hover" id="accountBtn">Sign In</button>
+            <button class="login-trigger premium-hover" id="accountBtn" onclick="location.href='index.html'">Sign In</button>
         </div>
     </header>
 
@@ -100,6 +153,9 @@
         <nav class="panel-links">
             <a href="index.html" class="stagger-link"><i class="fas fa-compass"></i> Discover</a>
             <a href="index.html" class="stagger-link" id="sidebarAccountLink"><i class="fas fa-user-circle"></i> My Profile</a>
+            <a href="wallet.html" class="stagger-link"><i class="fas fa-wallet"></i> My Wallet</a>
+            <a href="subriction.html" class="stagger-link"><i class="fas fa-gem" style="color: #8b5cf6;"></i> My Subscriptions</a>
+            <a href="wishlist.html" class="stagger-link"><i class="fas fa-heart"></i> My Wishlist</a>
             <a href="track.html" class="stagger-link"><i class="fas fa-box-open"></i> Orders & Tracking</a>
             <a href="warrenty.html" class="stagger-link" style="color: var(--primary); background: var(--bg-color); border-right: 3px solid var(--primary);"><i class="fas fa-shield-alt"></i> Claim Warranty</a>
             <a href="support.html" class="stagger-link"><i class="fas fa-headset"></i> Concierge Support</a>
@@ -110,21 +166,20 @@
         </div>
     </aside>
 
-    <div class="dimmer" id="overlay" onclick="toggleSidebar()"></div>
-    <div id="toastNotification" class="toast-notification"><i class="fas fa-check-circle"></i> <span id="toastMessage">Action successful</span></div>
+    <div class="dimmer" id="overlay" onclick="closeSidebar()"></div>
     
     <div class="modal" id="imageZoomModal" style="z-index: 6000; background: rgba(10,10,10,0.95); display: none; flex-direction: column;">
-        <span class="exit-modal" onclick="document.getElementById('imageZoomModal').style.display='none'" style="color: white; right: 30px; top: 30px; z-index: 6001;"><i class="fas fa-times"></i></span>
+        <span class="exit-modal" onclick="document.getElementById('imageZoomModal').style.display='none'" style="color: white; right: 30px; top: 30px; z-index: 6001; cursor: pointer; font-size: 24px;"><i class="fas fa-times"></i></span>
         <div style="flex-grow: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; width: 100%;">
             <img id="zoomedImage" src="" style="max-width: 100%; max-height: 80vh; border-radius: 8px; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
         </div>
     </div>
 
     <div class="modal" id="claimSuccessModal" style="z-index: 5000;">
-        <div class="modal-content text-center">
+        <div class="modal-content text-center" style="max-width: 450px;">
             <i class="fas fa-check-circle" style="font-size: 60px; color: var(--success); margin-bottom: 20px;"></i>
             <h2 style="font-size: 24px; font-weight: 800; color: var(--primary);">Claim Submitted</h2>
-            <p style="color: var(--text-muted); margin-bottom: 25px; line-height: 1.6;">Your warranty request has been securely sent. Our team is verifying the details, and we will get back to you within <strong>48 hours</strong>.</p>
+            <p style="color: var(--text-muted); margin-bottom: 25px; line-height: 1.6;">Your warranty request has been securely sent. Our technical team is verifying the details, and we will get back to you within <strong>48 hours</strong>.</p>
             <div style="display: flex; flex-direction: column; gap: 15px;">
                 <button class="btn-outline w-100" onclick="window.print()"><i class="fas fa-download"></i> Download Slip</button>
                 <button class="btn-prime w-100" onclick="closeClaimSuccess()"><i class="fas fa-history"></i> See Progress Report</button>
@@ -132,25 +187,11 @@
         </div>
     </div>
 
-    <div class="custom-alert-overlay" id="customAlertOverlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center;">
-        <div class="custom-alert-box" style="background: white; padding: 30px; border-radius: 16px; text-align: center; max-width: 350px; width: 90%;">
-            <div class="alert-icon-wrapper" style="font-size: 40px; color: var(--primary); margin-bottom: 15px;"><i class="fas fa-info-circle"></i></div>
-            <h3 id="alertTitle" style="margin-bottom: 10px; color: var(--text-main);">Notice</h3>
-            <p id="alertMessage" style="color: var(--text-muted); margin-bottom: 20px; font-size: 14px; line-height: 1.5;">Message goes here.</p>
-            <div class="alert-actions" style="display: flex; gap: 10px;">
-                <button class="btn-cancel w-100" id="alertCancelBtn" onclick="closeAlert(false)" style="display:none; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: transparent; cursor: pointer; font-weight: bold;">Cancel</button>
-                <button class="btn-prime w-100" id="alertOkBtn" onclick="closeAlert(true)" style="padding: 12px; border-radius: 8px; border: none; background: var(--primary); color: white; cursor: pointer; font-weight: bold;">Got it</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="productShelf" style="display:none;"></div><div id="cartItemsContainer" style="display:none;"></div><span id="cartBadge" style="display:none;"></span><div id="cartSubtotal" style="display:none;"></div><div id="cartTotalValue" style="display:none;"></div><div class="modal" id="authModal" style="display:none;"></div>
-
     <main class="main-content" style="padding-top: 100px;">
         <div class="warranty-container">
             <div class="text-center mb-15">
                 <h1 style="font-size: 36px; font-weight: 800; letter-spacing: -1px;">Aryanta Care.</h1>
-                <p class="sub-text">Initiate and track your premium warranty claims.</p>
+                <p class="sub-text">Initiate, track, and manage your premium warranty claims.</p>
             </div>
 
             <div class="tab-header">
@@ -189,12 +230,29 @@
                     <button class="btn-back mb-15" style="padding:0; background: transparent; border: none; cursor: pointer; font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px;" onclick="resetFlow()"><i class="fas fa-arrow-left"></i> Back</button>
                     <h2 class="panel-title">Product Successfully Verified</h2>
                     
+                    <div id="warrantyCountdownBanner" style="background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; padding: 15px; border-radius: 12px; font-weight: 800; margin-bottom: 20px; text-align: center; font-size: 18px;">
+                        <i class="fas fa-check-circle"></i> Warranty is Active (<span id="daysRemaining">0</span> Days Left)
+                    </div>
+
                     <div class="invoice-box">
                         <div class="invoice-box-title"><i class="fas fa-shield-check"></i> Warranty Record Found</div>
                         <p class="invoice-info-text"><i class="fas fa-box"></i> Item: <span id="detItemName" style="margin-left: 10px; color: #000;">---</span></p>
                         <p class="invoice-info-text"><i class="fas fa-user"></i> Ordered By: <span id="detOrderedBy" style="margin-left: 10px; color: #000;">---</span></p>
                         <p class="invoice-info-text"><i class="fas fa-calendar-plus"></i> Warranty Start: <span id="detWarrStart" style="margin-left: 10px; color: #000;">---</span></p>
                         <p class="invoice-info-text"><i class="fas fa-calendar-times"></i> Warranty End: <span id="detWarrEnd" style="margin-left: 10px; color: #000;">---</span></p>
+                    </div>
+
+                    <div class="declaration-box">
+                        <h3 style="font-size: 15px; color: #991b1b; margin-bottom: 15px;"><i class="fas fa-exclamation-triangle"></i> Mandatory Declarations</h3>
+                        <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: #000; font-weight: 600; margin-bottom: 12px; cursor: pointer;">
+                            <input type="checkbox" class="claim-declaration" style="margin-top: 2px;"> I declare I have raised this issue just after the delivery within 5 hours.
+                        </label>
+                        <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: #000; font-weight: 600; margin-bottom: 12px; cursor: pointer;">
+                            <input type="checkbox" class="claim-declaration" style="margin-top: 2px;"> The product is completely unused, unaltered, and in its original condition.
+                        </label>
+                        <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: #000; font-weight: 600; margin-bottom: 0; cursor: pointer;">
+                            <input type="checkbox" class="claim-declaration" style="margin-top: 2px;"> All original tags, packaging, and included accessories are intact.
+                        </label>
                     </div>
                     
                     <button class="btn-prime w-100 btn-large" onclick="proceedToClaimForm()"><i class="fas fa-file-contract"></i> Proceed to Claim</button>
@@ -206,8 +264,6 @@
                     
                     <div style="background: #f8fafc; border: 1px solid var(--border); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
                         <h3 style="font-size: 14px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin-bottom: 15px; border-bottom: 1px dashed var(--border); padding-bottom: 8px;">1. Confirm Customer Details</h3>
-                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Modify these details if you need the replacement sent to a different address.</p>
-                        
                         <div class="split-grid-mobile" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                             <div><label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Full Name</label><input type="text" id="claimName" class="modern-input" style="margin-bottom:0; padding:12px;"></div>
                             <div><label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Email Address</label><input type="email" id="claimEmail" class="modern-input" style="margin-bottom:0; padding:12px;" readonly></div>
@@ -218,17 +274,13 @@
 
                     <div style="background: #f8fafc; border: 1px solid var(--border); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
                         <h3 style="font-size: 14px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin-bottom: 15px; border-bottom: 1px dashed var(--border); padding-bottom: 8px;">2. Claim Information</h3>
-                        <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Order Number</label>
-                        <input type="text" id="claimOrderNo" class="modern-input" placeholder="ARY-XXXXXX" readonly style="background: #e2e8f0;">
-
                         <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Why are you claiming the warranty?</label>
                         <textarea id="claimReasonInput" class="modern-input" placeholder="Describe the exact defect or issue..." style="min-height: 80px; margin-bottom: 0;"></textarea>
                     </div>
 
                     <div style="background: #f8fafc; border: 1px solid var(--border); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
-                        <h3 style="font-size: 14px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px dashed var(--border); padding-bottom: 8px;">3. Photographic Evidence</h3>
-                        <div class="upload-grid" style="margin-bottom: 0;">
-                            
+                        <h3 style="font-size: 14px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px dashed var(--border); padding-bottom: 8px;">3. Photographic & Video Evidence</h3>
+                        <div class="upload-grid" style="margin-bottom: 15px;">
                             <div>
                                 <input type="file" id="itemImageInput" accept="image/*" multiple style="display: none;">
                                 <div class="drop-zone" id="itemDropZone">
@@ -237,7 +289,6 @@
                                     <div id="itemThumbs" class="thumb-grid"></div>
                                 </div>
                             </div>
-                            
                             <div>
                                 <input type="file" id="serialImageInput" accept="image/*" style="display: none;">
                                 <div class="drop-zone" id="serialDropZone">
@@ -245,7 +296,24 @@
                                     <p>Serial Tag Photo (Required)</p>
                                 </div>
                             </div>
+                        </div>
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Video Evidence Link (Optional but highly recommended)</label>
+                        <input type="url" id="claimVideoLink" class="modern-input" placeholder="Paste Google Drive or YouTube Link here..." style="margin-bottom: 0;">
+                    </div>
 
+                    <div style="background: #f8fafc; border: 1px solid var(--border); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+                        <h3 style="font-size: 14px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin-bottom: 15px; border-bottom: 1px dashed var(--border); padding-bottom: 8px;">4. Resolution Preference</h3>
+                        <div class="logistics-grid">
+                            <div class="logistics-card selected" id="resRefund" onclick="selectResolution('Refund')">
+                                <i class="fas fa-undo"></i>
+                                <h4>Get Refunded</h4>
+                                <p style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">Get full refund once picked up by courier.</p>
+                            </div>
+                            <div class="logistics-card" id="resReplace" onclick="selectResolution('Replacement')">
+                                <i class="fas fa-box-open"></i>
+                                <h4>Get Replacement</h4>
+                                <p style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">Get a new, identical product delivered.</p>
+                            </div>
                         </div>
                     </div>
 
@@ -255,45 +323,7 @@
                 <div class="warranty-panel" id="step4_slip" style="display:none;">
                     <button class="btn-back mb-15 no-print" style="padding:0; background: transparent; border: none; cursor: pointer; font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px;" onclick="goBackToForm()"><i class="fas fa-arrow-left"></i> Edit Details</button>
                     
-                    <div id="printableSlip" class="physical-receipt-slip" style="padding: 30px; font-family: sans-serif; background: #fff; border-radius: 8px; border: 1px solid var(--border);">
-                        
-                        <div style="text-align: center; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin-bottom: 20px; background: #f8fafc;">
-                            <h2 style="font-size: 26px; font-weight: 800; letter-spacing: 2px; color: #000; margin:0;">ARYANTA CARE</h2>
-                            <p style="font-size: 12px; color: #64748b; font-weight: 700; letter-spacing: 1px; margin: 8px 0 0 0;">OFFICIAL WARRANTY CLAIM SLIP</p>
-                            <p style="font-size: 12px; color: #64748b; margin: 5px 0 0 0;">Aryanta E-Commerce, Bhagalpur, Bihar | support@aryanta.com</p>
-                        </div>
-                        
-                        <div class="split-grid-mobile" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                            <div style="border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px;">
-                                <p style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: var(--primary); border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; margin-top:0;">Customer Details</p>
-                                <p style="font-size: 15px; font-weight: 700; margin: 0 0 5px 0; color: #000;" id="slipName">---</p>
-                                <p style="font-size: 13px; margin: 0 0 5px 0; color: #333;" id="slipEmail">---</p>
-                                <p style="font-size: 13px; margin: 0 0 5px 0; color: #333;" id="slipPhone">---</p>
-                                <p style="font-size: 13px; margin: 0 0 0 0; line-height: 1.4; color: #333;" id="slipAddress">---</p>
-                            </div>
-                            
-                            <div style="border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px;">
-                                <p style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: var(--primary); border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; margin-top:0;">Product Details</p>
-                                <p style="font-size: 15px; font-weight: 700; margin: 0 0 8px 0; color: #000;" id="slipItemName">---</p>
-                                <p style="font-size: 13px; margin: 0 0 5px 0; color: #333;"><strong>Serial No:</strong> <span id="slipSerialNo"></span></p>
-                                <p style="font-size: 13px; margin: 0 0 5px 0; color: #333;"><strong>Order No:</strong> <span id="slipOrderNoText"></span></p>
-                                <p style="font-size: 13px; margin: 0 0 0 0; color: #333;"><strong>Claim ID:</strong> <span id="slipReqId"></span></p>
-                            </div>
-                        </div>
-                        
-                        <div style="border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px;">
-                            <p style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: var(--primary); border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; margin-top:0;">Claim Information</p>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                                <span style="font-size: 14px; font-weight: 700; color: #000;">Warranty Validity:</span>
-                                <span style="font-size: 14px; font-weight: 600; color: #333;" id="slipWarrPeriod">---</span>
-                            </div>
-                            <p style="font-size: 13px; font-weight: 700; margin-bottom: 5px; color: #000;">Reason for Claim:</p>
-                            <p style="font-size: 14px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 0 0 15px 0; color: #333;" id="slipReasonText">---</p>
-                            
-                            <p style="font-size: 13px; font-weight: 700; margin-bottom: 5px; color: #000;">Attached Evidence:</p>
-                            <div id="slipEvidenceContainer" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
-                        </div>
-                    </div>
+                    <div id="visualSlipArea"></div>
 
                     <div class="split-grid-mobile no-print" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
                         <button class="btn-outline w-100 btn-large" onclick="window.print()"><i class="fas fa-download"></i> Download Slip</button>
@@ -306,7 +336,7 @@
             <div id="historyTab" class="tab-content">
                 <div class="warranty-panel">
                     <h2 class="panel-title">Warranty Claim Progress Report</h2>
-                    <p class="sub-text mb-15">Track the status of your submitted claims and download slips.</p>
+                    <p class="sub-text mb-15">Track the live status of your submitted claims and download slips.</p>
                     <div id="historyContainer">
                         <p class="text-center mt-20" style="color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Fetching records...</p>
                     </div>
@@ -321,6 +351,41 @@
     <script src="java.js"></script>
     
     <script>
+        // --- CUSTOM UI REPLACEMENTS (No Chrome Alerts) ---
+        function sysAlert(message, title = "Notice", type = "info", callback = null) {
+            document.getElementById('customAlertTitle').innerText = title;
+            document.getElementById('customAlertMessage').innerText = message;
+            
+            const iconEl = document.getElementById('alertIcon');
+            if(type === 'error') { iconEl.innerHTML = '<i class="fas fa-times-circle"></i>'; iconEl.style.color = 'var(--danger)'; }
+            else if(type === 'success') { iconEl.innerHTML = '<i class="fas fa-check-circle"></i>'; iconEl.style.color = 'var(--success)'; }
+            else { iconEl.innerHTML = '<i class="fas fa-info-circle"></i>'; iconEl.style.color = 'var(--primary)'; }
+            
+            const overlay = document.getElementById('customAlertOverlay');
+            overlay.style.display = 'flex';
+            
+            document.getElementById('customAlertOkBtn').onclick = () => {
+                overlay.style.display = 'none';
+                if(callback) callback();
+            };
+        }
+
+        function sysConfirm(message, title = "Confirm Action", callback) {
+            document.getElementById('customConfirmTitle').innerText = title;
+            document.getElementById('customConfirmMessage').innerText = message;
+            
+            const overlay = document.getElementById('customConfirmOverlay');
+            overlay.style.display = 'flex';
+            
+            document.getElementById('customConfirmCancelBtn').onclick = () => { overlay.style.display = 'none'; };
+            document.getElementById('customConfirmOkBtn').onclick = () => {
+                overlay.style.display = 'none';
+                if(callback) callback();
+            };
+        }
+
+        window.alert = function(msg) { sysAlert(msg); };
+
         // --- Firebase Configuration ---
         const firebaseConfig = { projectId: "aryanta-mart-a8893" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -328,29 +393,43 @@
 
         // --- State Variables ---
         let claimContext = { order: null, item: null };
-        let itemImagesBase64 = []; // Supports up to 5 images
+        let itemImagesBase64 = []; 
         let serialImageBase64 = null;
         let generatedClaimId = null;
         let crossAccountOTP = "";
+        let selectedResolution = "Refund";
+        
+        // This holds the auto-appended final reason
+        let finalConcatenatedReason = "";
 
-        // --- Initialization ---
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('overlay').classList.toggle('show');
-        }
-
-        setTimeout(() => {
+        // --- ULTRA-FAST BOOT ---
+        function fastBoot() {
             const user = JSON.parse(localStorage.getItem('active_session'));
             if(user) {
                 const accBtn = document.getElementById('accountBtn');
                 const firstName = user.name.split(' ')[0];
                 const savedAvatar = user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`;
-                accBtn.innerHTML = `<img src="${savedAvatar}" class="nav-avatar" style="margin-right:8px; width: 30px; height: 30px; border-radius: 50%;"> <span>${firstName}</span>`;
-                accBtn.onclick = null;
+                accBtn.innerHTML = `<img src="${savedAvatar}" style="width: 28px; height: 28px; border-radius: 50%; margin-right:8px; border: 2px solid var(--primary); object-fit: cover;"> <span>${firstName}</span>`;
+                accBtn.onclick = () => window.location.href = 'index.html';
+                
+                document.getElementById('sidebarUser').innerText = user.name;
+                document.getElementById('sidebarAvatar').src = savedAvatar;
+                document.getElementById('sidebarLogoutBtn').style.display = 'flex';
             } else {
-                showAlert("You must be signed in to access Warranty features.", "Access Denied", false, () => { window.location.href="index.html"; });
+                sysAlert("You must be signed in to access Warranty features.", "Access Denied", "error", () => { window.location.href="index.html"; });
             }
-        }, 500);
+        }
+        fastBoot();
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('show');
+        }
+
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('show');
+        }
 
         function switchTab(tabId, btnElement) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -358,6 +437,14 @@
             document.getElementById(tabId).classList.add('active');
             btnElement.classList.add('active');
             if(tabId === 'historyTab') loadClaimHistory();
+        }
+
+        function selectResolution(method) {
+            selectedResolution = method;
+            document.getElementById('resRefund').classList.remove('selected');
+            document.getElementById('resReplace').classList.remove('selected');
+            if(method === 'Refund') document.getElementById('resRefund').classList.add('selected');
+            else document.getElementById('resReplace').classList.add('selected');
         }
 
         function resetFlow() {
@@ -372,10 +459,14 @@
             document.getElementById('crossOtpStep').style.display = 'none';
             document.getElementById('crossVerifyInput').value = "";
             document.getElementById('crossOtpInput').value = "";
-            crossAccountOTP = "";
             
+            document.querySelectorAll('.claim-declaration').forEach(d => d.checked = false);
+            
+            crossAccountOTP = "";
+            finalConcatenatedReason = "";
             document.getElementById('serialInput').value = "";
             document.getElementById('claimReasonInput').value = "";
+            document.getElementById('claimVideoLink').value = "";
             
             itemImagesBase64 = [];
             serialImageBase64 = null;
@@ -384,14 +475,16 @@
             document.getElementById('serialDropZone').innerHTML = `<i class="fas fa-barcode"></i><p>Serial Tag Photo (Required)</p>`;
             
             claimContext = { order: null, item: null };
+            selectResolution('Refund');
         }
 
-        // --- STEP 1: VERIFY SERIAL NO & SECURITY CHECKS ---
         async function verifySerial() {
             const serial = document.getElementById('serialInput').value.trim();
-            if(!serial) return showAlert("Please enter a Serial Number.");
+            if(!serial) return sysAlert("Please enter a Serial Number.", "Input Required", "error");
             
-            toggleButtonState('btnVerify', true, 'Locating Product...');
+            document.getElementById('btnVerify').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Locating...';
+            document.getElementById('btnVerify').disabled = true;
+
             const notFoundBox = document.getElementById('notFoundContainer');
             const crossAuthBox = document.getElementById('crossAccountAuth');
             
@@ -412,38 +505,37 @@
                 
                 claimContext.order = snapshot.docs[0].data();
                 
-                // Cross-Account Verification Trigger
                 if (claimContext.order.user_email !== user.email) {
                     crossAuthBox.style.display = 'block';
-                    return; // Stop here until they verify OTP
+                    return; 
                 }
 
-                // Normal Validation (If owned by current user)
                 await runStrictValidations(serial);
 
             } catch (e) {
-                showAlert("Network Error: Could not verify serial number.");
+                sysAlert("Network Error: Could not verify serial number.", "Error", "error");
             } finally {
-                toggleButtonState('btnVerify', false, '<i class="fas fa-search"></i> Verify Serial Number');
+                document.getElementById('btnVerify').innerHTML = '<i class="fas fa-search"></i> Verify Serial Number';
+                document.getElementById('btnVerify').disabled = false;
             }
         }
 
-        // Process Cross Account Verification with OTP
         async function processCrossAccountVerification() {
             const input = document.getElementById('crossVerifyInput').value.trim();
-            if(!input) return showAlert("Please enter the original Email or Phone.");
+            if(!input) return sysAlert("Please enter the original Email or Phone.", "Input Required", "error");
             
             const originalEmail = claimContext.order.user_email;
             const originalPhone = claimContext.order.delivery_phone || "";
             
             if(input === originalEmail || input === originalPhone) {
-                // Correct info entered, send OTP
-                toggleButtonState('btnCrossSendOTP', true, 'Sending OTP...');
+                const btn = document.getElementById('btnCrossSendOTP');
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+                btn.disabled = true;
+
                 const rawOTP = Math.floor(1000 + Math.random() * 9000).toString();
                 crossAccountOTP = rawOTP; 
 
                 try {
-                    // Requires emailjs from java.js initialization
                     await emailjs.send("service_wnqvm4n", "template_5by2ldn", { 
                         to_email: originalEmail, 
                         to_name: claimContext.order.delivery_name || "Valued Customer", 
@@ -452,26 +544,27 @@
                     
                     document.getElementById('crossInputStep').style.display = 'none';
                     document.getElementById('crossOtpStep').style.display = 'block';
-                    showAlert("A secure 4-Digit OTP has been sent to the original purchaser's email.", "Check Inbox");
+                    sysAlert("A secure 4-Digit OTP has been sent to the original purchaser's email.", "Check Inbox", "success");
                 } catch (err) {
-                    showAlert("Failed to send OTP email. Please try again.");
+                    sysAlert("Failed to send OTP email. Please try again.", "Network Error", "error");
                 } finally {
-                    toggleButtonState('btnCrossSendOTP', false, '<i class="fas fa-shield-alt"></i> Send Verification OTP');
+                    btn.innerHTML = '<i class="fas fa-shield-alt"></i> Send Verification OTP';
+                    btn.disabled = false;
                 }
             } else {
-                showAlert("Verification Failed. The email or phone does not match the original purchaser.", "Access Denied");
+                sysAlert("Verification Failed. The email or phone does not match the original purchaser.", "Access Denied", "error");
             }
         }
 
         async function verifyCrossAccountOTP() {
             const otpInput = document.getElementById('crossOtpInput').value.trim();
-            if(!otpInput) return showAlert("Please enter the 4-digit OTP.");
+            if(!otpInput) return sysAlert("Please enter the 4-digit OTP.", "Input Required", "error");
             
             if(otpInput === crossAccountOTP) {
                 document.getElementById('crossAccountAuth').style.display = 'none';
                 await runStrictValidations(claimContext.order.serial_no);
             } else {
-                showAlert("Invalid Verification Code. Please try again.", "Verification Failed");
+                sysAlert("Invalid Verification Code. Please try again.", "Verification Failed", "error");
             }
         }
 
@@ -492,7 +585,25 @@
                 return;
             }
 
-            // Success -> Step 2
+            const endDate = new Date(claimContext.order.warranty_end || Date.now());
+            const daysLeft = Math.ceil((endDate - new Date()) / (1000 * 60 * 60 * 24));
+            
+            const banner = document.getElementById('warrantyCountdownBanner');
+            if (daysLeft <= 0) {
+                banner.style.background = "#fef2f2";
+                banner.style.color = "#991b1b";
+                banner.style.borderColor = "#fecaca";
+                banner.innerHTML = `<i class="fas fa-times-circle"></i> Warranty Expired (${Math.abs(daysLeft)} Days Ago)`;
+                notFoundBox.style.display = 'block';
+                notFoundBox.innerHTML = '<p style="color: var(--danger); font-weight: 700;"><i class="fas fa-hourglass-end"></i> Warranty period has expired for this product.</p>';
+                return;
+            } else {
+                banner.style.background = "#ecfdf5";
+                banner.style.color = "#065f46";
+                banner.style.borderColor = "#6ee7b7";
+                banner.innerHTML = `<i class="fas fa-check-circle"></i> Warranty is Active (<span style="font-size:22px;">${daysLeft}</span> Days Left)`;
+            }
+
             document.getElementById('step1_verify').style.display = 'none';
             const itemName = (claimContext.order.items && claimContext.order.items.length > 0) ? claimContext.order.items[0].name : "Premium Item";
             
@@ -504,10 +615,17 @@
             document.getElementById('step2_details').style.display = 'block';
         }
 
-        // --- STEP 2 to 3 ---
         function proceedToClaimForm() {
+            // Check Declarations
+            const decls = document.querySelectorAll('.claim-declaration');
+            let allChecked = true;
+            decls.forEach(d => { if(!d.checked) allChecked = false; });
+            
+            if(!allChecked) {
+                return sysAlert("You must agree to all mandatory declarations before proceeding.", "Required", "error");
+            }
+
             document.getElementById('step2_details').style.display = 'none';
-            document.getElementById('claimOrderNo').value = claimContext.order.order_no || ""; 
             
             const session = JSON.parse(localStorage.getItem('active_session'));
             if(session) {
@@ -521,21 +639,18 @@
         }
 
         // --- MULTIMEDIA UPLOADS ---
-        
-        // Setup Item Images (Multiple)
         const itemDrop = document.getElementById('itemDropZone');
         const itemInput = document.getElementById('itemImageInput');
         itemDrop.addEventListener('click', () => itemInput.click());
         itemInput.addEventListener('change', async function() {
             if(this.files.length) {
                 for(let file of this.files) {
-                    if(itemImagesBase64.length >= 5) { showAlert("Maximum 5 images allowed."); break; }
+                    if(itemImagesBase64.length >= 5) { sysAlert("Maximum 5 images allowed.", "Limit Reached", "error"); break; }
                     if(file.type.startsWith('image/')) await processImage(file, true);
                 }
             }
         });
 
-        // Setup Serial Image (Single)
         const serialDrop = document.getElementById('serialDropZone');
         const serialInput = document.getElementById('serialImageInput');
         serialDrop.addEventListener('click', () => serialInput.click());
@@ -576,41 +691,97 @@
             });
         }
 
+        // --- EXACT MATCH HTML GENERATOR ---
+        function generateOfficialSlipHTML(data) {
+            let evHtml = "";
+            if(data.itemImages && data.itemImages.length) {
+                data.itemImages.forEach(img => { evHtml += `<img src="${img}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc;">`; });
+            }
+            if(data.serialImage) {
+                evHtml += `<img src="${data.serialImage}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 2px solid #4f46e5;" title="Serial Tag">`;
+            }
 
-        // --- STEP 3 to 4: GENERATE SLIP ---
+            return `
+            <div class="physical-receipt-slip" style="padding: 30px; font-family: sans-serif; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; width: 100%;">
+                <div style="text-align: center; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin-bottom: 20px; background: #f8fafc;">
+                    <h2 style="font-size: 26px; font-weight: 800; letter-spacing: 2px; color: #000; margin:0;">ARYANTA CARE</h2>
+                    <p style="font-size: 12px; color: #64748b; font-weight: 700; letter-spacing: 1px; margin: 8px 0 0 0;">OFFICIAL WARRANTY CLAIM SLIP</p>
+                    <p style="font-size: 12px; color: #64748b; margin: 5px 0 0 0;">Aryanta E-Commerce, Bhagalpur, Bihar | support@aryanta.com</p>
+                </div>
+                
+                <div class="split-grid-mobile" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div style="border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px;">
+                        <p style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #4f46e5; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; margin-top:0;">Customer Details</p>
+                        <p style="font-size: 15px; font-weight: 700; margin: 0 0 5px 0; color: #000;">${data.name}</p>
+                        <p style="font-size: 13px; margin: 0 0 5px 0; color: #333;">${data.email}</p>
+                        <p style="font-size: 13px; margin: 0 0 5px 0; color: #333;">${data.phone}</p>
+                        <p style="font-size: 13px; margin: 0 0 0 0; line-height: 1.4; color: #333;">${data.address}</p>
+                    </div>
+                    
+                    <div style="border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px;">
+                        <p style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #4f46e5; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; margin-top:0;">Product Details</p>
+                        <p style="font-size: 15px; font-weight: 700; margin: 0 0 8px 0; color: #000;">${data.itemName}</p>
+                        <p style="font-size: 13px; margin: 0 0 5px 0; color: #333;"><strong>Serial No:</strong> ${data.serialNo}</p>
+                        <p style="font-size: 13px; margin: 0 0 5px 0; color: #333;"><strong>Order No:</strong> ${data.orderNo}</p>
+                        <p style="font-size: 13px; margin: 0 0 0 0; color: #333;"><strong>Claim ID:</strong> ${data.reqId}</p>
+                    </div>
+                </div>
+                
+                <div style="border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px;">
+                    <p style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #4f46e5; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; margin-top:0;">Claim Information</p>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <span style="font-size: 14px; font-weight: 700; color: #000;">Warranty Validity:</span>
+                        <span style="font-size: 14px; font-weight: 600; color: #333;">${data.warrPeriod}</span>
+                    </div>
+                    
+                    <p style="font-size: 13px; font-weight: 700; margin-bottom: 5px; color: #000;">Reason for Claim & Details:</p>
+                    <p style="font-size: 14px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 0 0 15px 0; color: #333; white-space: pre-wrap;">${data.reason}</p>
+                    
+                    <p style="font-size: 13px; font-weight: 700; margin-bottom: 5px; color: #000;">Attached Evidence:</p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">${evHtml}</div>
+                </div>
+            </div>`;
+        }
+
         function generateReviewSlip() {
-            const reason = document.getElementById('claimReasonInput').value.trim();
-            const orderNo = document.getElementById('claimOrderNo').value.trim();
+            const baseReason = document.getElementById('claimReasonInput').value.trim();
+            const orderNo = claimContext.order.order_no || "N/A";
             const name = document.getElementById('claimName').value.trim();
             const phone = document.getElementById('claimPhone').value.trim();
             const addr = document.getElementById('claimAddress').value.trim();
+            const videoLink = document.getElementById('claimVideoLink').value.trim();
             
-            if(!name || !phone || !addr) return showAlert('Please fill in all Customer Details.');
-            if(!reason) return showAlert('Please describe why you are claiming the warranty.');
-            if(itemImagesBase64.length === 0 || !serialImageBase64) return showAlert('Both item and serial number images are strictly required.');
+            if(!name || !phone || !addr) return sysAlert('Please fill in all Customer Details.', "Required", "error");
+            if(!baseReason) return sysAlert('Please describe why you are claiming the warranty.', "Required", "error");
+            if(itemImagesBase64.length === 0 || !serialImageBase64) return sysAlert('Both item and serial number images are strictly required to proceed.', "Evidence Required", "error");
+
+            // Auto-append details dynamically into description
+            finalConcatenatedReason = baseReason;
+            finalConcatenatedReason += `\n\n=== Selected Preferences ===`;
+            finalConcatenatedReason += `\nResolution Preference: ${selectedResolution === 'Refund' ? 'Refund (Courier Pickup)' : 'Replacement (New Product)'}`;
+            if(videoLink) finalConcatenatedReason += `\nVideo Evidence Link: ${videoLink}`;
 
             generatedClaimId = "REQ-" + Date.now().toString().slice(-6);
-
-            document.getElementById('slipReqId').innerText = generatedClaimId;
-            document.getElementById('slipName').innerText = name;
-            document.getElementById('slipEmail').innerText = document.getElementById('claimEmail').value;
-            document.getElementById('slipPhone').innerText = phone;
-            document.getElementById('slipAddress').innerText = addr;
-            
             const itemName = (claimContext.order.items && claimContext.order.items.length > 0) ? claimContext.order.items[0].name : "Premium Item";
-            
-            document.getElementById('slipItemName').innerText = itemName;
-            document.getElementById('slipSerialNo').innerText = claimContext.order.serial_no;
-            document.getElementById('slipOrderNoText').innerText = orderNo;
-            document.getElementById('slipWarrPeriod').innerText = `${claimContext.order.warranty_start} to ${claimContext.order.warranty_end}`;
-            document.getElementById('slipReasonText').innerText = reason;
 
-            // Render Evidence on Slip
-            let evHtml = "";
-            itemImagesBase64.forEach(img => { evHtml += `<img src="${img}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc;">`; });
-            evHtml += `<img src="${serialImageBase64}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 2px solid var(--primary);" title="Serial Tag">`;
-            
-            document.getElementById('slipEvidenceContainer').innerHTML = evHtml;
+            const slipData = {
+                reqId: generatedClaimId,
+                name: name,
+                email: document.getElementById('claimEmail').value,
+                phone: phone,
+                address: addr,
+                itemName: itemName,
+                serialNo: claimContext.order.serial_no,
+                orderNo: orderNo,
+                warrPeriod: `${claimContext.order.warranty_start} to ${claimContext.order.warranty_end}`,
+                reason: finalConcatenatedReason,
+                itemImages: itemImagesBase64,
+                serialImage: serialImageBase64
+            };
+
+            const html = generateOfficialSlipHTML(slipData);
+            document.getElementById('visualSlipArea').innerHTML = html;
+            document.getElementById('printArea').innerHTML = html; // Sync print area
 
             document.getElementById('step3_form').style.display = 'none';
             document.getElementById('step4_slip').style.display = 'block';
@@ -621,53 +792,53 @@
             document.getElementById('step3_form').style.display = 'block';
         }
 
-        // --- FINAL SUBMIT TO FIREBASE & SUCCESS MODAL ---
         async function submitFinalClaim() {
             const user = JSON.parse(localStorage.getItem('active_session'));
             
             const claimData = {
                 claim_id: generatedClaimId,
-                order_no: document.getElementById('claimOrderNo').value.trim(),
+                order_no: claimContext.order.order_no || "N/A",
                 serial_no: claimContext.order.serial_no,
-                item_name: document.getElementById('slipItemName').innerText,
+                item_name: (claimContext.order.items && claimContext.order.items.length > 0) ? claimContext.order.items[0].name : "Premium Item",
                 user_email: user.email,
                 customer_name: document.getElementById('claimName').value.trim(),
                 customer_phone: document.getElementById('claimPhone').value.trim(),
                 customer_address: document.getElementById('claimAddress').value.trim(),
-                reason: document.getElementById('claimReasonInput').value.trim(),
+                reason: finalConcatenatedReason, // Saves the perfectly appended string
                 item_images: itemImagesBase64,
                 serial_image: serialImageBase64,
                 status: 'Under Review', 
                 timestamp: new Date().toISOString()
             };
             
-            toggleButtonState('finalSubmitBtn', true, 'Securely Saving...');
+            const btn = document.getElementById('finalSubmitBtn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Securely Saving...';
+            btn.disabled = true;
             
             try {
                 await db.collection('warranty_claims').doc(generatedClaimId).set(claimData);
+                
+                // Show modal AND blur the background elegantly
                 document.getElementById('claimSuccessModal').style.display = 'flex';
-                document.getElementById('overlay').classList.add('show');
+                document.querySelector('.main-content').classList.add('blurred');
+                document.querySelector('.top-bar').classList.add('blurred');
+                
             } catch(e) {
-                showAlert('Failed to submit claim. Data size limit exceeded or network unstable.');
+                sysAlert('Failed to submit claim. Data size limit exceeded or network unstable.', "Upload Error", "error");
             } finally {
-                toggleButtonState('finalSubmitBtn', false, '<i class="fas fa-check-circle"></i> Submit Request');
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> Submit Request';
+                btn.disabled = false;
             }
         }
 
         function closeClaimSuccess() {
             document.getElementById('claimSuccessModal').style.display = 'none';
-            document.getElementById('overlay').classList.remove('show');
+            document.querySelector('.main-content').classList.remove('blurred');
+            document.querySelector('.top-bar').classList.remove('blurred');
             resetFlow();
             switchTab('historyTab', document.querySelectorAll('.tab-btn')[1]);
         }
 
-        function openImageZoom(src) {
-            const modal = document.getElementById('imageZoomModal');
-            document.getElementById('zoomedImage').src = src; 
-            modal.style.display = 'flex';
-        }
-
-        // --- HISTORY TAB & PRINT GENERATOR ---
         async function loadClaimHistory() {
             const user = JSON.parse(localStorage.getItem('active_session'));
             const container = document.getElementById('historyContainer');
@@ -690,42 +861,56 @@
                 claims.forEach(data => {
                     window.claimsDataMap[data.claim_id] = data;
                     
-                    let statusClass = 'status-progress';
                     let statusText = data.status || "Under Review";
+                    const s = statusText.toLowerCase();
                     
-                    const lowerStatus = statusText.toLowerCase();
-                    if(lowerStatus.includes('cancel') || lowerStatus.includes('reject')) statusClass = 'status-rejected';
-                    else if(lowerStatus.includes('approve') || lowerStatus.includes('accept') || lowerStatus.includes('resolve')) statusClass = 'status-approved';
+                    let isRejected = s.includes('cancel') || s.includes('reject');
+                    let isApproved = s.includes('approve') || s.includes('accept');
+                    let isResolved = s.includes('resolve') || s.includes('replace') || s.includes('refund');
                     
+                    let timelineHtml = `
+                    <div class="warr-timeline">
+                        <div class="warr-step completed"><div class="warr-icon"><i class="fas fa-file-upload"></i></div><span class="warr-label">Submitted</span></div>
+                        <div class="warr-step ${isRejected ? 'rejected' : (isApproved || isResolved ? 'completed' : 'active')}"><div class="warr-icon"><i class="fas fa-search"></i></div><span class="warr-label">${isRejected ? 'Rejected' : 'In Review'}</span></div>
+                        <div class="warr-step ${isResolved ? 'completed' : (isApproved && !isRejected ? 'active' : '')}"><div class="warr-icon"><i class="fas fa-check-circle"></i></div><span class="warr-label">Approved</span></div>
+                        <div class="warr-step ${isResolved ? 'completed' : ''}"><div class="warr-icon"><i class="fas fa-box"></i></div><span class="warr-label">Resolved</span></div>
+                    </div>`;
+
                     let imagesHtml = '';
                     if(data.item_images && Array.isArray(data.item_images)) {
                         data.item_images.forEach(img => {
-                            imagesHtml += `<img src="${img}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); cursor: pointer;" onclick="openImageZoom('${img}')">`;
+                            imagesHtml += `<img src="${img}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); cursor: pointer;" onclick="document.getElementById('imageZoomModal').style.display='flex'; document.getElementById('zoomedImage').src='${img}';">`;
                         });
                     }
-                    if(data.serial_image) imagesHtml += `<img src="${data.serial_image}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 2px solid var(--primary); cursor: pointer;" onclick="openImageZoom('${data.serial_image}')">`;
+
+                    let supportBtnHtml = '';
+                    if (isRejected || (!isResolved && (new Date() - new Date(data.timestamp)) > (1000 * 60 * 60 * 24 * 3))) {
+                        supportBtnHtml = `<button class="btn-outline" style="padding: 10px 20px; color: #b45309; border-color: #fde68a; background: #fffbeb;" onclick="window.location.href='support.html?ref=${data.claim_id}'"><i class="fas fa-headset"></i> Contact Concierge</button>`;
+                    }
 
                     html += `
-                    <div class="invoice-box" style="margin-bottom: 25px; padding: 25px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap: 15px; border-bottom: 1px dashed var(--border); padding-bottom: 15px; margin-bottom: 15px;">
+                    <div class="invoice-box" style="margin-bottom: 25px; padding: 25px; box-shadow: var(--shadow-sm);">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap: 15px;">
                             <div>
                                 <span class="invoice-box-title" style="border:none; margin:0; padding:0;">Req ID: ${data.claim_id}</span>
                                 <h4 style="font-size: 18px; margin-top:5px; margin-bottom: 5px;">${data.item_name}</h4>
                                 <p class="sub-text" style="font-family: var(--font-mono); font-size:12px;">Serial: ${data.serial_no || 'N/A'}</p>
                             </div>
                             <div style="text-align:right;">
-                                <span class="${statusClass}">${statusText}</span>
-                                <p style="font-size:12px; font-weight:700; color:var(--text-muted); margin-top:10px;">Filed on: ${new Date(data.timestamp).toLocaleDateString()}</p>
+                                <p style="font-size:12px; font-weight:700; color:var(--text-muted); margin-top:0;">Filed on: ${new Date(data.timestamp).toLocaleDateString()}</p>
                             </div>
                         </div>
                         
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+                        ${timelineHtml}
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px; border-top: 1px dashed var(--border); padding-top: 15px; margin-top: 15px;">
                             <div>
-                                <p style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">Uploaded Evidence</p>
+                                <p style="font-size: 11px; font-weight: 800; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">Uploaded Evidence</p>
                                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">${imagesHtml}</div>
                             </div>
-                            <div>
-                                <button class="btn-outline" style="padding: 10px 20px;" onclick="printClaimSlip('${data.claim_id}')"><i class="fas fa-download"></i> Download Slip</button>
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                ${supportBtnHtml}
+                                <button class="btn-prime" style="padding: 10px 20px;" onclick="printClaimSlipHistory('${data.claim_id}')"><i class="fas fa-download"></i> Slip</button>
                             </div>
                         </div>
                     </div>`;
@@ -736,42 +921,28 @@
             }
         }
 
-        window.printClaimSlip = function(claimId) {
+        // Exact Match Print Logic for History Tab
+        window.printClaimSlipHistory = function(claimId) {
             const data = window.claimsDataMap[claimId];
             if(!data) return;
             
-            const printArea = document.getElementById('printArea');
-            printArea.innerHTML = `
-            <div style="padding: 40px; font-family: sans-serif; background: #fff;">
-                <div style="text-align: center; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin-bottom: 20px; background: #f8fafc;">
-                    <h2 style="font-size: 26px; font-weight: 800; letter-spacing: 2px; color: #000; margin:0;">ARYANTA CARE</h2>
-                    <p style="font-size: 12px; color: #64748b; font-weight: 700; letter-spacing: 1px; margin: 8px 0 0 0;">OFFICIAL WARRANTY CLAIM SLIP</p>
-                    <p style="font-size: 12px; color: #64748b; margin: 5px 0 0 0;">Aryanta E-Commerce, Bhagalpur, Bihar | support@aryanta.com</p>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                    <div style="border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px;">
-                        <p style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #6366f1; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; margin-top:0;">Customer Details</p>
-                        <p style="font-size: 15px; font-weight: 700; margin: 0 0 5px 0; color: #000;">${data.customer_name || data.user_email}</p>
-                        <p style="font-size: 13px; margin: 0 0 5px 0; color: #333;">${data.user_email}</p>
-                        <p style="font-size: 13px; margin: 0 0 5px 0; color: #333;">${data.customer_phone || '---'}</p>
-                        <p style="font-size: 13px; margin: 0 0 0 0; line-height: 1.4; color: #333;">${data.customer_address || '---'}</p>
-                    </div>
-                    <div style="border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px;">
-                        <p style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #6366f1; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; margin-top:0;">Product Details</p>
-                        <p style="font-size: 15px; font-weight: 700; margin: 0 0 8px 0; color: #000;">${data.item_name}</p>
-                        <p style="font-size: 13px; margin: 0 0 5px 0; color: #333;"><strong>Serial No:</strong> ${data.serial_no}</p>
-                        <p style="font-size: 13px; margin: 0 0 5px 0; color: #333;"><strong>Order No:</strong> ${data.order_no}</p>
-                        <p style="font-size: 13px; margin: 0 0 0 0; color: #333;"><strong>Claim ID:</strong> ${data.claim_id}</p>
-                    </div>
-                </div>
-                
-                <div style="border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px;">
-                    <p style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #6366f1; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; margin-top:0;">Claim Information</p>
-                    <p style="font-size: 13px; font-weight: 700; margin-bottom: 5px; color: #000;">Reason for Claim:</p>
-                    <p style="font-size: 14px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 0; color: #333;">${data.reason}</p>
-                </div>
-            </div>`;
+            const slipData = {
+                reqId: data.claim_id,
+                name: data.customer_name || data.user_email,
+                email: data.user_email,
+                phone: data.customer_phone || "---",
+                address: data.customer_address || "---",
+                itemName: data.item_name,
+                serialNo: data.serial_no,
+                orderNo: data.order_no,
+                warrPeriod: "Check Admin Portal", 
+                reason: data.reason, // Will already contain the appended resolution & video link
+                itemImages: data.item_images,
+                serialImage: data.serial_image
+            };
+
+            // Inject Exact HTML Design
+            document.getElementById('printArea').innerHTML = generateOfficialSlipHTML(slipData);
             
             setTimeout(() => { window.print(); }, 200);
         };
