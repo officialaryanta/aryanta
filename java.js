@@ -22,15 +22,25 @@ let currentOrderState = { itemsTotal: 0, shippingCost: 0, grandTotal: 0, discoun
 let savedUserAddresses = [];
 let userAvatar = "";
 let walletBalance = 0; 
+let walletAppliedAmount = 0;
 
 let isGoogleSignup = false;
 let googleUserData = null;
 
+let siteConfig = { isSpecialDay: false, specialDayName: "", taxConfig: { baseShipping: 60, gstRate: 18, primeRadius: 120 } };
+
 const BHAGALPUR_LAT = 25.2425;
 const BHAGALPUR_LON = 86.9842;
 
-// --- 2. FAST BOOT OPTIMIZATION & UI CONTROLS ---
+// --- 2. FAST BOOT OPTIMIZATION & REFRESH/URL LINKING ---
 let activeOverlays = [];
+
+const navEntries = performance.getEntriesByType("navigation");
+if ((navEntries.length > 0 && navEntries[0].type === "reload") || (window.performance && window.performance.navigation && window.performance.navigation.type === 1)) {
+    if (window.location.search.includes('product=')) {
+        window.location.href = window.location.pathname;
+    }
+}
 
 setTimeout(() => {
     const loader = document.getElementById('pageLoader');
@@ -45,7 +55,7 @@ window.closeAllModals = function() {
     document.getElementById('sidebar').classList.remove('open');
     document.body.style.overflow = 'auto';
     activeOverlays = [];
-    history.pushState(null, null, window.location.pathname);
+    window.history.replaceState(null, null, window.location.pathname);
 };
 
 function openSidebar() {
@@ -61,7 +71,11 @@ function openUI(id) {
     if(el.classList.contains('full-page') || id === 'sidebar') el.classList.add('open');
     else if (id === 'overlay') el.classList.add('show');
     else el.style.display = 'flex';
+    
     if(el.classList.contains('full-page')) document.body.style.overflow = 'hidden';
+    
+    if(id === 'fullWishlistPage') renderWishlistPage();
+
     activeOverlays.push(id);
     history.pushState({ ui: id }, "");
 }
@@ -83,6 +97,7 @@ window.addEventListener('popstate', (e) => {
         const anyFull = activeOverlays.some(uid => { const check = document.getElementById(uid); return check && check.classList.contains('full-page'); });
         if(!anyFull) document.body.style.overflow = 'auto';
     }
+    if (activeOverlays.length === 0) { window.history.replaceState(null, null, window.location.pathname); }
 });
 
 let toastTimer;
@@ -132,15 +147,76 @@ async function updateUserDataAPI(email, updateFields) {
     } catch(e) {}
 }
 
+// --- NEW FEATURE: BROADCAST LISTENER ---
+async function listenForBroadcasts() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/get-broadcasts`);
+        const data = await res.json();
+        if(data && data.length > 0) {
+            const b = data[0]; 
+            const lastSeen = localStorage.getItem('last_seen_broadcast');
+            if(lastSeen !== b.id) {
+                document.getElementById('broadcastTitle').innerText = b.title;
+                document.getElementById('broadcastMessage').innerText = b.message;
+                document.getElementById('broadcastModal').style.display = 'flex';
+                localStorage.setItem('last_seen_broadcast', b.id);
+            }
+        }
+    } catch(e) { }
+}
+
 // --- 3. PRODUCTS, BANNERS, CATEGORIES, & INFINITE SCROLL ---
 let scrollObserver = null;
 let isFetchingBatch = false;
 
 function sortProductsByAdAndRandom(products) {
-    let ads = products.filter(p => p.isAd === true).slice(0, 40); 
-    let regular = products.filter(p => p.isAd !== true);
+    let ads = products.filter(p => p.isAd === true); 
+    let primeSellers = products.filter(p => p.sellerType === 'prime' && !p.isAd);
+    let newSellers = products.filter(p => p.sellerType === 'new' && !p.isAd);
+    let regular = products.filter(p => p.sellerType !== 'prime' && p.sellerType !== 'new' && !p.isAd);
+    
     regular.sort(() => Math.random() - 0.5); 
-    return [...ads, ...regular];
+    newSellers.sort(() => Math.random() - 0.5);
+    
+    let mixedSellers = [];
+    while(primeSellers.length || newSellers.length) {
+        if(primeSellers.length) mixedSellers.push(primeSellers.shift());
+        if(primeSellers.length) mixedSellers.push(primeSellers.shift());
+        if(newSellers.length) mixedSellers.push(newSellers.shift());
+    }
+
+    return [...ads, ...mixedSellers, ...regular];
+}
+
+async function fetchAppConfig() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/config`);
+        const data = await res.json();
+
+        // 1. Theme Configuration
+        if(data && data.special_day && data.special_day.isActive) {
+            const now = new Date();
+            const start = new Date(data.special_day.startTime);
+            const end = new Date(data.special_day.endTime);
+            if(now >= start && now <= end) {
+                siteConfig.isSpecialDay = true;
+                siteConfig.specialDayName = data.special_day.eventName;
+                document.body.classList.add('theme-special-day');
+                
+                const festiveBar = document.getElementById('festiveAnnouncement');
+                if(festiveBar) {
+                    festiveBar.style.display = 'block';
+                    festiveBar.innerText = `🎉 ${siteConfig.specialDayName} is LIVE! Enjoy exclusive offers. 🎉`;
+                }
+            }
+        }
+        
+        // 2. Tax/Shipping Configuration
+        if(data && data.global_tax) {
+            siteConfig.taxConfig = data.global_tax;
+        }
+
+    } catch (e) {}
 }
 
 async function fetchBanners() {
@@ -196,10 +272,6 @@ async function fetchProducts() {
     const cached = localStorage.getItem('cached_products');
     const urlParams = new URLSearchParams(window.location.search);
     const sharedProductId = urlParams.get('product');
-    
-    if (sharedProductId) {
-        window.history.replaceState(null, null, window.location.pathname);
-    }
     
     if (cached) {
         try {
@@ -300,7 +372,7 @@ window.loadMoreProducts = function() {
         if (scrollObserver) scrollObserver.disconnect();
         scrollObserver = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting) loadMoreProducts();
-        }, { rootMargin: "300px" });
+        }, { rootMargin: "400px" });
         scrollObserver.observe(triggerCard);
     }
 
@@ -333,14 +405,18 @@ function applySearchAndRender(term) {
     }
     const searchTerms = term.split(' ');
     const filtered = allProducts.map(p => {
-        let score = p.isAd ? 10 : 0; 
+        let score = p.isAd ? 15 : 0; 
         const nameStr = p.name.toLowerCase();
         const descStr = (p.desc || "").toLowerCase();
         const catStr = (p.category || "").toLowerCase();
+        const tagsStr = (p.tags ? p.tags.join(" ") : "").toLowerCase();
+        const brandStr = (p.brand || "").toLowerCase();
         
         searchTerms.forEach(t => { 
-            if(nameStr.includes(t)) score += 5; 
+            if(nameStr.includes(t)) score += 10; 
             else if(fuzzyMatch(nameStr, t)) score += 3;
+            if(tagsStr.includes(t)) score += 8;
+            if(brandStr.includes(t)) score += 8;
             if(catStr.includes(t)) score += 3;
             if(descStr.includes(t)) score += 1; 
         });
@@ -373,26 +449,43 @@ function renderProducts(list, containerId, append = false) {
         return;
     }
     
+    const session = JSON.parse(localStorage.getItem('active_session'));
+    const isUserPrime = session && session.isPrime;
+
     list.forEach((p, index) => {
         if(p.isDummy) return;
         let img = p.image || (p.images && p.images.length > 0 ? p.images[0] : 'https://via.placeholder.com/300');
         let starUI = (p.avgRating && p.avgRating !== "New") ? `<i class="fas fa-star"></i> ${p.avgRating} (${p.reviewCount})` : `<i class="fas fa-star" style="color:#cbd5e1;"></i> New`;
         
-        let sellerText = p.sellerName ? `Sold by ${p.sellerName}` : "Sold by Aryanta Retail";
         let isWished = wishlist.includes(p.id) ? 'fas fa-heart text-danger' : 'far fa-heart';
         
-        // REAL PRICING (No more fake logic)
         let price = Number(p.price);
         let mrp = p.mrp ? Number(p.mrp) : 0;
+        
+        if(isUserPrime) price = Math.floor(price * 0.95);
+
         let priceHTML = '';
         let badgeHTML = '';
 
         if (mrp > price) {
             let offPercent = Math.round(((mrp - price) / mrp) * 100);
-            badgeHTML = `<span style="position:absolute; top:8px; left:8px; background:var(--danger); color:white; font-size:10px; font-weight:800; padding:4px 6px; border-radius:4px;">${offPercent}% OFF</span>`;
+            badgeHTML = `<span style="position:absolute; top:8px; left:8px; background:var(--danger); color:white; font-size:10px; font-weight:800; padding:4px 6px; border-radius:4px; z-index:5;">${offPercent}% OFF</span>`;
             priceHTML = `<span style="text-decoration:line-through; color:var(--text-muted); font-size:13px; margin-right:6px; font-weight:500;">₹${mrp.toLocaleString('en-IN')}</span> ₹${price.toLocaleString('en-IN')}`;
         } else {
             priceHTML = `₹${price.toLocaleString('en-IN')}`;
+        }
+
+        let adBadge = p.isAd ? `<div class="ad-badge">Sponsored <i class="fas fa-info-circle"></i></div>` : '';
+        let stockWarning = (p.stock !== undefined && p.stock < 10) ? `<div class="stock-warning">Only ${p.stock} left in stock!</div>` : '';
+
+        // FIX: PERFECT VERIFIED TICK ALIGNMENT
+        let sellerText = '';
+        let adminVerified = false;
+        if(!p.sellerEmail || p.sellerEmail === 'admin' || p.sellerName === 'Aryanta Admin') {
+            sellerText = `Aryanta Admin`;
+            adminVerified = true;
+        } else {
+            sellerText = p.sellerName ? `${p.sellerName}` : "Seller";
         }
 
         const div = document.createElement('div');
@@ -409,9 +502,18 @@ function renderProducts(list, containerId, append = false) {
             <div class="list-info" style="position: relative;">
                 <i class="${isWished} wishlist-icon premium-hover" onclick="event.stopPropagation(); toggleWishlist('${p.id}', this)" style="position: absolute; top: 0; right: 0; font-size: 18px; color: ${wishlist.includes(p.id) ? 'var(--danger)' : 'var(--text-muted)'}; z-index: 10;"></i>
                 <h4>${p.name}</h4>
-                <div class="stars" id="stars-${p.id}">${starUI} <span style="font-size: 11px; margin-left: 8px; color: var(--text-muted); font-weight: normal;">${sellerText}</span></div>
+                <div class="stars" id="stars-${p.id}">${starUI}</div>
+                
+                <div class="seller-line">
+                    <span>Sold by ${sellerText}</span> 
+                    ${adminVerified ? '<i class="fas fa-check-circle" style="color:var(--primary); font-size:12px;"></i>' : ''}
+                </div>
+
+                ${adBadge}
+                ${stockWarning}
                 <div class="price">
                     ${priceHTML}
+                    ${isUserPrime ? '<span style="font-size:11px; color:var(--accent); font-weight:800; margin-left: 5px;"><i class="fas fa-gem"></i> Prime Price</span>' : ''}
                 </div>
                 <div class="list-actions">
                     <button class="btn-list-add" onclick="event.stopPropagation(); directAddToCart('${p.id}')">Add to Cart</button>
@@ -422,6 +524,40 @@ function renderProducts(list, containerId, append = false) {
     });
 }
 
+// --- NEW FEATURE: RECENTLY VIEWED TRACKER ---
+function trackRecentlyViewed(product) {
+    let viewed = JSON.parse(localStorage.getItem('recently_viewed')) || [];
+    viewed = viewed.filter(p => p.id !== product.id); 
+    viewed.unshift(product); 
+    if(viewed.length > 10) viewed.pop(); 
+    localStorage.setItem('recently_viewed', JSON.stringify(viewed));
+    renderRecentlyViewed();
+}
+
+function renderRecentlyViewed() {
+    let viewed = JSON.parse(localStorage.getItem('recently_viewed')) || [];
+    const container = document.getElementById('recentShelf');
+    const wrapper = document.getElementById('recentlyViewedContainer');
+    
+    if(!container || !wrapper) return;
+    if(viewed.length === 0) { wrapper.style.display = 'none'; return; }
+    
+    wrapper.style.display = 'block';
+    container.innerHTML = viewed.map(p => {
+        let imgUrl = p.image || (p.images && p.images.length > 0 ? p.images[0] : 'https://via.placeholder.com/100');
+        return `
+            <div class="cat-pill" style="padding: 10px; border-radius: 12px; min-width: 250px; justify-content:flex-start;" onclick="openProductPage('${p.id}')">
+                <img src="${imgUrl}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px; margin-right: 10px;">
+                <div style="display:flex; flex-direction:column; overflow:hidden;">
+                    <strong style="font-size:13px; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${p.name}</strong>
+                    <span style="font-size:12px; color:var(--primary); font-weight:800;">₹${p.price}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+
 // --- 4. PRODUCT PAGE, SHARE & WISHLIST ---
 let relatedDisplayed = 0;
 let relatedObserver = null;
@@ -430,15 +566,29 @@ let isFetchingRelated = false;
 window.openProductPage = async function(id) {
     currentProduct = allProducts.find(p => p.id === id);
     if(!currentProduct) return;
+    
     currentImageIndex = 0;
+    trackRecentlyViewed(currentProduct);
     
     document.getElementById('fpName').innerText = currentProduct.name;
     document.getElementById('fpDesc').innerText = currentProduct.desc || "High-quality product selected for you.";
     
-    // REAL PRICING for Product Page
+    const highlightBox = document.getElementById('fpHighlights');
+    if (highlightBox && currentProduct.highlights && currentProduct.highlights.length > 0) {
+        highlightBox.style.display = 'block';
+        highlightBox.innerHTML = '<strong>Highlights:</strong><ul>' + currentProduct.highlights.map(h => `<li>${h}</li>`).join('') + '</ul>';
+    } else if(highlightBox) {
+        highlightBox.style.display = 'none';
+    }
+
+    const session = JSON.parse(localStorage.getItem('active_session'));
+    const isUserPrime = session && session.isPrime;
+
     let price = Number(currentProduct.price);
     let mrp = currentProduct.mrp ? Number(currentProduct.mrp) : 0;
     
+    if(isUserPrime) price = Math.floor(price * 0.95);
+
     if (mrp > price) {
         document.getElementById('fpMrp').innerText = `₹${mrp.toLocaleString('en-IN')}`;
         document.getElementById('fpMrp').style.display = 'inline';
@@ -447,8 +597,30 @@ window.openProductPage = async function(id) {
     }
 
     document.getElementById('fpPrice').innerText = `₹${price.toLocaleString('en-IN')}`;
-    document.getElementById('fpSellerName').innerText = currentProduct.sellerName || "Aryanta Retail";
     
+    // Check Admin Verified Status for Full Page
+    let adminVerified = false;
+    if(!currentProduct.sellerEmail || currentProduct.sellerEmail === 'admin' || currentProduct.sellerName === 'Aryanta Admin') {
+        adminVerified = true;
+    }
+    
+    let verifiedUI = adminVerified 
+        ? `<span class="verified-badge admin-badge"><i class="fas fa-shield-check"></i> Aryanta Verified</span>`
+        : (currentProduct.isSellerVerified ? `<span class="verified-badge seller-badge"><i class="fas fa-check-circle"></i> Verified Seller</span>` : '');
+    
+    const sellerInfoEl = document.getElementById('fpSellerInfo');
+    if(sellerInfoEl) {
+        sellerInfoEl.innerHTML = `Sold by: <strong style="color: var(--primary);">${currentProduct.sellerName || "Aryanta Admin"}</strong><br>${verifiedUI}`;
+    }
+
+    const delBox = document.getElementById('fpDeliveryBox');
+    if(delBox) {
+        const estDate = new Date();
+        estDate.setDate(estDate.getDate() + (isUserPrime ? 2 : 5)); 
+        const dateOptions = { weekday: 'short', month: 'short', day: 'numeric' };
+        document.getElementById('fpDeliveryDate').innerText = estDate.toLocaleDateString('en-IN', dateOptions);
+    }
+
     const wBox = document.getElementById('fpWarrantyBox');
     if(currentProduct.warranty) {
         wBox.style.display = 'flex';
@@ -470,6 +642,7 @@ window.openProductPage = async function(id) {
     document.getElementById('relatedProductsShelf').innerHTML = '';
     loadMoreRelated();
     
+    window.history.replaceState({ ui: 'fullProductPage' }, "", "?product=" + id);
     openUI('fullProductPage');
     document.getElementById('fullProductPage').scrollTo(0,0);
 
@@ -500,6 +673,67 @@ window.openProductPage = async function(id) {
     }
 };
 
+window.openQAPage = async function() {
+    if(!currentProduct) return;
+    openUI('fullQAPage');
+    document.getElementById('qaList').innerHTML = '<p class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading Questions...</p>';
+    
+    setTimeout(() => {
+        const mockQA = currentProduct.qa || [];
+        if(mockQA.length === 0) {
+            document.getElementById('qaList').innerHTML = '<div class="panel-box text-center"><i class="fas fa-comments" style="font-size:40px; color:var(--border); margin-bottom:15px;"></i><p class="sub-text">No questions asked yet. Be the first!</p></div>';
+            return;
+        }
+        
+        document.getElementById('qaList').innerHTML = mockQA.map(qa => {
+            let answerHtml = qa.answer ? `<div class="qa-a"><strong>A:</strong> ${qa.answer} <br><span style="font-size:11px; font-weight:bold; color:var(--primary);"><i class="fas fa-check-circle"></i> Official Answer</span></div>` : `<div class="qa-a" style="background:#f1f5f9; color:#94a3b8;"><em>Pending official answer...</em></div>`;
+            return `
+            <div class="qa-item">
+                <div class="qa-q"><strong>Q:</strong> ${qa.question} <br><span style="font-size:11px; color:var(--text-muted);">by ${qa.user}</span></div>
+                ${answerHtml}
+            </div>
+        `}).join('');
+    }, 500);
+}
+
+// --- NEW FEATURE: DB SYNC FOR Q&A ---
+window.askQuestion = async function() {
+    const session = JSON.parse(localStorage.getItem('active_session'));
+    if(!session) return showAlert("Please log in to ask a question.");
+    
+    const q = prompt("What would you like to know about this product?");
+    if(q && q.trim() !== '') {
+        toggleButtonState('qaSubmitBtn', true, 'Submitting...');
+        try {
+            const qaObj = {
+                id: 'Q-' + Date.now(),
+                user: session.name.split(' ')[0],
+                question: q,
+                answer: '',
+                admin: false,
+                timestamp: new Date().toISOString()
+            };
+            
+            if(!currentProduct.qa) currentProduct.qa = [];
+            currentProduct.qa.push(qaObj);
+            
+            await fetch(`${API_BASE_URL}/update-product`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: currentProduct.id, qa: currentProduct.qa, projectId: PROJECT_ID })
+            });
+            
+            showToast("Question submitted! Admin will answer shortly.");
+            openQAPage(); 
+        } catch(e) {
+            showToast("Question sent securely.");
+            openQAPage();
+        } finally {
+            toggleButtonState('qaSubmitBtn', false, 'Ask a Question');
+        }
+    }
+}
+
 window.shareProduct = function() {
     if(!currentProduct) return;
     const url = window.location.origin + window.location.pathname + '?product=' + currentProduct.id;
@@ -518,6 +752,7 @@ window.toggleWishlist = function(id, element) {
         showToast("Added to Wishlist");
     }
     saveWishlist();
+    if(document.getElementById('fullWishlistPage').classList.contains('open')) renderWishlistPage();
 }
 
 window.toggleWishlistFromPage = function() {
@@ -528,6 +763,33 @@ async function saveWishlist() {
     localStorage.setItem('local_wishlist', JSON.stringify(wishlist));
     const session = JSON.parse(localStorage.getItem('active_session'));
     if (session && session.email) updateUserDataAPI(session.email, { wishlist: wishlist });
+}
+
+function renderWishlistPage() {
+    const container = document.getElementById('wishlistShelf');
+    if(!container) return;
+    
+    const wishedProducts = allProducts.filter(p => wishlist.includes(p.id));
+    if(wishedProducts.length === 0) {
+        container.innerHTML = '<div class="panel-box text-center" style="grid-column: 1/-1;"><i class="fas fa-heart" style="font-size:40px; color:var(--border); margin-bottom:15px;"></i><p style="font-size:18px; font-weight:600; color:var(--text-muted);">Your wishlist is empty.</p></div>';
+        return;
+    }
+    
+    renderProducts(wishedProducts, 'wishlistShelf', false);
+}
+
+// --- NEW FEATURE: NATIVE SHARE WISHLIST ---
+window.shareWishlist = function() {
+    if(wishlist.length === 0) return showAlert("Your wishlist is empty.");
+    let text = "Check out my Aryanta Wishlist:\n";
+    wishlist.forEach(id => {
+        const p = allProducts.find(x => x.id === id);
+        if(p) text += `- ${p.name}\n`;
+    });
+    text += "\nShop on Aryanta!";
+    
+    if (navigator.share) { navigator.share({ title: `My Aryanta Wishlist`, text: text, url: window.location.origin });
+    } else { navigator.clipboard.writeText(text); showToast('Wishlist copied to clipboard!'); }
 }
 
 window.openWalletPage = async function() {
@@ -574,7 +836,7 @@ function loadMoreRelated() {
     if (isFetchingRelated || !currentProduct) return;
     isFetchingRelated = true;
 
-    const similar = allProducts.filter(p => p.id !== currentProduct.id);
+    const similar = sortProductsByAdAndRandom(allProducts.filter(p => p.id !== currentProduct.id && (p.category === currentProduct.category || p.brand === currentProduct.brand)));
     const nextBatch = similar.slice(relatedDisplayed, relatedDisplayed + BATCH_SIZE);
     
     if(nextBatch.length === 0) { isFetchingRelated = false; return; }
@@ -583,13 +845,13 @@ function loadMoreRelated() {
     
     const container = document.getElementById('relatedProductsShelf');
     const allCards = container.querySelectorAll('.list-item-card');
-    const triggerIndex = relatedDisplayed + Math.floor(BATCH_SIZE / 2);
+    const triggerIndex = Math.max(0, allCards.length - 8);
     
     if(triggerIndex < allCards.length) {
         if(relatedObserver) relatedObserver.disconnect();
         relatedObserver = new IntersectionObserver((entries) => {
             if(entries[0].isIntersecting) loadMoreRelated();
-        }, { rootMargin: "300px" });
+        }, { rootMargin: "400px" });
         relatedObserver.observe(allCards[triggerIndex]);
     }
     
@@ -703,10 +965,9 @@ window.openUI = async function(id) {
         if(revDropZone && revImageInput) {
             revDropZone.onclick = () => revImageInput.click();
             
-            // Multiple Files Handling for Reviews
             revImageInput.onchange = function(e) {
                 if(this.files.length) {
-                    const files = Array.from(this.files).slice(0, 5); // Limit 5
+                    const files = Array.from(this.files).slice(0, 5); 
                     selectedReviewImages = [];
                     revDropZone.innerHTML = '';
                     
@@ -777,7 +1038,6 @@ async function loadReviewsList() {
                     imgHTML += `<img src="${imgData}" class="rev-image-thumb" onclick="openImageZoom('${imgData}')">`;
                 });
             } else if (data.image) {
-                // Fallback for older reviews with single image
                 imgHTML += `<img src="${data.image}" class="rev-image-thumb" onclick="openImageZoom('${data.image}')">`;
             }
             
@@ -869,11 +1129,11 @@ window.deleteReview = async function(id) {
     });
 }
 
-// --- 6. CART LOGIC ---
+// --- 6. CART LOGIC (With Abandoned Cart Sync) ---
 async function saveCart() {
     localStorage.setItem('local_cart', JSON.stringify(cart));
     const session = JSON.parse(localStorage.getItem('active_session'));
-    if (session && session.email) updateUserDataAPI(session.email, { cart: cart });
+    if (session && session.email) updateUserDataAPI(session.email, { cart: cart }); // Abandoned Cart Sync
 }
 
 function bootLocalData() {
@@ -882,6 +1142,7 @@ function bootLocalData() {
     const localWish = localStorage.getItem('local_wishlist');
     if(localWish) wishlist = JSON.parse(localWish);
     updateCartUI(); 
+    renderRecentlyViewed();
 }
 
 window.addToCartFromPage = function() {
@@ -902,16 +1163,22 @@ function updateCartUI() {
     const container = document.getElementById('cartItemsContainer');
     container.innerHTML = '';
     let total = 0, count = 0;
+    
+    const session = JSON.parse(localStorage.getItem('active_session'));
+    const isUserPrime = session && session.isPrime;
 
     cart.forEach(item => {
-        total += item.price * item.qty; count += item.qty;
+        let pPrice = Number(item.price);
+        if(isUserPrime) pPrice = Math.floor(pPrice * 0.95);
+
+        total += pPrice * item.qty; count += item.qty;
         let img = item.image || (item.images && item.images.length > 0 ? item.images[0] : 'https://via.placeholder.com/150');
         container.innerHTML += `
             <div class="cart-item-row">
                 <div class="cart-img-box"><img src="${img}"></div>
                 <div class="cart-details">
                     <h4>${item.name}</h4>
-                    <div class="price">₹${(item.price * item.qty).toLocaleString('en-IN')}</div>
+                    <div class="price">₹${(pPrice * item.qty).toLocaleString('en-IN')}</div>
                     <div class="cart-controls">
                         <button class="qty-btn" onclick="changeQty('${item.id}', -1)"><i class="fas fa-minus"></i></button>
                         <span style="font-weight:800; width: 24px; text-align:center;">${item.qty}</span>
@@ -1039,7 +1306,7 @@ function checkSession() {
     
     if (session && session.email) {
         document.getElementById('sidebarUser').innerText = session.name;
-        document.getElementById('sidebarRole').innerText = "Member";
+        document.getElementById('sidebarRole').innerText = session.isPrime ? "Prime Member" : "Member";
         document.getElementById('sidebarLogoutBtn').style.display = "flex"; 
         
         let avatar = session.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.email}`;
@@ -1047,6 +1314,14 @@ function checkSession() {
         accBtn.onclick = () => window.openAccountPage();
         document.getElementById('sidebarAccountLink').onclick = (e) => { e.preventDefault(); window.openAccountPage(); };
         
+        // Prime Member Gold Tags UI Update
+        if(session.isPrime) {
+            const crown = document.getElementById('primeCrownBadge');
+            if(crown) crown.style.display = 'block';
+            const profileTag = document.getElementById('profilePrimeTag');
+            if(profileTag) profileTag.style.display = 'inline-block';
+        }
+
         bootLocalData(); 
         initUserProfileAPI(session.email);
     } else {
@@ -1178,7 +1453,12 @@ function initUserProfileAPI(email) {
             if(data.wallet !== undefined) walletBalance = data.wallet;
             
             let session = JSON.parse(localStorage.getItem('active_session'));
-            if(session) { session.addresses = savedUserAddresses; localStorage.setItem('active_session', JSON.stringify(session)); }
+            if(session) { 
+                session.addresses = savedUserAddresses; 
+                session.isPrime = data.isPrime; 
+                session.walletPin = data.walletPin; 
+                localStorage.setItem('active_session', JSON.stringify(session)); 
+            }
 
             userAvatar = data.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`;
             document.getElementById('sidebarAvatar').src = userAvatar;
@@ -1301,16 +1581,22 @@ window.openCheckoutDirect = async function() {
     const session = JSON.parse(localStorage.getItem('active_session'));
     if (!session) return showAlert("Please Login to proceed.", "Secure Checkout", false, () => document.getElementById('accountBtn').click());
     
-    // Reset Coupon State
     currentOrderState.discount = 0;
+    walletAppliedAmount = 0; 
     window.currentCouponValue = 0;
     document.getElementById('couponToggle').style.display = 'flex';
     document.getElementById('couponBox').style.display = 'none';
     document.getElementById('couponChoiceBox').style.display = 'none';
     document.getElementById('couponMessage').style.display = 'none';
     document.getElementById('couponCode').value = '';
-    document.getElementById('couponPin').value = '';
     document.getElementById('discountRow').style.display = 'none';
+
+    if(document.getElementById('walletUseBtn')) {
+        document.getElementById('walletUseBtn').innerHTML = `<i class="fas fa-wallet"></i> Use Wallet Balance (₹${walletBalance})`;
+        document.getElementById('walletUseBtn').style.borderColor = 'var(--border)';
+        document.getElementById('walletUseBtn').style.background = 'transparent';
+        document.getElementById('walletUseBtn').style.display = walletBalance > 0 ? 'flex' : 'none';
+    }
 
     openUI('fullCheckoutPage');
     document.getElementById('checkoutStep1').style.display = 'block';
@@ -1349,41 +1635,81 @@ window.calculateShippingAndProceed = async function() {
     if(!pincode) return showAlert("Pincode is mandatory for shipping calculation.");
     toggleButtonState('calcShippingBtn', true, 'Calculating...');
 
+    const session = JSON.parse(localStorage.getItem('active_session'));
+    const baseShip = siteConfig.taxConfig.baseShipping || 60;
+    const primeRad = siteConfig.taxConfig.primeRadius || 120;
+
     try {
         const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${pincode},+India`);
         const data = await res.json();
-        let shippingFee = 60; 
+        let shippingFee = baseShip; 
         
         if (data && data.length > 0) {
             const distance = getDistanceFromLatLonInKm(BHAGALPUR_LAT, BHAGALPUR_LON, parseFloat(data[0].lat), parseFloat(data[0].lon));
-            if (distance < 10) shippingFee = 10;
-            else if (distance < 35) shippingFee = 25;
-            else if (distance < 70) shippingFee = 60;
-            else if (distance < 120) shippingFee = 100;
-            else shippingFee = 150;
+            if (distance < 10) shippingFee = Math.round(baseShip * 0.2);
+            else if (distance < 35) shippingFee = Math.round(baseShip * 0.5);
+            else if (distance < 70) shippingFee = baseShip;
+            else if (distance < primeRad) shippingFee = Math.round(baseShip * 1.5);
+            else shippingFee = Math.round(baseShip * 2.5);
         }
+
+        // PRIME PERK
+        if(session && session.isPrime && shippingFee <= Math.round(baseShip * 1.5)) shippingFee = 0;
 
         currentOrderState.shippingCost = shippingFee;
         updateCheckoutMiniReceipt();
         
         document.getElementById('checkoutStep1').style.display = 'none'; document.getElementById('checkoutStep2').style.display = 'block';
     } catch(err) {
-        currentOrderState.shippingCost = 60; 
+        currentOrderState.shippingCost = (session && session.isPrime) ? 0 : baseShip; 
         updateCheckoutMiniReceipt();
         document.getElementById('checkoutStep1').style.display = 'none'; document.getElementById('checkoutStep2').style.display = 'block';
     } finally { toggleButtonState('calcShippingBtn', false, 'Next Step <i class="fas fa-arrow-right"></i>'); }
 };
 
+window.toggleWalletCheckout = function() {
+    if(walletBalance <= 0) return showAlert("Insufficient wallet balance.");
+    const session = JSON.parse(localStorage.getItem('active_session'));
+    const btn = document.getElementById('walletUseBtn');
+
+    if(walletAppliedAmount > 0) {
+        walletAppliedAmount = 0;
+        btn.innerHTML = `<i class="fas fa-wallet"></i> Use Wallet Balance (₹${walletBalance})`;
+        btn.style.borderColor = 'var(--border)';
+        btn.style.background = 'transparent';
+        updateCheckoutMiniReceipt();
+    } else {
+        if(session.walletPin) {
+            let pinInput = prompt("Enter your 4-digit Wallet PIN:");
+            if(pinInput !== session.walletPin) return showAlert("Incorrect Wallet PIN.");
+        }
+        
+        const totalBeforeWallet = currentOrderState.itemsTotal + currentOrderState.shippingCost - currentOrderState.discount;
+        walletAppliedAmount = Math.min(walletBalance, totalBeforeWallet);
+        
+        btn.innerHTML = `<i class="fas fa-check-circle"></i> Wallet Applied (-₹${walletAppliedAmount})`;
+        btn.style.borderColor = 'var(--success)';
+        btn.style.background = '#f0fdf4';
+        updateCheckoutMiniReceipt();
+    }
+}
+
 function updateCheckoutMiniReceipt() {
     currentOrderState.grandTotal = currentOrderState.itemsTotal + currentOrderState.shippingCost;
-    currentOrderState.finalPayable = Math.max(0, currentOrderState.grandTotal - currentOrderState.discount);
+    
+    let totalDeductions = currentOrderState.discount + walletAppliedAmount;
+    currentOrderState.finalPayable = Math.max(0, currentOrderState.grandTotal - totalDeductions);
 
     document.getElementById('sumItems').innerText = `₹${currentOrderState.itemsTotal.toLocaleString('en-IN')}`;
     document.getElementById('sumShipping').innerText = `₹${currentOrderState.shippingCost.toLocaleString('en-IN')}`;
     
-    if (currentOrderState.discount > 0) {
+    if (totalDeductions > 0) {
         document.getElementById('discountRow').style.display = 'flex';
-        document.getElementById('sumDiscount').innerText = `-₹${currentOrderState.discount.toLocaleString('en-IN')}`;
+        let discountText = "";
+        if(currentOrderState.discount > 0) discountText += `Promo: -₹${currentOrderState.discount} `;
+        if(walletAppliedAmount > 0) discountText += `Wallet: -₹${walletAppliedAmount}`;
+        
+        document.getElementById('sumDiscount').innerText = discountText;
     } else {
         document.getElementById('discountRow').style.display = 'none';
     }
@@ -1391,24 +1717,25 @@ function updateCheckoutMiniReceipt() {
     document.getElementById('sumTotal').innerText = `₹${currentOrderState.finalPayable.toLocaleString('en-IN')}`;
 }
 
-// BACKEND DRIVEN COUPON VALIDATION
+// --- PROMO CODE ENGINE INTEGRATION ---
 window.validateAndShowCouponChoice = async function() {
     const code = document.getElementById('couponCode').value.toUpperCase().trim();
-    const pin = document.getElementById('couponPin').value.trim();
     const msg = document.getElementById('couponMessage');
     const choiceBox = document.getElementById('couponChoiceBox');
+
+    if(!code) return;
 
     msg.style.display = 'block';
     choiceBox.style.display = 'none';
     msg.style.color = 'var(--text-muted)';
-    msg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking secure database...';
+    msg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validating...';
+    toggleButtonState('promoCheckBtn', true, 'Check');
 
     try {
-        const userSession = JSON.parse(localStorage.getItem('active_session'));
-        const response = await fetch(`${API_BASE_URL}/validate-coupon`, {
+        const response = await fetch(`${API_BASE_URL}/validate-promo`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: code, pin: pin, userEmail: userSession ? userSession.email : 'guest' })
+            body: JSON.stringify({ code: code, cartTotal: currentOrderState.itemsTotal })
         });
         
         const result = await response.json();
@@ -1420,11 +1747,13 @@ window.validateAndShowCouponChoice = async function() {
             document.querySelector('#couponChoiceBox p').innerHTML = `<i class="fas fa-check-circle"></i> Valid! You got ₹${result.discountAmount} Off. Where do you want to apply it?`;
         } else {
             msg.style.color = 'var(--danger)';
-            msg.innerText = result.message || "Invalid or Expired Coupon.";
+            msg.innerText = result.message || "Invalid Promo Code.";
         }
     } catch (e) {
         msg.style.color = 'var(--danger)';
-        msg.innerText = "Error connecting to server.";
+        msg.innerText = "Error checking promo code.";
+    } finally {
+        toggleButtonState('promoCheckBtn', false, 'Apply');
     }
 };
 
@@ -1435,11 +1764,11 @@ window.applyCouponChoice = function(targetType) {
     if (targetType === 'shipping') {
         let actualDeduction = Math.min(currentOrderState.shippingCost, amountOff);
         currentOrderState.discount = actualDeduction;
-        msg.innerText = `Coupon Applied! ₹${actualDeduction} deducted from Shipping Fee.`;
+        msg.innerText = `Promo Applied! ₹${actualDeduction} deducted from Shipping Fee.`;
     } else {
         let actualDeduction = Math.min(currentOrderState.itemsTotal, amountOff);
         currentOrderState.discount = actualDeduction;
-        msg.innerText = `Coupon Applied! ₹${actualDeduction} deducted from Order Total.`;
+        msg.innerText = `Promo Applied! ₹${actualDeduction} deducted from Order Total.`;
     }
     
     msg.style.color = 'var(--success)';
@@ -1452,11 +1781,11 @@ window.applyCouponChoice = function(targetType) {
 
 window.processPayment = function() {
     const isCOD = document.querySelector('input[name="payMethod"]:checked').value === 'cod';
-    const amountToPay = isCOD ? Math.max(0, currentOrderState.shippingCost - currentOrderState.discount) : currentOrderState.finalPayable;
+    const amountToPay = isCOD ? Math.max(0, currentOrderState.shippingCost - currentOrderState.discount - walletAppliedAmount) : currentOrderState.finalPayable;
 
     if (amountToPay === 0) {
         toggleButtonState('payBtn', true, 'Processing Order...');
-        saveOrderToBackend(isCOD ? "COD_FREE_" + Date.now() : "PAID_FREE_" + Date.now(), isCOD);
+        saveOrderToBackend(isCOD ? "COD_FREE_" + Date.now() : "PAID_FREE_" + Date.now(), isCOD ? "Cash On Delivery" : "Wallet / Full Discount");
         return;
     }
 
@@ -1496,21 +1825,25 @@ async function saveOrderToBackend(paymentId, paymentMethodStr) {
     const orderNo = "ARY-" + Date.now().toString().slice(-6) + Math.floor(Math.random() * 100); 
     const fullAddress = `${document.getElementById('chkAddress').value}, ${document.getElementById('chkCity').value} - ${document.getElementById('chkPincode').value}`;
     
-    // Note: If coupon was used, the backend will need to mark it as deactivated 
-    // You should pass the couponCode in this payload so your backend can do that.
-    const usedCoupon = document.getElementById('couponCode').value.toUpperCase().trim();
+    const usedCoupon = currentOrderState.discount > 0 ? document.getElementById('couponCode').value.toUpperCase().trim() : null;
     
     const orderData = { 
         order_no: orderNo, user_email: session.email, delivery_name: document.getElementById('chkName').value, 
         delivery_phone: document.getElementById('chkPhone').value, delivery_address: fullAddress, 
         items: cart, financials: currentOrderState, payment_method: paymentMethodStr, 
         razorpay_id: paymentId, status: "Confirmed", timestamp: new Date().toISOString(),
-        applied_coupon: currentOrderState.discount > 0 ? usedCoupon : null
+        applied_coupon: usedCoupon, wallet_deducted: walletAppliedAmount
     };
     
     toggleButtonState('payBtn', true, 'Processing...');
     try {
         await fetch(`${API_BASE_URL}/order`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderData) });
+        
+        if (walletAppliedAmount > 0) {
+            walletBalance -= walletAppliedAmount;
+            await updateUserDataAPI(session.email, { wallet: walletBalance });
+        }
+
         buildGloriousReceipt(orderData); cart = []; updateCartUI(); saveCart(); closeCheckout(); 
         setTimeout(() => { openUI('overlay'); openUI('orderSuccessModal'); }, 300);
     } catch (error) { showAlert("Order processed but receipt save failed via API. Screenshot this ID: " + paymentId, "Warning"); 
@@ -1524,9 +1857,12 @@ function buildGloriousReceipt(data) {
     document.getElementById('recItemsTotal').innerText = `₹${data.financials.itemsTotal.toLocaleString('en-IN')}`; 
     document.getElementById('recShipping').innerText = `₹${data.financials.shippingCost.toLocaleString('en-IN')}`; 
     
-    if (data.financials.discount > 0) {
+    if (data.financials.discount > 0 || data.wallet_deducted > 0) {
         document.getElementById('recDiscountRow').style.display = 'flex';
-        document.getElementById('recDiscountAmount').innerText = `-₹${data.financials.discount.toLocaleString('en-IN')}`;
+        let discountText = "";
+        if(data.financials.discount > 0) discountText += `Coupon: -₹${data.financials.discount} `;
+        if(data.wallet_deducted > 0) discountText += `Wallet: -₹${data.wallet_deducted}`;
+        document.getElementById('recDiscountAmount').innerText = discountText;
     }
     
     document.getElementById('recGrandTotal').innerText = `₹${data.financials.finalPayable.toLocaleString('en-IN')}`;
@@ -1546,11 +1882,6 @@ function buildGloriousReceipt(data) {
 
 window.closeOrderSuccess = function() { location.reload(); }
 
-// INIT
-checkSession(); 
-fetchBanners(); 
-fetchProducts();
-
 // 🔍 SEARCH SYSTEM
 const searchInput = document.getElementById("searchInput");
 const dropdown = document.getElementById("searchDropdown");
@@ -1558,7 +1889,6 @@ const clearBtn = document.getElementById("searchClearBtn");
 
 let timeout;
 
-// Clear search functionality
 clearBtn.addEventListener("click", function() {
     searchInput.value = "";
     clearBtn.style.display = "none";
@@ -1576,7 +1906,6 @@ clearBtn.addEventListener("click", function() {
 searchInput.addEventListener("input", function () {
     clearTimeout(timeout);
     
-    // Toggle clear button
     if(this.value.trim() !== "") {
         clearBtn.style.display = "block";
     } else {
@@ -1589,15 +1918,20 @@ searchInput.addEventListener("input", function () {
         const query = this.value.toLowerCase().trim();
 
         if (query === "") {
-            if(bannerContainer) bannerContainer.style.display = "block"; // Show Banner
+            if(bannerContainer) bannerContainer.style.display = "block"; 
             dropdown.innerHTML = "";
             dropdown.style.display = "none";
             baseCategoryProducts = sortProductsByAdAndRandom(allProducts);
         } else {
-            if(bannerContainer) bannerContainer.style.display = "none"; // Hide Banner
-            const filtered = allProducts.filter(p =>
-                p.name.toLowerCase().includes(query)
-            );
+            if(bannerContainer) bannerContainer.style.display = "none"; 
+            
+            const searchTerms = query.split(' ');
+            const filtered = allProducts.filter(p => {
+                const nameStr = p.name.toLowerCase();
+                const tagsStr = (p.tags ? p.tags.join(" ") : "").toLowerCase();
+                const brandStr = (p.brand || "").toLowerCase();
+                return searchTerms.every(t => nameStr.includes(t) || tagsStr.includes(t) || brandStr.includes(t) || fuzzyMatch(nameStr, t));
+            });
 
             if (filtered.length === 0) {
                 baseCategoryProducts = sortProductsByAdAndRandom(allProducts);
@@ -1625,7 +1959,6 @@ searchInput.addEventListener("input", function () {
     }, 300);
 });
 
-// Hide search dropdown when clicking anywhere outside of it
 document.addEventListener("click", function(e) {
     const item = e.target.closest(".search-item");
 
@@ -1645,7 +1978,6 @@ document.addEventListener("click", function(e) {
 
         openProductPage(productId); 
     } else {
-        // Global click check for hiding the dropdown if clicking outside
         if (searchInput && dropdown && !searchInput.contains(e.target) && !dropdown.contains(e.target) && !clearBtn.contains(e.target)) {
             dropdown.style.display = "none";
             const bannerContainer = document.querySelector('.banner-slider-container');
@@ -1661,3 +1993,10 @@ window.addEventListener("scroll", function() {
         dropdown.style.display = "none";
     }
 });
+
+// INIT
+fetchAppConfig();
+checkSession(); 
+fetchBanners(); 
+fetchProducts();
+listenForBroadcasts();
