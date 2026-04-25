@@ -14,12 +14,36 @@
 
     <style>
         /* --- STRICT NO-SCROLL APP LAYOUT --- */
-        html, body { margin: 0; padding: 0; height: 100vh; overflow: hidden; background: var(--bg-color); }
+        html, body { 
+            margin: 0; 
+            padding: 0; 
+            height: 100vh; 
+            height: 100dvh; /* Dynamic height for mobile */
+            overflow: hidden; 
+            background: var(--bg-color); 
+        }
         * { box-sizing: border-box; }
         
-        .main-content { padding-top: 60px; height: 100vh; display: flex; flex-direction: column; }
+        .main-content { 
+            padding-top: 60px; 
+            height: 100vh; 
+            height: 100dvh; 
+            display: flex; 
+            flex-direction: column; 
+        }
         
-        .support-wrapper { flex-grow: 1; max-width: 800px; margin: 0 auto; width: 100%; padding: 10px 5%; display: flex; flex-direction: column; max-height: calc(100vh - 60px); }
+        .support-wrapper { 
+            flex-grow: 1; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            width: 100%; 
+            padding: 10px 5%; 
+            padding-bottom: calc(10px + env(safe-area-inset-bottom));
+            display: flex; 
+            flex-direction: column; 
+            max-height: calc(100vh - 60px); 
+            max-height: calc(100dvh - 60px); 
+        }
         
         .chat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; padding: 0 10px; }
         .chat-header-text h1 { font-size: 22px; font-weight: 800; letter-spacing: -1px; margin: 0; display: flex; align-items: center; gap: 8px; }
@@ -88,7 +112,7 @@
         .ui-btn-secondary { background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border); }
 
         /* Off-Screen Print Area for HTML2PDF */
-        #printArea { position: absolute; left: -9999px; top: -9999px; width: 800px; background: white; color: black; z-index: -1; }
+        #printArea { position: absolute; left: 0; top: 0; width: 800px; background: white; color: black; z-index: -1000; opacity: 0; pointer-events: none; display: none; }
 
         @media (max-width: 600px) {
             .bubble { max-width: 90%; font-size: 13px; }
@@ -217,6 +241,8 @@
 
         window.alert = function(msg) { sysAlert(msg); };
 
+        // No Public APIs - Using exact minimal config + Cloudflare URL
+        const API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
         const firebaseConfig = { projectId: "aryanta-mart-a8893" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
@@ -506,9 +532,35 @@
             if (action.startsWith("track_select_")) {
                 let order = allMyOrders.find(o => o.order_no === action.replace("track_select_", ""));
                 let item = order.items && order.items[0] ? order.items[0] : {};
-                let expected = order.expected_delivery ? new Date(order.expected_delivery).toLocaleDateString() : "Pending";
                 
-                await botSpeak(`<strong>Tracking Report:</strong><div class="chat-card" style="margin-top:10px;"><p style="font-family:monospace; font-size:12px;">#${order.order_no}</p><p style="font-weight:700; font-size:14px; margin:5px 0;">${item.name || "Item"}</p><p style="color:var(--primary); font-weight:800; font-size:13px; margin: 8px 0;">STATUS: ${order.status || 'Pending'}</p><p style="font-size:12px; margin-bottom:10px;">Expected: ${expected}</p></div>`);
+                // Advanced Tracking Status Verification
+                let isDelivered = (order.status || "").toLowerCase().includes("deliver");
+                let dateLabel = isDelivered ? "Delivered On" : "Expected Delivery";
+                let dateValue = "Pending";
+                
+                if (isDelivered) {
+                    // Check for the exact shipped/delivered date
+                    if (order.shipped_date) {
+                        dateValue = new Date(order.shipped_date).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    } else if (order.timestamp) {
+                        dateValue = new Date(order.timestamp).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+                    } else {
+                        dateValue = "Recently";
+                    }
+                } else {
+                    // Generate Expected Delivery Date
+                    if (order.expected_delivery) {
+                        dateValue = new Date(order.expected_delivery).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+                    } else if (order.timestamp) {
+                        let d = new Date(order.timestamp);
+                        d.setDate(d.getDate() + 7); // Default 7-day expectation
+                        dateValue = d.toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+                    }
+                }
+                
+                let statusColor = isDelivered ? "var(--success)" : "var(--primary)";
+                
+                await botSpeak(`<strong>Tracking Report:</strong><div class="chat-card" style="margin-top:10px; padding:15px; border-radius:12px; background:var(--surface); border:1px solid var(--border);"><p style="font-family:monospace; font-size:12px; color:var(--text-muted); margin-bottom:5px;">Ref: #${order.order_no}</p><p style="font-weight:700; font-size:14px; margin:5px 0;">${item.name || "Item"}</p><p style="color:${statusColor}; font-weight:800; font-size:13px; margin: 8px 0;">STATUS: ${order.status || 'Pending'}</p><p style="font-size:12px; margin-bottom:0; font-weight: 600; color:var(--text-muted);">${dateLabel}: <span style="color:var(--text-main);">${dateValue}</span></p></div>`);
                 
                 showOptions([
                     { text: "Cancel this item", action: `cancel_select_${order.order_no}`, danger: true },
@@ -546,6 +598,8 @@
             if (action.startsWith("invoice_select_") || action.startsWith("warrslip_select_")) {
                 let orderNo = action.replace("invoice_select_", "").replace("warrslip_select_", "");
                 let isInvoice = action.startsWith("invoice_select_");
+                
+                // This generates the actual HTML content inside the invisible #printArea
                 generateUniversalSlip(orderNo, isInvoice);
                 
                 await botSpeak(`<strong>Your document is ready.</strong><br>Click the button below to download it directly as a PDF.`);
@@ -564,21 +618,28 @@
                 case "show_menu_4": showOptions(MENU_4); break;
                 case "sign_in": window.location.href = "index.html"; break;
                 
-                // HTML2PDF DOWNLOAD SYSTEM
+                // --- HTML2PDF DOWNLOAD SYSTEM WITH RENDER DELAY FIX ---
                 case "trigger_download": 
-                    await botSpeak("Downloading your document...", 400);
+                    await botSpeak("Gathering company & order details and generating your document...", 400);
                     const element = document.getElementById('printArea');
-                    element.style.display = 'block';
-                    html2pdf().set({
-                        margin: 10,
-                        filename: 'Aryanta_Document.pdf',
-                        image: { type: 'jpeg', quality: 0.98 },
-                        html2canvas: { scale: 2 },
-                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                    }).from(element).save().then(() => {
-                        element.style.display = 'none';
-                        showOptions(MENU_MAIN);
-                    });
+                    
+                    // Display block momentarily so html2pdf can capture it perfectly
+                    element.style.display = 'block'; 
+                    
+                    // FIX: Added a 600ms delay so the browser can fully render the text/details
+                    // into the DOM before html2pdf takes the invisible snapshot.
+                    setTimeout(() => {
+                        html2pdf().set({
+                            margin: [15, 15, 15, 15],
+                            filename: 'Aryanta_Document.pdf',
+                            image: { type: 'jpeg', quality: 1.0 },
+                            html2canvas: { scale: 2, windowWidth: 800 },
+                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                        }).from(element).save().then(() => {
+                            element.style.display = 'none'; // Hide it again
+                            showOptions(MENU_MAIN);
+                        });
+                    }, 600); // Wait 0.6 seconds
                     break;
 
                 case "track_order": await botSpeak("Which order would you like to track?"); showOrderSelection(0, "track"); break;
