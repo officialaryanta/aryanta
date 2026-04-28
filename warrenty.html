@@ -12,6 +12,8 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <style>
         /* Premium Tabs Layout */
@@ -152,13 +154,11 @@
         </div>
         <nav class="panel-links">
             <a href="index.html" class="stagger-link"><i class="fas fa-compass"></i> Discover</a>
-            <a href="index.html" class="stagger-link" id="sidebarAccountLink"><i class="fas fa-user-circle"></i> My Profile</a>
-            <a href="wallet.html" class="stagger-link"><i class="fas fa-wallet"></i> My Wallet</a>
-            <a href="subriction.html" class="stagger-link"><i class="fas fa-gem" style="color: #8b5cf6;"></i> My Subscriptions</a>
-            <a href="wishlist.html" class="stagger-link"><i class="fas fa-heart"></i> My Wishlist</a>
-            <a href="track.html" class="stagger-link"><i class="fas fa-box-open"></i> Orders & Tracking</a>
-            <a href="warrenty.html" class="stagger-link" style="color: var(--primary); background: var(--bg-color); border-right: 3px solid var(--primary);"><i class="fas fa-shield-alt"></i> Claim Warranty</a>
-            <a href="support.html" class="stagger-link"><i class="fas fa-headset"></i> Concierge Support</a>
+            <a href="wishlist.html" style="color: var(--primary); background: var(--bg-color);"><i class="fas fa-heart"></i> My Wishlist</a>
+            <a href="track.html"><i class="fas fa-box-open"></i> My Orders</a>
+            <a href="warrenty.html"><i class="fas fa-shield-alt"></i> Claim Warranty</a>
+            <a href="sellerpanlevurification.html"><i class="fas fa-store"></i> Sell on Our Platform</a>
+            <a href="support.html"><i class="fas fa-headset"></i> Support</a>
         </nav>
         <div class="sidebar-footer">
             <button class="btn-sidebar-logout" id="sidebarLogoutBtn" onclick="logOut()" style="display:none;"><i class="fas fa-sign-out-alt"></i> Secure Logout</button>
@@ -169,9 +169,19 @@
     <div class="dimmer" id="overlay" onclick="closeSidebar()"></div>
     
     <div class="modal" id="imageZoomModal" style="z-index: 6000; background: rgba(10,10,10,0.95); display: none; flex-direction: column;">
-        <span class="exit-modal" onclick="document.getElementById('imageZoomModal').style.display='none'" style="color: white; right: 30px; top: 30px; z-index: 6001; cursor: pointer; font-size: 24px;"><i class="fas fa-times"></i></span>
+        <span class="exit-modal" onclick="document.getElementById('imageZoomModal').style.display='none'" style="color: white; right: 30px; top: 30px; z-index: 6001; cursor: pointer; font-size: 24px; position:absolute;"><i class="fas fa-times"></i></span>
         <div style="flex-grow: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; width: 100%;">
             <img id="zoomedImage" src="" style="max-width: 100%; max-height: 80vh; border-radius: 8px; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
+        </div>
+    </div>
+
+    <div class="modal" id="qrScannerModal" style="z-index: 6000; background: rgba(10,10,10,0.95); display: none; flex-direction: column;">
+        <span class="exit-modal" onclick="closeScanner()" style="color: white; right: 30px; top: 30px; z-index: 6001; cursor: pointer; font-size: 24px; position:absolute;"><i class="fas fa-times"></i></span>
+        <div style="background: white; padding: 25px; border-radius: 16px; width: 90%; max-width: 450px; text-align: center; margin: auto;">
+            <h3 style="margin-bottom: 5px; color: var(--primary);"><i class="fas fa-qrcode"></i> Scan QR Code</h3>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Point your camera at the QR code to verify.</p>
+            <div id="qr-reader" style="width:100%; border-radius:12px; overflow:hidden; border:2px solid var(--border);"></div>
+            <button class="btn-prime w-100" style="margin-top:20px; background:var(--danger);" onclick="closeScanner()"><i class="fas fa-times"></i> Cancel Scan</button>
         </div>
     </div>
 
@@ -202,7 +212,7 @@
             <div id="newClaimTab" class="tab-content active">
                 
                 <div class="warranty-panel" id="step1_verify">
-                    <h2 class="panel-title">Identify Your Product</h2>
+                    <h2 class="panel-title">Step 1: Identify Your Product</h2>
                     <p class="sub-text mb-15">Enter the Product Serial Number provided upon delivery.</p>
                     <input type="text" id="serialInput" class="modern-input" placeholder="e.g. SN-99823471">
                     <button class="btn-prime w-100 mt-10" id="btnVerify" onclick="verifySerial()"><i class="fas fa-search"></i> Verify Serial Number</button>
@@ -226,16 +236,40 @@
                     </div>
                 </div>
 
+                <div class="warranty-panel" id="step1_invoice" style="display:none;">
+                    <button class="btn-back mb-15" style="padding:0; background: transparent; border: none; cursor: pointer; font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px;" onclick="resetFlow()"><i class="fas fa-arrow-left"></i> Cancel Process</button>
+                    <h2 class="panel-title">Step 2: Scan Official Invoice QR</h2>
+                    <p class="sub-text mb-15">Please scan the QR code data printed on your original Aryanta tax invoice to authenticate your purchase.</p>
+                    
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="text" id="invoiceQrInput" class="modern-input" placeholder="Scan or paste Invoice QR here..." style="margin-bottom:0; flex-grow:1;">
+                        <button class="btn-prime" style="background:#2563eb; padding: 13px 20px; white-space:nowrap;" onclick="openScanner('invoice')"><i class="fas fa-camera"></i> Scan</button>
+                    </div>
+                    <button class="btn-prime w-100 mt-15" id="btnVerifyInvoice" onclick="verifyInvoiceQR()"><i class="fas fa-qrcode"></i> Validate Invoice Details</button>
+                </div>
+
+                <div class="warranty-panel" id="step1_shipping" style="display:none;">
+                    <button class="btn-back mb-15" style="padding:0; background: transparent; border: none; cursor: pointer; font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px;" onclick="resetFlow()"><i class="fas fa-arrow-left"></i> Cancel Process</button>
+                    <h2 class="panel-title">Step 3: Scan Shipping QR</h2>
+                    <p class="sub-text mb-15">Please scan the 17-digit physical Shipping QR code attached to your delivered product package.</p>
+                    
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="text" id="shippingQrInput" class="modern-input" placeholder="Scan or enter 17-digit Asset Tag..." maxlength="17" style="margin-bottom:0; flex-grow:1; font-family: monospace; font-weight:bold;">
+                        <button class="btn-prime" style="background:#2563eb; padding: 13px 20px; white-space:nowrap;" onclick="openScanner('shipping')"><i class="fas fa-camera"></i> Scan</button>
+                    </div>
+                    <button class="btn-prime w-100 mt-15" id="btnVerifyShipping" onclick="verifyShippingQR()"><i class="fas fa-box"></i> Validate Shipping Tag</button>
+                </div>
+
                 <div class="warranty-panel" id="step2_details" style="display:none;">
-                    <button class="btn-back mb-15" style="padding:0; background: transparent; border: none; cursor: pointer; font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px;" onclick="resetFlow()"><i class="fas fa-arrow-left"></i> Back</button>
-                    <h2 class="panel-title">Product Successfully Verified</h2>
+                    <button class="btn-back mb-15" style="padding:0; background: transparent; border: none; cursor: pointer; font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px;" onclick="resetFlow()"><i class="fas fa-arrow-left"></i> Cancel Authentication</button>
+                    <h2 class="panel-title">Asset Successfully Verified</h2>
                     
                     <div id="warrantyCountdownBanner" style="background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; padding: 15px; border-radius: 12px; font-weight: 800; margin-bottom: 20px; text-align: center; font-size: 18px;">
                         <i class="fas fa-check-circle"></i> Warranty is Active (<span id="daysRemaining">0</span> Days Left)
                     </div>
 
                     <div class="invoice-box">
-                        <div class="invoice-box-title"><i class="fas fa-shield-check"></i> Warranty Record Found</div>
+                        <div class="invoice-box-title"><i class="fas fa-shield-check"></i> Authentic Warranty Record Found</div>
                         <p class="invoice-info-text"><i class="fas fa-box"></i> Item: <span id="detItemName" style="margin-left: 10px; color: #000;">---</span></p>
                         <p class="invoice-info-text"><i class="fas fa-user"></i> Ordered By: <span id="detOrderedBy" style="margin-left: 10px; color: #000;">---</span></p>
                         <p class="invoice-info-text"><i class="fas fa-calendar-plus"></i> Warranty Start: <span id="detWarrStart" style="margin-left: 10px; color: #000;">---</span></p>
@@ -398,9 +432,11 @@
         let generatedClaimId = null;
         let crossAccountOTP = "";
         let selectedResolution = "Refund";
-        
-        // This holds the auto-appended final reason
         let finalConcatenatedReason = "";
+        
+        // Scanner Variables
+        let html5QrcodeScanner = null;
+        let currentScanTarget = null; // 'invoice' or 'shipping'
 
         // --- ULTRA-FAST BOOT ---
         function fastBoot() {
@@ -449,25 +485,29 @@
 
         function resetFlow() {
             document.getElementById('step1_verify').style.display = 'block';
+            document.getElementById('step1_invoice').style.display = 'none';
+            document.getElementById('step1_shipping').style.display = 'none';
             document.getElementById('step2_details').style.display = 'none';
             document.getElementById('step3_form').style.display = 'none';
             document.getElementById('step4_slip').style.display = 'none';
+            
             document.getElementById('notFoundContainer').style.display = 'none';
             document.getElementById('crossAccountAuth').style.display = 'none';
-            
             document.getElementById('crossInputStep').style.display = 'block';
             document.getElementById('crossOtpStep').style.display = 'none';
+            
             document.getElementById('crossVerifyInput').value = "";
             document.getElementById('crossOtpInput').value = "";
+            document.getElementById('serialInput').value = "";
+            document.getElementById('invoiceQrInput').value = "";
+            document.getElementById('shippingQrInput').value = "";
+            document.getElementById('claimReasonInput').value = "";
+            document.getElementById('claimVideoLink').value = "";
             
             document.querySelectorAll('.claim-declaration').forEach(d => d.checked = false);
             
             crossAccountOTP = "";
             finalConcatenatedReason = "";
-            document.getElementById('serialInput').value = "";
-            document.getElementById('claimReasonInput').value = "";
-            document.getElementById('claimVideoLink').value = "";
-            
             itemImagesBase64 = [];
             serialImageBase64 = null;
             
@@ -478,6 +518,47 @@
             selectResolution('Refund');
         }
 
+        // ================= CAMERA SCANNER LOGIC =================
+        function openScanner(target) {
+            currentScanTarget = target;
+            document.getElementById('qrScannerModal').style.display = 'flex';
+            
+            if (!html5QrcodeScanner) {
+                html5QrcodeScanner = new Html5QrcodeScanner(
+                    "qr-reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
+            }
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        }
+
+        function closeScanner() {
+            document.getElementById('qrScannerModal').style.display = 'none';
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear().catch(error => {
+                    console.error("Failed to clear scanner.", error);
+                });
+                html5QrcodeScanner = null; // reset to avoid rendering issues on reopen
+            }
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            closeScanner();
+            
+            if (currentScanTarget === 'invoice') {
+                document.getElementById('invoiceQrInput').value = decodedText;
+                verifyInvoiceQR(); // Auto trigger validation
+            } else if (currentScanTarget === 'shipping') {
+                document.getElementById('shippingQrInput').value = decodedText;
+                verifyShippingQR(); // Auto trigger validation
+            }
+        }
+
+        function onScanFailure(error) {
+            // Continuously called when no QR code is in frame. Ignore silently.
+        }
+
+        // ================= NEW MULTI-STEP VERIFICATION LOGIC =================
+
+        // Step 1: Verify Serial Number
         async function verifySerial() {
             const serial = document.getElementById('serialInput').value.trim();
             if(!serial) return sysAlert("Please enter a Serial Number.", "Input Required", "error");
@@ -504,13 +585,15 @@
                 } 
                 
                 claimContext.order = snapshot.docs[0].data();
+                claimContext.order.id = snapshot.docs[0].id;
                 
                 if (claimContext.order.user_email !== user.email) {
                     crossAuthBox.style.display = 'block';
                     return; 
                 }
 
-                await runStrictValidations(serial);
+                // Move to Step 2: Invoice Scan
+                proceedToInvoiceScan();
 
             } catch (e) {
                 sysAlert("Network Error: Could not verify serial number.", "Error", "error");
@@ -520,6 +603,7 @@
             }
         }
 
+        // Cross-Account Auth Helper
         async function processCrossAccountVerification() {
             const input = document.getElementById('crossVerifyInput').value.trim();
             if(!input) return sysAlert("Please enter the original Email or Phone.", "Input Required", "error");
@@ -561,18 +645,55 @@
             if(!otpInput) return sysAlert("Please enter the 4-digit OTP.", "Input Required", "error");
             
             if(otpInput === crossAccountOTP) {
-                document.getElementById('crossAccountAuth').style.display = 'none';
-                await runStrictValidations(claimContext.order.serial_no);
+                proceedToInvoiceScan();
             } else {
                 sysAlert("Invalid Verification Code. Please try again.", "Verification Failed", "error");
             }
         }
 
+        function proceedToInvoiceScan() {
+            document.getElementById('step1_verify').style.display = 'none';
+            document.getElementById('crossAccountAuth').style.display = 'none';
+            document.getElementById('step1_invoice').style.display = 'block';
+        }
+
+        // Step 2: Verify Invoice QR
+        function verifyInvoiceQR() {
+            const input = document.getElementById('invoiceQrInput').value.trim();
+            if(!input) return sysAlert("Please scan the Invoice QR.", "Input Required", "error");
+            
+            const expectedOrderNo = claimContext.order.order_no || claimContext.order.id;
+            
+            if(input === expectedOrderNo) {
+                document.getElementById('step1_invoice').style.display = 'none';
+                document.getElementById('step1_shipping').style.display = 'block';
+            } else {
+                sysAlert("This is not a valid qr try again or contacct comny 06414054676 email suppor@aryanta.com", "Invalid QR", "error");
+            }
+        }
+
+        // Step 3: Verify Shipping QR
+        function verifyShippingQR() {
+            const input = document.getElementById('shippingQrInput').value.trim();
+            if(!input) return sysAlert("Please scan the Shipping QR.", "Input Required", "error");
+            
+            const expectedLinkedQr = claimContext.order.linkedQrCode;
+            
+            if(!expectedLinkedQr || input !== expectedLinkedQr) {
+                sysAlert("This is not a valid qr try again or contacct comny 06414054676 email suppor@aryanta.com", "Invalid QR", "error");
+            } else {
+                document.getElementById('step1_shipping').style.display = 'none';
+                runStrictValidations(claimContext.order.serial_no);
+            }
+        }
+
+        // Step 4: Final Validation and Show Details
         async function runStrictValidations(serial) {
-            const notFoundBox = document.getElementById('notFoundContainer');
             const orderStatus = (claimContext.order.status || "").toLowerCase();
             
             if(orderStatus.includes("cancel") || orderStatus.includes("return")) {
+                document.getElementById('step1_verify').style.display = 'block';
+                const notFoundBox = document.getElementById('notFoundContainer');
                 notFoundBox.style.display = 'block';
                 notFoundBox.innerHTML = '<p style="color: var(--danger); font-weight: 700;"><i class="fas fa-ban"></i> This item was cancelled or returned and is no longer eligible for warranty.</p>';
                 return;
@@ -580,6 +701,8 @@
             
             const claimSnapshot = await db.collection("warranty_claims").where("serial_no", "==", serial).get();
             if(!claimSnapshot.empty) {
+                document.getElementById('step1_verify').style.display = 'block';
+                const notFoundBox = document.getElementById('notFoundContainer');
                 notFoundBox.style.display = 'block';
                 notFoundBox.innerHTML = '<p style="color: var(--danger); font-weight: 700;"><i class="fas fa-clipboard-check"></i> A warranty claim for this serial number has already been submitted.</p>';
                 return;
@@ -590,6 +713,8 @@
             
             const banner = document.getElementById('warrantyCountdownBanner');
             if (daysLeft <= 0) {
+                document.getElementById('step1_verify').style.display = 'block';
+                const notFoundBox = document.getElementById('notFoundContainer');
                 banner.style.background = "#fef2f2";
                 banner.style.color = "#991b1b";
                 banner.style.borderColor = "#fecaca";
@@ -604,7 +729,6 @@
                 banner.innerHTML = `<i class="fas fa-check-circle"></i> Warranty is Active (<span style="font-size:22px;">${daysLeft}</span> Days Left)`;
             }
 
-            document.getElementById('step1_verify').style.display = 'none';
             const itemName = (claimContext.order.items && claimContext.order.items.length > 0) ? claimContext.order.items[0].name : "Premium Item";
             
             document.getElementById('detItemName').innerText = itemName;
@@ -615,8 +739,8 @@
             document.getElementById('step2_details').style.display = 'block';
         }
 
+        // ================= FORM & MULTIMEDIA LOGIC =================
         function proceedToClaimForm() {
-            // Check Declarations
             const decls = document.querySelectorAll('.claim-declaration');
             let allChecked = true;
             decls.forEach(d => { if(!d.checked) allChecked = false; });
@@ -638,7 +762,6 @@
             document.getElementById('step3_form').style.display = 'block';
         }
 
-        // --- MULTIMEDIA UPLOADS ---
         const itemDrop = document.getElementById('itemDropZone');
         const itemInput = document.getElementById('itemImageInput');
         itemDrop.addEventListener('click', () => itemInput.click());
@@ -755,7 +878,6 @@
             if(!baseReason) return sysAlert('Please describe why you are claiming the warranty.', "Required", "error");
             if(itemImagesBase64.length === 0 || !serialImageBase64) return sysAlert('Both item and serial number images are strictly required to proceed.', "Evidence Required", "error");
 
-            // Auto-append details dynamically into description
             finalConcatenatedReason = baseReason;
             finalConcatenatedReason += `\n\n=== Selected Preferences ===`;
             finalConcatenatedReason += `\nResolution Preference: ${selectedResolution === 'Refund' ? 'Refund (Courier Pickup)' : 'Replacement (New Product)'}`;
@@ -781,7 +903,7 @@
 
             const html = generateOfficialSlipHTML(slipData);
             document.getElementById('visualSlipArea').innerHTML = html;
-            document.getElementById('printArea').innerHTML = html; // Sync print area
+            document.getElementById('printArea').innerHTML = html; 
 
             document.getElementById('step3_form').style.display = 'none';
             document.getElementById('step4_slip').style.display = 'block';
@@ -804,7 +926,7 @@
                 customer_name: document.getElementById('claimName').value.trim(),
                 customer_phone: document.getElementById('claimPhone').value.trim(),
                 customer_address: document.getElementById('claimAddress').value.trim(),
-                reason: finalConcatenatedReason, // Saves the perfectly appended string
+                reason: finalConcatenatedReason, 
                 item_images: itemImagesBase64,
                 serial_image: serialImageBase64,
                 status: 'Under Review', 
@@ -818,7 +940,6 @@
             try {
                 await db.collection('warranty_claims').doc(generatedClaimId).set(claimData);
                 
-                // Show modal AND blur the background elegantly
                 document.getElementById('claimSuccessModal').style.display = 'flex';
                 document.querySelector('.main-content').classList.add('blurred');
                 document.querySelector('.top-bar').classList.add('blurred');
@@ -921,7 +1042,6 @@
             }
         }
 
-        // Exact Match Print Logic for History Tab
         window.printClaimSlipHistory = function(claimId) {
             const data = window.claimsDataMap[claimId];
             if(!data) return;
@@ -936,14 +1056,12 @@
                 serialNo: data.serial_no,
                 orderNo: data.order_no,
                 warrPeriod: "Check Admin Portal", 
-                reason: data.reason, // Will already contain the appended resolution & video link
+                reason: data.reason, 
                 itemImages: data.item_images,
                 serialImage: data.serial_image
             };
 
-            // Inject Exact HTML Design
             document.getElementById('printArea').innerHTML = generateOfficialSlipHTML(slipData);
-            
             setTimeout(() => { window.print(); }, 200);
         };
     </script>
