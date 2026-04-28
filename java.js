@@ -1,10 +1,17 @@
-// --- 1. CORE CONFIGURATION ---
+// --- 1. CORE CONFIGURATION & DYNAMIC API KEYS ---
 const API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
 const PROJECT_ID = "aryanta-mart-a8893"; 
-const GOOGLE_CLIENT_ID = "534670405296-dat142ad15koph0aupropeau1997o1md.apps.googleusercontent.com";
-const RAZORPAY_KEY = "rzp_test_SfN9xZbqkMSz6G"; 
 
-emailjs.init("TDgNRO0CEs9rU3ozD");
+// Keys will be fetched dynamically from Cloudflare on boot
+let API_KEYS = {
+    RAZORPAY: "",
+    GOOGLE_CLIENT_ID: "",
+    EMAILJS_PUBLIC: "",
+    EMAILJS_OTP_SERVICE: "",
+    EMAILJS_OTP_TEMPLATE: "",
+    EMAILJS_ORDER_SERVICE: "", 
+    EMAILJS_ORDER_TEMPLATE: "" 
+};
 
 let allProducts = [];
 let baseCategoryProducts = []; 
@@ -23,14 +30,12 @@ let savedUserAddresses = [];
 let userAvatar = "";
 let walletBalance = 0; 
 let walletAppliedAmount = 0;
+let userCancelledCount = 0; // Tracks past cancellations
 
 let isGoogleSignup = false;
 let googleUserData = null;
 
 let siteConfig = { isSpecialDay: false, specialDayName: "", taxConfig: { baseShipping: 60, gstRate: 18, primeRadius: 120 } };
-
-const BHAGALPUR_LAT = 25.2425;
-const BHAGALPUR_LON = 86.9842;
 
 // --- 2. FAST BOOT OPTIMIZATION & REFRESH/URL LINKING ---
 let activeOverlays = [];
@@ -147,7 +152,6 @@ async function updateUserDataAPI(email, updateFields) {
     } catch(e) {}
 }
 
-// --- NEW FEATURE: BROADCAST LISTENER ---
 async function listenForBroadcasts() {
     try {
         const res = await fetch(`${API_BASE_URL}/get-broadcasts`);
@@ -193,7 +197,6 @@ async function fetchAppConfig() {
         const res = await fetch(`${API_BASE_URL}/config`);
         const data = await res.json();
 
-        // 1. Theme Configuration
         if(data && data.special_day && data.special_day.isActive) {
             const now = new Date();
             const start = new Date(data.special_day.startTime);
@@ -211,7 +214,6 @@ async function fetchAppConfig() {
             }
         }
         
-        // 2. Tax/Shipping Configuration
         if(data && data.global_tax) {
             siteConfig.taxConfig = data.global_tax;
         }
@@ -478,7 +480,6 @@ function renderProducts(list, containerId, append = false) {
         let adBadge = p.isAd ? `<div class="ad-badge">Sponsored <i class="fas fa-info-circle"></i></div>` : '';
         let stockWarning = (p.stock !== undefined && p.stock < 10) ? `<div class="stock-warning">Only ${p.stock} left in stock!</div>` : '';
 
-        // FIX: PERFECT VERIFIED TICK ALIGNMENT
         let sellerText = '';
         let adminVerified = false;
         if(!p.sellerEmail || p.sellerEmail === 'admin' || p.sellerName === 'Aryanta Admin') {
@@ -524,7 +525,6 @@ function renderProducts(list, containerId, append = false) {
     });
 }
 
-// --- NEW FEATURE: RECENTLY VIEWED TRACKER ---
 function trackRecentlyViewed(product) {
     let viewed = JSON.parse(localStorage.getItem('recently_viewed')) || [];
     viewed = viewed.filter(p => p.id !== product.id); 
@@ -598,7 +598,6 @@ window.openProductPage = async function(id) {
 
     document.getElementById('fpPrice').innerText = `₹${price.toLocaleString('en-IN')}`;
     
-    // Check Admin Verified Status for Full Page
     let adminVerified = false;
     if(!currentProduct.sellerEmail || currentProduct.sellerEmail === 'admin' || currentProduct.sellerName === 'Aryanta Admin') {
         adminVerified = true;
@@ -696,7 +695,6 @@ window.openQAPage = async function() {
     }, 500);
 }
 
-// --- NEW FEATURE: DB SYNC FOR Q&A ---
 window.askQuestion = async function() {
     const session = JSON.parse(localStorage.getItem('active_session'));
     if(!session) return showAlert("Please log in to ask a question.");
@@ -778,7 +776,6 @@ function renderWishlistPage() {
     renderProducts(wishedProducts, 'wishlistShelf', false);
 }
 
-// --- NEW FEATURE: NATIVE SHARE WISHLIST ---
 window.shareWishlist = function() {
     if(wishlist.length === 0) return showAlert("Your wishlist is empty.");
     let text = "Check out my Aryanta Wishlist:\n";
@@ -1213,69 +1210,6 @@ window.changeQty = function(id, d) {
 };
 window.removeFromCart = function(id) { cart = cart.filter(i => i.id !== id); updateCartUI(); saveCart(); };
 
-// --- 7. AUTHENTICATION & GOOGLE INTEGRATION ---
-async function secureHash(string) {
-    const msgBuffer = new TextEncoder().encode(string); const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-window.onload = function () {
-    if(window.google) {
-        try {
-            google.accounts.id.initialize({
-                client_id: GOOGLE_CLIENT_ID,
-                callback: handleGoogleCredentialResponse
-            });
-            google.accounts.id.renderButton(
-                document.getElementById("googleAuthBtnLogin"),
-                { theme: "outline", size: "large", shape: "rectangular", text: "signin_with" }
-            );
-            google.accounts.id.renderButton(
-                document.getElementById("googleAuthBtnSignup"),
-                { theme: "outline", size: "large", shape: "rectangular", text: "signup_with" }
-            );
-        } catch(e) {
-            console.log("Ensure you added a valid Google Client ID to the JS file.", e);
-        }
-    }
-}
-
-function parseJwt(token) {
-    var base64Url = token.split('.')[1];
-    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-    return JSON.parse(jsonPayload);
-}
-
-async function handleGoogleCredentialResponse(response) {
-    const data = parseJwt(response.credential);
-    
-    try {
-        const checkRes = await fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(data.email)}`);
-        const existingUser = await checkRes.json();
-
-        if(existingUser && existingUser.email) {
-            localStorage.setItem('active_session', JSON.stringify(existingUser));
-            showAlert(`Welcome back, ${existingUser.name.split(' ')[0]}.`, "Login Success");
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            isGoogleSignup = true;
-            googleUserData = { name: data.name, email: data.email, avatar: data.picture };
-            
-            document.getElementById('regName').value = data.name;
-            document.getElementById('regEmail').value = data.email;
-            document.getElementById('regEmail').readOnly = true; 
-            
-            goToStep('signup');
-            document.getElementById('signupBtn').innerText = "Complete Profile"; 
-            showAlert("Please complete your delivery details (Phone, Address, Pincode) below to finish signing up.", "Almost Done!");
-        }
-    } catch (error) {
-        showAlert("Failed to connect to backend after Google Login.");
-    }
-}
 
 window.goToStep = function(step) { 
     document.getElementById('loginView').style.display = 'none'; 
@@ -1314,7 +1248,6 @@ function checkSession() {
         accBtn.onclick = () => window.openAccountPage();
         document.getElementById('sidebarAccountLink').onclick = (e) => { e.preventDefault(); window.openAccountPage(); };
         
-        // Prime Member Gold Tags UI Update
         if(session.isPrime) {
             const crown = document.getElementById('primeCrownBadge');
             if(crown) crown.style.display = 'block';
@@ -1383,7 +1316,12 @@ window.handleSignup = async function() {
     toggleButtonState('signupBtn', true, 'Send OTP');
     const rawOTP = Math.floor(1000 + Math.random() * 9000).toString(); hashedOTP = await secureHash(rawOTP);
     try { 
-        await emailjs.send("service_wnqvm4n", "template_5by2ldn", { to_email: tempUserData.email, to_name: tempUserData.name, otp_code: rawOTP }); 
+        // Use Dynamic OTP Keys from Cloudflare
+        await emailjs.send(API_KEYS.EMAILJS_OTP_SERVICE, API_KEYS.EMAILJS_OTP_TEMPLATE, { 
+            to_email: tempUserData.email, 
+            to_name: tempUserData.name, 
+            otp_code: rawOTP 
+        }); 
         showAlert("Verification code dispatched.", "Check Inbox"); 
         goToStep('otp'); 
     } catch (err) { 
@@ -1409,7 +1347,14 @@ window.handleLogin = async function() {
         
         tempUserData = { action: 'login', ...data }; 
         const rawOTP = Math.floor(1000 + Math.random() * 9000).toString(); hashedOTP = await secureHash(rawOTP);
-        await emailjs.send("service_wnqvm4n", "template_5by2ldn", { to_email: email, to_name: tempUserData.name, otp_code: rawOTP }); goToStep('otp');
+        
+        // Use Dynamic OTP Keys from Cloudflare
+        await emailjs.send(API_KEYS.EMAILJS_OTP_SERVICE, API_KEYS.EMAILJS_OTP_TEMPLATE, { 
+            to_email: email, 
+            to_name: tempUserData.name, 
+            otp_code: rawOTP 
+        }); 
+        goToStep('otp');
     } catch(err) { showAlert("Cloudflare connection failed."); } finally { toggleButtonState('loginBtn', false, 'Send OTP'); }
 };
 
@@ -1441,6 +1386,48 @@ window.completeAuth = async function() {
         } catch (error) { showAlert("Account creation failed via API. Please check your connection."); }
     } else { showAlert("Invalid Verification Code."); }
 };
+
+async function secureHash(string) {
+    const msgBuffer = new TextEncoder().encode(string); const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function parseJwt(token) {
+    var base64Url = token.split('.')[1];
+    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+}
+
+async function handleGoogleCredentialResponse(response) {
+    const data = parseJwt(response.credential);
+    
+    try {
+        const checkRes = await fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(data.email)}`);
+        const existingUser = await checkRes.json();
+
+        if(existingUser && existingUser.email) {
+            localStorage.setItem('active_session', JSON.stringify(existingUser));
+            showAlert(`Welcome back, ${existingUser.name.split(' ')[0]}.`, "Login Success");
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            isGoogleSignup = true;
+            googleUserData = { name: data.name, email: data.email, avatar: data.picture };
+            
+            document.getElementById('regName').value = data.name;
+            document.getElementById('regEmail').value = data.email;
+            document.getElementById('regEmail').readOnly = true; 
+            
+            goToStep('signup');
+            document.getElementById('signupBtn').innerText = "Complete Profile"; 
+            showAlert("Please complete your delivery details (Phone, Address, Pincode) below to finish signing up.", "Almost Done!");
+        }
+    } catch (error) {
+        showAlert("Failed to connect to backend after Google Login.");
+    }
+}
 
 // --- 8. EDITABLE PROFILE & ADDRESS BOOK ---
 function initUserProfileAPI(email) {
@@ -1584,6 +1571,8 @@ window.openCheckoutDirect = async function() {
     currentOrderState.discount = 0;
     walletAppliedAmount = 0; 
     window.currentCouponValue = 0;
+    userCancelledCount = 0; // Initialize cancellation tracker
+
     document.getElementById('couponToggle').style.display = 'flex';
     document.getElementById('couponBox').style.display = 'none';
     document.getElementById('couponChoiceBox').style.display = 'none';
@@ -1605,6 +1594,15 @@ window.openCheckoutDirect = async function() {
     
     if (savedUserAddresses.length === 0) await initUserProfileAPI(session.email);
     renderCheckoutAddressesList();
+
+    // 🔒 CHECK PAST CANCELLATIONS FOR COD LOGIC 🔒
+    try {
+        const res = await fetch(`${API_BASE_URL}/my-orders?email=${encodeURIComponent(session.email)}`);
+        const orders = await res.json();
+        if(Array.isArray(orders)) {
+            userCancelledCount = orders.filter(o => o.status === 'Cancelled' || o.status === 'Returned' || o.status.toLowerCase().includes('return')).length;
+        }
+    } catch(e) { console.warn("Could not fetch order history for COD check."); }
 };
 
 function renderCheckoutAddressesList() {
@@ -1624,48 +1622,57 @@ function renderCheckoutAddressesList() {
     }
 }
 
-function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-    const R = 6371; const dLat = (lat2 - lat1) * (Math.PI/180); const dLon = (lon2 - lon1) * (Math.PI/180); 
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * (Math.PI/180)) * Math.cos(lat2 * (Math.PI/180)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
-    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
-}
-
+// 🔥 FIXED 60RS DELIVERY CHARGE FUNCTION 🔥
 window.calculateShippingAndProceed = async function() {
     const pincode = document.getElementById('chkPincode').value;
     if(!pincode) return showAlert("Pincode is mandatory for shipping calculation.");
     toggleButtonState('calcShippingBtn', true, 'Calculating...');
 
     const session = JSON.parse(localStorage.getItem('active_session'));
-    const baseShip = siteConfig.taxConfig.baseShipping || 60;
-    const primeRad = siteConfig.taxConfig.primeRadius || 120;
+    
+    // STRICTLY 60RS DELIVERY CHARGE
+    let shippingFee = 60; 
+    
+    // Prime members get free delivery
+    if(session && session.isPrime) shippingFee = 0;
 
-    try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${pincode},+India`);
-        const data = await res.json();
-        let shippingFee = baseShip; 
-        
-        if (data && data.length > 0) {
-            const distance = getDistanceFromLatLonInKm(BHAGALPUR_LAT, BHAGALPUR_LON, parseFloat(data[0].lat), parseFloat(data[0].lon));
-            if (distance < 10) shippingFee = Math.round(baseShip * 0.2);
-            else if (distance < 35) shippingFee = Math.round(baseShip * 0.5);
-            else if (distance < 70) shippingFee = baseShip;
-            else if (distance < primeRad) shippingFee = Math.round(baseShip * 1.5);
-            else shippingFee = Math.round(baseShip * 2.5);
+    currentOrderState.shippingCost = shippingFee;
+    updateCheckoutMiniReceipt();
+    
+    document.getElementById('checkoutStep1').style.display = 'none'; 
+    document.getElementById('checkoutStep2').style.display = 'block';
+    toggleButtonState('calcShippingBtn', false, 'Next Step <i class="fas fa-arrow-right"></i>');
+
+    // 🔒 COD UI CANCELLATION WARNING LOGIC 🔒
+    const codRadio = document.querySelector('input[name="payMethod"][value="cod"]');
+    const onlineRadio = document.querySelector('input[name="payMethod"][value="online"]');
+    
+    let warningDiv = document.getElementById('codWarningBox');
+    if(!warningDiv) {
+        warningDiv = document.createElement('div');
+        warningDiv.id = 'codWarningBox';
+        const payBtn = document.getElementById('payBtn');
+        if(payBtn) payBtn.parentNode.insertBefore(warningDiv, payBtn);
+    }
+
+    const updatePaymentUI = () => {
+        const isCOD = codRadio && codRadio.checked;
+        if(isCOD && userCancelledCount >= 3) {
+            warningDiv.style = "display:block; background:#fee2e2; color:#991b1b; padding:12px; border-radius:8px; font-size:13px; font-weight:bold; margin-bottom:15px; border: 1px solid #fecaca;";
+            warningDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Notice: Due to ${userCancelledCount} past cancellations, standard Cash on Delivery is blocked. You must pay the ₹${currentOrderState.shippingCost} shipping charge in advance to proceed.`;
+        } else if(isCOD) {
+            warningDiv.style = "display:block; background:#e0e7ff; color:#3730a3; padding:12px; border-radius:8px; font-size:13px; font-weight:bold; margin-bottom:15px; border: 1px solid #c7d2fe;";
+            warningDiv.innerHTML = `<i class="fas fa-info-circle"></i> Pay ₹0 now. Pay full amount on delivery.`;
+        } else {
+            warningDiv.style.display = 'none';
         }
+    };
 
-        // PRIME PERK
-        if(session && session.isPrime && shippingFee <= Math.round(baseShip * 1.5)) shippingFee = 0;
-
-        currentOrderState.shippingCost = shippingFee;
-        updateCheckoutMiniReceipt();
-        
-        document.getElementById('checkoutStep1').style.display = 'none'; document.getElementById('checkoutStep2').style.display = 'block';
-    } catch(err) {
-        currentOrderState.shippingCost = (session && session.isPrime) ? 0 : baseShip; 
-        updateCheckoutMiniReceipt();
-        document.getElementById('checkoutStep1').style.display = 'none'; document.getElementById('checkoutStep2').style.display = 'block';
-    } finally { toggleButtonState('calcShippingBtn', false, 'Next Step <i class="fas fa-arrow-right"></i>'); }
+    if(codRadio) codRadio.addEventListener('change', updatePaymentUI);
+    if(onlineRadio) onlineRadio.addEventListener('change', updatePaymentUI);
+    setTimeout(updatePaymentUI, 100);
 };
+
 
 window.toggleWalletCheckout = function() {
     if(walletBalance <= 0) return showAlert("Insufficient wallet balance.");
@@ -1717,7 +1724,6 @@ function updateCheckoutMiniReceipt() {
     document.getElementById('sumTotal').innerText = `₹${currentOrderState.finalPayable.toLocaleString('en-IN')}`;
 }
 
-// --- PROMO CODE ENGINE INTEGRATION ---
 window.validateAndShowCouponChoice = async function() {
     const code = document.getElementById('couponCode').value.toUpperCase().trim();
     const msg = document.getElementById('couponMessage');
@@ -1781,7 +1787,22 @@ window.applyCouponChoice = function(targetType) {
 
 window.processPayment = function() {
     const isCOD = document.querySelector('input[name="payMethod"]:checked').value === 'cod';
-    const amountToPay = isCOD ? Math.max(0, currentOrderState.shippingCost - currentOrderState.discount - walletAppliedAmount) : currentOrderState.finalPayable;
+    
+    // 🔒 COD LOGIC CHECK FOR FINAL AMOUNT 🔒
+    let amountToPay = 0;
+    
+    if (isCOD) {
+        if (userCancelledCount >= 3) {
+            // User flagged: Must pay shipping fee securely now
+            amountToPay = Math.max(0, currentOrderState.shippingCost - currentOrderState.discount - walletAppliedAmount);
+        } else {
+            // Honest User: Normal COD, no payment upfront
+            amountToPay = 0;
+        }
+    } else {
+        // Online full payment
+        amountToPay = currentOrderState.finalPayable;
+    }
 
     if (amountToPay === 0) {
         toggleButtonState('payBtn', true, 'Processing Order...');
@@ -1793,11 +1814,11 @@ window.processPayment = function() {
     setTimeout(() => {
         const session = JSON.parse(localStorage.getItem('active_session'));
         const options = {
-            "key": RAZORPAY_KEY, 
+            "key": API_KEYS.RAZORPAY, 
             "amount": amountToPay * 100, 
             "currency": "INR", 
             "name": "Aryanta",
-            "description": isCOD ? "Shipping Charge (COD Balance Later)" : "Full Order Payment",
+            "description": isCOD ? "Advance Shipping Fee (Past Cancellations)" : "Full Order Payment",
             "handler": function (response) { saveOrderToBackend(response.razorpay_payment_id, isCOD ? "Cash On Delivery" : "Online Full"); },
             "prefill": { "name": document.getElementById('chkName').value, "email": session.email, "contact": document.getElementById('chkPhone').value },
             "theme": { "color": "#0a0a0a" },
@@ -1873,11 +1894,14 @@ function buildGloriousReceipt(data) {
         emailItemsText += `${item.name} (x${item.qty}) - Rs.${item.price * item.qty}\n`; 
     });
     
-    try { emailjs.send("service_wnqvm4n", "template_5by2ldn", { 
-        to_email: data.user_email, to_name: data.delivery_name, order_no: data.order_no, 
-        address: data.delivery_address, items_list: emailItemsText, shipping: data.financials.shippingCost, 
-        grand_total: data.financials.finalPayable 
-    }).catch(err => console.log("Receipt email failed", err)); } catch(e) {}
+    try { 
+        // Use Dynamic Order Keys from Cloudflare
+        emailjs.send(API_KEYS.EMAILJS_ORDER_SERVICE, API_KEYS.EMAILJS_ORDER_TEMPLATE, { 
+            to_email: data.user_email, to_name: data.delivery_name, order_no: data.order_no, 
+            address: data.delivery_address, items_list: emailItemsText, shipping: data.financials.shippingCost, 
+            grand_total: data.financials.finalPayable 
+        }).catch(err => console.log("Receipt email failed", err)); 
+    } catch(e) {}
 }
 
 window.closeOrderSuccess = function() { location.reload(); }
@@ -1994,9 +2018,56 @@ window.addEventListener("scroll", function() {
     }
 });
 
-// INIT
-fetchAppConfig();
-checkSession(); 
-fetchBanners(); 
-fetchProducts();
-listenForBroadcasts();
+function initGoogleAuth() {
+    if(window.google && API_KEYS.GOOGLE_CLIENT_ID) {
+        try {
+            google.accounts.id.initialize({
+                client_id: API_KEYS.GOOGLE_CLIENT_ID,
+                callback: handleGoogleCredentialResponse
+            });
+            google.accounts.id.renderButton(
+                document.getElementById("googleAuthBtnLogin"),
+                { theme: "outline", size: "large", shape: "rectangular", text: "signin_with" }
+            );
+            google.accounts.id.renderButton(
+                document.getElementById("googleAuthBtnSignup"),
+                { theme: "outline", size: "large", shape: "rectangular", text: "signup_with" }
+            );
+        } catch(e) { console.log(e); }
+    }
+}
+
+async function fetchAppKeysAndBoot() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/get-api-keys`);
+        const data = await res.json();
+        
+        // Map Cloudflare response to internal variables
+        API_KEYS.RAZORPAY = data.razorpayKey || "";
+        API_KEYS.GOOGLE_CLIENT_ID = data.googleClientId || "";
+        API_KEYS.EMAILJS_PUBLIC = data.emailjsPublicKey || "";
+        API_KEYS.EMAILJS_OTP_SERVICE = data.emailjsOtpService || "";
+        API_KEYS.EMAILJS_OTP_TEMPLATE = data.emailjsOtpTemplate || "";
+        API_KEYS.EMAILJS_ORDER_SERVICE = data.emailjsOrderService || "";
+        API_KEYS.EMAILJS_ORDER_TEMPLATE = data.emailjsOrderTemplate || "";
+
+        // Initialize EmailJS with the dynamic public key
+        if (API_KEYS.EMAILJS_PUBLIC) {
+            emailjs.init(API_KEYS.EMAILJS_PUBLIC);
+        }
+
+        initGoogleAuth();
+    } catch(e) {
+        console.warn("Failed to fetch dynamic API keys from Cloudflare.", e);
+    }
+
+    // Proceed with normal booting
+    fetchAppConfig();
+    checkSession(); 
+    fetchBanners(); 
+    fetchProducts();
+    listenForBroadcasts();
+}
+
+// Start System Boot Sequence
+fetchAppKeysAndBoot();
