@@ -7,8 +7,6 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
     <style>
         :root {
@@ -170,11 +168,11 @@
                     <div class="input-group full"><label class="input-label">Expected Monthly Sales on Aryanta</label><input type="text" id="s_expected" class="modern-input" placeholder="e.g. ₹50,000" required></div>
                     <div class="input-group full"><label class="input-label">How did you reach us?</label><select id="s_reach" class="modern-input" required><option value="">Select Source</option><option value="Social Media">Social Media</option><option value="Search Engine">Google/Search</option><option value="Advertisement">Advertisement</option></select></div>
                 </div>
-                <div class="btn-group"><button type="button" class="btn btn-secondary" onclick="prevStep(3, 2)"><i class="fas fa-arrow-left"></i> Back</button><button type="button" class="btn btn-primary" onclick="generateSummary()">Review & Confirm <i class="fas fa-check"></i></button></div>
+                <div class="btn-group"><button type="button" class="btn btn-secondary" onclick="prevStep(3, 2)"><i class="fas fa-arrow-left"></i> Back</button><button type="button" class="btn btn-primary" onclick="generateSummary()">Review Details <i class="fas fa-check"></i></button></div>
             </div>
 
             <div class="form-panel" id="step4">
-                <div class="panel-title">Verification & Payment</div>
+                <div class="panel-title">Review & Submit</div>
                 
                 <div class="summary-box">
                     <h3 style="font-size: 14px; color: var(--accent); margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">Personal Details</h3>
@@ -192,20 +190,12 @@
 
                 <div class="summary-box">
                     <h3 style="font-size: 14px; color: var(--accent); margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">KYC Documents Uploaded</h3>
-                    <p style="font-size: 12px; color: var(--text-sub); margin-bottom: 10px;">Please verify your documents before paying.</p>
                     <div id="sum_images"></div>
-                </div>
-
-                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
-                    <i class="fas fa-shield-alt" style="font-size: 30px; color: var(--success); margin-bottom: 10px;"></i>
-                    <h3 style="color: #166534; margin-bottom: 5px;">One-Time Verification Fee</h3>
-                    <p style="color: #15803d; font-size: 13px; margin-bottom: 15px;">To authenticate your seller account and prevent spam, a nominal, refundable fee is required.</p>
-                    <h1 style="font-size: 40px; color: var(--success); font-weight: 900;">₹59</h1>
                 </div>
 
                 <div class="btn-group">
                     <button type="button" class="btn btn-secondary" onclick="prevStep(4, 3)"><i class="fas fa-arrow-left"></i> Edit Details</button>
-                    <button type="button" class="btn btn-pay" id="finalPayBtn" onclick="processPayment()">Pay ₹59 & Submit Form <i class="fas fa-lock"></i></button>
+                    <button type="button" class="btn btn-pay" id="finalPayBtn" onclick="saveDataToDatabase()"><i class="fas fa-check-circle"></i> Submit Application</button>
                 </div>
             </div>
 
@@ -339,27 +329,7 @@
             nextStep(3, 4);
         }
 
-        function processPayment() {
-            const options = {
-                "key": "rzp_test_SfN9xZbqkMSz6G", 
-                "amount": 5900, 
-                "currency": "INR",
-                "name": "Aryanta Seller Registration",
-                "description": "One-Time KYC Verification Fee",
-                "handler": function (response) { saveDataToDatabase(response.razorpay_payment_id); },
-                "prefill": { "name": document.getElementById('p_name').value, "email": document.getElementById('p_email').value, "contact": document.getElementById('p_phone').value },
-                "theme": { "color": "#000000" }
-            };
-            
-            try {
-                const rzp = new Razorpay(options); rzp.open();
-            } catch (err) {
-                showAlert("Gateway Error", "Razorpay script failed. Simulating payment...", "info");
-                setTimeout(() => { saveDataToDatabase("MOCK_PAY_" + Date.now()); }, 1500);
-            }
-        }
-
-        async function saveDataToDatabase(paymentId) {
+        async function saveDataToDatabase() {
             document.getElementById('finalPayBtn').innerHTML = `<i class="fas fa-spinner fa-spin"></i> Submitting...`;
             document.getElementById('finalPayBtn').disabled = true;
             
@@ -386,7 +356,7 @@
                     expectedSales: document.getElementById('s_expected').value, reachSource: document.getElementById('s_reach').value
                 },
                 payment: {
-                    status: "Completed", amountPaid: 59, transactionId: paymentId, date: new Date().toISOString()
+                    status: "Waived", amountPaid: 0, transactionId: "N/A", date: new Date().toISOString()
                 },
                 status: "Pending", 
                 timestamp: new Date().toISOString()
@@ -403,13 +373,13 @@
                 if(!response.ok) throw new Error("Failed to save data");
 
                 document.getElementById('alertModal').style.display = 'none';
-                showAlert("Application Submitted!", "Your payment was successful. Details sent to Admin for verification.", "success");
+                showAlert("Application Submitted!", "Your details have been successfully submitted to Admin for verification.", "success");
                 
-                setTimeout(() => { window.location.href = "index.html"; }, 3000);
+                setTimeout(() => { window.location.href = "seller.html"; }, 3000);
             } catch(e) {
-                document.getElementById('finalPayBtn').innerHTML = `Pay ₹59 & Submit Form <i class="fas fa-lock"></i>`;
+                document.getElementById('finalPayBtn').innerHTML = `<i class="fas fa-check-circle"></i> Submit Application`;
                 document.getElementById('finalPayBtn').disabled = false;
-                showAlert("Server Error", "Payment successful, but failed to save details to database. Please contact support.", "error");
+                showAlert("Server Error", "Failed to save details to database. Please check your connection and try again.", "error");
             }
         }
     </script>
