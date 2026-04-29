@@ -1,12 +1,16 @@
+// seller.js - Fully Restored Firebase SDK Logic, Print/PDF Fixes, & 7-Day Suspension
+
+const API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
+
 // API Keys
 let API_KEYS = {
-    RAZORPAY: "rzp_test_YourRazorpayKeyHere",
-    EMAILJS_PUBLIC: "YourEmailJSPublicKey",
-    EMAILJS_OTP_SERVICE: "YourServiceID",
-    EMAILJS_OTP_TEMPLATE: "YourTemplateID"
+    RAZORPAY: "",
+    EMAILJS_PUBLIC: "",
+    EMAILJS_OTP_SERVICE: "",
+    EMAILJS_OTP_TEMPLATE: ""
 };
 
-// FIREBASE CONFIGURATION (Pure SDK logic restored)
+// PURE FIREBASE SDK CONFIGURATION (Restored original direct DB access)
 const firebaseConfig = {
     apiKey: "YOUR_API_KEY",
     authDomain: "aryanta-mart-a8893.firebaseapp.com",
@@ -16,13 +20,14 @@ const firebaseConfig = {
     appId: "YOUR_APP_ID"
 };
 
-// Initialize Firebase
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const db = firebase.firestore();
 
-// PURE SELLER VARIABLES ONLY
+let suspendInterval;
+
+// GLOBALS
 let currentSeller = null;
 let sellerProducts = [];
 let sellerOrders = [];
@@ -37,13 +42,45 @@ let html5QrcodeScanner = null;
 let currentPlanDuration = 'month'; 
 let cachedTotalUpcoming = 0; 
 
-// ================= UI & STRICT PRIVACY MASKING =================
-function renderStatusScreen(title, msg, isSuspended = false) {
+// ================= UI & MASKING =================
+function renderStatusScreen(title, msg, isSuspended = false, endTime = null) {
     document.getElementById("loginBox").style.display = "none";
     document.getElementById("statusBox").style.display = "block";
     document.getElementById("statusTitle").innerText = title;
     document.getElementById("statusTitle").style.color = isSuspended ? "var(--warning)" : "var(--danger)";
     document.getElementById("statusMessage").innerHTML = msg;
+    
+    const timerEl = document.getElementById("suspendTimer");
+    if (isSuspended && endTime) {
+        timerEl.style.display = "block";
+        clearInterval(suspendInterval);
+        suspendInterval = setInterval(() => {
+            const now = Date.now();
+            const diff = endTime - now;
+            if (diff <= 0) {
+                clearInterval(suspendInterval);
+                timerEl.innerText = "Suspension Over! Unblocking...";
+                currentSeller.status = "Active";
+                currentSeller.suspendedAt = null;
+                localStorage.setItem('sellerToken', JSON.stringify(currentSeller));
+                
+                db.collection("sellers").doc(currentSeller.email).update({ 
+                    status: "Active",
+                    suspendedAt: firebase.firestore.FieldValue.delete()
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const s = Math.floor((diff % (1000 * 60)) / 1000);
+                timerEl.innerText = `${d}d ${h}h ${m}m ${s}s`;
+            }
+        }, 1000);
+    } else {
+        timerEl.style.display = "none";
+    }
 }
 
 window.toggleSidebar = function() { 
@@ -113,9 +150,8 @@ window.showToast = function(msg, type="info") {
 
 function safeSetText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text; }
 
-// ================= AUTHENTICATION & EXPIRY ALERTS =================
+// ================= AUTHENTICATION & SUSPENSION =================
 function checkSession() {
-    // Uses localStorage to save preferences persistently
     const token = localStorage.getItem('sellerToken');
     const loader = document.getElementById("pageLoader");
 
@@ -133,12 +169,34 @@ function checkSession() {
         }
         if(currentSeller.status === "Suspended") {
             document.getElementById("loginOverlay").style.display = "flex"; if(loader) loader.style.display = "none";
-            renderStatusScreen(
-                "Account Suspended", 
-                "Your account is temporarily suspended by admin.<br><br>Get support by:<br>📞 Phone: <strong>06414054676</strong><br>✉️ Email: <strong>support@aryanta.com</strong>", 
-                true
-            );
-            return;
+            
+            // 7 Days Suspension Logic
+            let suspendTime = currentSeller.suspendedAt ? new Date(currentSeller.suspendedAt).getTime() : Date.now();
+            let unlockTime = suspendTime + (7 * 24 * 60 * 60 * 1000); 
+            
+            if (Date.now() >= unlockTime) {
+                currentSeller.status = "Active";
+                currentSeller.suspendedAt = null;
+                localStorage.setItem('sellerToken', JSON.stringify(currentSeller));
+                db.collection("sellers").doc(currentSeller.email).update({ 
+                    status: "Active", suspendedAt: firebase.firestore.FieldValue.delete() 
+                }).catch(e=>console.error(e));
+                
+                document.getElementById("loginOverlay").style.display = "none"; 
+                document.querySelector(".seller-container").style.display = "block";
+            } else {
+                if (!currentSeller.suspendedAt) {
+                    currentSeller.suspendedAt = new Date().toISOString();
+                    db.collection("sellers").doc(currentSeller.email).update({ suspendedAt: currentSeller.suspendedAt });
+                }
+                renderStatusScreen(
+                    "Account Suspended", 
+                    "Your account is temporarily suspended by admin. You will be automatically unblocked after the timer reaches zero.<br><br>Get support by:<br>📞 Phone: <strong>06414054676</strong><br>✉️ Email: <strong>support@aryanta.com</strong>", 
+                    true, 
+                    unlockTime
+                );
+                return;
+            }
         }
         
         applySettingsToUI();
@@ -409,7 +467,6 @@ window.toggleSetting = async function(key) {
     currentSeller.settings[key] = isChecked;
     
     applySettingsToUI();
-    // Saving to Chrome Local Storage to persist changes instantly!
     localStorage.setItem('sellerToken', JSON.stringify(currentSeller));
     
     if(key === 'offline') {
@@ -429,7 +486,6 @@ window.toggleSetting = async function(key) {
 }
 
 function applySettingsToUI() {
-    // Specifically checks for 'theme' explicitly set to true.
     if(currentSeller && currentSeller.settings && currentSeller.settings.theme === true) { 
         document.body.classList.add('dark-theme'); 
     } else { 
@@ -750,6 +806,141 @@ function loadAcceptedOrders() {
     });
 }
 
+// ================= PRINTING & PDF DOWNLOAD (FULLY RESTORED & FIXED) =================
+window.processSlips = async function(mode, singleId = null) {
+    let selectedIds = []; if(singleId) { selectedIds.push(singleId); } else { document.querySelectorAll('.cb-acc:checked').forEach(cb => selectedIds.push(cb.value)); }
+    if(selectedIds.length === 0) return showToast("Select at least one order.", "warning");
+
+    const printArea = document.getElementById("printArea"); let printHtml = '';
+
+    for(let id of selectedIds) {
+        const o = sellerOrders.find(x => x.id === id); if(!o) continue;
+        let myItems = getSellerItemsFromOrder(o); let itemsHtml = myItems.map(i=>`<div style="display:flex; justify-content:space-between; border-bottom:1px solid #e2e8f0; padding:10px 0;"><span style="font-weight:600; font-size:14px;">${i.name} (x${i.qty})</span><span style="font-weight:800; font-size:14px;">₹${i.price}</span></div>`).join('');
+        
+        let warrStr = "N/A"; const p = sellerProducts.find(x => x.name === myItems[0].name);
+        if(p && p.warranty && p.warranty !== "No Warranty") warrStr = `Valid for ${p.warranty} from delivery date. Keep invoice safe.`;
+        
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(o.order_no || o.id)}`;
+
+        let realName = o.delivery_name || "Customer";
+        let realSellerName = currentSeller.companyName || currentSeller.email || "Seller";
+        
+        // STRICT PRIVACY: Masks email and phone EVEN on the print invoice as requested
+        let safeEmail = maskEmail(o.user_email);
+        let safePhone = maskPhone(o.delivery_phone);
+
+        let paymentStatusUI = o.payment_method && o.payment_method.toLowerCase().includes('cash') 
+            ? `<span style="color:var(--danger); font-weight:800; border: 2px dashed var(--danger); padding: 4px 8px;">CASH ON DELIVERY (COLLECT)</span>`
+            : `<span style="color:var(--success); font-weight:800; border: 2px solid var(--success); padding: 4px 8px;">PRE-PAID (ONLINE)</span>`;
+
+        printHtml += `
+        <div class="print-page" style="background:white; color:black;">
+            <div style="border: 2px solid #0f172a; padding:30px; border-radius:16px; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: white;">
+                <div style="display:flex; justify-content:space-between; border-bottom:4px solid #0f172a; padding-bottom:20px; margin-bottom:20px;">
+                    <div><h1 style="margin:0; font-size:28px; color:#0f172a; font-weight:900; letter-spacing:-1px;">ARYANTA</h1><p style="margin:5px 0 0 0; font-size:14px; color:#475569; font-weight:600;">support@aryanta.com | Ph: 06414054676</p></div>
+                    <div style="text-align:right;"><strong style="font-size:20px; color:#059669;">Tax Invoice & Dispatch Slip</strong></div>
+                </div>
+                
+                <div style="display:flex; justify-content:space-between; border-bottom:2px solid #e2e8f0; padding-bottom:25px; margin-bottom:25px;">
+                    <div style="width:55%; border:1px solid #cbd5e1; padding:15px; border-radius:12px; background:#f8fafc;">
+                        <strong style="font-size:16px; color:#0f172a;">SHIP TO:</strong><br>
+                        <strong style="font-size:18px; margin-top:5px; display:block;">${realName}</strong>
+                        <div style="font-size:14px; margin-top:5px; line-height:1.6; color:#1e293b;">
+                            Phone: <strong>${safePhone}</strong><br>
+                            Email: <strong>${safeEmail}</strong><br>
+                            Address: ${o.delivery_address || "N/A"}<br>${o.delivery_city || ""}, ${o.delivery_state || ""} - <strong>${o.delivery_pincode || ""}</strong><br>
+                        </div>
+                    </div>
+                    <div style="width:40%; text-align:right; display:flex; flex-direction:column; align-items:flex-end; justify-content:center;">
+                        <img src="${qrUrl}" crossorigin="anonymous" style="width:120px; height:120px; border:2px solid #cbd5e1; padding:5px; border-radius:12px;"><br>
+                        <strong style="font-size:14px; margin-top:10px;">Order ID: ${o.order_no || o.id}</strong>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom:25px; font-size:14px; border:1px solid #cbd5e1; padding:15px; border-radius:12px; background:#f8fafc; line-height:1.6; display: flex; justify-content: space-between;">
+                    <div><strong style="font-size:16px;">SELLER DETAILS:</strong><br><span style="font-weight:700;">${realSellerName}</span><br>${currentSeller.shopInfo?.address || 'N/A'}<br>City: ${currentSeller.shopInfo?.city || ''}</div>
+                    <div style="text-align:right;"><strong style="font-size:16px;">PAYMENT MODE:</strong><br>${paymentStatusUI}</div>
+                </div>
+                
+                <div style="border:2px solid #0f172a; padding:20px; margin-bottom:25px; border-radius:12px;">
+                    <h4 style="margin:0 0 15px 0; border-bottom:2px solid #0f172a; padding-bottom:10px; font-size:18px;">ITEMS ORDERED</h4>
+                    ${itemsHtml}
+                    <div style="text-align:right; margin-top:15px; font-size:20px; color:#0f172a;"><strong>SELLER PAYOUT: ₹${myItems.reduce((s,i)=>s+(Number(i.price)*Number(i.qty)),0)}</strong></div>
+                </div>
+                
+                <div style="border:2px dashed #059669; padding:15px; background:#ecfdf5; font-size:14px; border-radius:12px; color:#064e3b;">
+                    <strong>WARRANTY STATUS:</strong><br>${warrStr}
+                </div>
+            </div>
+        </div>`;
+        
+        try { db.collection("orders").doc(id).update({ printed: true }); } catch(e) {}
+    }
+
+    printArea.innerHTML = printHtml; 
+
+    if(mode === 'download') {
+        const loader = document.getElementById("pageLoader");
+        document.getElementById("loaderMessage").innerText = "Generating PDFs...";
+        loader.style.display = "flex"; loader.style.opacity = "1";
+
+        const images = printArea.getElementsByTagName('img');
+        let loadedImages = 0; let totalImages = images.length;
+
+        const triggerPDFGeneration = () => {
+            var opt = { margin: [10, 10], filename: `Aryanta_Invoice_${Date.now()}.pdf`, image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2, useCORS: true, allowTaint: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+            printArea.style.display = 'block';
+            printArea.style.position = 'absolute';
+            printArea.style.left = '-9999px';
+            html2pdf().set(opt).from(printArea).save().then(() => {
+                printArea.style.display = 'none'; printArea.style.position = 'static'; printArea.style.left = '0';
+                loader.style.opacity = "0"; 
+                setTimeout(() => { loader.style.display = "none"; document.getElementById("loaderMessage").innerText = "SYNCING LIVE DB..."; }, 300);
+                showToast("PDF Downloaded!", "success");
+            }).catch(e => {
+                printArea.style.display = 'none'; printArea.style.position = 'static'; loader.style.display = "none"; showToast("Failed to generate PDF", "error");
+            });
+        };
+
+        if (totalImages === 0) triggerPDFGeneration();
+        else {
+            for (let i = 0; i < totalImages; i++) {
+                if (images[i].complete) { loadedImages++; if (loadedImages === totalImages) triggerPDFGeneration(); } 
+                else { 
+                    images[i].onload = () => { loadedImages++; if (loadedImages === totalImages) triggerPDFGeneration(); }; 
+                    images[i].onerror = () => { loadedImages++; if (loadedImages === totalImages) triggerPDFGeneration(); }; 
+                }
+            }
+        }
+    } else { 
+        showToast("Opening Print Dialog...", "info"); 
+        
+        const loader = document.getElementById("pageLoader");
+        document.getElementById("loaderMessage").innerText = "Preparing Print...";
+        loader.style.display = "flex"; loader.style.opacity = "1";
+        
+        const images = printArea.getElementsByTagName('img');
+        let loadedImages = 0; let totalImages = images.length;
+        
+        const triggerPrint = () => {
+            loader.style.opacity = "0"; 
+            setTimeout(() => { loader.style.display = "none"; document.getElementById("loaderMessage").innerText = "SYNCING LIVE DB..."; }, 300);
+            setTimeout(() => { window.print(); }, 500); 
+        };
+        
+        if (totalImages === 0) triggerPrint();
+        else {
+            for (let i = 0; i < totalImages; i++) {
+                if (images[i].complete) { loadedImages++; if (loadedImages === totalImages) triggerPrint(); } 
+                else { 
+                    images[i].onload = () => { loadedImages++; if (loadedImages === totalImages) triggerPrint(); }; 
+                    images[i].onerror = () => { loadedImages++; if (loadedImages === totalImages) triggerPrint(); }; 
+                }
+            }
+        }
+    }
+}
+
 // ================= GLOBAL SCAN TO SHIP CAMERA =================
 let scanStep = 1; let isProcessingScan = false;
 
@@ -757,6 +948,8 @@ window.openGlobalScanModal = async function() {
     scanStep = 1; isProcessingScan = false; document.getElementById("scanOrderId").value = ""; document.getElementById("skipScanBtn").style.display = "none";
     document.getElementById("qr-reader").innerHTML = ""; document.getElementById("qr-reader").style.display = "none"; document.getElementById("scannerPlaceholder").style.display = "flex";
     document.getElementById("scanStatus").innerHTML = "Awaiting Pre-fetch check..."; document.getElementById("scanStatus").style.color = "var(--primary)"; document.getElementById("scanModal").style.display = "flex";
+
+    try { const snap = await db.collection("orders").orderBy("timestamp", "desc").limit(500).get(); sellerOrders = snap.docs.map(d=>({id:d.id, ...d.data()})); } catch(e) {}
 
     setTimeout(() => {
         document.getElementById("scannerPlaceholder").style.display = "none"; document.getElementById("qr-reader").style.display = "block"; document.getElementById("scanStatus").innerHTML = "Awaiting Invoice QR Scan...";
@@ -808,7 +1001,7 @@ window.skipAndShip = async function() {
     if(!confirm("Skip Scanning the shipping label? A fine of ₹7 will be deducted from your payout.")) return;
     try {
         await db.collection("fines").add({ email: currentSeller.email, amount: 7, reason: `Skipped label scan for Order ${id}`, timestamp: new Date().toISOString() });
-        try{ html5QrcodeScanner.clear(); } catch(e){} executeDispatch(id, "SKIPPED"); showToast("Shipped (₹7 Fine Applied)", "warning");
+        try{ html5QrcodeScanner.clear(); } catch(e){} executeDispatch(id, "SKIPPED_SCAN"); showToast("Shipped (₹7 Fine Applied)", "warning");
     } catch(e) {}
 }
 
@@ -1245,7 +1438,7 @@ window.openB2bBuyModal = function(id) {
     let imgSrc = p.image || '';
     document.getElementById("b2bProductInfo").innerHTML = `
         <div style="display:flex; flex-direction: column; align-items: center; text-align: center; gap: 15px; margin-bottom: 20px;">
-            <img src="${imgSrc}" style="width: 100%; max-height: 250px; object-fit: contain; border-radius: 12px; border: 1px solid var(--border-color);">
+            <img src="${imgSrc}" style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 12px; border: 1px solid var(--border-color);">
             <div>
                 <h4 style="margin: 0 0 5px; font-size: 18px;">${p.name}</h4>
                 <span style="font-size: 14px; color: var(--text-light); display:block; margin-bottom:10px;">${p.desc || 'Quality B2B Wholesale Item'}</span>
@@ -1523,11 +1716,13 @@ window.resetPassword = async function() {
     }
 }
 
+// Fetch API Keys Dynamically via URL from Cloudflare
 async function fetchAppKeysAndBoot() {
     try {
-        const doc = await db.collection("site_config").doc("api_keys").get();
-        if(doc.exists) {
-            const data = doc.data();
+        const res = await fetch(`${API_BASE_URL}/get-api-keys`);
+        if (res.ok) {
+            const data = await res.json();
+            
             API_KEYS.RAZORPAY = data.razorpayKey || API_KEYS.RAZORPAY;
             API_KEYS.EMAILJS_PUBLIC = data.emailjsPublicKey || API_KEYS.EMAILJS_PUBLIC;
             API_KEYS.EMAILJS_OTP_SERVICE = data.emailjsOtpService || API_KEYS.EMAILJS_OTP_SERVICE;
@@ -1538,7 +1733,7 @@ async function fetchAppKeysAndBoot() {
             emailjs.init(API_KEYS.EMAILJS_PUBLIC);
         }
     } catch(e) {
-        console.warn("Using default API keys.", e);
+        console.warn("Failed to fetch API keys from Cloudflare URL. Using fallback if available.", e);
     }
     checkSession();
 }
