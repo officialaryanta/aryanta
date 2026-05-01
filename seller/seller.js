@@ -1,8 +1,8 @@
-// seller.js - Fully Restored Firebase SDK Logic, Print/PDF Fixes, & 7-Day Suspension
+// seller.js - Fully API Driven, Fixed Modals, 3-Step Scan & Interactive KYC
 
 const API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
 
-// API Keys
+// API Keys - Populated partly by Cloudflare, Firebase initialized directly as requested
 let API_KEYS = {
     RAZORPAY: "",
     EMAILJS_PUBLIC: "",
@@ -10,7 +10,7 @@ let API_KEYS = {
     EMAILJS_OTP_TEMPLATE: ""
 };
 
-// PURE FIREBASE SDK CONFIGURATION (Restored original direct DB access)
+// PURE FIREBASE SDK CONFIGURATION (Restored exactly as requested so app boots normally)
 const firebaseConfig = {
     apiKey: "YOUR_API_KEY",
     authDomain: "aryanta-mart-a8893.firebaseapp.com",
@@ -34,6 +34,8 @@ let sellerOrders = [];
 let sellerFines = [];
 let sellerReviews = [];
 let sellerWarranties = []; 
+let sellerSupportTickets = [];
+let sellerNotifications = [];
 let b2bItems = [];
 let salesChartInstance = null;
 let uploadedImagesArray = [];
@@ -41,6 +43,14 @@ let html5QrcodeScanner = null;
 
 let currentPlanDuration = 'month'; 
 let cachedTotalUpcoming = 0; 
+let unreadNotifCount = 0;
+
+// URL Masking Utility function for rendering text to users securely
+function cleanTextLinks(text) {
+    if (!text) return '';
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.replace(urlRegex, '<a href="$1" target="_blank" class="btn-sm" style="background:var(--primary); color:white; text-decoration:none; display:inline-block; margin-top:5px;"><i class="fas fa-external-link-alt"></i> View Secure Link</a>');
+}
 
 // ================= UI & MASKING =================
 function renderStatusScreen(title, msg, isSuspended = false, endTime = null) {
@@ -127,13 +137,22 @@ window.selectOption = function(value) {
     document.getElementById('supCategory').value = value;
     document.querySelector('.custom-select-options').classList.remove('open');
 }
+
+// Global click event to close dropdowns when clicking anywhere else
 document.addEventListener('click', function(e) {
+    // Close Custom Select
     if(!e.target.closest('.custom-select-wrapper')) {
         const opts = document.querySelector('.custom-select-options');
         if(opts) opts.classList.remove('open');
     }
+    // Close Search Suggestions
     if(!e.target.closest('.search-container')) {
         document.getElementById('searchSuggestions').style.display = 'none';
+    }
+    // Close Notifications Menu
+    if(!e.target.closest('.notif-dropdown') && !e.target.closest('.fa-bell')) {
+        const nd = document.getElementById('notifDropdown');
+        if(nd && nd.classList.contains('open')) nd.classList.remove('open');
     }
 });
 
@@ -158,16 +177,18 @@ function checkSession() {
     if (token) {
         currentSeller = JSON.parse(token);
         
+        let shouldHideInventory = false;
+
         if(currentSeller.status === "Blocked") {
+            shouldHideInventory = true;
             document.getElementById("loginOverlay").style.display = "flex"; if(loader) loader.style.display = "none";
             renderStatusScreen(
                 "Account Blocked", 
                 "You have been permanently blocked by Admin.<br><br>Please get support by:<br>📞 Phone: <strong>06414054676</strong><br>✉️ Email: <strong>support@aryanta.com</strong>",
                 false
             );
-            return;
-        }
-        if(currentSeller.status === "Suspended") {
+        } else if(currentSeller.status === "Suspended") {
+            shouldHideInventory = true;
             document.getElementById("loginOverlay").style.display = "flex"; if(loader) loader.style.display = "none";
             
             // 7 Days Suspension Logic
@@ -177,6 +198,7 @@ function checkSession() {
             if (Date.now() >= unlockTime) {
                 currentSeller.status = "Active";
                 currentSeller.suspendedAt = null;
+                shouldHideInventory = false;
                 localStorage.setItem('sellerToken', JSON.stringify(currentSeller));
                 db.collection("sellers").doc(currentSeller.email).update({ 
                     status: "Active", suspendedAt: firebase.firestore.FieldValue.delete() 
@@ -195,23 +217,40 @@ function checkSession() {
                     true, 
                     unlockTime
                 );
-                return;
             }
+        } else {
+            document.getElementById("loginOverlay").style.display = "none"; document.querySelector(".seller-container").style.display = "block";
+            document.getElementById("sellerGreeting").innerText = `| ${currentSeller.companyName || currentSeller.email}`;
+            
+            if(currentSeller.subscription && currentSeller.subscription !== 'None') {
+                document.getElementById('verifiedBadge').style.display = 'inline';
+            }
+            
+            checkSubscriptionExpiry();
+            initDashboard();
         }
-        
         applySettingsToUI();
-        document.getElementById("loginOverlay").style.display = "none"; document.querySelector(".seller-container").style.display = "block";
-        document.getElementById("sellerGreeting").innerText = `| ${currentSeller.companyName || currentSeller.email}`;
-        
-        if(currentSeller.subscription && currentSeller.subscription !== 'None') {
-            document.getElementById('verifiedBadge').style.display = 'inline';
+
+        // Enforce Offline/Hidden Products if blocked, suspended, or offline
+        if(shouldHideInventory || (currentSeller.settings && currentSeller.settings.offline)) {
+            enforceHiddenInventory();
         }
-        
-        checkSubscriptionExpiry();
-        initDashboard();
     } else {
         document.getElementById("loginOverlay").style.display = "flex"; if(loader) loader.style.display = "none"; 
     }
+}
+
+async function enforceHiddenInventory() {
+    try {
+        const prodSnap = await db.collection("products").where("sellerEmail", "==", currentSeller.email.toLowerCase().trim()).get();
+        const batch = db.batch();
+        prodSnap.docs.forEach(d => {
+            if (d.data().isVisible !== false) {
+                batch.update(db.collection("products").doc(d.id), { isVisible: false });
+            }
+        });
+        await batch.commit();
+    } catch(e) {}
 }
 
 function checkSubscriptionExpiry() {
@@ -264,10 +303,49 @@ window.handleLogin = async function() {
                 showToast("Invalid Credentials or Account Not Found.", "error");
             }
         }
-    } catch(e) { btn.innerHTML = `Login to Dashboard <i class="fas fa-arrow-right"></i>`; showToast("Network error or Firebase not configured.", "error"); }
+    } catch(e) { btn.innerHTML = `Login to Dashboard <i class="fas fa-arrow-right"></i>`; showToast("Network error. Checking Server Connection...", "error"); }
 }
 
 window.handleLogout = function() { localStorage.removeItem('sellerToken'); window.location.reload(); }
+
+// ================= NOTIFICATIONS LOGIC =================
+window.toggleNotifications = function() {
+    const dropdown = document.getElementById('notifDropdown');
+    dropdown.classList.toggle('open');
+    if (dropdown.classList.contains('open')) {
+        unreadNotifCount = 0;
+        document.getElementById('notifBadge').style.display = 'none';
+        document.getElementById('notifBadge').innerText = '0';
+    }
+}
+
+function loadNotifications() {
+    const container = document.getElementById("notifListContainer");
+    container.innerHTML = "";
+    
+    if (sellerNotifications.length === 0) {
+        container.innerHTML = `<div style="padding:15px; color:var(--text-light); text-align:center;">No new notifications.</div>`;
+        return;
+    }
+
+    sellerNotifications.forEach(n => {
+        let titleColor = "var(--primary)";
+        if(n.type === 'Alert') titleColor = "var(--danger)";
+        if(n.type === 'Support') titleColor = "var(--warning)";
+        
+        container.innerHTML += `
+        <div class="notif-item">
+            <strong style="color:${titleColor}; font-size:14px;">${n.title}</strong>
+            <span style="font-size:13px; line-height:1.4;">${cleanTextLinks(n.message)}</span>
+            <span style="font-size:10px; color:var(--text-light);">${new Date(n.timestamp).toLocaleString()}</span>
+        </div>`;
+    });
+
+    if (unreadNotifCount > 0) {
+        document.getElementById('notifBadge').style.display = 'block';
+        document.getElementById('notifBadge').innerText = unreadNotifCount;
+    }
+}
 
 // ================= NAVIGATION =================
 window.showSection = function(section) {
@@ -294,6 +372,7 @@ window.showSection = function(section) {
         case 'qna': loadQna(); break;
         case 'buyB2b': loadB2bStore(); break;
         case 'settings': loadSettingsUI(); break;
+        case 'howToSell': loadHowToSell(); break;
     }
 }
 
@@ -364,6 +443,16 @@ async function initDashboard() {
         // Fetch Warranties
         const warrSnap = await db.collection("warranties").where("sellerEmail", "==", userEmailLower).get();
         sellerWarranties = warrSnap.docs.map(d => ({id: d.id, ...d.data()}));
+
+        // Fetch Notifications
+        const notifSnap = await db.collection("notifications").where("target", "in", ["all", userEmailLower]).orderBy("timestamp", "desc").limit(20).get();
+        sellerNotifications = notifSnap.docs.map(d => ({id: d.id, ...d.data()}));
+        unreadNotifCount = sellerNotifications.length; 
+        loadNotifications();
+
+        // Fetch Tickets
+        const tixSnap = await db.collection("seller_support_tickets").where("email", "==", userEmailLower).orderBy("timestamp", "desc").get();
+        sellerSupportTickets = tixSnap.docs.map(d => ({id: d.id, ...d.data()}));
 
     } catch(e) {}
 
@@ -493,7 +582,7 @@ function applySettingsToUI() {
     }
 }
 
-// ================= ADVANCED PROFILE & SUB HISTORY =================
+// ================= ADVANCED PROFILE, KYC, & SUB HISTORY =================
 function loadProfile() {
     const personal = currentSeller.personalInfo || {}; const shop = currentSeller.shopInfo || {};
     
@@ -518,6 +607,24 @@ function loadProfile() {
 
     document.getElementById("profIfsc").value = currentSeller.bankIfsc || '';
     document.getElementById("profAcc").value = currentSeller.bankAccount || '';
+
+    // Handle KYC visibility if requested by Admin
+    if (currentSeller.kycRequested) {
+        document.getElementById('kycContainer').style.display = 'block';
+        
+        ['pan', 'aadhaar', 'gst'].forEach(type => {
+            const preview = document.getElementById(`${type}Preview`);
+            if(currentSeller.kycDocs && currentSeller.kycDocs[type]) {
+                let html = '';
+                currentSeller.kycDocs[type].forEach(img => {
+                    html += `<img src="${img}" style="width:60px; height:60px; border-radius:8px; object-fit:cover; border:1px solid var(--primary); cursor:pointer;" onclick="openImageViewer(this.src)">`;
+                });
+                preview.innerHTML = html;
+            }
+        });
+    } else {
+        document.getElementById('kycContainer').style.display = 'none';
+    }
 }
 
 window.updateBankDetails = async function() {
@@ -531,6 +638,46 @@ window.updateBankDetails = async function() {
         localStorage.setItem('sellerToken', JSON.stringify(currentSeller));
         showToast("Bank details updated successfully!", "success");
     } catch(e) { showToast("Failed to update bank details.", "error"); }
+}
+
+let tempKycImages = { pan: [], aadhaar: [], gst: [] };
+window.previewKycImages = async function(e, type) {
+    const files = e.target.files;
+    if(files.length > 2) { showToast("Maximum 2 images allowed.", "error"); return; }
+    
+    const preview = document.getElementById(`${type}Preview`);
+    tempKycImages[type] = []; preview.innerHTML = '';
+    
+    for (let file of files) {
+        if (!file.type.startsWith('image/')) continue;
+        const base64Str = await new Promise((resolve) => { 
+            const reader = new FileReader(); reader.readAsDataURL(file); 
+            reader.onload = (ev) => { 
+                const img = new Image(); img.src = ev.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas'); const MAX_WIDTH = 800; let scaleSize = 1;
+                    if(img.width > MAX_WIDTH) scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = img.width * scaleSize; canvas.height = img.height * scaleSize;
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.8)); 
+                }
+            }; 
+        });
+        tempKycImages[type].push(base64Str); 
+        preview.innerHTML += `<img src="${base64Str}" style="width:60px; height:60px; object-fit:cover; border-radius:8px; border:2px solid var(--primary);">`;
+    }
+}
+
+window.uploadKycDocs = async function(type) {
+    if(!tempKycImages[type] || tempKycImages[type].length === 0) return showToast("Please select documents first.", "warning");
+    try {
+        if(!currentSeller.kycDocs) currentSeller.kycDocs = {};
+        currentSeller.kycDocs[type] = tempKycImages[type];
+        
+        await db.collection("sellers").doc(currentSeller.email).update({ [`kycDocs.${type}`]: tempKycImages[type] });
+        localStorage.setItem('sellerToken', JSON.stringify(currentSeller));
+        showToast(`${type.toUpperCase()} securely uploaded!`, "success");
+    } catch(e) { showToast("Failed to upload.", "error"); }
 }
 
 window.openSubHistoryModal = function() {
@@ -565,9 +712,20 @@ function loadInventory() {
             <td data-label="Stock">${stockHtml}</td>
             <td data-label="Price"><span style="text-decoration:line-through; font-size:11px; color:#94a3b8;">₹${p.mrp}</span> <br><strong style="color:var(--primary); font-size:15px;">₹${p.price}</strong></td>
             <td data-label="Actions">
-                <div><button class="btn-sm edit" onclick="event.stopPropagation(); editItem('${p.id}')"><i class="fas fa-edit"></i></button><button class="btn-sm delete" onclick="event.stopPropagation(); deleteItem('${p.id}')"><i class="fas fa-trash"></i></button></div>
+                <div style="display:flex; gap:5px;">
+                    <button class="btn-sm" style="background:#10b981;" onclick="event.stopPropagation(); shareProduct('${p.id}')" title="Share Link"><i class="fas fa-share-alt"></i></button>
+                    <button class="btn-sm edit" onclick="event.stopPropagation(); editItem('${p.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                    <button class="btn-sm delete" onclick="event.stopPropagation(); deleteItem('${p.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+                </div>
             </td>
         </tr>`;
+    });
+}
+
+window.shareProduct = function(id) {
+    const url = `https://aryanta.in/product?id=${id}`;
+    navigator.clipboard.writeText(url).then(() => {
+        showToast("Link copied! Paste to share.", "success");
     });
 }
 
@@ -650,8 +808,8 @@ window.submitItemForm = async function() {
     
     const finalListedPrice = Math.round(price + (price * commPercent));
 
-    const isOfflineMode = currentSeller.settings && currentSeller.settings.offline;
-    const makeVisible = !isOfflineMode;
+    const isRestricted = (currentSeller.status === "Blocked" || currentSeller.status === "Suspended" || (currentSeller.settings && currentSeller.settings.offline));
+    const makeVisible = !isRestricted;
 
     const data = { 
         sellerEmail: currentSeller.email, 
@@ -684,7 +842,7 @@ window.submitItemForm = async function() {
         
         closeModal("itemModal"); 
         try { await initDashboard(); } catch(e) {} 
-        showToast(makeVisible ? "Product Saved & Live on Panel!" : "Saved securely, but Hidden (Due to Offline Mode).", "success"); 
+        showToast(makeVisible ? "Product Saved & Live on Panel!" : "Saved securely, but Hidden (Due to Restrictions/Offline Mode).", "success"); 
     } catch(e) { 
         showToast("Database Error: " + e.message, "error"); 
     }
@@ -941,18 +1099,20 @@ window.processSlips = async function(mode, singleId = null) {
     }
 }
 
-// ================= GLOBAL SCAN TO SHIP CAMERA =================
+// ================= GLOBAL SCAN TO SHIP CAMERA (3-STEP MULTI-SCAN) =================
 let scanStep = 1; let isProcessingScan = false;
+let tempTrackingId = "";
 
 window.openGlobalScanModal = async function() {
-    scanStep = 1; isProcessingScan = false; document.getElementById("scanOrderId").value = ""; document.getElementById("skipScanBtn").style.display = "none";
+    scanStep = 1; isProcessingScan = false; tempTrackingId = ""; 
+    document.getElementById("scanOrderId").value = ""; document.getElementById("skipScanBtn").style.display = "none";
     document.getElementById("qr-reader").innerHTML = ""; document.getElementById("qr-reader").style.display = "none"; document.getElementById("scannerPlaceholder").style.display = "flex";
     document.getElementById("scanStatus").innerHTML = "Awaiting Pre-fetch check..."; document.getElementById("scanStatus").style.color = "var(--primary)"; document.getElementById("scanModal").style.display = "flex";
 
     try { const snap = await db.collection("orders").orderBy("timestamp", "desc").limit(500).get(); sellerOrders = snap.docs.map(d=>({id:d.id, ...d.data()})); } catch(e) {}
 
     setTimeout(() => {
-        document.getElementById("scannerPlaceholder").style.display = "none"; document.getElementById("qr-reader").style.display = "block"; document.getElementById("scanStatus").innerHTML = "Awaiting Invoice QR Scan...";
+        document.getElementById("scannerPlaceholder").style.display = "none"; document.getElementById("qr-reader").style.display = "block"; document.getElementById("scanStatus").innerHTML = "Step 1: Awaiting Invoice QR Scan...";
         if(!html5QrcodeScanner) { html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 15, qrbox: {width: 250, height: 250}, aspectRatio: 1.0 }, false); }
         try { html5QrcodeScanner.render(onScanSuccess, onScanFailure); } catch(e) {}
     }, 500);
@@ -968,7 +1128,7 @@ async function onScanSuccess(decodedText, decodedResult) {
             if(order.status === 'Accepted') {
                 document.getElementById("scanOrderId").value = order.id; scanStep = 2; 
                 document.getElementById("skipScanBtn").style.display = "block"; 
-                document.getElementById("scanStatus").innerHTML = `<i class="fas fa-check-circle"></i> Invoice Verified! Now Scan Shipping Label QR...`; document.getElementById("scanStatus").style.color = "var(--warning)";
+                document.getElementById("scanStatus").innerHTML = `<i class="fas fa-check-circle"></i> Invoice Verified! <br>Step 2: Scan Shipping Label QR...`; document.getElementById("scanStatus").style.color = "var(--warning)";
                 try { html5QrcodeScanner.pause(true); setTimeout(() => html5QrcodeScanner.resume(), 1500); } catch(e){}
             } else {
                 showToast(`Order status is '${order.status}'. Needs to be 'Accepted'.`, "warning");
@@ -980,17 +1140,28 @@ async function onScanSuccess(decodedText, decodedResult) {
         document.getElementById("scanStatus").innerHTML = `<i class="fas fa-spinner fa-spin"></i> Checking DB for Shipping Label...`; document.getElementById("scanStatus").style.color = "var(--primary)";
         try {
             try { html5QrcodeScanner.pause(true); } catch(e){}
-            
             const trackingSnap = await db.collection("orders").where("tracking_no", "==", scannedId).get();
             
             if (trackingSnap.empty) {
-                document.getElementById("scanStatus").innerHTML = `<i class="fas fa-truck"></i> Verified! Dispatching...`; document.getElementById("scanStatus").style.color = "var(--success)";
-                try{ html5QrcodeScanner.clear(); } catch(e){} setTimeout(() => executeDispatch(oId, scannedId), 1000);
+                tempTrackingId = scannedId;
+                scanStep = 3;
+                document.getElementById("scanStatus").innerHTML = `<i class="fas fa-check"></i> Label Valid! <br>Step 3: Scan 16-Digit Numeric Barcode...`; document.getElementById("scanStatus").style.color = "var(--success)";
+                try { setTimeout(() => html5QrcodeScanner.resume(), 1500); } catch(e){}
             } else {
                 document.getElementById("scanStatus").innerHTML = `<i class="fas fa-exclamation-triangle"></i> This label is already linked! Skip or scan a fresh label.`; document.getElementById("scanStatus").style.color = "var(--warning)"; document.getElementById("skipScanBtn").style.display = "block";
                 try { setTimeout(() => html5QrcodeScanner.resume(), 2500); } catch(e){}
             }
         } catch(e) { document.getElementById("scanStatus").innerText = "Network Error."; try { setTimeout(() => html5QrcodeScanner.resume(), 2000); } catch(e){} }
+    }
+    else if (scanStep === 3) {
+        try { html5QrcodeScanner.pause(true); } catch(e){}
+        if (scannedId.length >= 10 && /^\d+$/.test(scannedId)) {
+            document.getElementById("scanStatus").innerHTML = `<i class="fas fa-truck"></i> Verified! Dispatching...`; document.getElementById("scanStatus").style.color = "var(--success)";
+            try{ html5QrcodeScanner.clear(); } catch(e){} setTimeout(() => executeDispatch(oId, tempTrackingId, scannedId), 1000);
+        } else {
+            document.getElementById("scanStatus").innerHTML = `<i class="fas fa-times"></i> Invalid! Must be numeric barcode. Scan again.`; document.getElementById("scanStatus").style.color = "var(--danger)";
+            try { setTimeout(() => html5QrcodeScanner.resume(), 2000); } catch(e){}
+        }
     }
     setTimeout(() => { isProcessingScan = false; }, 2000);
 }
@@ -1001,13 +1172,13 @@ window.skipAndShip = async function() {
     if(!confirm("Skip Scanning the shipping label? A fine of ₹7 will be deducted from your payout.")) return;
     try {
         await db.collection("fines").add({ email: currentSeller.email, amount: 7, reason: `Skipped label scan for Order ${id}`, timestamp: new Date().toISOString() });
-        try{ html5QrcodeScanner.clear(); } catch(e){} executeDispatch(id, "SKIPPED_SCAN"); showToast("Shipped (₹7 Fine Applied)", "warning");
+        try{ html5QrcodeScanner.clear(); } catch(e){} executeDispatch(id, "SKIPPED_SCAN", "SKIPPED_BARCODE"); showToast("Shipped (₹7 Fine Applied)", "warning");
     } catch(e) {}
 }
 
-async function executeDispatch(id, trackingNo = "") {
+async function executeDispatch(id, trackingNo = "", numericBarcode = "") {
     try { 
-        await db.collection("orders").doc(id).update({status: 'Shipped', tracking_no: trackingNo, shipped_date: new Date().toISOString()});
+        await db.collection("orders").doc(id).update({status: 'Shipped', tracking_no: trackingNo, numeric_barcode: numericBarcode, shipped_date: new Date().toISOString()});
         closeModal("scanModal"); showToast("Order officially Dispatched!", "success"); try{await initDashboard();}catch(e){} loadAcceptedOrders(); renderDashboardStats(); 
     } catch(e) {}
 }
@@ -1434,11 +1605,10 @@ window.changeB2bImg = function(id, dir) {
 window.openB2bBuyModal = function(id) {
     const p = b2bItems.find(x => x.id === id); if(!p) return;
     
-    // Top Image -> Description -> Price layout
     let imgSrc = p.image || '';
     document.getElementById("b2bProductInfo").innerHTML = `
         <div style="display:flex; flex-direction: column; align-items: center; text-align: center; gap: 15px; margin-bottom: 20px;">
-            <img src="${imgSrc}" style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 12px; border: 1px solid var(--border-color);">
+            <img src="${imgSrc}" style="width: 100%; max-height: 250px; object-fit: contain; border-radius: 12px; border: 1px solid var(--border-color);">
             <div>
                 <h4 style="margin: 0 0 5px; font-size: 18px;">${p.name}</h4>
                 <span style="font-size: 14px; color: var(--text-light); display:block; margin-bottom:10px;">${p.desc || 'Quality B2B Wholesale Item'}</span>
@@ -1541,8 +1711,8 @@ function loadQna() {
                 list.innerHTML += `<tr>
                     <td data-label="Product"><div style="font-size:12px; font-weight:600; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div></td>
                     <td data-label="Q&A" style="white-space: normal; line-height: 1.5; min-width: 250px;">
-                        <strong style="font-size:14px; color:#1e3a8a; display:block; margin-bottom:5px;">Q: ${q.question}</strong>
-                        ${isAns ? `<span style="font-size:13px; color:#064e3b; display:block; background:#ecfdf5; padding:8px; border-radius:8px;">A: ${q.answer}</span>` : ''}
+                        <strong style="font-size:14px; color:#1e3a8a; display:block; margin-bottom:5px;">Q: ${cleanTextLinks(q.question)}</strong>
+                        ${isAns ? `<span style="font-size:13px; color:#064e3b; display:block; background:#ecfdf5; padding:8px; border-radius:8px;">A: ${cleanTextLinks(q.answer)}</span>` : ''}
                         <span style="font-size:10px; color:var(--text-light); font-weight:800; text-transform:uppercase; display:block; margin-top:5px;">By: ${maskName(q.user)}</span>
                     </td>
                     <td data-label="Status">${status}</td><td data-label="Action"><div style="display:flex; justify-content:flex-end; gap:5px;">${btn}</div></td>
@@ -1555,7 +1725,7 @@ function loadQna() {
 
 window.openQnaModal = function(pId, qId, qText, existingAns) { 
     document.getElementById("qnaProdId").value = pId; document.getElementById("qnaQid").value = qId; 
-    document.getElementById("qnaTextDisplay").innerText = `"${qText}"`; 
+    document.getElementById("qnaTextDisplay").innerHTML = cleanTextLinks(`"${qText}"`); 
     document.getElementById("qnaAnsText").value = existingAns || ""; 
     document.getElementById("qnaModal").style.display = "flex"; 
 }
@@ -1573,7 +1743,26 @@ window.deleteQnaAnswer = async function(pId, qId) {
     try { await db.collection("products").doc(pId).update({ qa: updatedQA }); try{await initDashboard();}catch(e){} loadQna(); showToast("Answer Deleted", "success"); } catch(e) {}
 }
 
-// ================= ADMIN SUPPORT TICKET =================
+// ================= ADMIN SUPPORT TICKET TABS =================
+window.toggleSupportTab = function(tab) {
+    if(tab === 'create') {
+        document.getElementById('supportCreateTab').style.display = 'block';
+        document.getElementById('supportListTab').style.display = 'none';
+        document.getElementById('tabCreateTicketBtn').style.background = '#f59e0b';
+        document.getElementById('tabCreateTicketBtn').style.color = 'white';
+        document.getElementById('tabMyTicketsBtn').style.background = 'var(--surface-2)';
+        document.getElementById('tabMyTicketsBtn').style.color = 'var(--text-main)';
+    } else {
+        document.getElementById('supportCreateTab').style.display = 'none';
+        document.getElementById('supportListTab').style.display = 'block';
+        document.getElementById('tabCreateTicketBtn').style.background = 'var(--surface-2)';
+        document.getElementById('tabCreateTicketBtn').style.color = 'var(--text-main)';
+        document.getElementById('tabMyTicketsBtn').style.background = '#3b82f6';
+        document.getElementById('tabMyTicketsBtn').style.color = 'white';
+        loadOldTicketsList();
+    }
+}
+
 window.submitSupportTicket = async function() {
     const cat = document.getElementById("supCategory").value; 
     if(!cat) return showToast("Please select an Issue Category.", "warning");
@@ -1586,7 +1775,77 @@ window.submitSupportTicket = async function() {
         document.getElementById("supDesc").value = ""; 
         document.getElementById("supCategory").value = "";
         document.getElementById("supCategorySelected").innerText = "-- Select Issue Type --";
+        try{await initDashboard();}catch(e){}
     } catch(e) { showToast("Error sending ticket", "error"); }
+}
+
+function loadOldTicketsList() {
+    const list = document.getElementById("oldTicketsList"); list.innerHTML = "";
+    if (sellerSupportTickets.length === 0) {
+        list.innerHTML = "<tr><td colspan='3' style='text-align:center;'>No old tickets found.</td></tr>";
+    } else {
+        sellerSupportTickets.forEach(t => {
+            let statusBadge = '';
+            if(t.status === 'Complete' || t.status === 'Closed') statusBadge = `<span class="badge" style="background:#dcfce3; color:#166534;">${t.status}</span>`;
+            else statusBadge = `<span class="badge" style="background:#fef08a; color:#854d0e;">Pending</span>`;
+
+            list.innerHTML += `<tr>
+                <td data-label="Date & Title"><strong style="font-size:13px;">${new Date(t.timestamp).toLocaleDateString()}</strong><br><span style="font-size:14px;">${t.reason}</span></td>
+                <td data-label="Status">${statusBadge}</td>
+                <td data-label="Action"><button class="btn-sm" style="background:var(--primary);" onclick="viewTicketDetails('${t.id}')">View Details</button></td>
+            </tr>`;
+        });
+    }
+}
+
+window.viewTicketDetails = function(id) {
+    const t = sellerSupportTickets.find(x => x.id === id); if(!t) return;
+    
+    let adminReply = t.adminReply ? `<div style="margin-top:15px; padding:15px; background:#ecfdf5; border-radius:12px; border:1px solid #a7f3d0;"><strong style="color:var(--success);">Admin Reply:</strong><br>${cleanTextLinks(t.adminReply)}</div>` : `<div style="margin-top:15px; padding:10px; color:var(--text-light); font-style:italic;">No reply from admin yet.</div>`;
+
+    document.getElementById("ticketDetailsContent").innerHTML = `
+        <strong style="font-size:16px;">${t.reason}</strong><br>
+        <span style="font-size:12px; color:var(--text-light);">${new Date(t.timestamp).toLocaleString()}</span>
+        <div style="margin-top:15px;"><strong style="font-size:14px;">Your Message:</strong><br>${cleanTextLinks(t.description)}</div>
+        ${adminReply}
+    `;
+    document.getElementById("ticketDetailsModal").style.display = "flex";
+}
+
+// ================= HOW TO SELL (ADMIN GUIDES DYNAMIC) =================
+async function loadHowToSell() {
+    const grid = document.getElementById("howToSellGrid"); grid.innerHTML = "Loading guides...";
+    try {
+        const snap = await db.collection("how_to_sell").get();
+        if(snap.empty) { grid.innerHTML = "No guides available right now."; return; }
+        
+        grid.innerHTML = "";
+        snap.forEach(doc => {
+            const data = doc.data();
+            let mediaHtml = "";
+            
+            // Handle PDF explicitly vs Image
+            if (data.fileUrl) {
+                if(data.fileType === 'pdf' || data.fileUrl.toLowerCase().includes('.pdf')) {
+                    mediaHtml = `<iframe src="${data.fileUrl}#toolbar=0" style="width:100%; height:250px; border:none; border-radius:12px; margin-bottom:15px; overflow-y:auto;"></iframe>`;
+                } else {
+                    mediaHtml = `<img src="${data.fileUrl}" style="width:100%; height:180px; object-fit:cover; border-radius:12px; margin-bottom:15px;">`;
+                }
+            } else if (data.image) {
+                mediaHtml = `<img src="${data.image}" style="width:100%; height:180px; object-fit:cover; border-radius:12px; margin-bottom:15px;">`;
+            }
+            
+            grid.innerHTML += `
+            <div style="background:var(--white); border:1px solid var(--border-color); border-radius:16px; padding:20px; box-shadow:var(--shadow-sm);">
+                ${mediaHtml}
+                <h4 style="font-size:16px; margin-bottom:10px; color:var(--text-main);">${data.title || 'Guide'}</h4>
+                <p style="font-size:14px; color:var(--text-light); margin-bottom:15px; max-height:100px; overflow-y:auto;">${cleanTextLinks(data.description || '')}</p>
+                ${data.link ? cleanTextLinks(data.link) : ''}
+            </div>`;
+        });
+    } catch (e) {
+        grid.innerHTML = "Network error loading guides.";
+    }
 }
 
 // ================= FORGOT PASSWORD (SECURE HASHING & DB CHECK) =================
@@ -1716,7 +1975,7 @@ window.resetPassword = async function() {
     }
 }
 
-// Fetch API Keys Dynamically via URL from Cloudflare
+// Fetch API Keys Dynamically via URL from Cloudflare (100% Dynamic Boot)
 async function fetchAppKeysAndBoot() {
     try {
         const res = await fetch(`${API_BASE_URL}/get-api-keys`);
@@ -1733,9 +1992,14 @@ async function fetchAppKeysAndBoot() {
             emailjs.init(API_KEYS.EMAILJS_PUBLIC);
         }
     } catch(e) {
-        console.warn("Failed to fetch API keys from Cloudflare URL. Using fallback if available.", e);
+        console.warn("Failed to fetch API keys from Server.");
     }
-    checkSession();
+    
+    if(db) {
+        checkSession();
+    } else {
+        document.getElementById('loaderMessage').innerText = "ERROR: UNABLE TO CONNECT TO SERVER";
+    }
 }
 
 window.onload = function() { fetchAppKeysAndBoot(); };
