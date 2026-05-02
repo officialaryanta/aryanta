@@ -1,20 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Aryanta Seller Panel Login | Aryanta.in</title>
-
+    <title>Aryanta Seller Panel | Enterprise Hub</title>
     <meta name="description" content="Login to Aryanta Seller Panel. Manage products, orders, B2B items and grow your business with Aryanta.">
     <meta name="keywords" content="Aryanta seller panel, Aryanta seller login, Aryanta dashboard, Aryanta B2B">
     <link rel="canonical" href="https://aryanta.in/seller">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
+    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
+    <!-- External SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -26,7 +26,7 @@
             --primary: #059669; --secondary: #3b82f6; --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
             --bg-body: #f8fafc; --sidebar-bg: #064e3b; --sidebar-hover: #047857; --text-main: #0f172a; --text-light: #475569;
             --white: #ffffff; --shadow-sm: 0 2px 4px rgba(0,0,0,0.05); --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
-            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1); --radius: 16px; --border-color: #e2e8f0; --surface-2: #f1f5f9;
+            --shadow-lg: 0 15px 25px -5px rgba(0,0,0,0.1); --radius: 16px; --border-color: #e2e8f0; --surface-2: #f1f5f9;
         }
 
         body.dark-theme {
@@ -34,11 +34,12 @@
             --border-color: #334155; --sidebar-bg: #022c22; --surface-2: #0f172a;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg-body); color: var(--text-main); display: flex; font-size: 14px; min-height: 100vh; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
 
         #mobileSidebarOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1005; backdrop-filter: blur(2px); transition: 0.3s; }
 
+        /* Premium Loader & Animations */
         #pageLoader { position: fixed; inset: 0; background: #000000; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease; }
         .video-loader-wrapper { position: relative; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
         .pulse-ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--primary); animation: pulseAnim 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
@@ -46,13 +47,17 @@
         .loader-logo { width: 60px; height: 60px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 900; z-index: 10; box-shadow: 0 0 30px var(--primary); animation: floatAnim 2s ease-in-out infinite; }
         @keyframes pulseAnim { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
         @keyframes floatAnim { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
+        /* Auth Screen */
         #loginOverlay { position: fixed; inset: 0; background: linear-gradient(135deg, #064e3b 0%, #059669 100%); z-index: 10000; display: flex; align-items: center; justify-content: center; flex-direction: column; }
         .login-box { background: var(--white); padding: 40px; border-radius: 24px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); animation: scaleIn 0.4s ease; }
         .login-box h2 { color: var(--primary); font-size: 26px; font-weight: 800; margin-bottom: 25px; letter-spacing: -0.5px; }
 
-        .seller-container { display: none; width: 100%; min-height: 100vh; position: relative; }
+        .seller-container { display: none; width: 100%; min-height: 100vh; position: relative; flex-direction: column; }
         
+        /* Sidebar Navigation */
         .sidebar { width: 280px; background: var(--sidebar-bg); color: white; padding: 25px 15px; position: fixed; left: 0; top: 0; bottom: 0; overflow-y: auto; z-index: 2000; box-shadow: 4px 0 15px rgba(0,0,0,0.1); transition: transform 0.3s ease; }
         .sidebar::-webkit-scrollbar { width: 4px; }
         .sidebar::-webkit-scrollbar-thumb { background: #047857; border-radius: 10px; }
@@ -63,58 +68,39 @@
         .nav-item i { font-size: 18px; width: 22px; text-align: center; }
         .nav-badge { margin-left: auto; background: var(--danger); color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 800; display: none; }
 
-        /* Premium Scan Button Styling */
-        .scan-btn-premium {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white !important;
-            border: none;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
-            font-weight: 800;
-            border-radius: 12px;
-            margin: 15px 5px !important;
-            animation: pulseGlow 2s infinite;
-        }
+        .scan-btn-premium { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white !important; border: none; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); font-weight: 800; border-radius: 12px; margin: 15px 5px !important; animation: pulseGlow 2s infinite; }
         .scan-btn-premium i { color: white !important; }
-        .scan-btn-premium:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6); 
-            background: linear-gradient(135deg, #059669 0%, #047857 100%); 
-        }
-        @keyframes pulseGlow { 
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 
-            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } 
-        }
+        .scan-btn-premium:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6); background: linear-gradient(135deg, #059669 0%, #047857 100%); }
+        @keyframes pulseGlow { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
 
+        /* Main Layout & Sticky Header */
         .main-content { margin-left: 280px; width: calc(100% - 280px); transition: margin-left 0.3s, width 0.3s; position: relative; display: flex; flex-direction: column; min-height: 100vh; }
-        
-        .global-header-wrapper { position: fixed; top: 0; left: 280px; right: 0; z-index: 1010; background: var(--bg-body); transition: left 0.3s; }
+        .global-header-wrapper { position: sticky; top: 0; left: 280px; right: 0; z-index: 1010; background: var(--bg-body); transition: left 0.3s; border-bottom: 1px solid var(--border-color); }
         .marquee-wrap { background: var(--primary); color: white; padding: 12px 20px; font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; display: flex; align-items: center; }
         .marquee-inner { display: inline-block; padding-left: 100%; animation: marqueeAnim 25s linear infinite; }
         @keyframes marqueeAnim { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
 
-        .top-bar-container { padding: 15px 35px 5px 35px; }
+        #accountStatusBanner { display: none; background: #991b1b; color: white; padding: 14px 20px; text-align: center; font-weight: 700; font-size: 14px; box-shadow: var(--shadow-sm); z-index: 1009; position: relative; letter-spacing: 0.5px; }
+
+        .top-bar-container { padding: 15px 35px; }
         .top-bar { display: flex; justify-content: space-between; align-items: center; background: var(--white); padding: 15px 25px; border-radius: var(--radius); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); }
-        
-        .content-padding { padding: 140px 35px 80px 35px; flex-grow: 1; overflow-x: hidden; }
-        
+        .content-padding { padding: 30px 35px 80px 35px; flex-grow: 1; overflow-x: hidden; }
         .mobile-toggle { display: none; font-size: 24px; color: var(--primary); cursor: pointer; }
 
+        /* Search Bar & Dropdowns */
         .search-container { position: relative; display: flex; align-items: center; background: var(--surface-2); border-radius: 12px; width: 400px; border: 1px solid var(--border-color); transition: 0.2s; }
-        .search-container:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1); }
+        .search-container:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1); background: var(--white); }
         .search-container input { border: none; background: transparent; outline: none; padding: 12px 15px; width: 100%; font-size: 14px; color: var(--text-main); font-weight: 500; }
         .search-container i { padding: 0 15px; color: var(--text-light); }
-        
         .suggestions-box { display: none; position: absolute; top: 110%; left: 0; right: 0; background: var(--white); border: 1px solid var(--border-color); box-shadow: var(--shadow-lg); border-radius: 12px; z-index: 2000; max-height: 300px; overflow-y: auto; }
         .suggestion-item { padding: 12px 15px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; flex-direction: column; gap: 4px; transition: 0.2s; color: var(--text-main); }
         .suggestion-item:hover { background: var(--surface-2); }
 
         .badge { padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 800; display: inline-block; }
 
+        /* Sections & Grids */
         .data-section { display: none; animation: fadeIn 0.4s ease; }
         .data-section.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 25px; }
         .stat-card { background: var(--white); padding: 25px; border-radius: var(--radius); box-shadow: var(--shadow-sm); text-align: left; border: 1px solid var(--border-color); transition: 0.3s; position: relative; overflow:hidden;}
@@ -124,6 +110,7 @@
         .smart-badge { position:absolute; top:15px; right:15px; background:linear-gradient(45deg, #059669, #10b981); color:white; font-size:10px; padding:4px 10px; border-radius:20px; font-weight:bold; letter-spacing:0.5px;}
         .panel-box { background: var(--white); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 25px; box-shadow: var(--shadow-sm); margin-bottom: 20px; }
 
+        /* Tables */
         .table-container { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; border: 1px solid var(--border-color); margin-bottom: 25px; }
         .admin-table { width: 100%; border-collapse: collapse; }
         .admin-table th { background: var(--surface-2); padding: 18px 20px; text-align: left; font-size: 12px; color: var(--text-light); text-transform: uppercase; font-weight: 800; border-bottom: 2px solid var(--border-color); letter-spacing: 0.5px; }
@@ -131,50 +118,45 @@
         .clickable-row { cursor: pointer; transition: 0.2s; }
         .clickable-row:hover { background: var(--surface-2); }
 
+        /* Buttons */
         .btn-prime { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; font-size: 14px; letter-spacing: 0.3px; }
         .btn-prime:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3); }
-        .btn-prime:disabled { background: var(--text-light); cursor: not-allowed; transform: none; box-shadow: none; }
-        
         .btn-sm { padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer; font-size: 12px; font-weight: 700; transition: 0.2s; margin-right: 5px; color: white;}
         .btn-sm:hover { opacity: 0.8; transform: scale(1.05); }
         .btn-sm.edit { background: var(--secondary); }
         .btn-sm.delete { background: var(--danger); }
         
-        .btn-print { background: #64748b; color: white; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 12px; transition: 0.2s; display: inline-flex; align-items: center; gap: 5px; margin-bottom:5px;}
-        .btn-print:hover { background: #475569; box-shadow: 0 4px 10px rgba(100, 116, 139, 0.3); }
-        .btn-pdf { background: #3b82f6; color: white; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 12px; transition: 0.2s; display: inline-flex; align-items: center; gap: 5px; }
-        .btn-pdf:hover { background: #2563eb; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3); }
+        .btn-shiprocket { background: #8b5cf6; color: white; border: none; padding: 10px 16px; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 13px; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; justify-content: center; box-shadow: 0 2px 5px rgba(139, 92, 246, 0.2); }
+        .btn-shiprocket:hover { background: #7c3aed; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4); transform: translateY(-2px); }
+        .btn-pdf { background: #3b82f6; color: white; border: none; padding: 10px 16px; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 13px; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; justify-content: center; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.2); }
+        .btn-pdf:hover { background: #2563eb; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); transform: translateY(-2px); }
 
         .input-field { width: 100%; padding: 14px 18px; margin: 8px 0 20px; border: 1px solid var(--border-color); border-radius: 10px; font-size: 14px; font-weight: 500; outline: none; background: var(--surface-2); color: var(--text-main); transition: 0.2s; }
         .input-field:focus { border-color: var(--primary); background: var(--white); box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.1); }
-        .input-field:disabled, .input-field.readonly { background: #e2e8f0; color: #475569; cursor: not-allowed; border-style: dashed; }
         label { font-size: 13px; font-weight: 700; color: var(--text-main); display: block; margin-bottom: 5px; }
-
-        .custom-cb { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); }
+        .custom-cb { width: 20px; height: 20px; cursor: pointer; accent-color: var(--primary); }
 
         .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: var(--surface-2); padding: 25px; border-radius: 16px; border: 1px solid var(--border-color); margin-bottom: 20px;}
         .detail-box span { display: block; font-size: 11px; color: var(--text-light); text-transform: uppercase; font-weight: 800; margin-bottom: 6px; letter-spacing: 0.5px; }
         .detail-box strong { font-size: 15px; color: var(--text-main); display: block; font-weight: 700; word-wrap: break-word; word-break: break-all; }
 
-        .custom-select-wrapper { position: relative; width: 100%; margin: 8px 0 20px; }
-        .custom-select-trigger { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border: 1px solid var(--border-color); border-radius: 10px; font-size: 14px; font-weight: 500; background: var(--surface-2); color: var(--text-main); cursor: pointer; transition: 0.2s; }
-        .custom-select-trigger:hover { border-color: var(--primary); background: var(--white); box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.1); }
-        .custom-select-options { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--white); border: 1px solid var(--border-color); border-radius: 10px; box-shadow: var(--shadow-lg); z-index: 1000; max-height: 250px; overflow-y: auto; margin-top: 5px; }
-        .custom-select-options.open { display: block; animation: scaleIn 0.2s ease; }
-        .custom-option { padding: 12px 18px; font-size: 14px; cursor: pointer; transition: 0.2s; border-bottom: 1px solid var(--border-color); font-weight: 500; color: var(--text-main); }
-        .custom-option:hover { background: var(--surface-2); color: var(--secondary); font-weight: 700; padding-left: 25px; }
-        .custom-option:last-child { border-bottom: none; }
+        /* Notification Dropdown */
+        #notifDropdown { display:none; position:absolute; top:70px; right:35px; width:380px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); border-radius: 16px; z-index: 2000; max-height: 450px; overflow-y: auto; transition: 0.3s ease; animation: scaleIn 0.2s ease; }
+        body.dark-theme #notifDropdown { background: rgba(30, 41, 59, 0.95); border-color: #334155; }
+        .notif-header-box { padding: 20px; border-bottom: 1px solid var(--border-color); font-weight: 800; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: inherit; z-index: 10; font-size: 16px; }
+        .notif-item-row { padding: 15px 20px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: 0.2s; display: flex; align-items: flex-start; gap: 15px; }
+        .notif-item-row:hover { background: var(--surface-2); }
+        .notif-dot { width: 10px; height: 10px; background: var(--primary); border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
 
+        /* B2B Grid */
         .b2b-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; margin-bottom: 25px; }
         .b2b-card { background: var(--white); border: 1px solid var(--border-color); border-radius: var(--radius); overflow: hidden; transition: 0.3s; display: flex; flex-direction: column; cursor: pointer; box-shadow: var(--shadow-sm); position: relative; }
         .b2b-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); border-color: var(--primary); }
         .b2b-img-box { width: 100%; height: 220px; background: var(--surface-2); position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; border-bottom: 1px solid var(--border-color); }
         .b2b-img-box img { width: 100%; height: 100%; object-fit: contain; transition: 0.3s; cursor: zoom-in; }
-        .gallery-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); color: white; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; z-index: 10; font-size: 12px;}
-        .gallery-nav:hover { background: var(--primary); }
-        .gallery-nav.left { left: 10px; } .gallery-nav.right { right: 10px; }
         .b2b-content { padding: 15px; display: flex; flex-direction: column; flex-grow: 1; }
 
+        /* Settings Toggle */
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; inset: 0; background-color: #cbd5e1; transition: .4s; border-radius: 34px; }
@@ -182,15 +164,13 @@
         input:checked + .slider { background-color: var(--primary); }
         input:checked + .slider:before { transform: translateX(24px); }
 
+        /* Subscriptions */
         .plan-card { border: 2px solid var(--border-color); border-radius: 20px; padding: 30px; background: var(--white); transition: 0.3s; display: flex; flex-direction: column; position: relative; overflow: hidden; }
         .plan-card.pro { border-color: var(--secondary); box-shadow: 0 10px 30px rgba(59, 130, 246, 0.15); }
-        .plan-card:hover { transform: translateY(-10px); }
         .plan-badge { position: absolute; top: 0; right: 0; background: var(--secondary); color: white; font-size: 12px; font-weight: 800; padding: 6px 15px; border-bottom-left-radius: 16px; text-transform: uppercase; }
         .plan-price { font-size: 40px; font-weight: 900; color: var(--text-main); margin: 15px 0; }
-        .plan-price span { font-size: 16px; font-weight: 500; color: var(--text-light); }
         .plan-features { list-style: none; margin: 20px 0; flex-grow: 1; }
-        .plan-features li { margin-bottom: 12px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; color: var(--text-main); }
-        .plan-features li i { color: var(--success); font-size: 16px; }
+        .plan-features li { margin-bottom: 12px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; }
 
         /* MODALS */
         .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); z-index: 20000; align-items: center; justify-content: center; padding: 20px; }
@@ -199,52 +179,48 @@
         .close-modal:hover { background: #fee2e2; color: #ef4444; transform: rotate(90deg); }
 
         #imageViewerModal { z-index: 100000; background: rgba(0,0,0,0.92); }
-        #imageViewerModal img { max-width: 90%; max-height: 90vh; object-fit: contain; border-radius: 12px; box-shadow: 0 0 40px rgba(0,0,0,0.5); animation: scaleIn 0.3s ease; }
+        #imageViewerModal img { max-width: 90%; max-height: 90vh; object-fit: contain; border-radius: 12px; }
         .viewer-close { position: absolute; top: 30px; right: 40px; color: white; font-size: 40px; cursor: pointer; transition: 0.2s; }
         .viewer-close:hover { color: var(--danger); transform: scale(1.1); }
 
         #toastContainer { position: fixed; bottom: 30px; right: 30px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;}
         .toast { background: #1e293b; color: white; padding: 16px 24px; border-radius: 12px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); animation: fadeIn 0.4s ease; min-width: 280px; border-left: 4px solid var(--primary); }
 
+        /* QR Scanner */
         .scanner-placeholder { height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--surface-2); border-radius: 16px; margin-bottom: 20px; border: 2px dashed #cbd5e1; color: var(--text-light); }
         #qr-reader { width: 100%; border: none !important; border-radius: 16px; overflow: hidden; margin-bottom: 20px; box-shadow: inset 0 4px 6px rgba(0,0,0,0.1); background: #000; display:none; }
         #qr-reader__scan_region { background: #000; display:flex; align-items:center; justify-content:center; }
         #qr-reader__dashboard_section_csr span, #qr-reader button { color: var(--primary) !important; font-family: 'Plus Jakarta Sans', sans-serif !important; font-weight:bold; }
         #qr-reader__dashboard_section_swaplink { display: none !important; }
 
+        /* --- SPECIFIC PRINT MEDIA QUERY INTEGRATION FROM index.html --- */
         #printArea { display: none; }
         @media print {
             body * { visibility: hidden !important; }
             #printArea, #printArea * { visibility: visible !important; }
             #printArea { display: block !important; position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; z-index: 9999; }
             .print-page { page-break-after: always; padding: 20px; font-family: sans-serif; box-sizing: border-box; width: 100%; display: block; }
-            .seller-container, .modal, #toastContainer { display: none !important; }
+            .seller-container, .modal, #toastContainer, #mobileSidebar { display: none !important; }
             @page { margin: 0; size: auto; }
         }
 
-        /* MOBILE FIX FOR STICKY HEADER & PADDING */
+        /* MOBILE FIX */
         @media (max-width: 900px) {
             .sidebar { transform: translateX(-100%); }
             .sidebar.open { transform: translateX(0); }
             .main-content { margin-left: 0; width: 100%; }
             .global-header-wrapper { left: 0; }
             .top-bar-container { padding: 10px 15px; }
-            .content-padding { padding: 120px 15px 100px 15px; } 
+            .content-padding { padding: 30px 15px 100px 15px; } 
             .mobile-toggle { display: block; }
-            
             .top-bar { flex-wrap: wrap; justify-content: space-between; padding: 10px 15px; gap: 10px; }
             .search-container { width: 100%; order: 3; }
             .mobile-hide { display: block !important; }
-            
+            #notifDropdown { width: 90%; right: 5%; left: 5%; top: 60px; }
             .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
             .stat-card { padding: 15px; }
             .stat-card h3 { font-size: 1.5rem; }
-            .stat-card p { font-size: 11px; }
             .b2b-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            .b2b-content { padding: 10px; }
-            .b2b-content h4 { font-size: 14px !important; }
-            .b2b-content h3 { font-size: 18px !important; }
-
             .table-container { box-shadow: none; border: none; background: transparent; overflow-x: hidden; margin-bottom: 20px;}
             .admin-table, .admin-table tbody, .admin-table tr, .admin-table td { display: block; width: 100%; }
             .admin-table thead { display: none; }
@@ -252,13 +228,12 @@
             .admin-table td { padding: 10px 0; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; text-align: right; }
             .admin-table td::before { content: attr(data-label); font-weight: 800; font-size: 12px; color: var(--text-light); text-transform: uppercase; float: left; text-align: left; padding-right: 15px; flex-shrink: 0; }
             .admin-table td:last-child { border-bottom: none; }
-            .admin-table td > div, .admin-table td > button { text-align: right; margin:0;}
-            .admin-table td input[type="checkbox"] { transform: scale(1.3); margin-left: auto; }
         }
     </style>
 </head>
 <body>
 
+    <!-- PRE-LOADER -->
     <div id="pageLoader">
         <div class="video-loader-wrapper">
             <div class="pulse-ring"></div>
@@ -269,6 +244,7 @@
         <h2 id="loaderMessage" style="margin-top:10px; color:#ffffff; font-weight:600; font-size: 14px; letter-spacing: 2px; text-transform: uppercase;">SYNCING LIVE DB...</h2>
     </div>
 
+    <!-- AUTHENTICATION LAYER -->
     <div id="loginOverlay" style="display:none;">
         <div class="login-box" id="loginBox">
             <h2>Aryanta Partners</h2>
@@ -284,19 +260,18 @@
                 <button class="btn-prime" style="flex: 1; background: #f59e0b; font-size: 13px; padding: 12px;" onclick="window.location.href='https://aryanta.in/seller'"><i class="fas fa-user-plus"></i> Apply to Sell</button>
             </div>
         </div>
-
-        <div class="login-box" id="statusBox" style="display:none;">
-            <h2 id="statusTitle">Account Status</h2>
-            <p id="statusMessage" style="font-size: 15px; color: var(--text-main); font-weight: 600; line-height: 1.5; margin-bottom: 20px;"></p>
-            <h3 id="suspendTimer" style="display:none; color: var(--danger); font-size: 24px; margin-bottom: 20px; font-variant-numeric: tabular-nums;"></h3>
-            <button class="btn-prime w-100" style="background:var(--secondary);" onclick="handleLogout()">Logout / Refresh</button>
-        </div>
     </div>
 
+    <!-- MOBILE OVERLAY -->
     <div id="mobileSidebarOverlay" onclick="toggleSidebar()"></div>
 
+    <!-- MAIN APP WRAPPER -->
     <div class="seller-container">
         
+        <!-- Persistent Banner for Blocked/Suspended Accounts -->
+        <div id="accountStatusBanner">Your account is restricted. You are forced into Offline Mode. Contact Support.</div>
+
+        <!-- SIDEBAR -->
         <aside class="sidebar" id="mobileSidebar">
             <h2><i class="fas fa-store"></i> Aryanta <span id="verifiedBadge" style="display:none; color:#10b981; font-size:14px; margin-left:5px;" title="Verified Prime Seller"><i class="fas fa-check-circle"></i></span></h2>
             
@@ -308,12 +283,12 @@
             <div class="nav-item" onclick="showSection('inventory')"><i class="fas fa-box-open"></i> My Inventory</div>
             <div class="nav-item" onclick="showSection('newOrders')"><i class="fas fa-bell" style="color: #fbbf24;"></i> New Orders <span id="badge-new-orders" class="nav-badge" style="background:#f59e0b;">0</span></div>
             <div class="nav-item" onclick="showSection('acceptedOrders')"><i class="fas fa-check-square" style="color: #60a5fa;"></i> Accepted Orders <span id="badge-accepted" class="nav-badge" style="background:#3b82f6;">0</span></div>
+            <div class="nav-item" onclick="showSection('completedScan')"><i class="fas fa-clipboard-check" style="color: #10b981;"></i> Completed Scanning</div>
             <div class="nav-item" onclick="showSection('shippedOrders')"><i class="fas fa-truck-fast" style="color: #34d399;"></i> Shipped Orders</div>
-            <div class="nav-item" onclick="showSection('deliveredOrders')"><i class="fas fa-clipboard-check" style="color: #10b981;"></i> Delivered Orders</div>
+            <div class="nav-item" onclick="showSection('deliveredOrders')"><i class="fas fa-box-check" style="color: #10b981;"></i> Delivered Orders</div>
             
             <div style="border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 20px;"></div>
             
-            <!-- Upgraded Premium Dispatch Button -->
             <div class="nav-item scan-btn-premium" onclick="openGlobalScanModal()"><i class="fas fa-qrcode"></i> Scan & Ship Orders</div>
             
             <div class="nav-item" onclick="showSection('history')" style="margin-top:15px;"><i class="fas fa-history"></i> Order History</div>
@@ -337,8 +312,10 @@
             <div class="nav-item" onclick="handleLogout()" style="color: #f87171; margin-top:30px;"><i class="fas fa-sign-out-alt"></i> Secure Logout</div>
         </aside>
 
+        <!-- MAIN VIEW -->
         <main class="main-content">
             
+            <!-- STICKY TOP BAR -->
             <div class="global-header-wrapper">
                 <div class="marquee-wrap">
                     <div class="marquee-inner" id="sellerMarquee">We help to make your business no. 1. Thanks for choosing us! Keep growing with Aryanta Prime Seller Network.</div>
@@ -357,13 +334,14 @@
                             </div>
                         </div>
 
-                        <div id="notifDropdown" style="display:none; position:absolute; top:70px; left:25px; width:350px; background:var(--white); box-shadow:var(--shadow-lg); border:1px solid var(--border-color); border-radius:12px; z-index:2000; max-height:400px; overflow-y:auto; transition:0.3s ease;">
-                            <div style="padding:15px; border-bottom:1px solid var(--border-color); font-weight:800; display:flex; justify-content:space-between; align-items:center;">
+                        <!-- Redesigned Notification Dropdown -->
+                        <div id="notifDropdown">
+                            <div class="notif-header-box">
                                 <span><i class="fas fa-bell text-primary"></i> Live Notifications</span>
                                 <i class="fas fa-times" style="cursor:pointer;" onclick="toggleNotifications()"></i>
                             </div>
-                            <div id="notifList" style="padding:10px;">
-                                <div style="text-align:center; padding:20px; color:var(--text-light); font-size:13px;">No new messages.</div>
+                            <div id="notifList">
+                                <div style="text-align:center; padding:30px; color:var(--text-light); font-size:14px;"><i class="fas fa-box-open" style="font-size: 30px; margin-bottom: 10px;"></i><br>No new messages.</div>
                             </div>
                         </div>
                         
@@ -376,6 +354,7 @@
                 </div>
             </div>
 
+            <!-- CONTENT SECTIONS -->
             <div class="content-padding">
 
                 <section id="homeSection" class="data-section active">
@@ -443,7 +422,6 @@
                             <button class="btn-prime" onclick="updateBankDetails()"><i class="fas fa-save"></i> Update Bank Info</button>
                         </div>
 
-                        <!-- Update: KYC/GST Upload UI -->
                         <h4 style="margin-top:30px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">KYC & GST Documents</h4>
                         <div id="kycStatusBox" style="margin-top:15px; padding:25px; background:var(--surface-2); border-radius:12px; text-align:center; border: 2px dashed #cbd5e1;">
                             <p style="margin-bottom:10px; font-weight:600; font-size:15px;">Upload your GST and KYC documents to unlock verified features and seamless payouts.</p>
@@ -458,7 +436,7 @@
                         <h3 style="font-size:22px;"><i class="fas fa-box-open"></i> My Inventory</h3>
                         <button class="btn-prime" onclick="openItemModal()"><i class="fas fa-plus"></i> Add Product</button>
                     </div>
-                    <div class="table-container"><table class="admin-table"><thead><tr><th>SKU & Images</th><th>Product Title</th><th>Category</th><th>Stock</th><th>MRP / Price</th><th>Actions</th></tr></thead><tbody id="inventoryList"></tbody></table></div>
+                    <div class="table-container"><table class="admin-table"><thead><tr><th>SKU & Images</th><th>Product Title</th><th>Category/Warranty</th><th>Stock</th><th>MRP / Price</th><th>Actions</th></tr></thead><tbody id="inventoryList"></tbody></table></div>
                 </section>
 
                 <section id="newOrdersSection" class="data-section">
@@ -471,7 +449,7 @@
                     </div>
                     <div class="panel-box" style="background:var(--surface-2); padding:15px; margin-bottom: 15px; display:flex; align-items:center;">
                         <input type="checkbox" id="selectAllNew" class="custom-cb" aria-label="Select All New" onclick="toggleSelectAllNew(this)"> 
-                        <label for="selectAllNew" style="margin:0 0 0 10px; font-size:14px; cursor:pointer;">Select All Pending Orders</label>
+                        <label for="selectAllNew" style="margin:0 0 0 10px; font-size:14px; cursor:pointer; font-weight:bold;">Select All Pending Orders</label>
                     </div>
                     <div class="table-container"><table class="admin-table"><thead><tr><th style="width: 50px;">Select</th><th>Order Date</th><th>Order Ref</th><th>Item Details</th><th>Amount</th><th>SLA Status</th><th>Action</th></tr></thead><tbody id="newOrdersList"></tbody></table></div>
                 </section>
@@ -479,16 +457,26 @@
                 <section id="acceptedOrdersSection" class="data-section">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
                         <h3 style="color: #3b82f6; font-size:22px; margin:0;"><i class="fas fa-check-square"></i> Accepted Orders</h3>
-                        <div style="display:flex; gap:10px;">
-                            <button class="btn-prime" style="background:#64748b;" onclick="processSlips('print')"><i class="fas fa-print"></i> Print Slips</button>
-                            <button class="btn-prime" style="background:#2563eb;" onclick="processSlips('download')"><i class="fas fa-file-pdf"></i> Download PDFs</button>
+                    </div>
+                    
+                    <div class="panel-box" style="background:var(--surface-2); padding:15px; margin-bottom: 15px; display:flex; align-items:center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                        <div style="display:flex; align-items:center;">
+                            <input type="checkbox" id="selectAllAcc" class="custom-cb" aria-label="Select All Accepted" onclick="toggleSelectAllAcc(this)"> 
+                            <label for="selectAllAcc" style="margin:0 0 0 10px; font-size:14px; cursor:pointer; font-weight: bold;">Select All Orders</label>
+                        </div>
+                        <!-- SIDE BY SIDE DOWNLOAD BUTTONS -->
+                        <div style="display:flex; gap: 15px; flex-wrap: wrap;">
+                            <button class="btn-pdf" onclick="processSlips('download')"><i class="fas fa-file-pdf"></i> Download Slips</button>
+                            <button class="btn-shiprocket" onclick="downloadShippingInvoice('bulk')"><i class="fas fa-rocket"></i> Shiprocket Slips</button>
                         </div>
                     </div>
-                    <div class="panel-box" style="background:var(--surface-2); padding:15px; margin-bottom: 15px; display:flex; align-items:center;">
-                        <input type="checkbox" id="selectAllAcc" class="custom-cb" aria-label="Select All Accepted" onclick="toggleSelectAllAcc(this)"> 
-                        <label for="selectAllAcc" style="margin:0 0 0 10px; font-size:14px; cursor:pointer;">Select All Orders</label>
-                    </div>
+                    
                     <div class="table-container"><table class="admin-table"><thead><tr><th style="width: 50px;">Select</th><th>Order Date</th><th>Order Ref</th><th>Item Details</th><th>Action</th></tr></thead><tbody id="acceptedOrdersList"></tbody></table></div>
+                </section>
+
+                <section id="completedScanSection" class="data-section">
+                    <h3 style="color: #10b981; margin-bottom: 20px; font-size:22px;"><i class="fas fa-clipboard-check"></i> Completed Scanning</h3>
+                    <div class="table-container"><table class="admin-table"><thead><tr><th>Scan Date</th><th>Order Ref</th><th>Item Details</th><th>Status</th><th>Action</th></tr></thead><tbody id="completedScanList"></tbody></table></div>
                 </section>
 
                 <section id="shippedOrdersSection" class="data-section">
@@ -602,7 +590,6 @@
                     </div>
                 </section>
 
-                <!-- UPGRADED DYNAMIC TUTORIALS SECTION -->
                 <section id="tutorialSection" class="data-section">
                     <h3 style="margin-bottom: 20px; color: #c026d3; font-size:22px;"><i class="fas fa-video"></i> How to Sell on Aryanta</h3>
                     <div id="tutorialContentList" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px;">
@@ -646,13 +633,11 @@
                         </form>
                         
                         <div style="border-top:1px solid var(--border-color); margin-top:20px; padding-top:20px; text-align:center;">
-                            <!-- Opens as Tab Now -->
                             <button class="btn-prime" style="background:#3b82f6;" onclick="showSection('oldTickets')"><i class="fas fa-history"></i> See My Old Tickets</button>
                         </div>
                     </div>
                 </section>
 
-                <!-- NEW TAB FOR OLD TICKETS (Replaced Modal) -->
                 <section id="oldTicketsSection" class="data-section">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
                         <h3 style="color: #3b82f6; margin:0; font-size:22px;"><i class="fas fa-history"></i> My Support Tickets</h3>
@@ -723,9 +708,10 @@
         </main>
     </div>
 
+    <!-- Modals -->
     <div class="modal" id="kycModal">
         <div class="modal-content" style="width: 500px; text-align: center;">
-            <span class="close-modal" onclick="closeModal('kycModal')">&times;</span>
+            <span class="close-modal" onclick="closeModal('kycModal')"><i class="fas fa-times"></i></span>
             <h3 style="color: var(--primary); margin-bottom: 15px; font-size:22px;"><i class="fas fa-file-invoice-dollar"></i> Upload KYC & GST</h3>
             <p id="kycStatusText" style="font-size:14px; color:var(--text-light); margin-bottom:20px;"></p>
             
@@ -746,23 +732,22 @@
         </div>
     </div>
 
-    <!-- Single Ticket Details Modal -->
     <div class="modal" id="ticketDetailModal">
         <div class="modal-content" style="width: 550px;">
-            <span class="close-modal" onclick="closeModal('ticketDetailModal')">&times;</span>
+            <span class="close-modal" onclick="closeModal('ticketDetailModal')"><i class="fas fa-times"></i></span>
             <h3 style="color: var(--primary); margin-bottom: 15px; font-size:20px;"><i class="fas fa-ticket-alt"></i> Ticket Details</h3>
             <div id="ticketDetailContent"></div>
         </div>
     </div>
 
     <div class="modal" id="imageViewerModal" onclick="closeModal('imageViewerModal')">
-        <span class="viewer-close">&times;</span>
+        <span class="viewer-close"><i class="fas fa-times"></i></span>
         <img id="fullscreenImg" src="" onclick="event.stopPropagation()">
     </div>
 
     <div class="modal" id="subExpiryModal">
         <div class="modal-content" style="width: 400px; text-align: center;">
-            <span class="close-modal" onclick="closeModal('subExpiryModal')">&times;</span>
+            <span class="close-modal" onclick="closeModal('subExpiryModal')"><i class="fas fa-times"></i></span>
             <i class="fas fa-exclamation-triangle" style="font-size:50px; color:#f59e0b; margin-bottom:15px;"></i>
             <h3 style="color: #f59e0b; margin-bottom: 10px;">Subscription Alert!</h3>
             <p id="subExpiryMsg" style="font-size:15px; margin-bottom:20px; font-weight:600;"></p>
@@ -772,7 +757,7 @@
 
     <div class="modal" id="subHistoryModal">
         <div class="modal-content" style="width: 700px; max-width:95%;">
-            <span class="close-modal" onclick="closeModal('subHistoryModal')">&times;</span>
+            <span class="close-modal" onclick="closeModal('subHistoryModal')"><i class="fas fa-times"></i></span>
             <h3 style="margin-bottom: 20px; font-size:22px; color:var(--primary);"><i class="fas fa-history"></i> Subscription History</h3>
             <div class="table-container">
                 <table class="admin-table">
@@ -783,22 +768,52 @@
         </div>
     </div>
 
-    <div class="modal" id="itemModal"><div class="modal-content" style="width: 750px; max-width:95%;"><span class="close-modal" onclick="closeModal('itemModal')">&times;</span><h3 id="modalTitle" style="margin-bottom:20px; color:var(--primary); font-size:22px;">Add / Edit Product</h3><form id="itemForm" onsubmit="event.preventDefault(); submitItemForm(); return false;"><input type="hidden" id="editId">
-        <div style="display: grid; grid-template-columns: 2fr 1fr; gap:15px;"><div><label>Product Title</label><input type="text" id="itemName" class="input-field" required aria-label="Product Name"></div><div><label>Unique SKU (Code)</label><input type="text" id="itemSku" class="input-field" placeholder="Auto-generated if blank" style="font-family: monospace; font-weight: bold;" aria-label="SKU"></div></div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap:15px;"><div><label>Category</label><select id="itemCat" class="input-field" aria-label="Category"><option value="Electronics">Electronics</option><option value="Clothes">Clothes</option><option value="Grocery">Grocery</option><option value="Home Items">Home Items</option><option value="Footwear">Footwear</option><option value="Books">Books</option><option value="Toys">Toys</option><option value="Beauty">Beauty</option><option value="Health">Health</option><option value="Sports">Sports</option><option value="Other">Other</option></select></div><div><label>Total Stock</label><input type="number" id="itemStock" class="input-field" required aria-label="Total Stock"></div></div>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap:15px;">
-            <div><label>MRP (₹)</label><input type="number" id="itemMrp" class="input-field" required aria-label="MRP"></div>
-            <div><label>Your Selling Price (₹)</label><input type="number" id="itemPrice" class="input-field" oninput="calculateListedPrice()" required aria-label="Selling Price"></div>
-            <div><label>Listed Price (Inc. Comm)</label><input type="text" id="itemListedPrice" class="input-field readonly" disabled style="font-weight:bold; color:var(--primary);" aria-label="Listed Price"></div>
+    <div class="modal" id="itemModal">
+        <div class="modal-content" style="width: 750px; max-width:95%;">
+            <span class="close-modal" onclick="closeModal('itemModal')"><i class="fas fa-times"></i></span>
+            <h3 id="modalTitle" style="margin-bottom:20px; color:var(--primary); font-size:22px;">Add / Edit Product</h3>
+            <form id="itemForm" onsubmit="event.preventDefault(); submitItemForm(); return false;">
+                <input type="hidden" id="editId">
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap:15px;">
+                    <div><label>Product Title</label><input type="text" id="itemName" class="input-field" required aria-label="Product Name"></div>
+                    <div><label>Unique SKU (Code)</label><input type="text" id="itemSku" class="input-field" placeholder="Auto-generated if blank" style="font-family: monospace; font-weight: bold;" aria-label="SKU"></div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap:15px;">
+                    <div>
+                        <label>Category</label>
+                        <select id="itemCat" class="input-field" aria-label="Category">
+                            <option value="Electronics">Electronics</option><option value="Clothes">Clothes</option><option value="Grocery">Grocery</option><option value="Home Items">Home Items</option><option value="Footwear">Footwear</option><option value="Books">Books</option><option value="Toys">Toys</option><option value="Beauty">Beauty</option><option value="Health">Health</option><option value="Sports">Sports</option><option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div><label>Total Stock</label><input type="number" id="itemStock" class="input-field" required aria-label="Total Stock"></div>
+                    <div>
+                        <label>Warranty</label>
+                        <select id="itemWarranty" class="input-field" onchange="toggleCustomWarranty()" aria-label="Warranty">
+                            <option value="No Warranty">No Warranty</option>
+                            <option value="3 Months">3 Months</option>
+                            <option value="6 Months">6 Months</option>
+                            <option value="1 Year">1 Year</option>
+                            <option value="Custom">Custom</option>
+                        </select>
+                        <input type="text" id="itemWarrantyCustom" class="input-field" placeholder="e.g. 2 Years" style="display:none; margin-top:-10px;">
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap:15px;">
+                    <div><label>MRP (₹)</label><input type="number" id="itemMrp" class="input-field" required aria-label="MRP"></div>
+                    <div><label>Your Selling Price (₹)</label><input type="number" id="itemPrice" class="input-field" oninput="calculateListedPrice()" required aria-label="Selling Price"></div>
+                    <div><label>Listed Price (Inc. Comm)</label><input type="text" id="itemListedPrice" class="input-field readonly" disabled style="font-weight:bold; color:var(--primary);" aria-label="Listed Price"></div>
+                </div>
+                
+                <label>Full Description</label><textarea id="itemDesc" class="input-field" style="height: 100px;" required aria-label="Description"></textarea>
+                <label>Upload Images</label><input type="file" id="itemImgFiles" class="input-field" multiple accept="image/*" aria-label="Upload Images">
+                <div id="imagePreviewContainer" style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;"></div>
+                <button type="submit" class="btn-prime w-100" id="saveProductBtn" style="font-size:16px; padding:15px; margin-top:10px;"><i class="fas fa-save"></i> Save Product</button>
+            </form>
         </div>
-        
-        <label>Full Description</label><textarea id="itemDesc" class="input-field" style="height: 100px;" required aria-label="Description"></textarea>
-        <label>Upload Images</label><input type="file" id="itemImgFiles" class="input-field" multiple accept="image/*" aria-label="Upload Images">
-        <div id="imagePreviewContainer" style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;"></div>
-        <button type="submit" class="btn-prime w-100" id="saveProductBtn" style="font-size:16px; padding:15px; margin-top:10px;"><i class="fas fa-save"></i> Save Product</button></form></div></div>
+    </div>
 
-    <div class="modal" id="scanModal"><div class="modal-content" style="width: 500px; text-align: center;"><span class="close-modal" onclick="closeModal('scanModal')">&times;</span><h3 style="color: #3b82f6; margin-bottom: 15px; font-size:22px;"><i class="fas fa-qrcode"></i> Scan to Dispatch</h3>
+    <div class="modal" id="scanModal"><div class="modal-content" style="width: 500px; text-align: center;"><span class="close-modal" onclick="closeModal('scanModal')"><i class="fas fa-times"></i></span><h3 style="color: #3b82f6; margin-bottom: 15px; font-size:22px;"><i class="fas fa-qrcode"></i> Scan to Dispatch</h3>
         <p id="scanInstructions" style="font-size:13px; color:var(--text-light); margin-bottom:20px; font-weight:600;">Step 1: Scan Order Invoice.<br>Step 2: Scan Shipping Label QR.<br>Step 3: Scan 16-Digit Product Barcode.</p>
         <input type="hidden" id="scanOrderId">
         <div class="scanner-placeholder" id="scannerPlaceholder"><i class="fas fa-spinner fa-spin"></i><p style="margin-top:10px; font-weight:bold;">Loading Camera...</p></div>
@@ -806,19 +821,19 @@
         <div id="scanStatus" style="font-size:16px; font-weight:800; color:var(--primary); margin:20px 0;">Please Wait...</div>
         <button class="btn-prime w-100" id="skipScanBtn" style="background:#ef4444; margin-top:10px; display:none;" onclick="skipAndShip()"><i class="fas fa-forward"></i> Skip Scan Process (Pay ₹7 Fine)</button></div></div>
 
-    <div class="modal" id="adPaymentModal"><div class="modal-content" style="width: 400px; text-align: center;"><span class="close-modal" onclick="closeModal('adPaymentModal')">&times;</span><h3 style="color: #ec4899; margin-bottom: 15px; font-size:22px;"><i class="fas fa-bullhorn"></i> Start Sponsored Ad</h3><input type="hidden" id="adProdId"><p style="font-size:16px; margin-bottom:25px;">Cost: <strong id="adCostDisplay">₹70</strong> <strong>for 24 Hours</strong></p><button class="btn-prime w-100" style="background:#10b981; margin-bottom:15px; padding:15px;" onclick="payAdOnline()"><i class="fas fa-credit-card"></i> Pay Now (Online Razorpay)</button><button class="btn-prime w-100" id="btnAdPayout" style="background:#3b82f6; padding:15px;" onclick="payAdUpcoming()"><i class="fas fa-wallet"></i> Pay via Upcoming Payout</button></div></div>
+    <div class="modal" id="adPaymentModal"><div class="modal-content" style="width: 400px; text-align: center;"><span class="close-modal" onclick="closeModal('adPaymentModal')"><i class="fas fa-times"></i></span><h3 style="color: #ec4899; margin-bottom: 15px; font-size:22px;"><i class="fas fa-bullhorn"></i> Start Sponsored Ad</h3><input type="hidden" id="adProdId"><p style="font-size:16px; margin-bottom:25px;">Cost: <strong id="adCostDisplay">₹70</strong> <strong>for 24 Hours</strong></p><button class="btn-prime w-100" style="background:#10b981; margin-bottom:15px; padding:15px;" onclick="payAdOnline()"><i class="fas fa-credit-card"></i> Pay Now (Online Razorpay)</button><button class="btn-prime w-100" id="btnAdPayout" style="background:#3b82f6; padding:15px;" onclick="payAdUpcoming()"><i class="fas fa-wallet"></i> Pay via Upcoming Payout</button></div></div>
 
-    <div class="modal" id="buyB2bModal"><div class="modal-content" style="width: 600px; max-width: 95%;"><span class="close-modal" onclick="closeModal('buyB2bModal')">&times;</span>
+    <div class="modal" id="buyB2bModal"><div class="modal-content" style="width: 600px; max-width: 95%;"><span class="close-modal" onclick="closeModal('buyB2bModal')"><i class="fas fa-times"></i></span>
         <div id="b2bStep1"><h3 style="color: var(--primary); margin-bottom: 15px;"><i class="fas fa-shopping-bag"></i> Wholesale Details</h3><input type="hidden" id="b2bBuyId"><div id="b2bProductInfo"></div><div style="background:var(--surface-2); padding:15px; border-radius:12px; margin-bottom: 20px;"><p style="margin-bottom:8px; font-size:14px;"><strong>Sold By:</strong> Aryanta Enterprise Admin <i class="fas fa-check-circle" style="color:var(--primary);"></i></p><p style="margin-bottom:8px; font-size:14px;"><strong>Delivery Speed:</strong> Dispatch & Delivery within 7 Days</p><p style="margin-bottom:0; font-size:14px;"><strong>Warranty Status:</strong> <span id="b2bWarrText" style="color:var(--secondary); font-weight:bold;"></span></p></div><button class="btn-prime w-100" style="padding:15px; font-size: 16px; margin-top:10px;" onclick="goToB2bStep2()">Order Now <i class="fas fa-arrow-right"></i></button></div>
         <div id="b2bStep2" style="display:none;"><h3 style="color: var(--primary); margin-bottom: 15px;"><i class="fas fa-truck"></i> Shipping & Payment</h3><button class="btn-sm" style="background:var(--text-light); margin-bottom:15px;" onclick="goToB2bStep1()"><i class="fas fa-arrow-left"></i> Back</button><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div><label>Order Quantity (MOQ: <span id="b2bMoqLabel"></span>)</label><input type="number" id="b2bBuyQty" class="input-field" oninput="calcB2bTotal()" required aria-label="B2B Quantity"></div><div><label>Total Price (+₹70 Shipping)</label><input type="text" id="b2bBuyTotal" class="input-field readonly" disabled style="font-weight:bold; color:var(--primary);" aria-label="B2B Total"></div></div><label>Full Shipping Address</label><input type="text" id="b2bBuyAddress" class="input-field" required aria-label="Address"><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div><label>City</label><input type="text" id="b2bBuyCity" class="input-field" required aria-label="City"></div><div><label>Pincode</label><input type="text" id="b2bBuyPin" class="input-field" required aria-label="Pincode"></div></div><button class="btn-prime w-100" style="background:#10b981; margin-bottom:15px; padding:15px; margin-top:10px;" onclick="processB2bBuy('online')"><i class="fas fa-credit-card"></i> Pay Online (Razorpay)</button><button class="btn-prime w-100" style="background:#3b82f6; padding:15px;" id="b2bPayoutBtn" onclick="processB2bBuy('payout')"><i class="fas fa-wallet"></i> Pay via Upcoming Payout</button></div></div></div>
 
-    <div class="modal" id="qnaModal"><div class="modal-content" style="width: 500px;"><span class="close-modal" onclick="closeModal('qnaModal')">&times;</span><h3 style="color: #3b82f6; margin-bottom: 20px; font-size:22px;"><i class="fas fa-reply"></i> Answer Customer</h3><input type="hidden" id="qnaProdId"><input type="hidden" id="qnaQid"><div id="qnaTextDisplay" style="background:#eff6ff; padding:20px; border-radius:12px; margin-bottom:20px; font-size:15px; font-weight:700; color:#1e3a8a; border:1px solid var(--border-color);"></div><label>Your Official Response</label><textarea id="qnaAnsText" class="input-field" style="height:120px;" required aria-label="QnA Answer"></textarea><button class="btn-prime w-100" style="padding:15px; font-size:16px; margin-top:10px;" onclick="submitQnaAnswer()"><i class="fas fa-paper-plane"></i> Publish Answer</button></div></div>
+    <div class="modal" id="qnaModal"><div class="modal-content" style="width: 500px;"><span class="close-modal" onclick="closeModal('qnaModal')"><i class="fas fa-times"></i></span><h3 style="color: #3b82f6; margin-bottom: 20px; font-size:22px;"><i class="fas fa-reply"></i> Answer Customer</h3><input type="hidden" id="qnaProdId"><input type="hidden" id="qnaQid"><div id="qnaTextDisplay" style="background:#eff6ff; padding:20px; border-radius:12px; margin-bottom:20px; font-size:15px; font-weight:700; color:#1e3a8a; border:1px solid var(--border-color);"></div><label>Your Official Response</label><textarea id="qnaAnsText" class="input-field" style="height:120px;" required aria-label="QnA Answer"></textarea><button class="btn-prime w-100" style="padding:15px; font-size:16px; margin-top:10px;" onclick="submitQnaAnswer()"><i class="fas fa-paper-plane"></i> Publish Answer</button></div></div>
 
-    <div class="modal" id="orderDetailsModal"><div class="modal-content" style="width: 650px;"><span class="close-modal" onclick="closeModal('orderDetailsModal')">&times;</span><h3 style="margin-bottom: 20px; color:var(--primary); font-size:22px;"><i class="fas fa-receipt"></i> Complete Order Details</h3><div id="orderDetailsContent" class="detail-grid" style="grid-template-columns: 1fr;"></div></div></div>
+    <div class="modal" id="orderDetailsModal"><div class="modal-content" style="width: 650px;"><span class="close-modal" onclick="closeModal('orderDetailsModal')"><i class="fas fa-times"></i></span><h3 style="margin-bottom: 20px; color:var(--primary); font-size:22px;"><i class="fas fa-receipt"></i> Complete Order Details</h3><div id="orderDetailsContent" class="detail-grid" style="grid-template-columns: 1fr;"></div></div></div>
 
     <div class="modal" id="forgotPassModal">
         <div class="modal-content" style="width: 400px; text-align: center;">
-            <span class="close-modal" onclick="closeModal('forgotPassModal')">&times;</span>
+            <span class="close-modal" onclick="closeModal('forgotPassModal')"><i class="fas fa-times"></i></span>
             <h3 style="color: var(--primary); margin-bottom: 15px; font-size:22px;"><i class="fas fa-lock"></i> Reset Password</h3>
             
             <div id="stepEmail">
@@ -848,1958 +863,10 @@
         </div>
     </div>
 
-    <div id="printArea"></div>
+    <!-- Hidden Print Area (CSS Handles Display during Printing) -->
+    <div id="printArea" style="display:none;"></div>
     <div id="toastContainer"></div>
 
-    <script>
-        const API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
-
-        let API_KEYS = {
-            RAZORPAY: "",
-            EMAILJS_PUBLIC: "",
-            EMAILJS_OTP_SERVICE: "",
-            EMAILJS_OTP_TEMPLATE: ""
-        };
-
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "aryanta-mart-a8893.firebaseapp.com",
-            projectId: "aryanta-mart-a8893",
-            storageBucket: "aryanta-mart-a8893.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const db = firebase.firestore();
-
-        let suspendInterval;
-
-        // GLOBALS
-        let currentSeller = null;
-        let sellerProducts = [];
-        let sellerOrders = [];
-        let sellerFines = [];
-        let sellerReviews = [];
-        let sellerWarranties = []; 
-        let b2bItems = [];
-        let salesChartInstance = null;
-        let uploadedImagesArray = [];
-        let html5QrcodeScanner = null;
-        let adminNotifications = [];
-        let unreadNotifs = 0;
-
-        let currentPlanDuration = 'month'; 
-        let cachedTotalUpcoming = 0; 
-
-        // ================= UI & MASKING =================
-        function renderStatusScreen(title, msg, isSuspended = false, endTime = null) {
-            document.getElementById("loginBox").style.display = "none";
-            document.getElementById("statusBox").style.display = "block";
-            document.getElementById("statusTitle").innerText = title;
-            document.getElementById("statusTitle").style.color = isSuspended ? "var(--warning)" : "var(--danger)";
-            document.getElementById("statusMessage").innerHTML = msg;
-            
-            const timerEl = document.getElementById("suspendTimer");
-            if (isSuspended && endTime) {
-                timerEl.style.display = "block";
-                clearInterval(suspendInterval);
-                suspendInterval = setInterval(() => {
-                    const now = Date.now();
-                    const diff = endTime - now;
-                    if (diff <= 0) {
-                        clearInterval(suspendInterval);
-                        timerEl.innerText = "Suspension Over! Unblocking...";
-                        currentSeller.status = "Active";
-                        currentSeller.suspendedAt = null;
-                        localStorage.setItem('sellerToken', JSON.stringify(currentSeller));
-                        
-                        db.collection("sellers").doc(currentSeller.email).update({ 
-                            status: "Active",
-                            suspendedAt: firebase.firestore.FieldValue.delete()
-                        }).then(() => {
-                            window.location.reload();
-                        });
-                    } else {
-                        const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-                        const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                        const s = Math.floor((diff % (1000 * 60)) / 1000);
-                        timerEl.innerText = `${d}d ${h}h ${m}m ${s}s`;
-                    }
-                }, 1000);
-            } else {
-                timerEl.style.display = "none";
-            }
-        }
-
-        window.toggleSidebar = function() { 
-            const sb = document.getElementById('mobileSidebar');
-            const ov = document.getElementById('mobileSidebarOverlay');
-            sb.classList.toggle('open'); 
-            if(sb.classList.contains('open')) ov.style.display = 'block';
-            else ov.style.display = 'none';
-        }
-
-        window.closeModal = function(id) { 
-            document.getElementById(id).style.display = "none"; 
-            if(id === 'scanModal' && html5QrcodeScanner) { try { html5QrcodeScanner.clear(); } catch(e) {} }
-        }
-
-        function maskName(name) {
-            if(!name) return 'Customer';
-            let parts = name.split(' ');
-            return parts.map(p => p.charAt(0) + '***').join(' ');
-        }
-
-        function maskEmail(email) {
-            if(!email) return 'Hidden'; 
-            let parts = email.split("@"); 
-            if(parts.length !== 2) return 'Hidden'; 
-            let name = parts[0];
-            if(name.length <= 4) return name.substring(0,1) + "****@" + parts[1];
-            return name.substring(0,4) + "****@" + parts[1];
-        }
-
-        function maskPhone(phone) {
-            if(!phone) return 'Hidden'; 
-            let pStr = String(phone).replace(/\D/g, ''); 
-            if(pStr.length < 4) return 'Hidden'; 
-            return "******" + pStr.substring(pStr.length - 4);
-        }
-
-        window.toggleCustomSelect = function() {
-            const opts = document.querySelector('.custom-select-options');
-            if(opts) opts.classList.toggle('open');
-        }
-        window.selectOption = function(value) {
-            document.getElementById('supCategorySelected').innerText = value;
-            document.getElementById('supCategory').value = value;
-            document.querySelector('.custom-select-options').classList.remove('open');
-        }
-        document.addEventListener('click', function(e) {
-            if(!e.target.closest('.custom-select-wrapper')) {
-                const opts = document.querySelector('.custom-select-options');
-                if(opts) opts.classList.remove('open');
-            }
-            if(!e.target.closest('.search-container')) {
-                document.getElementById('searchSuggestions').style.display = 'none';
-            }
-            if(!e.target.closest('#notifDropdown') && !e.target.closest('.fa-bell')) {
-                document.getElementById('notifDropdown').style.display = 'none';
-            }
-        });
-
-        window.openImageViewer = function(src) {
-            document.getElementById("fullscreenImg").src = src; document.getElementById("imageViewerModal").style.display = "flex";
-        }
-
-        window.showToast = function(msg, type="info") {
-            const container = document.getElementById("toastContainer"); const toast = document.createElement("div");
-            toast.className = `toast ${type}`; let icon = type === 'success' ? "fa-check-circle" : (type === 'error' ? "fa-times-circle" : "fa-info-circle");
-            toast.innerHTML = `<i class="fas ${icon}"></i> <span>${msg}</span>`; container.appendChild(toast);
-            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 3500);
-        }
-
-        function safeSetText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text; }
-
-        // ================= AUTHENTICATION & SUSPENSION =================
-        function checkSession() {
-            const token = localStorage.getItem('sellerToken');
-            const loader = document.getElementById("pageLoader");
-
-            if (token) {
-                currentSeller = JSON.parse(token);
-                
-                if(currentSeller.status === "Blocked") {
-                    document.getElementById("loginOverlay").style.display = "flex"; if(loader) loader.style.display = "none";
-                    renderStatusScreen(
-                        "Account Blocked", 
-                        "You have been permanently blocked by Admin.<br><br>Please get support by:<br>📞 Phone: <strong>06414054676</strong><br>✉️ Email: <strong>support@aryanta.com</strong>",
-                        false
-                    );
-                    return;
-                }
-                if(currentSeller.status === "Suspended") {
-                    document.getElementById("loginOverlay").style.display = "flex"; if(loader) loader.style.display = "none";
-                    
-                    let suspendTime = currentSeller.suspendedAt ? new Date(currentSeller.suspendedAt).getTime() : Date.now();
-                    let unlockTime = suspendTime + (7 * 24 * 60 * 60 * 1000); 
-                    
-                    if (Date.now() >= unlockTime) {
-                        currentSeller.status = "Active";
-                        currentSeller.suspendedAt = null;
-                        localStorage.setItem('sellerToken', JSON.stringify(currentSeller));
-                        db.collection("sellers").doc(currentSeller.email).update({ 
-                            status: "Active", suspendedAt: firebase.firestore.FieldValue.delete() 
-                        }).catch(e=>console.error(e));
-                        
-                        document.getElementById("loginOverlay").style.display = "none"; 
-                        document.querySelector(".seller-container").style.display = "block";
-                    } else {
-                        if (!currentSeller.suspendedAt) {
-                            currentSeller.suspendedAt = new Date().toISOString();
-                            db.collection("sellers").doc(currentSeller.email).update({ suspendedAt: currentSeller.suspendedAt });
-                        }
-                        renderStatusScreen(
-                            "Account Suspended", 
-                            "Your account is temporarily suspended by admin. You will be automatically unblocked after the timer reaches zero.<br><br>Get support by:<br>📞 Phone: <strong>06414054676</strong><br>✉️ Email: <strong>support@aryanta.com</strong>", 
-                            true, 
-                            unlockTime
-                        );
-                        return;
-                    }
-                }
-                
-                applySettingsToUI();
-                document.getElementById("loginOverlay").style.display = "none"; document.querySelector(".seller-container").style.display = "block";
-                document.getElementById("sellerGreeting").innerText = `| ${currentSeller.companyName || currentSeller.email}`;
-                
-                if(currentSeller.subscription && currentSeller.subscription !== 'None') {
-                    document.getElementById('verifiedBadge').style.display = 'inline';
-                }
-                
-                checkSubscriptionExpiry();
-                initDashboard();
-                fetchNotifications();
-            } else {
-                document.getElementById("loginOverlay").style.display = "flex"; if(loader) loader.style.display = "none"; 
-            }
-        }
-
-        function checkSubscriptionExpiry() {
-            if(currentSeller.subscription && currentSeller.subscription !== 'None' && currentSeller.subEndDate) {
-                const end = new Date(currentSeller.subEndDate).getTime();
-                const now = Date.now();
-                const diffDays = (end - now) / (1000 * 3600 * 24);
-                
-                if(diffDays <= 7 && diffDays > 0) {
-                    document.getElementById('subExpiryMsg').innerText = `Your ${currentSeller.subscription} plan expires in ${Math.ceil(diffDays)} days (${new Date(end).toLocaleDateString()}). Please update your payment to avoid interruption of orders.`;
-                    document.getElementById('subExpiryModal').style.display = 'flex';
-                } else if (diffDays <= 0) {
-                    document.getElementById('subExpiryMsg').innerText = `Your ${currentSeller.subscription} plan has EXPIRED. Please renew immediately to keep receiving orders.`;
-                    document.getElementById('subExpiryMsg').style.color = "var(--danger)";
-                    document.getElementById('subExpiryModal').style.display = 'flex';
-                }
-            }
-        }
-
-        window.handleLogin = async function() {
-            const id = document.getElementById("loginId").value.trim(); const pass = document.getElementById("loginPass").value.trim();
-            if(!id || !pass) return showToast("Enter Email/Phone and Password.", "error");
-
-            const btn = document.getElementById("loginBtn"); btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Logging in...`;
-
-            try {
-                const snapshot = await db.collection("sellers").where("email", "==", id).where("password", "==", pass).get();
-                if (!snapshot.empty) {
-                    currentSeller = snapshot.docs[0].data();
-                    if(!currentSeller.settings) currentSeller.settings = {};
-                    if(!currentSeller.subHistory) currentSeller.subHistory = [];
-                    
-                    localStorage.setItem('sellerToken', JSON.stringify(currentSeller));
-                    checkSession();
-                    showToast(`Welcome, ${currentSeller.companyName || 'Seller'}!`, "success"); 
-                } else {
-                    const phoneSnap = await db.collection("sellers").where("phone", "==", id).where("password", "==", pass).get();
-                    if(!phoneSnap.empty) {
-                        currentSeller = phoneSnap.docs[0].data();
-                        if(!currentSeller.settings) currentSeller.settings = {};
-                        if(!currentSeller.subHistory) currentSeller.subHistory = [];
-                        
-                        localStorage.setItem('sellerToken', JSON.stringify(currentSeller));
-                        checkSession();
-                        showToast(`Welcome, ${currentSeller.companyName || 'Seller'}!`, "success"); 
-                    } else {
-                        btn.innerHTML = `Login to Dashboard <i class="fas fa-arrow-right"></i>`; 
-                        showToast("Invalid Credentials or Account Not Found.", "error");
-                    }
-                }
-            } catch(e) { btn.innerHTML = `Login to Dashboard <i class="fas fa-arrow-right"></i>`; showToast("Network error or Firebase not configured.", "error"); }
-        }
-
-        window.handleLogout = function() { localStorage.removeItem('sellerToken'); window.location.reload(); }
-
-        // ================= NAVIGATION =================
-        window.showSection = function(section) {
-            document.getElementById('mobileSidebar').classList.remove('open'); document.getElementById('mobileSidebarOverlay').style.display = 'none';
-            document.querySelectorAll(".data-section").forEach(sec => sec.classList.remove("active"));
-            const targetSection = document.getElementById(section + "Section"); if(targetSection) targetSection.classList.add("active");
-            document.querySelectorAll(".nav-item").forEach(nav => nav.classList.remove("active"));
-            
-            // Highlight nav if it corresponds
-            if(event && event.target && event.target.closest) {
-                const navItem = event.target.closest('.nav-item');
-                if(navItem) navItem.classList.add("active");
-            }
-            
-            switch(section) {
-                case 'home': renderDashboardStats(); break;
-                case 'profile': loadProfile(); break;
-                case 'inventory': loadInventory(); break;
-                case 'newOrders': loadNewOrders(); break;
-                case 'acceptedOrders': loadAcceptedOrders(); break;
-                case 'shippedOrders': loadShippedOrders(); break;
-                case 'deliveredOrders': loadDeliveredOrders(); break;
-                case 'history': loadOrderHistory(); break;
-                case 'returns': loadReturns(); break;
-                case 'warranty': loadWarranty(); break;
-                case 'payments': loadPayments(); break;
-                case 'ads': loadAds(); break;
-                case 'subscription': loadSubscriptionsUI(); break;
-                case 'tutorial': loadTutorials(); break;
-                case 'qna': loadQna(); break;
-                case 'buyB2b': loadB2bStore(); break;
-                case 'settings': loadSettingsUI(); break;
-                case 'oldTickets': loadOldTickets(); break; // Handles Tab Fetch
-            }
-        }
-
-        window.handleGlobalSearch = function() {
-            const input = document.getElementById("globalSearchInput").value.toLowerCase().trim(); const box = document.getElementById("searchSuggestions");
-            if(!input) { box.style.display = 'none'; return; }
-            let resultsHtml = '';
-            const oMatches = sellerOrders.filter(o => (o.id && o.id.toLowerCase().includes(input)) || (o.order_no && o.order_no.toLowerCase().includes(input)) || (o.delivery_name && o.delivery_name.toLowerCase().includes(input)));
-            oMatches.slice(0, 3).forEach(o => { resultsHtml += `<div class="suggestion-item" onclick="viewOrderDetails('${o.id}'); document.getElementById('searchSuggestions').style.display='none';"><strong>📦 Order: ${o.order_no || o.id}</strong><span>Status: ${o.status} | Buyer: ${maskName(o.delivery_name) || 'N/A'}</span></div>`; });
-            const pMatches = sellerProducts.filter(p => (p.sku && p.sku.toLowerCase().includes(input)) || (p.name && p.name.toLowerCase().includes(input)));
-            pMatches.slice(0, 3).forEach(p => { resultsHtml += `<div class="suggestion-item" onclick="editItem('${p.id}'); document.getElementById('searchSuggestions').style.display='none';"><strong>🛒 Product: ${p.name}</strong><span>SKU: ${p.sku || 'N/A'} | ₹${p.price}</span></div>`; });
-            if(resultsHtml) { box.innerHTML = resultsHtml; box.style.display = 'block'; } else { box.innerHTML = `<div style="padding:15px; color:var(--text-light); font-size:13px; font-weight:600;">No matches found.</div>`; box.style.display = 'block'; }
-        }
-
-        // ================= NOTIFICATIONS LOGIC =================
-        function fetchNotifications() {
-            try {
-                db.collection("admin_broadcasts").orderBy("timestamp", "desc").limit(5).get().then(snap => {
-                    adminNotifications = []; unreadNotifs = 0;
-                    snap.docs.forEach(doc => {
-                        adminNotifications.push({ id: doc.id, text: doc.data().message, time: doc.data().timestamp, link: doc.data().link });
-                        unreadNotifs++;
-                    });
-                    
-                    const badge = document.getElementById("notifBadge");
-                    if(unreadNotifs > 0) { badge.innerText = unreadNotifs; badge.style.display = "block"; }
-                });
-            } catch(e) {}
-        }
-
-        window.toggleNotifications = function() {
-            const drop = document.getElementById("notifDropdown");
-            if(drop.style.display === "none") {
-                drop.style.display = "block";
-                unreadNotifs = 0;
-                document.getElementById("notifBadge").innerText = "0";
-                document.getElementById("notifBadge").style.display = "none";
-                
-                const list = document.getElementById("notifList");
-                if(adminNotifications.length === 0) {
-                    list.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-light); font-size:13px;">No new messages.</div>`;
-                } else {
-                    list.innerHTML = adminNotifications.map(n => `
-                        <div style="padding:10px; border-bottom:1px solid var(--border-color); cursor:pointer;" onclick="${n.link ? `window.open('${n.link}')` : ''}">
-                            <div style="font-size:14px; color:var(--text-main); font-weight:600;">${n.text}</div>
-                            <div style="font-size:11px; color:var(--text-light); margin-top:5px;">${new Date(n.time).toLocaleString()}</div>
-                        </div>
-                    `).join('');
-                }
-            } else {
-                drop.style.display = "none";
-            }
-        }
-
-        // ================= CORE DATA FETCHERS =================
-        async function initDashboard() {
-            const loader = document.getElementById("pageLoader"); const loadPercent = document.getElementById("loadPercent");
-            if(loader) loader.style.display = "flex";
-
-            let progress = 0;
-            let progressInterval = setInterval(() => { if(progress < 90) { progress += Math.floor(Math.random() * 20); if(progress > 90) progress = 90; } if(loadPercent) loadPercent.innerText = progress + "%"; }, 40);
-
-            try {
-                const confSnap = await db.collection("site_config").doc("global").get();
-                if(confSnap.exists && confSnap.data().marqueeMessage) {
-                    document.getElementById('sellerMarquee').innerText = confSnap.data().marqueeMessage;
-                }
-            } catch(e) {}
-
-            try {
-                const userEmailLower = currentSeller.email.toLowerCase().trim();
-
-                const prodSnap = await db.collection("products").where("sellerEmail", "==", userEmailLower).get();
-                sellerProducts = prodSnap.docs.map(d => ({id: d.id, ...d.data()}));
-                
-                const ordSnap = await db.collection("orders").orderBy("timestamp", "desc").limit(500).get();
-                sellerOrders = [];
-                ordSnap.forEach(doc => {
-                    const o = doc.data(); o.id = doc.id;
-                    let hasSellerItem = false;
-                    if(o.items) {
-                        o.items.forEach(i => {
-                            let mappedEmail = i.sellerEmail ? String(i.sellerEmail).toLowerCase().trim() : null;
-                            if (mappedEmail === userEmailLower) { hasSellerItem = true; return; }
-                            if (i.name) { const p = sellerProducts.find(x => x.name.toLowerCase() === i.name.toLowerCase()); if (p) hasSellerItem = true; }
-                            if (i.sku || i.id) { const p = sellerProducts.find(x => x.sku === i.sku || x.id === i.id); if (p) hasSellerItem = true; }
-                        });
-                    }
-                    if (hasSellerItem || (o.sellerEmail && o.sellerEmail.toLowerCase().trim() === userEmailLower)) {
-                        sellerOrders.push(o);
-                    }
-                });
-
-                const fineSnap = await db.collection("fines").where("email", "==", userEmailLower).get();
-                sellerFines = fineSnap.docs.map(d => ({id: d.id, ...d.data()}));
-
-                const revSnap = await db.collection("reviews").get();
-                sellerReviews = [];
-                revSnap.forEach(doc => {
-                    const r = doc.data();
-                    if (sellerProducts.some(p => p.id === r.productId)) { sellerReviews.push({id: doc.id, ...r}); }
-                });
-
-                const warrSnap = await db.collection("warranties").where("sellerEmail", "==", userEmailLower).get();
-                sellerWarranties = warrSnap.docs.map(d => ({id: d.id, ...d.data()}));
-
-            } catch(e) {}
-
-            clearInterval(progressInterval); if(loadPercent) loadPercent.innerText = "100%";
-
-            renderDashboardStats(); loadB2bStore(); loadPayments();
-            
-            const activeSec = document.querySelector('.data-section.active');
-            if(activeSec) showSection(activeSec.id.replace('Section', ''));
-
-            if(loader) { setTimeout(() => { loader.style.opacity = "0"; setTimeout(() => { loader.style.display = "none"; loader.style.opacity="1"; }, 300); }, 400); }
-        }
-
-        function getSellerItemsFromOrder(order) {
-            const userEmail = currentSeller.email.toLowerCase().trim();
-            if (!order.items || !Array.isArray(order.items)) return [];
-            return order.items.filter(i => {
-                let iEmail = i.sellerEmail ? i.sellerEmail.toLowerCase().trim() : null;
-                if (iEmail === userEmail) return true;
-                if (i.name) { const p = sellerProducts.find(x => x.name.toLowerCase() === i.name.toLowerCase()); if (p) return true; }
-                if (i.sku || i.id) { const p = sellerProducts.find(x => x.sku === i.sku || x.id === i.id); if (p) return true; }
-                return false;
-            });
-        }
-
-        function renderDashboardStats() {
-            let revenue = 0; let pendingPay = 0; let toAccept = 0; let returnsCount = 0; let qnaPending = 0;
-            let chartData = [0,0,0,0,0,0,0]; let productSalesMap = {}; 
-            let todayOrdersCount = 0; let monthlyOrdersCount = 0;
-            const nowStr = new Date().toDateString(); const currentMonth = new Date().getMonth();
-
-            sellerOrders.forEach(o => {
-                let myItems = getSellerItemsFromOrder(o);
-                if(myItems.length === 0) return;
-                
-                let sum = myItems.reduce((s, i) => s + (Number(i.price) * Number(i.qty)), 0);
-                myItems.forEach(i => { if(!productSalesMap[i.name]) productSalesMap[i.name] = 0; productSalesMap[i.name] += Number(i.qty); });
-
-                if(o.timestamp) {
-                    const oDate = new Date(o.timestamp);
-                    if(oDate.toDateString() === nowStr) todayOrdersCount++;
-                    if(oDate.getMonth() === currentMonth) monthlyOrdersCount++;
-                }
-
-                if(o.status === 'Delivered') revenue += sum;
-                if(o.status === 'Delivered' && !o.sellerSettled) pendingPay += sum;
-                if(o.status === 'Placed' || o.status === 'New' || o.status === 'Pending' || o.status === 'Confirmed') toAccept++;
-                if(o.status.includes('Return') || o.status === 'Cancelled') returnsCount++;
-                if(o.status === 'Delivered') { let dayIndex = new Date(o.timestamp || Date.now()).getDay(); chartData[dayIndex] += sum; }
-            });
-
-            let lowStockCount = 0; sellerProducts.forEach(p => { if(p.stock < 5) lowStockCount++; if(p.qa) p.qa.forEach(q => { if(!q.answer) qnaPending++; }); });
-
-            safeSetText("smartDailyOrders", `${todayOrdersCount} Orders`); safeSetText("smartMonthlyOrders", `${monthlyOrdersCount} Orders`);
-            safeSetText("stat-total-inventory", sellerProducts.length); 
-
-            let avgDaily = monthlyOrdersCount / new Date().getDate(); 
-            let dailyPct = avgDaily === 0 ? (todayOrdersCount > 0 ? 100 : 0) : Math.round(((todayOrdersCount - avgDaily) / avgDaily) * 100);
-            let pctSign = dailyPct >= 0 ? '+' : '';
-            let pctHtml = `<span style="font-size:11px; margin-left:5px; font-weight:bold; color:${dailyPct >= 0 ? '#10b981' : '#f43f5e'}">${pctSign}${dailyPct}% vs Avg</span>`;
-            document.getElementById("smartDailyPct").innerHTML = pctHtml;
-            safeSetText("smartRestock", `${lowStockCount} Items`);
-
-            let rating = 5.0; if(sellerReviews.length > 0) { let totalRating = sellerReviews.reduce((sum, r) => sum + r.rating, 0); rating = (totalRating / sellerReviews.length).toFixed(1); }
-            safeSetText("topShopRating", rating);
-
-            safeSetText("stat-total-pay", "₹" + revenue.toLocaleString('en-IN')); safeSetText("stat-pending-pay", "₹" + pendingPay.toLocaleString('en-IN'));
-            safeSetText("stat-orders", sellerOrders.length); safeSetText("stat-pending-orders", toAccept);
-
-            const bNew = document.getElementById("badge-new-orders"); if(bNew) { if(toAccept > 0) { bNew.style.display="inline-block"; bNew.innerText=toAccept; } else bNew.style.display="none"; }
-            const bAcc = document.getElementById("badge-accepted"); if(bAcc) { let accCount = sellerOrders.filter(o=>o.status==='Accepted').length; if(accCount > 0) { bAcc.style.display="inline-block"; bAcc.innerText=accCount; } else bAcc.style.display="none"; }
-            const bWarr = document.getElementById("badge-warranty"); if(bWarr) { const wPending = sellerWarranties.filter(w => w.status === 'Assigned to Seller').length; if(wPending > 0) { bWarr.style.display="inline-block"; bWarr.innerText=wPending; } else bWarr.style.display="none"; }
-
-            setTimeout(() => { renderSalesChart(chartData); }, 100);
-        }
-
-        function renderSalesChart(dataPoints) {
-            const ctx = document.getElementById('salesChart'); if(!ctx) return;
-            if(salesChartInstance) salesChartInstance.destroy();
-            let gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 250); gradient.addColorStop(0, 'rgba(5, 150, 105, 0.4)'); gradient.addColorStop(1, 'rgba(5, 150, 105, 0.0)');
-            salesChartInstance = new Chart(ctx, { type: 'line', data: { labels: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], datasets: [{ label: 'Revenue (₹)', data: dataPoints, borderColor: '#059669', backgroundColor: gradient, fill: true, tension: 0.4, borderWidth: 3, pointBackgroundColor: '#ffffff', pointBorderColor: '#059669', pointBorderWidth: 2, pointRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { borderDash: [5, 5], color: '#e2e8f0' } }, x: { grid: { display: false } } } } });
-        }
-
-        // ================= SETTINGS & DARK MODE =================
-        function loadSettingsUI() {
-            const s = currentSeller.settings || {};
-            const elOffline = document.getElementById('settingOffline'); if(elOffline) elOffline.checked = s.offline === true;
-            const elTheme = document.getElementById('settingTheme'); if(elTheme) elTheme.checked = s.theme === true;
-            const elAutoAcc = document.getElementById('settingAutoAcc'); if(elAutoAcc) elAutoAcc.checked = s.autoAcc === true;
-            const elVacation = document.getElementById('settingVacation'); if(elVacation) elVacation.checked = s.vacation === true;
-            const elSms = document.getElementById('settingSms'); if(elSms) elSms.checked = s.sms === true;
-            const el2fa = document.getElementById('setting2fa'); if(el2fa) el2fa.checked = s['2fa'] === true;
-        }
-
-        window.toggleSetting = async function(key) {
-            if(!currentSeller.settings) currentSeller.settings = {};
-            const el = document.getElementById(`setting${key.charAt(0).toUpperCase() + key.slice(1)}`);
-            if(!el) return;
-            
-            const isChecked = el.checked;
-            currentSeller.settings[key] = isChecked;
-            
-            applySettingsToUI();
-            localStorage.setItem('sellerToken', JSON.stringify(currentSeller));
-            
-            if(key === 'offline') {
-                showToast(isChecked ? "Going Offline... Hiding products." : "Going Online... Making products live.");
-                try {
-                    const batch = db.batch();
-                    sellerProducts.forEach(p => {
-                       p.isVisible = !isChecked; 
-                       batch.update(db.collection("products").doc(p.id), { isVisible: !isChecked }); 
-                    });
-                    await batch.commit();
-                    loadInventory();
-                } catch(e){}
-            }
-            
-            try { await db.collection("sellers").doc(currentSeller.email).update({ settings: currentSeller.settings }); } catch(e){}
-        }
-
-        function applySettingsToUI() {
-            if(currentSeller && currentSeller.settings && currentSeller.settings.theme === true) { 
-                document.body.classList.add('dark-theme'); 
-            } else { 
-                document.body.classList.remove('dark-theme'); 
-            }
-        }
-
-        // ================= ADVANCED PROFILE, KYC & SUB HISTORY =================
-        function loadProfile() {
-            const shop = currentSeller.shopInfo || {};
-            const subName = currentSeller.subscription || 'None';
-            const subEnd = currentSeller.subEndDate ? new Date(currentSeller.subEndDate).toLocaleDateString() : 'N/A';
-            const joined = currentSeller.joinedDate ? new Date(currentSeller.joinedDate).toLocaleDateString() : 'N/A';
-            
-            document.getElementById("profSubGrid").innerHTML = `
-                <div class="detail-box"><span>Current Plan</span><strong style="color:var(--secondary); font-size:18px;">${subName}</strong></div>
-                <div class="detail-box"><span>Joined Aryanta</span><strong>${joined}</strong></div>
-                <div class="detail-box"><span>Valid Until (End Date)</span><strong style="color:var(--danger);">${subEnd}</strong></div>
-            `;
-
-            document.getElementById("profPersonalGrid").innerHTML = `
-                <div class="detail-box"><span>Company Name</span><strong>${currentSeller.companyName || 'N/A'}</strong></div>
-                <div class="detail-box"><span>Registered Email</span><strong>${currentSeller.email}</strong></div>
-                <div class="detail-box"><span>Phone Number</span><strong>${currentSeller.phone || 'N/A'}</strong></div>
-                <div class="detail-box"><span>Bank IFSC / A/C</span><strong style="font-family:monospace; color:var(--primary);">${currentSeller.bankIfsc || 'N/A'} <br> ${currentSeller.bankAccount || 'N/A'}</strong></div>
-                <div class="detail-box" style="grid-column: span 2;"><span>Shop Address</span><strong>${shop.address || 'N/A'}</strong></div>
-                <div class="detail-box"><span>Account Status</span><strong style="color:var(--success);">${currentSeller.status || 'Active'}</strong></div>
-            `;
-
-            document.getElementById("profIfsc").value = currentSeller.bankIfsc || '';
-            document.getElementById("profAcc").value = currentSeller.bankAccount || '';
-
-            // Update KYC Status UI
-            const kyc = currentSeller.kyc || {};
-            const indicator = document.getElementById("kycStatusIndicator");
-            if (kyc.aadhar || kyc.pan || kyc.gst) {
-                indicator.innerHTML = `<span style="color:var(--success); font-weight:bold;"><i class="fas fa-check-circle"></i> Documents Uploaded & Under Review</span>`;
-            } else {
-                indicator.innerHTML = `<span style="color:var(--danger); font-weight:bold;"><i class="fas fa-times-circle"></i> Pending Upload</span>`;
-            }
-        }
-
-        window.updateBankDetails = async function() {
-            const ifsc = document.getElementById("profIfsc").value.trim();
-            const acc = document.getElementById("profAcc").value.trim();
-            if(!ifsc || !acc) return showToast("Both fields are required", "warning");
-
-            try {
-                await db.collection("sellers").doc(currentSeller.email).update({ bankIfsc: ifsc, bankAccount: acc });
-                currentSeller.bankIfsc = ifsc; currentSeller.bankAccount = acc;
-                localStorage.setItem('sellerToken', JSON.stringify(currentSeller));
-                showToast("Bank details updated successfully!", "success");
-            } catch(e) { showToast("Failed to update bank details.", "error"); }
-        }
-
-        // KYC & GST Modal Logic
-        window.openKycModal = function() {
-            document.getElementById("kycModal").style.display = "flex";
-            const kyc = currentSeller.kyc || {};
-            if(kyc.aadhar || kyc.pan || kyc.gst) {
-                document.getElementById("kycStatusText").innerHTML = "<strong style='color:var(--success);'>You have already uploaded documents. Uploading again will overwrite them.</strong>";
-            } else {
-                document.getElementById("kycStatusText").innerText = "Please upload clear images for swift verification.";
-            }
-        }
-
-        window.saveKycDocs = async function() {
-            showToast("Encrypting & Uploading securely...", "info");
-            document.getElementById("kycModal").style.display = "none";
-            
-            const kycData = { aadhar: true, pan: true, gst: true, uploadedAt: new Date().toISOString(), status: 'Pending Review' };
-            currentSeller.kyc = kycData;
-            localStorage.setItem('sellerToken', JSON.stringify(currentSeller));
-
-            try {
-                await db.collection("sellers").doc(currentSeller.email).update({ kyc: kycData });
-                showToast("KYC Documents successfully uploaded!", "success");
-                loadProfile();
-            } catch(e) {
-                showToast("Error saving KYC data.", "error");
-            }
-        }
-
-        window.openSubHistoryModal = function() {
-            const list = document.getElementById("subHistoryList"); list.innerHTML = "";
-            const history = currentSeller.subHistory || [];
-            if(history.length === 0) { list.innerHTML = "<tr><td colspan='5' style='text-align:center; font-weight:600;'>No subscription history found.</td></tr>"; }
-            else {
-                [...history].reverse().forEach(h => {
-                    list.innerHTML += `<tr><td><strong style="font-size:13px;">${new Date(h.startDate).toLocaleDateString()}</strong></td><td><strong style="color:var(--primary); font-size:14px;">${h.plan} (${h.duration})</strong></td><td>${h.method}</td><td><strong style="color:var(--success);">₹${h.cost}</strong></td><td>${new Date(h.endDate).toLocaleDateString()}</td></tr>`;
-                });
-            }
-            document.getElementById('subHistoryModal').style.display = 'flex';
-        }
-
-        // ================= INVENTORY & MULTI-IMAGE SUPPORT =================
-        function loadInventory() {
-            const list = document.getElementById("inventoryList"); list.innerHTML = "";
-            if(sellerProducts.length === 0) { list.innerHTML = "<tr><td colspan='6' style='text-align:center; font-weight:600;'>No products found in inventory.</td></tr>"; return; }
-
-            sellerProducts.forEach(p => {
-                let imgHtml = "";
-                let imgs = p.images && p.images.length > 0 ? p.images : (p.image ? [p.image] : []);
-                imgs.forEach(img => {
-                    imgHtml += `<img src="${img}" style="width:40px; height:40px; border-radius:8px; object-fit:cover; margin-right:5px; border:1px solid #e2e8f0;">`;
-                });
-
-                let stockHtml = p.stock < 5 ? `<span style="color:var(--danger); font-weight:800;">${p.stock} (Low)</span>` : `<span style="font-weight:700;">${p.stock}</span>`;
-                list.innerHTML += `<tr class="clickable-row" onclick="editItem('${p.id}')">
-                    <td data-label="SKU & Images"><div style="display:flex; align-items:center;">${imgHtml}<strong style="font-family:monospace; font-size:13px; color:var(--primary); margin-left:10px;">${p.sku || p.id.substring(0,8)}</strong></div></td>
-                    <td data-label="Product Title"><strong style="font-size:14px;">${p.name}</strong></td>
-                    <td data-label="Category">${p.category || 'N/A'}</td>
-                    <td data-label="Stock">${stockHtml}</td>
-                    <td data-label="Price"><span style="text-decoration:line-through; font-size:11px; color:#94a3b8;">₹${p.mrp}</span> <br><strong style="color:var(--primary); font-size:15px;">₹${p.price}</strong></td>
-                    <td data-label="Actions">
-                        <div>
-                            <button class="btn-sm" style="background:#8b5cf6;" onclick="event.stopPropagation(); shareProduct('${p.sku || p.id}')"><i class="fas fa-share-alt"></i></button>
-                            <button class="btn-sm edit" onclick="event.stopPropagation(); editItem('${p.id}')"><i class="fas fa-edit"></i></button>
-                            <button class="btn-sm delete" onclick="event.stopPropagation(); deleteItem('${p.id}')"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </td>
-                </tr>`;
-            });
-        }
-
-        window.shareProduct = function(sku) {
-            const url = `https://aryanta.in/product/${sku}`;
-            const tempInput = document.createElement("input");
-            tempInput.value = url;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            document.execCommand("copy");
-            document.body.removeChild(tempInput);
-            showToast("Product Link Copied & Ready to Share!", "success");
-        };
-
-        document.getElementById('itemImgFiles').addEventListener('change', async function(e) {
-            const files = e.target.files; 
-            const preview = document.getElementById('imagePreviewContainer'); 
-            uploadedImagesArray = []; 
-            preview.innerHTML = '';
-            
-            for (let file of files) {
-                if (!file.type.startsWith('image/')) continue;
-                
-                const base64Str = await new Promise((resolve) => { 
-                    const reader = new FileReader(); 
-                    reader.readAsDataURL(file); 
-                    reader.onload = (ev) => { 
-                        const img = new Image(); 
-                        img.src = ev.target.result;
-                        img.onload = () => {
-                            const canvas = document.createElement('canvas');
-                            const MAX_WIDTH = 600; 
-                            let scaleSize = 1;
-                            if(img.width > MAX_WIDTH) scaleSize = MAX_WIDTH / img.width;
-                            
-                            canvas.width = img.width * scaleSize;
-                            canvas.height = img.height * scaleSize;
-                            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                            
-                            resolve(canvas.toDataURL('image/jpeg', 0.8)); 
-                        }
-                    }; 
-                });
-                
-                uploadedImagesArray.push(base64Str); 
-                preview.innerHTML += `<img src="${base64Str}" style="width:80px; height:80px; object-fit:cover; border-radius:12px; border:2px solid var(--primary);">`;
-            }
-        });
-
-        window.calculateListedPrice = function() {
-            const sp = parseFloat(document.getElementById("itemPrice").value) || 0;
-            let subPlan = currentSeller.subscription || 'None';
-            let commPercent = 0.06; 
-            if(subPlan === 'Go') commPercent = 0.04;
-            if(subPlan === 'Pro') commPercent = 0.03;
-            
-            const listed = sp + (sp * commPercent);
-            document.getElementById("itemListedPrice").value = listed > 0 ? `₹ ${Math.round(listed)}` : '';
-        }
-
-        window.openItemModal = function() { 
-            document.getElementById("itemForm").reset(); document.getElementById("editId").value = ""; document.getElementById("itemSku").value = ""; uploadedImagesArray = []; 
-            document.getElementById("imagePreviewContainer").innerHTML = ""; document.getElementById("itemListedPrice").value = ""; document.getElementById("itemModal").style.display = "flex"; 
-        }
-
-        window.editItem = function(id) {
-            const p = sellerProducts.find(x => x.id === id); if(!p) return;
-            document.getElementById("editId").value = p.id; document.getElementById("itemSku").value = p.sku || p.id; document.getElementById("itemName").value = p.name; document.getElementById("itemCat").value = p.category; document.getElementById("itemStock").value = p.stock; document.getElementById("itemMrp").value = p.mrp; document.getElementById("itemPrice").value = p.price; document.getElementById("itemDesc").value = p.desc || "";
-            calculateListedPrice();
-            uploadedImagesArray = p.images || (p.image ? [p.image] : []); const preview = document.getElementById('imagePreviewContainer'); preview.innerHTML = ''; 
-            uploadedImagesArray.forEach(img => preview.innerHTML += `<img src="${img}" style="width:80px; height:80px; object-fit:cover; border-radius:12px; border:2px solid var(--primary);">`);
-            document.getElementById("itemModal").style.display = "flex";
-        }
-
-        window.submitItemForm = async function() {
-            const id = document.getElementById("editId").value; 
-            const mrp = parseInt(document.getElementById("itemMrp").value, 10); 
-            const price = parseInt(document.getElementById("itemPrice").value, 10); 
-            const stock = parseInt(document.getElementById("itemStock").value, 10);
-            
-            if(price > mrp) return showToast("Price cannot be > MRP!", "warning");
-            if(isNaN(price) || isNaN(stock)) return showToast("Invalid Price or Stock", "error");
-            
-            let itemSku = document.getElementById("itemSku").value.trim(); 
-            if(!itemSku) itemSku = 'PRD-' + Math.random().toString(36).substr(2, 6).toUpperCase();
-            
-            let subPlan = currentSeller.subscription || 'None'; 
-            let commPercent = 0.06; 
-            if(subPlan === 'Go') commPercent = 0.04; 
-            if(subPlan === 'Pro') commPercent = 0.03;
-            
-            const finalListedPrice = Math.round(price + (price * commPercent));
-
-            const isOfflineMode = currentSeller.settings && currentSeller.settings.offline;
-            const makeVisible = !isOfflineMode;
-
-            const data = { 
-                sellerEmail: currentSeller.email, 
-                sellerName: currentSeller.companyName || currentSeller.email, 
-                sku: itemSku, 
-                name: document.getElementById("itemName").value, 
-                category: document.getElementById("itemCat").value, 
-                stock: stock, 
-                mrp: mrp, 
-                price: price, 
-                listedPrice: finalListedPrice, 
-                desc: document.getElementById("itemDesc").value, 
-                isVisible: makeVisible, 
-                timestamp: new Date().toISOString() 
-            };
-            
-            if (uploadedImagesArray.length > 0) { 
-                data.images = uploadedImagesArray; 
-                data.image = uploadedImagesArray[0]; 
-            }
-            
-            document.getElementById("saveProductBtn").innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-            
-            try {
-                if(id) {
-                    await db.collection("products").doc(id).update(data);
-                } else {
-                    await db.collection("products").add(data);
-                }
-                
-                closeModal("itemModal"); 
-                try { await initDashboard(); } catch(e) {} 
-                showToast(makeVisible ? "Product Saved & Live on Panel!" : "Saved securely, but Hidden (Due to Offline Mode).", "success"); 
-            } catch(e) { 
-                showToast("Database Error: " + e.message, "error"); 
-            }
-            
-            document.getElementById("saveProductBtn").innerHTML = '<i class="fas fa-save"></i> Save Product';
-        }
-
-        window.deleteItem = async function(id) { 
-            if(confirm("Delete this product permanently?")) { 
-                await db.collection("products").doc(id).delete(); 
-                try{await initDashboard();}catch(e){} 
-                showToast("Deleted", "success"); 
-            } 
-        }
-
-        // ================= ORDERS LOGIC WITH IMAGES =================
-        function getProductImageHtml(itemName) {
-            let p = sellerProducts.find(p => p.name === itemName);
-            if (!p) return '';
-            let imgs = p.images && p.images.length > 0 ? p.images : (p.image ? [p.image] : []);
-            let imgHtml = imgs.map(img => `<img src="${img}" style="width:40px; height:40px; border-radius:4px; object-fit:cover; vertical-align:middle; margin-right:5px; border:1px solid #e2e8f0;">`).join('');
-            return imgHtml;
-        }
-
-        function loadNewOrders() {
-            const list = document.getElementById("newOrdersList"); list.innerHTML = ""; document.getElementById("selectAllNew").checked = false;
-            const pending = sellerOrders.filter(o => o.status === 'Placed' || o.status === 'New' || o.status === 'Pending' || o.status === 'Confirmed');
-            
-            if(pending.length === 0) { list.innerHTML = "<tr><td colspan='7' style='text-align:center; font-weight:600;'>No pending orders! 🎉</td></tr>"; return; }
-
-            const now = Date.now();
-            pending.forEach(o => {
-                let myItems = getSellerItemsFromOrder(o); if(myItems.length === 0) return;
-                let itemsHtml = myItems.map(i=> `<div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;"><div>${getProductImageHtml(i.name)}</div><div><span style="font-weight:700;">${i.name}</span><br><span style="color:var(--text-light); font-size:12px;">Qty: <span style="color:var(--primary); font-weight:800;">${i.qty}</span></span></div></div>`).join('');
-                let amount = myItems.reduce((s, i) => s + (Number(i.price) * Number(i.qty)), 0); 
-                
-                const orderTime = o.timestamp ? new Date(o.timestamp).getTime() : now; const diffHours = (now - orderTime) / 3600000;
-                let isBreached = diffHours > 48;
-                let slaText = isBreached ? `<span style="color:white; background:var(--danger); padding:4px 8px; border-radius:8px; font-weight:bold; font-size:11px;"><i class="fas fa-exclamation-triangle"></i> BREACHED SLA!</span>` : `<span style="color:var(--success); font-weight:800; font-size:13px;">${Math.round(48 - diffHours)}h left</span>`;
-
-                list.innerHTML += `<tr class="clickable-row" onclick="viewOrderDetails('${o.id}')">
-                    <td data-label="Select" style="text-align:center;"><input type="checkbox" class="custom-cb cb-new" value="${o.id}" onclick="event.stopPropagation()"></td>
-                    <td data-label="Order Date"><strong style="font-size:13px;">${new Date(o.timestamp).toLocaleDateString()}</strong></td>
-                    <td data-label="Order Ref"><strong style="font-family:monospace; color:var(--primary); font-size:14px;">${o.order_no || o.id}</strong></td>
-                    <td data-label="Item Details" style="font-size:13px;">${itemsHtml}</td>
-                    <td data-label="Amount" style="color:var(--text-main); font-weight:800; font-size:16px;">₹${amount}</td>
-                    <td data-label="SLA Status">${slaText}</td>
-                    <td data-label="Action"><div><button class="btn-sm" style="background:var(--success); padding:10px 15px;" onclick="event.stopPropagation(); acceptOrder('${o.id}', ${isBreached})"><i class="fas fa-check"></i> Accept</button><button class="btn-sm" style="background:var(--danger); padding:10px 15px;" onclick="event.stopPropagation(); cancelOrder('${o.id}')"><i class="fas fa-times"></i> Cancel</button></div></td>
-                </tr>`;
-            });
-        }
-
-        window.toggleSelectAllNew = function(source) { document.querySelectorAll('.cb-new').forEach(cb => cb.checked = source.checked); }
-
-        window.bulkAcceptNewOrders = async function() {
-            const checkboxes = document.querySelectorAll('.cb-new:checked'); if(checkboxes.length === 0) return showToast("Select at least one order.", "warning");
-            let orderIds = []; 
-            const batch = db.batch();
-            
-            checkboxes.forEach(cb => { 
-                orderIds.push(cb.value); 
-                const o = sellerOrders.find(x => x.id === cb.value); if(o) o.status = 'Accepted'; 
-                batch.update(db.collection("orders").doc(cb.value), {status: 'Accepted'});
-            });
-            
-            renderDashboardStats(); loadNewOrders(); loadAcceptedOrders(); showToast(`Accepting ${orderIds.length} orders...`, "info");
-            try { await batch.commit(); showToast("Bulk Accept Complete!", "success"); } catch(e) { showToast("Failed to bulk accept.", "error"); }
-        }
-
-        window.acceptOrder = async function(id, isBreached) {
-            const o = sellerOrders.find(x => x.id === id); if(o) o.status = 'Accepted'; renderDashboardStats(); loadNewOrders(); loadAcceptedOrders();
-            if(isBreached) { 
-                showToast("Order Accepted. ₹20 SLA Fine applied.", "warning"); 
-                try { await db.collection("fines").add({ email: currentSeller.email, amount: 20, reason: `Late Acceptance SLA Breach: Order ${id}`, timestamp: new Date().toISOString() }); } catch(e){} 
-            } else { showToast("Order Accepted!", "success"); }
-            try { await db.collection("orders").doc(id).update({status: 'Accepted'}); } catch(e) {}
-        }
-
-        window.cancelOrder = async function(id) {
-            if(currentSeller.status === 'Blocked' || currentSeller.status === 'Suspended') return showToast("Account restricted. Cannot modify orders.", "error");
-            if(!confirm("Warning! Canceling this order applies a ₹60 Shipping Fine. Proceed?")) return;
-            
-            const o = sellerOrders.find(x => x.id === id); 
-            if(o) o.status = 'Cancelled'; 
-            renderDashboardStats(); loadNewOrders(); loadReturns();
-            
-            try {
-                await db.collection("fines").add({ email: currentSeller.email, amount: 60, reason: `Seller Cancelled Order ${id}`, timestamp: new Date().toISOString() });
-                await db.collection("orders").doc(id).update({status: 'Cancelled'});
-                showToast("Order Cancelled. ₹60 fine applied.", "warning");
-            } catch(e) {
-                showToast("Network error. Could not cancel order.", "error");
-            }
-        }
-
-        // ================= ACCEPTED ORDERS =================
-        window.toggleSelectAllAcc = function(source) { document.querySelectorAll('.cb-acc').forEach(cb => cb.checked = source.checked); }
-
-        function loadAcceptedOrders() {
-            const list = document.getElementById("acceptedOrdersList"); list.innerHTML = ""; document.getElementById("selectAllAcc").checked = false;
-            const accepted = sellerOrders.filter(o => o.status === 'Accepted');
-            if(accepted.length === 0) { list.innerHTML = "<tr><td colspan='5' style='text-align:center; font-weight:600;'>No orders to dispatch.</td></tr>"; return; }
-
-            accepted.forEach(o => {
-                let myItems = getSellerItemsFromOrder(o); if(myItems.length === 0) return;
-                let itemsHtml = myItems.map(i=> `<div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;"><div>${getProductImageHtml(i.name)}</div><div><span style="font-weight:700;">${i.name}</span><br><span style="color:var(--text-light); font-size:12px;">Qty: <span style="color:var(--primary); font-weight:800;">${i.qty}</span></span></div></div>`).join('');
-                list.innerHTML += `<tr class="clickable-row" onclick="viewOrderDetails('${o.id}')">
-                    <td data-label="Select" style="text-align:center;"><input type="checkbox" class="custom-cb cb-acc" value="${o.id}" onclick="event.stopPropagation()"></td>
-                    <td data-label="Order Date"><strong style="font-size:13px;">${new Date(o.timestamp).toLocaleDateString()}</strong></td>
-                    <td data-label="Order Ref"><strong style="font-family:monospace; color:var(--secondary); font-size:14px;">${o.order_no || o.id}</strong></td>
-                    <td data-label="Item Details" style="font-size:13px;">${itemsHtml}</td>
-                    <td data-label="Action">
-                        <div style="display:flex; flex-direction:column; gap:5px; align-items:flex-end;">
-                            <button class="btn-print" onclick="event.stopPropagation(); processSlips('print', '${o.id}')"><i class="fas fa-print"></i> Print</button>
-                            <button class="btn-pdf" onclick="event.stopPropagation(); processSlips('download', '${o.id}')"><i class="fas fa-file-pdf"></i> Download PDF</button>
-                        </div>
-                    </td>
-                </tr>`;
-            });
-        }
-
-        // ================= PRINTING & PDF DOWNLOAD =================
-        window.processSlips = async function(mode, singleId = null) {
-            let selectedIds = []; if(singleId) { selectedIds.push(singleId); } else { document.querySelectorAll('.cb-acc:checked').forEach(cb => selectedIds.push(cb.value)); }
-            if(selectedIds.length === 0) return showToast("Select at least one order.", "warning");
-
-            const printArea = document.getElementById("printArea"); let printHtml = '';
-
-            for(let id of selectedIds) {
-                const o = sellerOrders.find(x => x.id === id); if(!o) continue;
-                let myItems = getSellerItemsFromOrder(o); let itemsHtml = myItems.map(i=>`<div style="display:flex; justify-content:space-between; border-bottom:1px solid #e2e8f0; padding:10px 0;"><span style="font-weight:600; font-size:14px;">${i.name} (x${i.qty})</span><span style="font-weight:800; font-size:14px;">₹${i.price}</span></div>`).join('');
-                
-                let warrStr = "N/A"; const p = sellerProducts.find(x => x.name === myItems[0].name);
-                if(p && p.warranty && p.warranty !== "No Warranty") warrStr = `Valid for ${p.warranty} from delivery date. Keep invoice safe.`;
-                
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(o.order_no || o.id)}`;
-
-                let realName = o.delivery_name || "Customer";
-                let realSellerName = currentSeller.companyName || currentSeller.email || "Seller";
-                
-                let safeEmail = maskEmail(o.user_email);
-                let safePhone = maskPhone(o.delivery_phone);
-
-                let paymentStatusUI = o.payment_method && o.payment_method.toLowerCase().includes('cash') 
-                    ? `<span style="color:var(--danger); font-weight:800; border: 2px dashed var(--danger); padding: 4px 8px;">CASH ON DELIVERY (COLLECT)</span>`
-                    : `<span style="color:var(--success); font-weight:800; border: 2px solid var(--success); padding: 4px 8px;">PRE-PAID (ONLINE)</span>`;
-
-                printHtml += `
-                <div class="print-page" style="background:white; color:black;">
-                    <div style="border: 2px solid #0f172a; padding:30px; border-radius:16px; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: white;">
-                        <div style="display:flex; justify-content:space-between; border-bottom:4px solid #0f172a; padding-bottom:20px; margin-bottom:20px;">
-                            <div><h1 style="margin:0; font-size:28px; color:#0f172a; font-weight:900; letter-spacing:-1px;">ARYANTA</h1><p style="margin:5px 0 0 0; font-size:14px; color:#475569; font-weight:600;">support@aryanta.com | Ph: 06414054676</p></div>
-                            <div style="text-align:right;"><strong style="font-size:20px; color:#059669;">Tax Invoice & Dispatch Slip</strong></div>
-                        </div>
-                        
-                        <div style="display:flex; justify-content:space-between; border-bottom:2px solid #e2e8f0; padding-bottom:25px; margin-bottom:25px;">
-                            <div style="width:55%; border:1px solid #cbd5e1; padding:15px; border-radius:12px; background:#f8fafc;">
-                                <strong style="font-size:16px; color:#0f172a;">SHIP TO:</strong><br>
-                                <strong style="font-size:18px; margin-top:5px; display:block;">${realName}</strong>
-                                <div style="font-size:14px; margin-top:5px; line-height:1.6; color:#1e293b;">
-                                    Phone: <strong>${safePhone}</strong><br>
-                                    Email: <strong>${safeEmail}</strong><br>
-                                    Address: ${o.delivery_address || "N/A"}<br>${o.delivery_city || ""}, ${o.delivery_state || ""} - <strong>${o.delivery_pincode || ""}</strong><br>
-                                </div>
-                            </div>
-                            <div style="width:40%; text-align:right; display:flex; flex-direction:column; align-items:flex-end; justify-content:center;">
-                                <img src="${qrUrl}" crossorigin="anonymous" style="width:120px; height:120px; border:2px solid #cbd5e1; padding:5px; border-radius:12px;"><br>
-                                <strong style="font-size:14px; margin-top:10px;">Order ID: ${o.order_no || o.id}</strong>
-                            </div>
-                        </div>
-                        
-                        <div style="margin-bottom:25px; font-size:14px; border:1px solid #cbd5e1; padding:15px; border-radius:12px; background:#f8fafc; line-height:1.6; display: flex; justify-content: space-between;">
-                            <div><strong style="font-size:16px;">SELLER DETAILS:</strong><br><span style="font-weight:700;">${realSellerName}</span><br>${currentSeller.shopInfo?.address || 'N/A'}<br>City: ${currentSeller.shopInfo?.city || ''}</div>
-                            <div style="text-align:right;"><strong style="font-size:16px;">PAYMENT MODE:</strong><br>${paymentStatusUI}</div>
-                        </div>
-                        
-                        <div style="border:2px solid #0f172a; padding:20px; margin-bottom:25px; border-radius:12px;">
-                            <h4 style="margin:0 0 15px 0; border-bottom:2px solid #0f172a; padding-bottom:10px; font-size:18px;">ITEMS ORDERED</h4>
-                            ${itemsHtml}
-                            <div style="text-align:right; margin-top:15px; font-size:20px; color:#0f172a;"><strong>SELLER PAYOUT: ₹${myItems.reduce((s,i)=>s+(Number(i.price)*Number(i.qty)),0)}</strong></div>
-                        </div>
-                        
-                        <div style="border:2px dashed #059669; padding:15px; background:#ecfdf5; font-size:14px; border-radius:12px; color:#064e3b;">
-                            <strong>WARRANTY STATUS:</strong><br>${warrStr}
-                        </div>
-                    </div>
-                </div>`;
-                
-                try { db.collection("orders").doc(id).update({ printed: true }); } catch(e) {}
-            }
-
-            printArea.innerHTML = printHtml; 
-
-            if(mode === 'download') {
-                const loader = document.getElementById("pageLoader");
-                document.getElementById("loaderMessage").innerText = "Generating PDFs...";
-                loader.style.display = "flex"; loader.style.opacity = "1";
-
-                const images = printArea.getElementsByTagName('img');
-                let loadedImages = 0; let totalImages = images.length;
-
-                const triggerPDFGeneration = () => {
-                    var opt = { margin: [10, 10], filename: `Aryanta_Invoice_${Date.now()}.pdf`, image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2, useCORS: true, allowTaint: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
-                    printArea.style.display = 'block';
-                    printArea.style.position = 'absolute';
-                    printArea.style.left = '-9999px';
-                    html2pdf().set(opt).from(printArea).save().then(() => {
-                        printArea.style.display = 'none'; printArea.style.position = 'static'; printArea.style.left = '0';
-                        loader.style.opacity = "0"; 
-                        setTimeout(() => { loader.style.display = "none"; document.getElementById("loaderMessage").innerText = "SYNCING LIVE DB..."; }, 300);
-                        showToast("PDF Downloaded!", "success");
-                    }).catch(e => {
-                        printArea.style.display = 'none'; printArea.style.position = 'static'; loader.style.display = "none"; showToast("Failed to generate PDF", "error");
-                    });
-                };
-
-                if (totalImages === 0) triggerPDFGeneration();
-                else {
-                    for (let i = 0; i < totalImages; i++) {
-                        if (images[i].complete) { loadedImages++; if (loadedImages === totalImages) triggerPDFGeneration(); } 
-                        else { 
-                            images[i].onload = () => { loadedImages++; if (loadedImages === totalImages) triggerPDFGeneration(); }; 
-                            images[i].onerror = () => { loadedImages++; if (loadedImages === totalImages) triggerPDFGeneration(); }; 
-                        }
-                    }
-                }
-            } else { 
-                showToast("Opening Print Dialog...", "info"); 
-                
-                const loader = document.getElementById("pageLoader");
-                document.getElementById("loaderMessage").innerText = "Preparing Print...";
-                loader.style.display = "flex"; loader.style.opacity = "1";
-                
-                const images = printArea.getElementsByTagName('img');
-                let loadedImages = 0; let totalImages = images.length;
-                
-                const triggerPrint = () => {
-                    loader.style.opacity = "0"; 
-                    setTimeout(() => { loader.style.display = "none"; document.getElementById("loaderMessage").innerText = "SYNCING LIVE DB..."; }, 300);
-                    setTimeout(() => { window.print(); }, 500); 
-                };
-                
-                if (totalImages === 0) triggerPrint();
-                else {
-                    for (let i = 0; i < totalImages; i++) {
-                        if (images[i].complete) { loadedImages++; if (loadedImages === totalImages) triggerPrint(); } 
-                        else { 
-                            images[i].onload = () => { loadedImages++; if (loadedImages === totalImages) triggerPrint(); }; 
-                            images[i].onerror = () => { loadedImages++; if (loadedImages === totalImages) triggerPrint(); }; 
-                        }
-                    }
-                }
-            }
-        }
-
-        // ================= GLOBAL SCAN TO SHIP CAMERA (UPGRADED) =================
-        let scanStep = 1; let isProcessingScan = false;
-        let tempTrackingId = "";
-
-        window.openGlobalScanModal = async function() {
-            scanStep = 1; isProcessingScan = false; tempTrackingId = ""; 
-            document.getElementById("scanOrderId").value = ""; document.getElementById("skipScanBtn").style.display = "none";
-            document.getElementById("qr-reader").innerHTML = ""; document.getElementById("qr-reader").style.display = "none"; document.getElementById("scannerPlaceholder").style.display = "flex";
-            document.getElementById("scanInstructions").innerHTML = "Step 1: Scan Order Invoice.<br>Step 2: Scan Shipping Label QR.<br>Step 3: Scan 16-Digit Product Barcode.";
-            document.getElementById("scanStatus").innerHTML = "Awaiting Pre-fetch check..."; document.getElementById("scanStatus").style.color = "var(--primary)"; document.getElementById("scanModal").style.display = "flex";
-
-            try { const snap = await db.collection("orders").orderBy("timestamp", "desc").limit(500).get(); sellerOrders = snap.docs.map(d=>({id:d.id, ...d.data()})); } catch(e) {}
-
-            setTimeout(() => {
-                document.getElementById("scannerPlaceholder").style.display = "none"; document.getElementById("qr-reader").style.display = "block"; document.getElementById("scanStatus").innerHTML = "Awaiting Invoice QR Scan...";
-                if(!html5QrcodeScanner) { html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 15, qrbox: {width: 250, height: 250}, aspectRatio: 1.0 }, false); }
-                try { html5QrcodeScanner.render(onScanSuccess, onScanFailure); } catch(e) {}
-            }, 500);
-        }
-
-        async function onScanSuccess(decodedText, decodedResult) {
-            if(isProcessingScan) return; isProcessingScan = true;
-
-            const oId = document.getElementById("scanOrderId").value; const scannedId = decodedText.trim();
-            if (scanStep === 1) {
-                const order = sellerOrders.find(o => scannedId.includes(o.id) || (o.order_no && scannedId.includes(o.order_no)));
-                if (order) {
-                    if(order.status === 'Accepted') {
-                        document.getElementById("scanOrderId").value = order.id; scanStep = 2; 
-                        document.getElementById("skipScanBtn").style.display = "block"; 
-                        document.getElementById("scanStatus").innerHTML = `<i class="fas fa-check-circle"></i> Invoice Verified! Now Scan Shipping Label QR...`; document.getElementById("scanStatus").style.color = "var(--warning)";
-                        try { html5QrcodeScanner.pause(true); setTimeout(() => html5QrcodeScanner.resume(), 1500); } catch(e){}
-                    } else {
-                        showToast(`Order status is '${order.status}'. Needs to be 'Accepted'.`, "warning");
-                        try { html5QrcodeScanner.pause(true); setTimeout(() => html5QrcodeScanner.resume(), 2000); } catch(e){}
-                    }
-                } else { showToast("Invalid QR or Order not found.", "error"); try { html5QrcodeScanner.pause(true); setTimeout(() => html5QrcodeScanner.resume(), 2000); } catch(e){} }
-            } 
-            else if (scanStep === 2) {
-                document.getElementById("scanStatus").innerHTML = `<i class="fas fa-spinner fa-spin"></i> Checking DB for Shipping Label...`; document.getElementById("scanStatus").style.color = "var(--primary)";
-                try {
-                    try { html5QrcodeScanner.pause(true); } catch(e){}
-                    const trackingSnap = await db.collection("orders").where("tracking_no", "==", scannedId).get();
-                    if (trackingSnap.empty) {
-                        tempTrackingId = scannedId;
-                        scanStep = 3;
-                        document.getElementById("scanStatus").innerHTML = `<i class="fas fa-barcode"></i> Label Verified! Now Scan 16-Digit Product Barcode...`; document.getElementById("scanStatus").style.color = "var(--secondary)";
-                        try { setTimeout(() => html5QrcodeScanner.resume(), 1500); } catch(e){}
-                    } else {
-                        document.getElementById("scanStatus").innerHTML = `<i class="fas fa-exclamation-triangle"></i> This label is already linked! Skip or scan a fresh label.`; document.getElementById("scanStatus").style.color = "var(--warning)"; document.getElementById("skipScanBtn").style.display = "block";
-                        try { setTimeout(() => html5QrcodeScanner.resume(), 2500); } catch(e){}
-                    }
-                } catch(e) { document.getElementById("scanStatus").innerText = "Network Error."; try { setTimeout(() => html5QrcodeScanner.resume(), 2000); } catch(e){} }
-            }
-            else if (scanStep === 3) {
-                const pureNumber = scannedId.replace(/\D/g,'');
-                if (pureNumber.length >= 8) {
-                    document.getElementById("scanStatus").innerHTML = `<i class="fas fa-truck"></i> Verified! Dispatching...`; document.getElementById("scanStatus").style.color = "var(--success)";
-                    try{ html5QrcodeScanner.clear(); } catch(e){} setTimeout(() => executeDispatch(oId, tempTrackingId, pureNumber), 1000);
-                } else {
-                    showToast("Barcode must be numeric (at least 8-16 digits). Try again.", "warning");
-                    try { html5QrcodeScanner.pause(true); setTimeout(() => html5QrcodeScanner.resume(), 2000); } catch(e){}
-                }
-            }
-            setTimeout(() => { isProcessingScan = false; }, 2000);
-        }
-        function onScanFailure(error) {}
-
-        window.skipAndShip = async function() {
-            const id = document.getElementById("scanOrderId").value; if(!id) return showToast("You must scan an Invoice first.", "warning");
-            if(!confirm("Skip Scanning the shipping label and barcode? A fine of ₹7 will be deducted from your payout.")) return;
-            try {
-                await db.collection("fines").add({ email: currentSeller.email, amount: 7, reason: `Skipped label scan for Order ${id}`, timestamp: new Date().toISOString() });
-                try{ html5QrcodeScanner.clear(); } catch(e){} executeDispatch(id, "SKIPPED_SCAN", "SKIPPED_BARCODE"); showToast("Shipped (₹7 Fine Applied)", "warning");
-            } catch(e) {}
-        }
-
-        async function executeDispatch(id, trackingNo = "", productBarcode = "") {
-            try { 
-                await db.collection("orders").doc(id).update({
-                    status: 'Shipped', 
-                    tracking_no: trackingNo, 
-                    product_barcode: productBarcode,
-                    shipped_date: new Date().toISOString()
-                });
-                closeModal("scanModal"); showToast("Order officially Dispatched!", "success"); try{await initDashboard();}catch(e){} loadAcceptedOrders(); renderDashboardStats(); 
-            } catch(e) {}
-        }
-
-        // ================= SHIPPED, DELIVERED, HISTORY & RETURNS =================
-        function loadShippedOrders() {
-            const list = document.getElementById("shippedOrdersList"); list.innerHTML = "";
-            const shipped = sellerOrders.filter(o => o.status === 'Shipped' || o.status === 'Near by warehouse');
-            if(shipped.length === 0) { list.innerHTML = "<tr><td colspan='4' style='text-align:center; font-weight:600;'>No orders in transit.</td></tr>"; return; }
-            shipped.forEach(o => { 
-                let myItems = getSellerItemsFromOrder(o); 
-                let itemsHtml = myItems.map(i=> `<div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;"><div>${getProductImageHtml(i.name)}</div><div><span style="font-weight:700;">${i.name}</span></div></div>`).join('');
-                list.innerHTML += `<tr class="clickable-row" onclick="viewOrderDetails('${o.id}')"><td data-label="Shipped Date"><strong style="font-size:13px;">${new Date(o.shipped_date || o.timestamp).toLocaleDateString()}</strong></td><td data-label="Order Ref"><strong style="font-family:monospace; color:var(--primary); font-size:14px;">${o.order_no || o.id}</strong></td><td data-label="Items">${itemsHtml}</td><td data-label="Status"><span class="badge" style="background:#dcfce3; color:#166534; font-size:12px;">${o.status}</span></td></tr>`; 
-            });
-        }
-
-        function loadDeliveredOrders() {
-            const list = document.getElementById("deliveredOrdersList"); list.innerHTML = "";
-            const delivered = sellerOrders.filter(o => o.status === 'Delivered');
-            if(delivered.length === 0) { list.innerHTML = "<tr><td colspan='5' style='text-align:center; font-weight:600;'>No delivered orders yet.</td></tr>"; return; }
-            delivered.forEach(o => { 
-                let myItems = getSellerItemsFromOrder(o); if(myItems.length===0) return; 
-                let itemsHtml = myItems.map(i=> `<div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;"><div>${getProductImageHtml(i.name)}</div><div><span style="font-weight:700;">${i.name}</span></div></div>`).join('');
-                let amount = myItems.reduce((s, i) => s + (Number(i.price) * Number(i.qty)), 0); 
-                list.innerHTML += `<tr class="clickable-row" onclick="viewOrderDetails('${o.id}')"><td data-label="Delivered"><strong style="font-size:13px;">${new Date(o.timestamp).toLocaleDateString()}</strong></td><td data-label="Order Ref"><strong style="font-family:monospace; color:var(--primary); font-size:14px;">${o.order_no || o.id}</strong></td><td data-label="Items">${itemsHtml}</td><td data-label="Amount"><strong style="font-size:15px; color:var(--success);">₹${amount}</strong></td><td data-label="Status"><span class="badge" style="background:#dcfce3; color:#166534; font-size:12px;"><i class="fas fa-check-circle"></i> ${o.status}</span></td></tr>`; 
-            });
-        }
-
-        function loadOrderHistory() {
-            const list = document.getElementById("historyList"); list.innerHTML = "";
-            if(sellerOrders.length === 0) { list.innerHTML = "<tr><td colspan='5' style='text-align:center; font-weight:600;'>No orders yet.</td></tr>"; return; }
-            sellerOrders.forEach(o => { 
-                let myItems = getSellerItemsFromOrder(o); if(myItems.length===0) return; 
-                let amount = myItems.reduce((s, i) => s + (Number(i.price) * Number(i.qty)), 0); 
-                list.innerHTML += `<tr class="clickable-row" onclick="viewOrderDetails('${o.id}')"><td data-label="Date"><strong style="font-size:13px;">${new Date(o.timestamp).toLocaleDateString()}</strong></td><td data-label="Order Ref"><strong style="font-family:monospace; color:var(--primary); font-size:14px;">${o.order_no || o.id}</strong></td><td data-label="Items"><span style="font-weight:600;">${myItems.map(i=>i.name).join(', ')}</span></td><td data-label="Amount"><strong style="font-size:15px;">₹${amount}</strong></td><td data-label="Status"><span class="badge" style="background:var(--surface-2); color:var(--text-light);">${o.status}</span></td></tr>`; 
-            });
-        }
-
-        function loadReturns() {
-            const list = document.getElementById("returnsList"); list.innerHTML = "";
-            const returns = sellerOrders.filter(o => o.status.includes('Return') || o.status === 'Cancelled');
-            if(returns.length === 0) { list.innerHTML = "<tr><td colspan='4' style='text-align:center; font-weight:600;'>No returns recorded.</td></tr>"; return; }
-            returns.forEach(o => { 
-                let myItems = getSellerItemsFromOrder(o); if(myItems.length===0) return; 
-                let itemsHtml = myItems.map(i=> `<div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;"><div>${getProductImageHtml(i.name)}</div><div><span style="font-weight:700;">${i.name}</span></div></div>`).join('');
-                list.innerHTML += `<tr class="clickable-row" onclick="viewOrderDetails('${o.id}')"><td data-label="Date"><strong style="font-size:13px;">${new Date(o.timestamp).toLocaleDateString()}</strong></td><td data-label="Order Ref"><strong style="font-family:monospace; color:var(--primary); font-size:14px;">${o.order_no || o.id}</strong></td><td data-label="Items">${itemsHtml}</td><td data-label="Reason"><span style="color:var(--danger); font-weight:800; font-size:13px;">Customer / Auto Cancel</span></td></tr>`; 
-            });
-        }
-
-        window.exportHistoryCSV = function() {
-            if(sellerOrders.length === 0) return showToast("No orders to export", "warning");
-            let csvContent = "data:text/csv;charset=utf-8,Date,Order ID,Items,Amount,Status,Payment Method\n";
-            
-            sellerOrders.forEach(o => {
-                let myItems = getSellerItemsFromOrder(o);
-                if(myItems.length === 0) return;
-                let amount = myItems.reduce((s, i) => s + (Number(i.price) * Number(i.qty)), 0);
-                let itemsStr = myItems.map(i => `${i.name} (x${i.qty})`).join('; ');
-                let date = new Date(o.timestamp).toLocaleDateString();
-                csvContent += `"${date}","${o.order_no || o.id}","${itemsStr}","${amount}","${o.status}","${o.payment_method || 'N/A'}"\n`;
-            });
-
-            var encodedUri = encodeURI(csvContent); var link = document.createElement("a"); link.setAttribute("href", encodedUri); link.setAttribute("download", "Aryanta_Order_History.csv");
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
-        }
-
-        window.viewOrderDetails = function(id) {
-            const o = sellerOrders.find(x => x.id === id); if(!o) return;
-            let myItems = getSellerItemsFromOrder(o);
-            let amount = myItems.reduce((s, i) => s + (Number(i.price) * Number(i.qty)), 0);
-            
-            let safeName = maskName(o.delivery_name); let emailDisplay = maskEmail(o.user_email); let phoneDisplay = maskPhone(o.delivery_phone);
-            let privacyTag = `<br><span style="font-size:10px; color:var(--danger); font-weight:800; text-transform:uppercase;">*Contact Masked for Customer Privacy*</span>`;
-
-            let payType = o.payment_method && o.payment_method.toLowerCase().includes('cash') 
-                ? `<strong style="color:var(--danger);">CASH ON DELIVERY</strong>` 
-                : `<strong style="color:var(--success);">PRE-PAID (ONLINE)</strong>`;
-
-            document.getElementById("orderDetailsContent").innerHTML = `
-                <div style="background:var(--surface-2); padding:20px; border-radius:12px; margin-bottom:15px; border:1px solid var(--border-color);">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                        <span style="font-weight:800; font-size:16px; color:var(--primary); font-family:monospace;">${o.order_no || o.id}</span><span class="badge" style="background:#e0e7ff; color:#3b82f6; font-size:13px;">${o.status}</span>
-                    </div>
-                    <strong style="font-size:14px; color:var(--text-main);">Customer Details:</strong><br>
-                    <span style="font-size:15px; font-weight:700; color:var(--text-main);">${safeName}</span><br><span style="color:var(--text-main);"><i class="fas fa-phone-alt"></i> ${phoneDisplay}<br><i class="fas fa-envelope"></i> ${emailDisplay}</span>
-                    ${privacyTag}<br><br><strong style="font-size:14px; color:var(--text-main);">Shipping Address:</strong><br>
-                    <span style="color:var(--text-main);">${o.delivery_address || 'N/A'}<br>${o.delivery_city || ''}, ${o.delivery_state || ''} - <strong style="color:var(--primary);">${o.delivery_pincode || ''}</strong></span>
-                </div>
-                <div style="background:#ecfdf5; padding:20px; border-radius:12px; border:1px solid #a7f3d0;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px solid #a7f3d0; padding-bottom:5px;">
-                        <strong style="font-size:14px; color:#064e3b;">Items in this order:</strong>
-                        <span style="font-size:12px; color:#064e3b;">Payment: ${payType}</span>
-                    </div>
-                    ${myItems.map(i=>`<div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span style="font-weight:600; font-size:14px; color:#064e3b;">${i.name} (x${i.qty})</span><strong style="font-size:14px; color:#064e3b;">₹${i.price}</strong></div>`).join('')}
-                    <div style="border-top:2px solid #a7f3d0; margin-top:10px; padding-top:10px; display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-weight:800; font-size:16px; color:#064e3b;">Total Seller Payout:</span><strong style="color:var(--primary); font-size:20px;">₹${amount}</strong>
-                    </div>
-                </div>
-            `;
-            document.getElementById("orderDetailsModal").style.display = "flex";
-        }
-
-        // ================= WARRANTY CLAIMS =================
-        function loadWarranty() {
-            const list = document.getElementById("warrantyList"); list.innerHTML = "";
-            const pendingWarranties = sellerWarranties.filter(w => w.status === 'Assigned to Seller' || w.status === 'Pending Action');
-            if(pendingWarranties.length === 0) { list.innerHTML = "<tr><td colspan='5' style='text-align:center; font-weight:600;'>No pending warranty requests.</td></tr>"; return; }
-
-            const now = Date.now();
-            pendingWarranties.forEach(w => {
-                const claimTime = w.assignedDate ? new Date(w.assignedDate).getTime() : new Date(w.timestamp).getTime();
-                const diffHours = (now - claimTime) / 3600000;
-                let isBreached = diffHours > 48;
-
-                if(isBreached && !w.slaBreachFined) {
-                    showToast(`SLA Breached for Claim ${w.id.substring(0,6)}. ₹199 Fine Applied.`, "error");
-                    try { db.collection("fines").add({ email: currentSeller.email, amount: 199, reason: `Late Warranty Claim SLA Breach: ${w.id}`, timestamp: new Date().toISOString() }); } catch(e){}
-                    w.slaBreachFined = true; 
-                }
-
-                let slaText = isBreached ? `<span style="color:var(--white); background:var(--danger); padding:4px 8px; border-radius:8px; font-weight:bold; font-size:11px;"><i class="fas fa-exclamation-triangle"></i> FINE APPLIED</span>` : `<span style="color:var(--warning); font-weight:800; font-size:13px;">${Math.round(48 - diffHours)}h left</span>`;
-
-                list.innerHTML += `<tr>
-                    <td data-label="Date"><strong style="font-size:13px;">${new Date(w.timestamp).toLocaleDateString()}</strong></td>
-                    <td data-label="Product & Serial"><strong style="font-size:14px;">${w.productName}</strong><br><span style="font-family:monospace; color:var(--text-light);">SN: ${w.serialNo}</span></td>
-                    <td data-label="Issue"><span style="font-size:13px;">${w.issueDesc}</span></td>
-                    <td data-label="SLA">${slaText}</td>
-                    <td data-label="Action">
-                        <div>
-                            <button class="btn-sm" style="background:var(--success); padding:10px 15px; margin-bottom:5px;" onclick="acceptWarranty('${w.id}')"><i class="fas fa-check"></i> Accept</button>
-                            <button class="btn-sm" style="background:var(--danger); padding:10px 15px;" onclick="cancelWarranty('${w.id}')"><i class="fas fa-times"></i> Reject</button>
-                        </div>
-                    </td>
-                </tr>`;
-            });
-        }
-
-        window.acceptWarranty = async function(id) {
-            if(!confirm("Accepting this warranty means you will provide a replacement or refund to the customer. Confirm?")) return;
-            try {
-                await db.collection("warranties").doc(id).update({ status: 'Accepted' });
-                const w = sellerWarranties.find(x => x.id === id); if(w) w.status = "In Progress";
-                showToast("Warranty Request Accepted! Arrange resolution with Admin.", "success");
-                loadWarranty(); renderDashboardStats();
-            } catch(e) {}
-        }
-
-        window.cancelWarranty = async function(id) {
-            if(!confirm("Warning! Rejecting this valid claim will deduct a flat ₹300 fine from your payout. Continue?")) return;
-            try {
-                await db.collection("fines").add({ email: currentSeller.email, amount: 300, reason: `Rejected Warranty Claim: ${id}`, timestamp: new Date().toISOString() });
-                await db.collection("warranties").doc(id).update({ status: 'Rejected' });
-                
-                const w = sellerWarranties.find(x => x.id === id); if(w) w.status = "Rejected";
-                showToast("Claim Rejected. ₹300 Fine Applied.", "error");
-                loadWarranty(); renderDashboardStats();
-            } catch(e) {}
-        }
-
-        // ================= PAYMENTS LEDGER =================
-        window.togglePaymentTab = function(tabId) {
-            document.querySelectorAll('.payment-tab').forEach(t => t.style.display = 'none');
-            document.getElementById('tab' + tabId.charAt(0).toUpperCase() + tabId.slice(1)).style.display = 'block';
-        }
-
-        function loadPayments() {
-            const listUpcoming = document.getElementById("payUpcomingList"); listUpcoming.innerHTML = "";
-            const listProgress = document.getElementById("payProgressList"); listProgress.innerHTML = "";
-            const listCompleted = document.getElementById("payCompletedList"); listCompleted.innerHTML = "";
-            const listFines = document.getElementById("payFinesList"); listFines.innerHTML = "";
-
-            let totalUpcoming = 0; let totalFines = sellerFines.reduce((s, f) => s + f.amount, 0);
-            const now = new Date();
-
-            sellerOrders.forEach(o => {
-                let myItems = getSellerItemsFromOrder(o); if(myItems.length === 0) return;
-                let amount = myItems.reduce((s, i) => s + (Number(i.price) * Number(i.qty)), 0);
-
-                if (o.status === 'Delivered' && !o.sellerSettled) {
-                    let deliveredDate = new Date(o.timestamp);
-                    let transferDate = new Date(deliveredDate); transferDate.setDate(transferDate.getDate() + 7);
-                    
-                    if(now < transferDate) {
-                        listProgress.innerHTML += `<tr><td data-label="Delivered Date"><strong style="font-size:13px;">${deliveredDate.toLocaleDateString()}</strong></td><td data-label="Release Date"><span style="color:var(--warning); font-weight:bold;">${transferDate.toLocaleDateString()}</span></td><td data-label="Order Ref"><strong style="font-family:monospace; color:var(--primary);">${o.order_no || o.id}</strong></td><td data-label="Amount"><strong style="font-size:15px;">₹${amount}</strong></td></tr>`;
-                    } else {
-                        totalUpcoming += amount; 
-                        let statusMsg = o.adminClearedPayment ? `<span style="color:var(--success); font-weight:bold;"><i class="fas fa-check-circle"></i> Successfully Credited</span>` : `<span style="color:var(--secondary); font-weight:bold;"><i class="fas fa-clock"></i> Processing by Bank</span>`;
-                        listUpcoming.innerHTML += `<tr><td data-label="Transfer Date"><strong style="font-size:13px;">${transferDate.toLocaleDateString()}</strong></td><td data-label="Order Ref"><strong style="font-family:monospace; color:var(--primary);">${o.order_no || o.id}</strong></td><td data-label="Status">${statusMsg}</td><td data-label="Gross Amount" style="color:var(--success); font-weight:800; font-size:16px;">₹${amount}</td></tr>`;
-                    }
-                } else if (o.sellerSettled) {
-                    listCompleted.innerHTML += `<tr><td data-label="Settled Date"><strong style="font-size:13px;">${new Date(o.settledDate).toLocaleDateString()}</strong></td><td data-label="Order Ref"><strong style="font-family:monospace; color:var(--primary);">${o.order_no || o.id}</strong></td><td data-label="Amount" style="color:var(--success); font-weight:800; font-size:16px;">₹${o.settlementAmount}</td></tr>`;
-                }
-            });
-
-            sellerFines.forEach(f => { listFines.innerHTML += `<tr><td data-label="Date"><strong style="font-size:13px;">${new Date(f.timestamp).toLocaleDateString()}</strong></td><td data-label="Reason"><span style="font-weight:600;">${f.reason}</span></td><td data-label="Amount" style="color:var(--danger); font-weight:900; font-size:16px;">-₹${f.amount}</td></tr>`; });
-
-            let finalUpcoming = totalUpcoming - totalFines; 
-            cachedTotalUpcoming = finalUpcoming; 
-            
-            const alertBox = document.getElementById("upcomingAlertBox");
-            if(totalUpcoming > 0 || totalFines > 0) {
-                alertBox.style.display = "block";
-                alertBox.innerHTML = `
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Gross Payout Pool:</span> <strong>₹${totalUpcoming.toLocaleString()}</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px; color:var(--danger);"><span>Total Deductions (Fines):</span> <strong>-₹${totalFines.toLocaleString()}</strong></div>
-                <div style="border-top:2px solid #bfdbfe; margin-top:10px; padding-top:10px; display:flex; justify-content:space-between; align-items:center;"><span style="font-weight:800; font-size:16px; color:#1e3a8a;">Final Expected Net Transfer:</span><strong style="color:var(--primary); font-size:22px;">₹${finalUpcoming.toLocaleString()}</strong></div>`;
-                syncPayoutToAdmin(totalUpcoming, totalFines, finalUpcoming);
-            } else { alertBox.style.display = "none"; }
-            
-            validatePayoutButtons();
-        }
-
-        async function syncPayoutToAdmin(totalGross, totalFines, finalUpcoming) {
-            try {
-                await db.collection("seller_payouts").doc(currentSeller.email).set({
-                    name: currentSeller.companyName, gross: totalGross, fines: totalFines, netPayout: finalUpcoming, date: new Date().toISOString(), status: "Pending"
-                });
-            } catch(e) {} 
-        }
-
-        // ================= PREMIUM SUBSCRIPTIONS =================
-        window.togglePlanDuration = function(type) {
-            currentPlanDuration = type;
-            const btnM = document.getElementById('btnPlanMonth'); const btnY = document.getElementById('btnPlanYear');
-            if(type === 'year') {
-                btnY.style.background = 'var(--primary)'; btnY.style.color = 'white';
-                btnM.style.background = 'transparent'; btnM.style.color = 'var(--text-light)';
-                document.getElementById('priceGo').innerText = '4999';
-                document.getElementById('pricePro').innerText = '7599';
-                document.querySelectorAll('.txtDuration').forEach(el => el.innerText = 'year');
-            } else {
-                btnM.style.background = 'var(--primary)'; btnM.style.color = 'white';
-                btnY.style.background = 'transparent'; btnY.style.color = 'var(--text-light)';
-                document.getElementById('priceGo').innerText = '499';
-                document.getElementById('pricePro').innerText = '799';
-                document.querySelectorAll('.txtDuration').forEach(el => el.innerText = 'month');
-            }
-            validatePayoutButtons();
-        }
-
-        function validatePayoutButtons() {
-            const costGo = currentPlanDuration === 'year' ? 4999 : 499;
-            const costPro = currentPlanDuration === 'year' ? 7599 : 799;
-            
-            const btnGo = document.getElementById('btnSubPayoutGo');
-            const btnPro = document.getElementById('btnSubPayoutPro');
-            const btnAd = document.getElementById('btnAdPayout');
-            const btnB2b = document.getElementById('b2bPayoutBtn');
-            
-            if(btnGo) { if(cachedTotalUpcoming >= costGo) { btnGo.disabled = false; btnGo.innerHTML = '<i class="fas fa-wallet"></i> Pay from Payout'; } else { btnGo.disabled = true; btnGo.innerHTML = '<i class="fas fa-exclamation-circle"></i> Insufficient Payout'; } }
-            if(btnPro) { if(cachedTotalUpcoming >= costPro) { btnPro.disabled = false; btnPro.innerHTML = '<i class="fas fa-wallet"></i> Pay from Payout'; } else { btnPro.disabled = true; btnPro.innerHTML = '<i class="fas fa-exclamation-circle"></i> Insufficient Payout'; } }
-            if(btnAd) { if(cachedTotalUpcoming >= 70) { btnAd.disabled = false; btnAd.innerHTML = '<i class="fas fa-wallet"></i> Pay via Upcoming Payout'; } else { btnAd.disabled = true; btnAd.innerHTML = '<i class="fas fa-exclamation-circle"></i> Insufficient Payout'; } }
-        }
-
-        function loadSubscriptionsUI() {
-            validatePayoutButtons();
-            if(currentSeller.subscription && currentSeller.subscription !== 'None') {
-                showToast(`You are currently on the ${currentSeller.subscription} Plan.`, 'success');
-            }
-        }
-
-        window.processSubscription = async function(planName, method) {
-            const cost = planName === 'Go' ? (currentPlanDuration === 'year' ? 4999 : 499) : (currentPlanDuration === 'year' ? 7599 : 799);
-            
-            if(method === 'online') {
-                const options = {
-                    "key": API_KEYS.RAZORPAY, 
-                    "amount": cost * 100, 
-                    "currency": "INR", 
-                    "name": "Aryanta Seller Network",
-                    "description": `${planName} Subscription (${currentPlanDuration})`,
-                    "handler": function (res) { finalizeSubscription(planName, cost, "Online Razorpay", res.razorpay_payment_id); },
-                    "prefill": { "name": currentSeller.companyName, "email": currentSeller.email, "contact": currentSeller.phone || "" },
-                    "theme": { "color": "#059669" }
-                };
-                const rzp = new Razorpay(options); 
-                rzp.open();
-            } else {
-                if(cachedTotalUpcoming < cost) return showToast("Insufficient funds in upcoming payout.", "error");
-                if(!confirm(`Deduct ₹${cost.toLocaleString()} from your upcoming payout for the ${planName} plan?`)) return;
-                try { 
-                    await db.collection("fines").add({ email: currentSeller.email, amount: cost, reason: `${planName} Subscription (${currentPlanDuration})`, timestamp: new Date().toISOString() }); 
-                    finalizeSubscription(planName, cost, "Payout Deduction", "PAYOUT_" + Date.now()); 
-                    try{await initDashboard();}catch(e){} loadPayments(); 
-                } catch(e) {} 
-            }
-        }
-
-        async function finalizeSubscription(planName, cost, method, txId) {
-            const now = new Date();
-            const endDate = new Date();
-            if(currentPlanDuration === 'year') endDate.setFullYear(endDate.getFullYear() + 1);
-            else endDate.setMonth(endDate.getMonth() + 1);
-
-            currentSeller.subscription = planName;
-            currentSeller.subEndDate = endDate.toISOString();
-            
-            if(!currentSeller.subHistory) currentSeller.subHistory = [];
-            currentSeller.subHistory.push({
-                plan: planName, duration: currentPlanDuration, cost: cost, method: method, txId: txId, 
-                startDate: now.toISOString(), endDate: endDate.toISOString()
-            });
-
-            localStorage.setItem('sellerToken', JSON.stringify(currentSeller));
-            document.getElementById('verifiedBadge').style.display = 'inline'; 
-            
-            try { 
-                await db.collection("sellers").doc(currentSeller.email).update({ subscription: planName, subEndDate: currentSeller.subEndDate, subHistory: currentSeller.subHistory }); 
-                showToast(`Successfully Upgraded to ${planName} Plan!`, "success"); 
-                applySettingsToUI(); 
-                loadProfile(); 
-                document.getElementById('subExpiryModal').style.display = 'none'; 
-            } catch(e) {}
-        }
-
-
-        // ================= SPONSORED ADS =================
-        function calculateAdCost() {
-            let cost = 70;
-            if (currentSeller.subscription === 'Go') cost = Math.round(70 * 0.8);
-            if (currentSeller.subscription === 'Pro') cost = Math.round(70 * 0.55);
-            return cost;
-        }
-
-        function loadAds() {
-            const list = document.getElementById("adsList"); list.innerHTML = "";
-            sellerProducts.forEach(p => {
-                let adStatus = p.isAd ? `<span class="badge" style="background:#fef08a; color:#854d0e;">Running</span>` : `<span class="badge" style="background:var(--border-color); color:var(--text-light);">Inactive</span>`;
-                let btn = p.isAd ? `<button class="btn-sm delete" style="padding:10px 15px;" onclick="stopAd('${p.id}')"><i class="fas fa-stop"></i> Stop Ad</button>` : `<button class="btn-sm edit" style="background:var(--primary); padding:10px 15px;" onclick="promptAd('${p.id}')"><i class="fas fa-play"></i> Start Ad</button>`;
-                list.innerHTML += `<tr><td data-label="Product"><strong style="font-size:14px;">${p.name}</strong></td><td data-label="Price"><strong style="font-size:15px; color:var(--primary);">₹${p.price}</strong></td><td data-label="Status">${adStatus}</td><td data-label="Action">${btn}</td></tr>`;
-            });
-        }
-
-        window.promptAd = function(id) {
-            const joined = new Date(currentSeller.joinedDate || Date.now()); const diffDays = (Date.now() - joined.getTime()) / (1000 * 3600 * 24);
-            let freeAdsAvailable = false;
-            if(currentSeller.subscription === 'Go' || currentSeller.subscription === 'Pro') freeAdsAvailable = true; 
-
-            if((diffDays <= 30 && !currentSeller.usedFreeAd) || freeAdsAvailable) { 
-                if(confirm("Promotional Offer / Plan Perk: Start 1 ad for free?")) { 
-                    currentSeller.usedFreeAd = true; localStorage.setItem('sellerToken', JSON.stringify(currentSeller)); executeAdStart(id); 
-                    db.collection("sellers").doc(currentSeller.email).update({ usedFreeAd: true });
-                } 
-            } else { 
-                document.getElementById("adProdId").value = id;
-                document.getElementById("adCostDisplay").innerText = `₹${calculateAdCost()}`;
-                validatePayoutButtons();
-                document.getElementById("adPaymentModal").style.display = "flex"; 
-            }
-        }
-
-        window.payAdOnline = function() {
-            const id = document.getElementById("adProdId").value;
-            const cost = calculateAdCost();
-            const options = {
-                "key": API_KEYS.RAZORPAY, "amount": cost * 100, "currency": "INR", "name": "Aryanta Ads", "description": "24 Hour Sponsored Ad Boost",
-                "handler": function (res) { executeAdStart(id); closeModal("adPaymentModal"); },
-                "prefill": { "name": currentSeller.companyName, "email": currentSeller.email },
-                "theme": { "color": "#ec4899" }
-            };
-            const rzp = new Razorpay(options); rzp.open();
-        }
-
-        window.payAdUpcoming = async function() { 
-            const cost = calculateAdCost();
-            if(cachedTotalUpcoming < cost) return showToast("Insufficient funds in upcoming payout.", "error");
-            if(!confirm(`Secure Action: Deduct ₹${cost} from upcoming payout?`)) return;
-            const id = document.getElementById("adProdId").value; 
-            try { await db.collection("fines").add({ email: currentSeller.email, amount: cost, reason: `Ad Boost for 24h: ${id}`, timestamp: new Date().toISOString() }); executeAdStart(id); closeModal("adPaymentModal"); try{await initDashboard();}catch(e){} loadPayments(); } catch(e) {} 
-        }
-
-        async function executeAdStart(id) { try { await db.collection("products").doc(id).update({ isAd: true }); try{await initDashboard();}catch(e){} loadAds(); showToast("Ad Started. Product boosted!", "success"); } catch(e) {} }
-        window.stopAd = async function(id) { try { await db.collection("products").doc(id).update({ isAd: false }); try{await initDashboard();}catch(e){} loadAds(); showToast("Ad Stopped.", "success"); } catch(e) {} }
-
-        // ================= HOW TO SELL (DYNAMIC TUTORIALS FROM ADMIN DB) =================
-        window.loadTutorials = async function() {
-            const list = document.getElementById("tutorialContentList");
-            list.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-light); grid-column: 1 / -1;"><i class="fas fa-spinner fa-spin"></i> Loading guides from Admin...</div>`;
-            
-            try {
-                // Fetching tutorials generated by Admin (without orderBy to avoid index requirements)
-                const snap = await db.collection("seller_tutorials").get();
-                if(snap.empty) {
-                    list.innerHTML = `<div class="panel-box" style="grid-column: 1 / -1; text-align:center; padding:40px;"><i class="fas fa-video-slash" style="font-size:30px; color:var(--text-light); margin-bottom:10px;"></i><br>No tutorials uploaded by admin yet.</div>`;
-                    return;
-                }
-                
-                let docsArr = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
-                // Sort via JS locally to prevent missing index errors in Firestore
-                docsArr.sort((a,b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
-
-                let html = "";
-                docsArr.forEach(data => {
-                    let fileTypeIcon = "fas fa-link";
-                    let btnText = "View Content";
-                    if(data.type === 'pdf') { fileTypeIcon = 'fas fa-file-pdf'; btnText = "Read PDF"; }
-                    else if(data.type === 'video') { fileTypeIcon = 'fab fa-youtube'; btnText = "Watch Video"; }
-
-                    // fallback image if admin didn't provide one
-                    let imgSrc = data.image || "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80&w=600";
-
-                    html += `
-                    <div class="panel-box" style="padding:0; overflow:hidden; display:flex; flex-direction:column; height: 100%;">
-                        <img src="${imgSrc}" style="width:100%; height:200px; object-fit:cover; border-bottom:1px solid var(--border-color);">
-                        <div style="padding:20px; display:flex; flex-direction:column; flex-grow:1;">
-                            <h4 style="font-size:18px; font-weight:800; margin-bottom:10px;">${data.title || 'Official Aryanta Guide'}</h4>
-                            <p style="color:var(--text-light); font-size:14px; line-height:1.6; margin-bottom:20px; flex-grow:1;">${data.description || 'Learn how to increase your sales with this step-by-step tutorial.'}</p>
-                            <button class="btn-prime w-100" style="background:#e11d48; padding:12px; font-size:15px;" onclick="window.open('${data.link || '#'}', '_blank')"><i class="${fileTypeIcon}"></i> ${btnText}</button>
-                        </div>
-                    </div>`;
-                });
-                list.innerHTML = html;
-            } catch(e) {
-                console.error(e);
-                list.innerHTML = `<div class="panel-box" style="grid-column: 1 / -1; text-align:center; padding:40px;"><p>Failed to load tutorials. Admin might not have set them up yet.</p></div>`;
-            }
-        }
-
-
-        // ================= BUY B2B SUPPLIES =================
-        let b2bImageIndexes = {}; 
-
-        async function loadB2bStore() {
-            const grid = document.getElementById("b2bProductsGrid"); grid.innerHTML = "Loading...";
-            try {
-                const snap = await db.collection("b2b_products").get();
-                if(!snap.empty) {
-                    b2bItems = snap.docs.map(d => ({id: d.id, ...d.data()})); grid.innerHTML = "";
-                    if(b2bItems.length===0) { grid.innerHTML = "<p>No B2B items currently available from admin.</p>"; return; }
-                    
-                    b2bItems.forEach(p => {
-                        b2bImageIndexes[p.id] = 0;
-                        let images = []; if(p.image) images.push(p.image); if(p.images && Array.isArray(p.images)) { images = p.images; } 
-                        
-                        let imgHtml = ""; let navHtml = "";
-                        if (images.length > 0) {
-                            imgHtml = `<img id="b2bImg_${p.id}" src="${images[0]}" onclick="event.stopPropagation(); openImageViewer(this.src)">`;
-                            if (images.length > 1) { navHtml = `<div class="gallery-nav left" onclick="event.stopPropagation(); changeB2bImg('${p.id}', -1)"><i class="fas fa-chevron-left"></i></div><div class="gallery-nav right" onclick="event.stopPropagation(); changeB2bImg('${p.id}', 1)"><i class="fas fa-chevron-right"></i></div>`; }
-                        } else { imgHtml = `<div style="width:100%; height:100%; background:#e2e8f0;"></div>`; }
-
-                        grid.innerHTML += `
-                        <div class="b2b-card" onclick="openB2bBuyModal('${p.id}')">
-                            <div class="b2b-img-box">${navHtml}${imgHtml}</div>
-                            <div class="b2b-content">
-                                <h4 style="margin-bottom:8px; font-size:16px; font-weight:800; color:var(--text-main); line-height:1.2;">${p.name.length > 40 ? p.name.substring(0,40)+'...' : p.name}</h4>
-                                <h3 style="color:var(--primary); font-size:22px; margin-bottom:5px; font-weight:900;">₹${p.price.toLocaleString()}</h3>
-                                <p style="font-size:11px; color:var(--text-light); margin-bottom:15px; font-weight:700;">Min Qty (MOQ): ${p.moq}</p>
-                                <button class="btn-prime w-100" style="padding:12px; font-size:14px; margin-top:auto;" onclick="event.stopPropagation(); openB2bBuyModal('${p.id}')"><i class="fas fa-shopping-bag"></i> Buy Now</button>
-                            </div>
-                        </div>`;
-                    });
-                } else {
-                    grid.innerHTML = "<p>No B2B items currently available from admin.</p>";
-                }
-            } catch(e) { grid.innerHTML = "Error loading B2B store."; }
-        }
-
-        window.changeB2bImg = function(id, dir) {
-            const p = b2bItems.find(x => x.id === id);
-            if(p && p.images && p.images.length > 1) {
-                b2bImageIndexes[id] += dir;
-                if(b2bImageIndexes[id] >= p.images.length) b2bImageIndexes[id] = 0;
-                if(b2bImageIndexes[id] < 0) b2bImageIndexes[id] = p.images.length - 1;
-                document.getElementById(`b2bImg_${id}`).src = p.images[b2bImageIndexes[id]];
-            }
-        }
-
-        window.openB2bBuyModal = function(id) {
-            const p = b2bItems.find(x => x.id === id); if(!p) return;
-            
-            let imgSrc = p.image || '';
-            document.getElementById("b2bProductInfo").innerHTML = `
-                <div style="display:flex; flex-direction: column; align-items: center; text-align: center; gap: 15px; margin-bottom: 20px;">
-                    <img src="${imgSrc}" style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 12px; border: 1px solid var(--border-color);">
-                    <div>
-                        <h4 style="margin: 0 0 5px; font-size: 18px;">${p.name}</h4>
-                        <span style="font-size: 14px; color: var(--text-light); display:block; margin-bottom:10px;">${p.desc || 'Quality B2B Wholesale Item'}</span>
-                        <strong style="color: var(--primary); font-size: 24px;">₹${p.price}</strong> <span style="font-size:12px; color:var(--text-light);">/ unit</span>
-                    </div>
-                </div>
-            `;
-            document.getElementById("b2bWarrText").innerText = p.warranty || 'No Warranty';
-            
-            document.getElementById("b2bBuyId").value = id; 
-            document.getElementById("b2bMoqLabel").innerText = p.moq;
-            document.getElementById("b2bBuyQty").value = p.moq; document.getElementById("b2bBuyQty").min = p.moq;
-            
-            calcB2bTotal(); 
-            document.getElementById("b2bBuyAddress").value = currentSeller.shopInfo?.address || ""; document.getElementById("b2bBuyCity").value = currentSeller.shopInfo?.city || ""; document.getElementById("b2bBuyPin").value = "";
-            
-            validatePayoutButtons();
-            
-            document.getElementById("b2bStep1").style.display = "block";
-            document.getElementById("b2bStep2").style.display = "none";
-            document.getElementById("buyB2bModal").style.display = "flex";
-        }
-
-        window.goToB2bStep2 = function() {
-            document.getElementById("b2bStep1").style.display = "none";
-            document.getElementById("b2bStep2").style.display = "block";
-        }
-        window.goToB2bStep1 = function() {
-            document.getElementById("b2bStep2").style.display = "none";
-            document.getElementById("b2bStep1").style.display = "block";
-        }
-
-        window.calcB2bTotal = function() {
-            const id = document.getElementById("b2bBuyId").value; const p = b2bItems.find(x => x.id === id); 
-            let qty = parseInt(document.getElementById("b2bBuyQty").value) || 0; if (qty < p.moq) qty = p.moq; 
-            
-            const totalAmount = (p.price * qty) + 70;
-            document.getElementById("b2bBuyTotal").value = totalAmount.toLocaleString('en-IN');
-            
-            const btnPayout = document.getElementById("b2bPayoutBtn");
-            if(cachedTotalUpcoming >= totalAmount) {
-                btnPayout.disabled = false; btnPayout.innerHTML = `<i class="fas fa-wallet"></i> Pay via Upcoming Payout`;
-            } else {
-                btnPayout.disabled = true; btnPayout.innerHTML = `<i class="fas fa-exclamation-circle"></i> Insufficient Balance`;
-            }
-        }
-
-        window.processB2bBuy = async function(method) {
-            const id = document.getElementById("b2bBuyId").value; const p = b2bItems.find(x => x.id === id); 
-            let qty = parseInt(document.getElementById("b2bBuyQty").value) || p.moq;
-            if(qty < p.moq) return showToast(`Minimum order quantity is ${p.moq}`, "warning");
-            const amount = (p.price * qty) + 70;
-            const add = document.getElementById("b2bBuyAddress").value; const city = document.getElementById("b2bBuyCity").value; const pin = document.getElementById("b2bBuyPin").value;
-            if(!add || !city || !pin) return showToast("Enter full shipping address.", "warning");
-
-            if(method === 'online') { 
-                const options = {
-                    "key": API_KEYS.RAZORPAY, "amount": amount * 100, "currency": "INR", "name": "Aryanta B2B Supply", "description": `Purchase ${qty}x ${p.name}`,
-                    "handler": function (res) { finalizeB2bBuy(id, amount, qty, "Online Razorpay"); },
-                    "prefill": { "name": currentSeller.companyName, "email": currentSeller.email },
-                    "theme": { "color": "#10b981" }
-                };
-                const rzp = new Razorpay(options); rzp.open();
-            } 
-            else { 
-                if(cachedTotalUpcoming < amount) return showToast("Insufficient funds in upcoming payout.", "error");
-                if(!confirm(`Deduct ₹${amount.toLocaleString()} from your payout balance?`)) return;
-                try { 
-                    await db.collection("fines").add({ email: currentSeller.email, amount: amount, reason: `B2B Purchase (${qty}x ${p.name}) + Shipping`, timestamp: new Date().toISOString() }); 
-                    finalizeB2bBuy(id, amount, qty, "Upcoming Payout"); try{await initDashboard();}catch(e){} loadPayments(); 
-                } catch(e) {} 
-            }
-        }
-
-        async function finalizeB2bBuy(id, amount, qty, method) {
-            const p = b2bItems.find(x => x.id === id);
-            try { 
-                await db.collection("b2b_orders").add({ sellerEmail: currentSeller.email, productId: id, productName: p.name, quantity: qty, amount: amount, paymentMethod: method, timestamp: new Date().toISOString(), status: "Pending" }); 
-                closeModal("buyB2bModal"); showToast("B2B Purchase Successful! Admin will ship it.", "success"); 
-            } catch(e) {}
-        }
-
-        // ================= CUSTOMER Q&A =================
-        function loadQna() {
-            const list = document.getElementById("qnaList"); list.innerHTML = ""; let qCount = 0;
-            sellerProducts.forEach(p => {
-                if(p.qa && Array.isArray(p.qa)) {
-                    p.qa.forEach(q => {
-                        qCount++; const isAns = q.answer && q.answer.trim() !== '';
-                        const status = isAns ? `<span class="badge" style="background:#dcfce3; color:#166534;">Answered</span>` : `<span class="badge" style="background:#fee2e2; color:#991b1b;">Pending</span>`;
-                        
-                        let btn = '';
-                        if(isAns) {
-                            btn = `<button class="btn-sm edit" style="padding:10px;" onclick="openQnaModal('${p.id}','${q.id}', '${q.question.replace(/'/g, "\\'")}', '${q.answer.replace(/'/g, "\\'")}')"><i class="fas fa-edit"></i></button>
-                                   <button class="btn-sm delete" style="padding:10px;" onclick="deleteQnaAnswer('${p.id}','${q.id}')"><i class="fas fa-trash"></i></button>`;
-                        } else {
-                            btn = `<button class="btn-sm edit" style="padding:10px 15px;" onclick="openQnaModal('${p.id}','${q.id}', '${q.question.replace(/'/g, "\\'")}', '')"><i class="fas fa-reply"></i> Reply</button>`;
-                        }
-
-                        list.innerHTML += `<tr>
-                            <td data-label="Product"><div style="font-size:12px; font-weight:600; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div></td>
-                            <td data-label="Q&A" style="white-space: normal; line-height: 1.5; min-width: 250px;">
-                                <strong style="font-size:14px; color:#1e3a8a; display:block; margin-bottom:5px;">Q: ${q.question}</strong>
-                                ${isAns ? `<span style="font-size:13px; color:#064e3b; display:block; background:#ecfdf5; padding:8px; border-radius:8px;">A: ${q.answer}</span>` : ''}
-                                <span style="font-size:10px; color:var(--text-light); font-weight:800; text-transform:uppercase; display:block; margin-top:5px;">By: ${maskName(q.user)}</span>
-                            </td>
-                            <td data-label="Status">${status}</td><td data-label="Action"><div style="display:flex; justify-content:flex-end; gap:5px;">${btn}</div></td>
-                        </tr>`;
-                    });
-                }
-            });
-            if(qCount === 0) list.innerHTML = "<tr><td colspan='4' style='text-align:center; font-weight:600;'>No questions from customers.</td></tr>";
-        }
-
-        window.openQnaModal = function(pId, qId, qText, existingAns) { 
-            document.getElementById("qnaProdId").value = pId; document.getElementById("qnaQid").value = qId; 
-            document.getElementById("qnaTextDisplay").innerText = `"${qText}"`; 
-            document.getElementById("qnaAnsText").value = existingAns || ""; 
-            document.getElementById("qnaModal").style.display = "flex"; 
-        }
-
-        window.submitQnaAnswer = async function() {
-            const pId = document.getElementById("qnaProdId").value; const qId = document.getElementById("qnaQid").value; const ans = document.getElementById("qnaAnsText").value.trim(); if(!ans) return showToast("Enter an answer.", "warning");
-            const p = sellerProducts.find(x => x.id === pId); if(!p) return; const updatedQA = p.qa.map(q => { if(q.id === qId) { return { ...q, answer: ans, seller: true }; } return q; });
-            try { await db.collection("products").doc(pId).update({ qa: updatedQA }); closeModal('qnaModal'); try{await initDashboard();}catch(e){} loadQna(); showToast("Answer published!", "success"); } catch(e) {}
-        }
-
-        window.deleteQnaAnswer = async function(pId, qId) {
-            if(!confirm("Are you sure you want to delete your answer? The question will return to Pending.")) return;
-            const p = sellerProducts.find(x => x.id === pId); if(!p) return; 
-            const updatedQA = p.qa.map(q => { if(q.id === qId) { return { ...q, answer: "", seller: false }; } return q; });
-            try { await db.collection("products").doc(pId).update({ qa: updatedQA }); try{await initDashboard();}catch(e){} loadQna(); showToast("Answer Deleted", "success"); } catch(e) {}
-        }
-
-        // ================= ADMIN SUPPORT TICKET & HISTORY =================
-        window.submitSupportTicket = async function() {
-            const cat = document.getElementById("supCategory").value; 
-            if(!cat) return showToast("Please select an Issue Category.", "warning");
-
-            const phone = document.getElementById("supPhone").value; const desc = document.getElementById("supDesc").value;
-            try { 
-                await db.collection("seller_support_tickets").add({ email: currentSeller.email, name: currentSeller.companyName, phone, reason: cat, description: desc, status: "Pending", timestamp: new Date().toISOString() }); 
-                showToast("Support Ticket submitted. Admin will resolve this soon.", "success"); 
-                
-                document.getElementById("supDesc").value = ""; 
-                document.getElementById("supCategory").value = "";
-                document.getElementById("supCategorySelected").innerText = "-- Select Issue Type --";
-            } catch(e) { showToast("Error sending ticket", "error"); }
-        }
-
-        window.loadOldTickets = async function() {
-            const list = document.getElementById("oldTicketsListContainer");
-            list.innerHTML = `<div style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Fetching your tickets...</div>`;
-            
-            try {
-                // Fetch without order by to prevent missing index requirements in firestore
-                const snap = await db.collection("seller_support_tickets").where("email", "==", currentSeller.email).get();
-                if(snap.empty) { list.innerHTML = "<div class='panel-box' style='text-align:center;'>No old tickets found.</div>"; return; }
-                
-                let html = "";
-                window.ticketCache = {};
-                
-                let docsArr = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
-                docsArr.sort((a,b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0)); // Memory Sort
-
-                docsArr.forEach(data => {
-                    window.ticketCache[data.id] = data;
-                    let badgeColor = (data.status === 'Completed' || data.status === 'Closed') ? '#10b981' : (data.status === 'Pending' ? '#f59e0b' : '#64748b');
-                    
-                    html += `
-                        <div class="panel-box" style="margin-bottom:15px; cursor:pointer; padding:20px; transition:0.2s;" onclick="openTicketDetail('${data.id}')" onmouseover="this.style.borderColor='var(--secondary)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border-color)'; this.style.transform='none'">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                                <strong style="font-size:16px; color:var(--text-main);">${data.reason}</strong>
-                                <span class="badge" style="background:${badgeColor}; color:white;">${data.status}</span>
-                            </div>
-                            <div style="font-size:13px; color:var(--text-light);"><i class="fas fa-clock"></i> ${new Date(data.timestamp).toLocaleString()}</div>
-                        </div>
-                    `;
-                });
-                list.innerHTML = html;
-            } catch(e) { list.innerHTML = "<div class='panel-box'>Network error loading tickets.</div>"; }
-        }
-
-        window.openTicketDetail = function(id) {
-            const data = window.ticketCache[id];
-            if(!data) return;
-            
-            let cleanReply = data.adminReply || "No reply yet from admin.";
-            cleanReply = cleanReply.replace(/(https?:\/\/[^\s]+)/g, "<button class='btn-sm' style='background:var(--secondary); margin-left:5px;' onclick='event.stopPropagation(); window.open(\"$1\")'><i class='fas fa-external-link-alt'></i> View Link</button>");
-
-            document.getElementById("ticketDetailContent").innerHTML = `
-                <h4 style="font-size:18px; margin-bottom:5px;">${data.reason}</h4>
-                <p style="font-size:12px; color:var(--text-light); margin-bottom:15px;"><i class="fas fa-clock"></i> ${new Date(data.timestamp).toLocaleString()}</p>
-                <div style="background:var(--surface-2); padding:15px; border-radius:12px; margin-bottom:15px; border:1px solid var(--border-color);">
-                    <strong style="font-size:13px; text-transform:uppercase; color:var(--text-light); display:block; margin-bottom:8px;">Your Message:</strong>
-                    <div style="font-size:14px; line-height:1.5;">${data.description}</div>
-                </div>
-                <div style="background:#eff6ff; padding:15px; border-radius:12px; border:1px solid #bfdbfe;">
-                    <strong style="font-size:13px; text-transform:uppercase; color:#1e40af; display:block; margin-bottom:8px;">Admin Company Reply:</strong>
-                    <div style="font-size:14px; line-height:1.5; color:#1e3a8a;">${cleanReply}</div>
-                </div>
-            `;
-            document.getElementById("ticketDetailModal").style.display = "flex";
-        }
-
-        // ================= FORGOT PASSWORD =================
-        async function generateSecureHash(text) {
-            const msgUint8 = new TextEncoder().encode(text);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-
-        window.openForgotPass = function() {
-            document.getElementById('stepEmail').style.display = 'block';
-            document.getElementById('stepOTP').style.display = 'none';
-            document.getElementById('stepReset').style.display = 'none';
-            document.getElementById('fpIdentifier').value = '';
-            document.getElementById('fpOTP').value = '';
-            document.getElementById('fpNewPass').value = '';
-            document.getElementById('fpConfirmPass').value = '';
-            document.getElementById('fpNoAccountMsg').style.display = 'none';
-            
-            document.getElementById('forgotPassModal').style.display = 'flex';
-        }
-
-        window.checkAccountAndSendOTP = async function() {
-            const identifier = document.getElementById('fpIdentifier').value.trim();
-            if(!identifier) return showToast("Enter your email or phone number", "warning");
-            
-            const btn = document.getElementById('fpNextBtn');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking Database...';
-            document.getElementById('fpNoAccountMsg').style.display = 'none';
-
-            try {
-                const snapEmail = await db.collection("sellers").where("email", "==", identifier).get();
-                let targetEmail = null;
-                
-                if(!snapEmail.empty) {
-                    targetEmail = snapEmail.docs[0].data().email;
-                } else {
-                    const snapPhone = await db.collection("sellers").where("phone", "==", identifier).get();
-                    if(!snapPhone.empty) {
-                        targetEmail = snapPhone.docs[0].data().email;
-                    }
-                }
-                
-                if (!targetEmail) {
-                    btn.innerHTML = '<i class="fas fa-arrow-right"></i> Next';
-                    document.getElementById('fpNoAccountMsg').style.display = 'block';
-                    return;
-                }
-
-                await sendSecureOTP(targetEmail);
-
-            } catch(e) {
-                showToast("Network Error checking database.", "error");
-                btn.innerHTML = '<i class="fas fa-arrow-right"></i> Next';
-            }
-        }
-
-        async function sendSecureOTP(email) {
-            const otp = Math.floor(1000 + Math.random() * 9000).toString();
-            const secureSalt = "_aryantaCrypt" + Date.now();
-            
-            const hashedOTP = await generateSecureHash(otp + secureSalt);
-            
-            sessionStorage.setItem('fp_otp_hash', hashedOTP);
-            sessionStorage.setItem('fp_otp_salt', secureSalt);
-            sessionStorage.setItem('fp_email_lock', email);
-
-            try {
-                await emailjs.send(API_KEYS.EMAILJS_OTP_SERVICE, API_KEYS.EMAILJS_OTP_TEMPLATE, {
-                    to_email: email,
-                    otp_code: otp,
-                    user_type: "Seller Partner"
-                });
-                
-                showToast("Secure OTP Sent to your Email!", "success");
-                document.getElementById('stepEmail').style.display = 'none';
-                document.getElementById('stepOTP').style.display = 'block';
-                document.getElementById('fpNextBtn').innerHTML = '<i class="fas fa-arrow-right"></i> Next';
-            } catch(e) {
-                showToast("Failed to send email. Check EmailJS config.", "error");
-                document.getElementById('fpNextBtn').innerHTML = '<i class="fas fa-arrow-right"></i> Next';
-            }
-        }
-
-        window.verifyOTP = async function() {
-            const entered = document.getElementById('fpOTP').value.trim();
-            const storedHash = sessionStorage.getItem('fp_otp_hash');
-            const storedSalt = sessionStorage.getItem('fp_otp_salt');
-            
-            if(!storedHash || !storedSalt) return showToast("Session expired, please request OTP again.", "error");
-            
-            const hashedEntered = await generateSecureHash(entered + storedSalt);
-            
-            if (hashedEntered === storedHash) {
-                showToast("OTP Verified Successfully!", "success");
-                document.getElementById('stepOTP').style.display = 'none';
-                document.getElementById('stepReset').style.display = 'block';
-            } else {
-                showToast("Incorrect OTP!", "error");
-            }
-        }
-
-        window.resetPassword = async function() {
-            const newPass = document.getElementById('fpNewPass').value.trim();
-            const confirmPass = document.getElementById('fpConfirmPass').value.trim();
-
-            if(newPass.length < 6) return showToast("Password must be at least 6 characters long", "warning");
-            if(newPass !== confirmPass) return showToast("Passwords do not match!", "error");
-            
-            const targetEmail = sessionStorage.getItem('fp_email_lock');
-            
-            try {
-                await db.collection("sellers").doc(targetEmail).update({ password: newPass });
-                showToast("Password updated successfully! Logging you in...", "success");
-                closeModal('forgotPassModal');
-                
-                document.getElementById("loginId").value = targetEmail;
-                document.getElementById("loginPass").value = newPass;
-                handleLogin();
-
-                sessionStorage.removeItem('fp_otp_hash');
-                sessionStorage.removeItem('fp_otp_salt');
-                sessionStorage.removeItem('fp_email_lock');
-            } catch(e) {
-                showToast("Network error occurred.", "error");
-            }
-        }
-
-        async function fetchAppKeysAndBoot() {
-            try {
-                const res = await fetch(`${API_BASE_URL}/get-api-keys`);
-                if (res.ok) {
-                    const data = await res.json();
-                    
-                    API_KEYS.RAZORPAY = data.razorpayKey || API_KEYS.RAZORPAY;
-                    API_KEYS.EMAILJS_PUBLIC = data.emailjsPublicKey || API_KEYS.EMAILJS_PUBLIC;
-                    API_KEYS.EMAILJS_OTP_SERVICE = data.emailjsOtpService || API_KEYS.EMAILJS_OTP_SERVICE;
-                    API_KEYS.EMAILJS_OTP_TEMPLATE = data.emailjsOtpTemplate || API_KEYS.EMAILJS_OTP_TEMPLATE;
-                }
-
-                if (API_KEYS.EMAILJS_PUBLIC) {
-                    emailjs.init(API_KEYS.EMAILJS_PUBLIC);
-                }
-            } catch(e) {
-                console.warn("Failed to fetch API keys from Cloudflare URL. Using fallback if available.", e);
-            }
-            checkSession();
-        }
-
-        window.onload = function() { fetchAppKeysAndBoot(); };
-
-    </script>
+    <script src="seller.js"></script>
 </body>
 </html>
