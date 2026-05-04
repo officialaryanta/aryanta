@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en" translate="yes">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Official Seller Onboarding | Aryanta</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+       (function(){
+          // REPLACE THIS WITH YOUR ACTUAL EMAILJS PUBLIC KEY
+          emailjs.init("YOUR_EMAILJS_PUBLIC_KEY");
+       })();
+    </script>
+
+    <style>
+        :root {
+            --brand: #0f172a; --accent: #2563eb; --accent-hover: #1d4ed8; 
+            --success: #059669; --danger: #dc2626; --bg: #f1f5f9; 
+            --paper: #ffffff; --text-main: #0f172a; --text-sub: #475569; 
+            --border: #cbd5e1; --shadow: 0 10px 40px -10px rgba(0,0,0,0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+
+        /* WELCOME OVERLAY */
+        #welcomeOverlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.98); backdrop-filter: blur(15px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; transition: opacity 0.5s ease; }
+        .welcome-box { background: var(--paper); padding: 50px 40px; border-radius: 16px; text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.4); max-width: 480px; width: 100%; animation: documentIn 0.8s cubic-bezier(0.16, 1, 0.3, 1); border-top: 6px solid var(--accent); }
+        .welcome-box img { width: 100px; height: 100px; border-radius: 16px; margin-bottom: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); object-fit: cover; }
+        .welcome-box h2 { font-size: 28px; font-weight: 900; margin-bottom: 15px; color: var(--brand); letter-spacing: -0.5px; }
+        .welcome-box p { color: var(--text-sub); font-size: 15px; margin-bottom: 35px; line-height: 1.7; }
+        
+        .top-bar { background: var(--paper); color: var(--brand); width: 100%; padding: 20px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 15px rgba(0,0,0,0.05); border-bottom: 1px solid var(--border); }
+        .top-bar h1 { font-weight: 900; letter-spacing: 4px; font-size: 22px; margin: 0; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .top-bar h1 i { color: var(--accent); }
+
+        .container { max-width: 850px; width: 100%; margin: 40px auto; padding: 0 20px; }
+
+        /* OFFICIAL DOCUMENT STYLE FORM */
+        form { background: var(--paper); border-radius: 12px; box-shadow: var(--shadow); border: 1px solid #e2e8f0; overflow: hidden; position: relative; }
+        form::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: linear-gradient(90deg, var(--accent), #60a5fa); z-index: 10; }
+
+        /* ANIMATED STEPPER (UPDATED TO 5 STEPS) */
+        .stepper-container { background: #f8fafc; padding: 30px 40px; border-bottom: 1px solid var(--border); }
+        .stepper { display: flex; justify-content: space-between; position: relative; max-width: 700px; margin: 0 auto; }
+        .stepper::before { content: ''; position: absolute; top: 20px; left: 0; width: 100%; height: 3px; background: #e2e8f0; z-index: 1; border-radius: 4px; }
+        .progress-bar { position: absolute; top: 20px; left: 0; height: 3px; background: var(--accent); z-index: 2; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); width: 0%; border-radius: 4px; }
+        
+        .step { position: relative; z-index: 3; text-align: center; width: 20%; }
+        .step-circle { width: 44px; height: 44px; background: var(--paper); border: 3px solid #e2e8f0; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 10px; font-weight: 700; color: #94a3b8; transition: all 0.5s ease; font-size: 16px; }
+        .step.active .step-circle { border-color: var(--accent); background: var(--accent); color: white; transform: scale(1.15); box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.2); }
+        .step.completed .step-circle { border-color: var(--success); background: var(--success); color: white; }
+        .step-label { font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; transition: 0.3s; }
+        .step.active .step-label { color: var(--brand); }
+
+        /* FORM PANELS WITH STAGGERED ANIMATION */
+        .form-panel { padding: 40px; display: none; }
+        .form-panel.active { display: block; animation: documentIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        @keyframes documentIn { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes staggerFade { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+        .panel-title { font-size: 24px; font-weight: 800; margin-bottom: 30px; color: var(--brand); display: flex; align-items: center; gap: 10px; }
+        .panel-title i { color: var(--accent); font-size: 20px; }
+
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .input-group { opacity: 0; animation: staggerFade 0.4s ease forwards; }
+        .input-group:nth-child(1) { animation-delay: 0.1s; } .input-group:nth-child(2) { animation-delay: 0.15s; }
+        .input-group:nth-child(3) { animation-delay: 0.2s; } .input-group:nth-child(4) { animation-delay: 0.25s; }
+        .input-group:nth-child(5) { animation-delay: 0.3s; } .input-group:nth-child(6) { animation-delay: 0.35s; }
+        .input-group:nth-child(7) { animation-delay: 0.4s; }
+        .input-group.full { grid-column: 1 / -1; }
+        
+        .input-label { display: block; font-size: 13px; font-weight: 700; color: var(--text-sub); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .modern-input { width: 100%; padding: 16px 20px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px; background: #f8fafc; outline: none; transition: all 0.3s ease; font-weight: 500; color: var(--text-main); }
+        .modern-input:focus { border-color: var(--accent); background: var(--paper); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+        select.modern-input { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 15px center; background-size: 16px; cursor: pointer; }
+
+        /* YES/NO GST TOGGLE */
+        .toggle-container { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 15px 20px; border-radius: 10px; border: 2px solid #e2e8f0; }
+        .toggle-label { font-size: 15px; font-weight: 700; color: var(--brand); display: flex; align-items: center; gap: 10px;}
+        .radio-switch { display: flex; background: #e2e8f0; border-radius: 8px; overflow: hidden; padding: 4px; }
+        .radio-switch input { display: none; }
+        .radio-switch label { padding: 8px 24px; cursor: pointer; font-weight: 700; font-size: 14px; border-radius: 6px; color: var(--text-sub); transition: all 0.3s; }
+        .radio-switch input:checked + label { background: var(--paper); color: var(--accent); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        /* DRAG & DROP FILE UPLOAD */
+        .file-upload-box { border: 2px dashed #94a3b8; border-radius: 12px; padding: 35px 20px; text-align: center; background: #f8fafc; transition: all 0.3s ease; cursor: pointer; position: relative; overflow: hidden; }
+        .file-upload-box:hover, .file-upload-box.dragover { border-color: var(--accent); background: #eff6ff; }
+        .file-upload-box.dragover { transform: scale(1.02); border-width: 3px; }
+        .file-upload-box i { font-size: 32px; color: var(--accent); margin-bottom: 15px; transition: transform 0.3s; }
+        .file-upload-box:hover i, .file-upload-box.dragover i { transform: translateY(-5px); }
+        .file-upload-box h4 { font-size: 16px; font-weight: 700; color: var(--brand); margin-bottom: 5px; }
+        .file-upload-box p { font-size: 13px; color: var(--text-sub); }
+        .file-input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10; }
+        
+        .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; margin-top: 15px; }
+        .img-preview-card { position: relative; border-radius: 10px; overflow: hidden; border: 2px solid #e2e8f0; aspect-ratio: 4/3; box-shadow: 0 4px 10px rgba(0,0,0,0.05); animation: documentIn 0.3s ease; }
+        .img-preview-card img { width: 100%; height: 100%; object-fit: cover; }
+        .img-preview-card .delete-btn { position: absolute; top: 5px; right: 5px; background: rgba(220, 38, 38, 0.9); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: 0.2s; z-index: 20; }
+        .img-preview-card .delete-btn:hover { background: var(--danger); transform: scale(1.1); }
+
+        .btn-group { display: flex; justify-content: space-between; margin-top: 40px; gap: 15px; border-top: 1px solid var(--border); padding-top: 30px; }
+        .btn { padding: 16px 28px; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.3s ease; border: none; flex: 1; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 10px; letter-spacing: 0.5px; }
+        .btn-secondary { background: #f1f5f9; color: var(--text-sub); border: 2px solid #e2e8f0; }
+        .btn-secondary:hover { background: #e2e8f0; color: var(--brand); }
+        .btn-primary { background: var(--accent); color: white; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.25); }
+        .btn-primary:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35); }
+        .btn-pay { background: var(--success); color: white; box-shadow: 0 4px 15px rgba(5, 150, 105, 0.25); }
+        .btn-pay:hover { background: #047857; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(5, 150, 105, 0.35); }
+
+        .summary-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 25px; margin-bottom: 25px; }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 15px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 10px; }
+        .summary-row:last-child { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
+        .summary-row span { color: var(--text-sub); font-weight: 600; }
+        .summary-row strong { color: var(--brand); font-weight: 800; text-align: right; max-width: 60%; word-wrap: break-word; }
+
+        /* ALERTS AND MODALS */
+        .alert-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); z-index: 9999; display: none; justify-content: center; align-items: center; padding: 20px; animation: documentIn 0.3s; }
+        .alert-box { background: var(--paper); padding: 40px; border-radius: 16px; width: 100%; max-width: 450px; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.3); border-top: 5px solid var(--accent); }
+
+        /* UPLOADING LOADER */
+        #uploadingOverlay { position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 10001; display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        .spinner { width: 80px; height: 80px; border: 6px solid #e2e8f0; border-top: 6px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 25px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* SUCCESS MODAL & PREMIUM SUPPORT DESIGN */
+        #successModal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.98); z-index: 10002; flex-direction: column; align-items: center; justify-content: center; padding: 20px; color: white; text-align: center; }
+        .success-box { background: var(--paper); color: var(--brand); padding: 50px 30px; border-radius: 16px; width: 100%; max-width: 500px; animation: documentIn 0.5s ease; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border-top: 6px solid var(--success); }
+        .ref-box { background: #f1f5f9; padding: 20px; border-radius: 12px; font-family: monospace; font-size: 26px; font-weight: 900; color: var(--success); margin: 20px 0; border: 2px dashed #cbd5e1; letter-spacing: 3px; }
+
+        /* PRIME SUPPORT CARD DEZIN */
+        .support-card { display: flex; align-items: center; justify-content: space-between; background: linear-gradient(145deg, #f8fafc, #f1f5f9); border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; margin-top: 30px; margin-bottom: 30px; box-shadow: inset 0 2px 4px rgba(255,255,255,1), 0 4px 15px rgba(0,0,0,0.03); text-align: left; }
+        .support-item { display: flex; align-items: center; gap: 14px; }
+        .support-item .icon-box { width: 44px; height: 44px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 20px; box-shadow: 0 4px 10px rgba(37,99,235,0.15); }
+        .support-item span { display: block; font-size: 11px; color: var(--text-sub); text-transform: uppercase; font-weight: 800; margin-bottom: 3px; letter-spacing: 0.5px; }
+        .support-item strong { display: block; font-size: 15px; color: var(--brand); font-weight: 800; text-decoration: none; }
+        .support-item a { text-decoration: none; color: inherit; }
+        .support-divider { width: 1px; height: 45px; background: #cbd5e1; margin: 0 15px; }
+        
+        @media(max-width: 500px) { 
+            .support-card { flex-direction: column; gap: 18px; align-items: flex-start; } 
+            .support-divider { width: 100%; height: 1px; margin: 0; } 
+        }
+
+        @media (max-width: 650px) {
+            .input-grid { grid-template-columns: 1fr; gap: 20px; }
+            .step-label { display: none; }
+            .stepper-container { padding: 20px; }
+            .form-panel { padding: 25px 20px; }
+            .btn-group { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- WELCOME OVERLAY -->
+    <div id="welcomeOverlay">
+        <div class="welcome-box">
+            <img src="aryanta.jpeg" alt="Aryanta Logo" onerror="this.src='https://via.placeholder.com/100/0f172a/fff?text=A'">
+            <h2>Official Seller Portal</h2>
+            <p>Register your business securely and become an official partner on Aryanta today.</p>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <button class="btn btn-primary" id="newSellerBtn" onclick="startNewApplication(this)">
+                    <i class="fas fa-file-signature"></i> Start Official Application
+                </button>
+                <button class="btn btn-secondary" onclick="window.location.href='https://aryanta.in/seller'">
+                    <i class="fas fa-sign-in-alt"></i> Existing Seller Login
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN HEADER -->
+    <header class="top-bar">
+        <h1><i class="fas fa-shield-alt"></i> ARYANTA</h1>
+    </header>
+
+    <div class="container">
+        
+        <form id="onboardingForm" onsubmit="event.preventDefault(); return false;">
+            <!-- STEPPER (5 STEPS NOW) -->
+            <div class="stepper-container">
+                <div class="stepper" id="stepper">
+                    <div class="progress-bar" id="progressBar"></div>
+                    <div class="step active" id="indicator1"><div class="step-circle"><i class="fas fa-user"></i></div><div class="step-label">Details</div></div>
+                    <div class="step" id="indicator2"><div class="step-circle"><i class="fas fa-id-card"></i></div><div class="step-label">KYC</div></div>
+                    <div class="step" id="indicator3"><div class="step-circle"><i class="fas fa-store"></i></div><div class="step-label">Business</div></div>
+                    <div class="step" id="indicator4"><div class="step-circle"><i class="fas fa-university"></i></div><div class="step-label">Bank</div></div>
+                    <div class="step" id="indicator5"><div class="step-circle"><i class="fas fa-check-circle"></i></div><div class="step-label">Review</div></div>
+                </div>
+            </div>
+
+            <!-- STEP 1: PERSONAL DETAILS -->
+            <div class="form-panel active" id="step1">
+                <div class="panel-title"><i class="fas fa-user-circle"></i> Applicant Information</div>
+                <div class="input-grid">
+                    <div class="input-group full"><label class="input-label">Full Legal Name</label><input type="text" id="p_name" class="modern-input" placeholder="As per official documents" required></div>
+                    <div class="input-group"><label class="input-label">Mobile Number</label><input type="tel" id="p_phone" class="modern-input" placeholder="10-digit number" inputmode="numeric" maxlength="10" required></div>
+                    <div class="input-group"><label class="input-label">Email Address</label><input type="email" id="p_email" class="modern-input" placeholder="official@example.com" required></div>
+                    <div class="input-group full"><label class="input-label">Residential Address</label><input type="text" id="p_address" class="modern-input" placeholder="House No, Street, Area" required></div>
+                    <div class="input-group"><label class="input-label">City</label><input type="text" id="p_city" class="modern-input" placeholder="City" required></div>
+                    <div class="input-group"><label class="input-label">State</label><input type="text" id="p_state" class="modern-input" placeholder="State" required></div>
+                    <div class="input-group full"><label class="input-label">Pincode</label><input type="text" id="p_pincode" class="modern-input" placeholder="6-digit pincode" inputmode="numeric" maxlength="6" required></div>
+                </div>
+                <div class="btn-group"><div style="flex:1;"></div><button type="button" class="btn btn-primary" onclick="nextStep(1, 2)">Proceed to KYC <i class="fas fa-arrow-right"></i></button></div>
+            </div>
+
+            <!-- STEP 2: KYC DOCUMENTS ONLY -->
+            <div class="form-panel" id="step2">
+                <div class="panel-title"><i class="fas fa-file-invoice"></i> Verification Documents</div>
+                
+                <!-- Aadhaar Upload -->
+                <div class="input-group full">
+                    <label class="input-label">Aadhaar Card <span style="color:var(--danger)">*</span></label>
+                    <div class="file-upload-box" data-type="aadhaar">
+                        <input type="file" id="k_aadhaar" class="file-input" accept="image/*" multiple data-type="aadhaar" onchange="handleFileUpload(this)">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h4>Drag & Drop Aadhaar Here</h4>
+                        <p>Or click to browse (Max 2 images)</p>
+                    </div>
+                    <div class="preview-grid" id="preview_aadhaar"></div>
+                </div>
+
+                <!-- PAN Upload -->
+                <div class="input-group full">
+                    <label class="input-label">PAN Card <span style="color:var(--danger)">*</span></label>
+                    <div class="file-upload-box" data-type="pan">
+                        <input type="file" id="k_pan" class="file-input" accept="image/*" multiple data-type="pan" onchange="handleFileUpload(this)">
+                        <i class="fas fa-id-badge"></i>
+                        <h4>Drag & Drop PAN Here</h4>
+                        <p>Or click to browse (Max 2 images)</p>
+                    </div>
+                    <div class="preview-grid" id="preview_pan"></div>
+                </div>
+                
+                <!-- GST Toggle -->
+                <div class="input-group full toggle-container">
+                    <div class="toggle-label"><i class="fas fa-receipt"></i> Do you have a GST Certificate?</div>
+                    <div class="radio-switch">
+                        <input type="radio" id="gst_no" name="gst_status" value="no" checked onchange="toggleGSTUpload()">
+                        <label for="gst_no">No</label>
+                        <input type="radio" id="gst_yes" name="gst_status" value="yes" onchange="toggleGSTUpload()">
+                        <label for="gst_yes">Yes</label>
+                    </div>
+                </div>
+
+                <!-- GST Upload -->
+                <div class="input-group full" id="gst_upload_container" style="display: none;">
+                    <label class="input-label">GST Certificate <span style="color:var(--danger)">*</span></label>
+                    <div class="file-upload-box" data-type="gst">
+                        <input type="file" id="k_gst" class="file-input" accept="image/*" multiple data-type="gst" onchange="handleFileUpload(this)">
+                        <i class="fas fa-file-signature"></i>
+                        <h4>Drag & Drop GST Document</h4>
+                        <p>Or click to browse (Max 2 images)</p>
+                    </div>
+                    <div class="preview-grid" id="preview_gst"></div>
+                </div>
+
+                <div class="btn-group"><button type="button" class="btn btn-secondary" onclick="prevStep(2, 1)"><i class="fas fa-arrow-left"></i> Back</button><button type="button" class="btn btn-primary" onclick="validateStep2()">Proceed to Business <i class="fas fa-arrow-right"></i></button></div>
+            </div>
+
+            <!-- STEP 3: BUSINESS INFO (Removed Category & Years) -->
+            <div class="form-panel" id="step3">
+                <div class="panel-title"><i class="fas fa-store-alt"></i> Business Profile</div>
+                <div class="input-grid">
+                    <div class="input-group full"><label class="input-label">Registered Business/Shop Name</label><input type="text" id="s_name" class="modern-input" placeholder="Official Business Name" required></div>
+                    <div class="input-group"><label class="input-label">Business Phone Number</label><input type="tel" id="s_phone" class="modern-input" placeholder="Business Contact No" inputmode="numeric" maxlength="10" required></div>
+                    <div class="input-group"><label class="input-label">Business Email</label><input type="email" id="s_email" class="modern-input" placeholder="Business Email" required></div>
+                    <div class="input-group full"><label class="input-label">Complete Operational Address</label><input type="text" id="s_address" class="modern-input" placeholder="Shop Address including Pincode" required></div>
+                    <div class="input-group"><label class="input-label">Annual Turnover</label><select id="s_turnover" class="modern-input" required><option value="">Select Range</option><option value="Under 10 Lakhs">Under ₹10 Lakhs</option><option value="10 - 50 Lakhs">₹10 Lakhs - ₹50 Lakhs</option><option value="Above 50 Lakhs">Above ₹50 Lakhs</option></select></div>
+                    <div class="input-group"><label class="input-label">Total Employees</label><input type="number" id="s_employees" class="modern-input" placeholder="Staff count" required></div>
+                </div>
+                <div class="btn-group"><button type="button" class="btn btn-secondary" onclick="prevStep(3, 2)"><i class="fas fa-arrow-left"></i> Back</button><button type="button" class="btn btn-primary" onclick="validateStep3()">Proceed to Bank <i class="fas fa-arrow-right"></i></button></div>
+            </div>
+
+            <!-- STEP 4: BANK DETAILS (New Dedicated Step) -->
+            <div class="form-panel" id="step4">
+                <div class="panel-title"><i class="fas fa-university"></i> Bank Account Information</div>
+                <p style="color: var(--text-sub); margin-bottom: 25px; font-size: 14px;">Enter the official bank account details where payments will be settled.</p>
+                
+                <div class="input-grid">
+                    <div class="input-group full">
+                        <label class="input-label">Bank IFSC Code</label>
+                        <input type="text" id="k_ifsc" class="modern-input" placeholder="e.g. SBIN0001234" maxlength="11" style="text-transform:uppercase;" onkeyup="this.value = this.value.toUpperCase();" required>
+                        <div id="ifsc_error" style="color: var(--danger); font-size: 12px; font-weight: 700; margin-top: 8px; display: none;">Invalid IFSC Format! Must be 4 letters, '0', then 6 characters.</div>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Account Number</label>
+                        <input type="password" id="k_acc" class="modern-input" placeholder="Enter Account Number" inputmode="numeric" required>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Confirm Account No.</label>
+                        <input type="text" id="k_acc_verify" class="modern-input" placeholder="Verify Account Number" inputmode="numeric" required>
+                        <div id="acc_error" style="color: var(--danger); font-size: 12px; font-weight: 700; margin-top: 8px; display: none;">Account numbers do not match!</div>
+                    </div>
+                </div>
+
+                <div class="btn-group"><button type="button" class="btn btn-secondary" onclick="prevStep(4, 3)"><i class="fas fa-arrow-left"></i> Back</button><button type="button" class="btn btn-primary" onclick="validateStep4()">Review Application <i class="fas fa-file-contract"></i></button></div>
+            </div>
+
+            <!-- STEP 5: FINAL SUMMARY (Removed Save Copy) -->
+            <div class="form-panel" id="step5">
+                <div class="panel-title"><i class="fas fa-clipboard-check"></i> Final Review</div>
+                <p style="color: var(--text-sub); margin-bottom: 20px; font-size: 14px;">Please review your official application details before final submission.</p>
+
+                <div class="summary-box">
+                    <h3 style="font-size: 14px; color: var(--accent); margin-bottom: 15px; text-transform: uppercase;">1. Applicant Details</h3>
+                    <div class="summary-row"><span>Legal Name:</span> <strong id="sum_name">--</strong></div>
+                    <div class="summary-row"><span>Mobile:</span> <strong id="sum_phone">--</strong></div>
+                    <div class="summary-row"><span>Email:</span> <strong id="sum_email">--</strong></div>
+                </div>
+
+                <div class="summary-box">
+                    <h3 style="font-size: 14px; color: var(--accent); margin-bottom: 15px; text-transform: uppercase;">2. Business & Banking</h3>
+                    <div class="summary-row"><span>Entity Name:</span> <strong id="sum_shopName">--</strong></div>
+                    <div class="summary-row"><span>Bank IFSC:</span> <strong id="sum_ifsc">--</strong></div>
+                </div>
+
+                <div class="summary-box">
+                    <h3 style="font-size: 14px; color: var(--accent); margin-bottom: 10px; text-transform: uppercase;">3. Document Appendices</h3>
+                    <div id="sum_images"></div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" class="btn btn-secondary" onclick="prevStep(5, 4)"><i class="fas fa-edit"></i> Edit Details</button>
+                    <!-- "Save Copy" button removed as requested -->
+                    <button type="button" class="btn btn-pay" onclick="submitFinalApplication()">Submit Official Application <i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- ALERT MODAL -->
+    <div class="alert-overlay" id="alertModal">
+        <div class="alert-box">
+            <i class="fas fa-exclamation-triangle" id="alertIcon" style="font-size: 50px; color: var(--danger); margin-bottom: 20px;"></i>
+            <h2 id="alertTitle" style="margin-bottom: 10px; font-weight: 800; color: var(--brand);">Notice</h2>
+            <p id="alertMsg" style="color: var(--text-sub); font-size: 15px; margin-bottom: 30px; line-height: 1.6;">Message goes here</p>
+            <button class="btn btn-primary" style="width: 100%;" onclick="document.getElementById('alertModal').style.display='none'">Acknowledge</button>
+        </div>
+    </div>
+
+    <!-- UPLOADING SCREEN -->
+    <div id="uploadingOverlay">
+        <div class="spinner"></div>
+        <h2 style="color: var(--brand); font-weight: 900; font-size: 26px;">Processing Application...</h2>
+        <p style="color: var(--text-sub); font-size: 15px; margin-top: 10px; font-weight: 600;">Establishing secure connection & saving records.</p>
+    </div>
+
+    <!-- SUCCESS MODAL (With Premium Support Section) -->
+    <div id="successModal">
+        <div class="success-box">
+            <i class="fas fa-check-circle" style="font-size: 70px; color: var(--success); margin-bottom: 20px;"></i>
+            <h2 style="font-size: 26px; font-weight: 900; margin-bottom: 12px;">Application Authorized</h2>
+            <p style="font-size: 14px; color: var(--text-sub); line-height: 1.6;">
+                Your official seller application has been submitted successfully to Aryanta records. Our compliance team will review your documents.
+            </p>
+            
+            <div style="margin-top: 25px; font-size: 11px; font-weight: 800; color: var(--text-sub); text-transform: uppercase;">Official Reference Identifier</div>
+            <div class="ref-box" id="refNumberDisplay"></div>
+            
+            <!-- PREMIUM SUPPORT SECTION DEZIN -->
+            <div class="support-card">
+                <div class="support-item">
+                    <div class="icon-box"><i class="fas fa-envelope-open-text"></i></div>
+                    <div>
+                        <span>Support Contact</span>
+                        <strong><a href="mailto:support@aryanta.in">support@aryanta.in</a></strong>
+                    </div>
+                </div>
+                
+                <div class="support-divider"></div>
+                
+                <div class="support-item">
+                    <div class="icon-box"><i class="fas fa-headset"></i></div>
+                    <div>
+                        <span>Helpline</span>
+                        <strong><a href="tel:06414054676">06414054676</a></strong>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" style="width: 100%;" onclick="window.location.href='https://aryanta.in'">Return to Homepage</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
+        let uploadedDocs = { aadhaar: [], pan: [], gst: [] };
+
+        // Drag and Drop Initialization
+        document.querySelectorAll('.file-upload-box').forEach(box => {
+            box.addEventListener('dragover', e => { e.preventDefault(); box.classList.add('dragover'); });
+            box.addEventListener('dragleave', e => { box.classList.remove('dragover'); });
+            box.addEventListener('drop', e => {
+                e.preventDefault(); box.classList.remove('dragover');
+                const fileInput = box.querySelector('.file-input');
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleFileUpload(fileInput);
+                }
+            });
+        });
+
+        function startNewApplication(btn) {
+            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Initializing...`;
+            btn.disabled = true;
+            setTimeout(() => {
+                document.getElementById('welcomeOverlay').style.opacity = '0';
+                setTimeout(() => { document.getElementById('welcomeOverlay').style.display = 'none'; }, 500);
+            }, 800);
+        }
+
+        function showAlert(title, msg, type = "error") {
+            document.getElementById('alertTitle').innerText = title;
+            document.getElementById('alertMsg').innerText = msg;
+            const icon = document.getElementById('alertIcon');
+            icon.className = type === 'error' ? "fas fa-exclamation-triangle" : "fas fa-check-circle";
+            icon.style.color = type === 'error' ? "var(--danger)" : "var(--success)";
+            document.getElementById('alertModal').style.display = 'flex';
+        }
+
+        function toggleGSTUpload() {
+            const isYes = document.getElementById('gst_yes').checked;
+            const gstContainer = document.getElementById('gst_upload_container');
+            if (isYes) {
+                gstContainer.style.display = 'block';
+            } else {
+                gstContainer.style.display = 'none';
+                uploadedDocs.gst = [];
+                renderImagePreviews('gst');
+                document.getElementById('k_gst').value = "";
+            }
+        }
+
+        // DATABASE DUPLICATE CHECK LOGIC
+        async function checkDuplicateInDB(checkType) {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    resolve(false); 
+                }, 800);
+            });
+        }
+
+        async function nextStep(current, next) {
+            const currentPanel = document.getElementById(`step${current}`);
+            const inputs = currentPanel.querySelectorAll('input[required], select[required]');
+            let isValid = true;
+            
+            inputs.forEach(input => {
+                if (!input.value.trim()) { input.style.borderColor = "var(--danger)"; isValid = false; } 
+                else { input.style.borderColor = "#e2e8f0"; }
+            });
+
+            if (!isValid) return showAlert("Incomplete Application", "All mandatory fields must be completed before proceeding.");
+
+            // IF Moving from Step 1 to 2 -> Check Email & Phone Duplicates
+            if (current === 1) {
+                document.getElementById('uploadingOverlay').style.display = 'flex';
+                document.querySelector('#uploadingOverlay h2').innerText = "Verifying Details...";
+                
+                const email = document.getElementById('p_email').value;
+                const phone = document.getElementById('p_phone').value;
+                
+                const isDuplicate = await checkDuplicateInDB({ email, phone });
+                document.getElementById('uploadingOverlay').style.display = 'none';
+
+                if (isDuplicate) {
+                    return showAlert("Record Exists", "An account with this Email or Phone number already exists in our system.");
+                }
+            }
+
+            transitionPanels(current, next);
+        }
+
+        function transitionPanels(current, next) {
+            document.getElementById(`step${current}`).classList.remove('active');
+            document.getElementById(`step${next}`).classList.add('active');
+            document.getElementById(`indicator${current}`).classList.add('completed');
+            document.getElementById(`indicator${next}`).classList.add('active');
+            // Updated calculation for 5 steps (dividing by 4 instead of 3)
+            document.getElementById('progressBar').style.width = `${((next - 1) / 4) * 100}%`;
+            window.scrollTo(0,0);
+        }
+
+        function prevStep(current, prev) {
+            document.getElementById(`step${current}`).classList.remove('active');
+            document.getElementById(`step${prev}`).classList.add('active');
+            document.getElementById(`indicator${current}`).classList.remove('active');
+            document.getElementById(`indicator${prev}`).classList.remove('completed');
+            // Updated calculation for 5 steps
+            document.getElementById('progressBar').style.width = `${((prev - 1) / 4) * 100}%`;
+            window.scrollTo(0,0);
+        }
+
+        async function handleFileUpload(input) {
+            const type = input.dataset.type;
+            const files = Array.from(input.files);
+            
+            if (uploadedDocs[type].length + files.length > 2) {
+                showAlert("Limit Exceeded", "Maximum 2 files allowed per document type.");
+                input.value = ""; return;
+            }
+            
+            for (let i = 0; i < files.length; i++) {
+                try { 
+                    let base64 = await resizeAndConvertImage(files[i]); 
+                    uploadedDocs[type].push(base64); 
+                } catch(e) { console.error(e); }
+            }
+            renderImagePreviews(type);
+            input.value = "";
+        }
+
+        function renderImagePreviews(type) {
+            const container = document.getElementById(`preview_${type}`);
+            container.innerHTML = "";
+            uploadedDocs[type].forEach((src, index) => {
+                container.innerHTML += `
+                    <div class="img-preview-card">
+                        <img src="${src}">
+                        <button type="button" class="delete-btn" onclick="deleteImage('${type}', ${index})"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+            });
+        }
+
+        function deleteImage(type, index) {
+            uploadedDocs[type].splice(index, 1);
+            renderImagePreviews(type);
+        }
+
+        function resizeAndConvertImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader(); reader.readAsDataURL(file);
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 600; 
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.6));
+                    }
+                    img.src = e.target.result;
+                };
+            });
+        }
+
+        function validateStep2() {
+            if (uploadedDocs.aadhaar.length === 0) return showAlert("Missing Document", "Aadhaar Card scan is mandatory.");
+            if (uploadedDocs.pan.length === 0) return showAlert("Missing Document", "PAN Card scan is mandatory.");
+            if (document.getElementById('gst_yes').checked && uploadedDocs.gst.length === 0) return showAlert("Missing Document", "GST Certificate scan is mandatory if 'Yes' is selected.");
+
+            transitionPanels(2, 3);
+        }
+
+        async function validateStep3() {
+            const inputs = document.getElementById('step3').querySelectorAll('input[required], select[required]');
+            let isValid = true;
+            inputs.forEach(input => {
+                if (!input.value.trim()) { input.style.borderColor = "var(--danger)"; isValid = false; } 
+                else { input.style.borderColor = "#e2e8f0"; }
+            });
+            if (!isValid) return showAlert("Incomplete Application", "Complete all business details.");
+
+            // Check duplicate Shop Name
+            document.getElementById('uploadingOverlay').style.display = 'flex';
+            document.querySelector('#uploadingOverlay h2').innerText = "Validating Business...";
+            
+            const shopName = document.getElementById('s_name').value;
+            const isDuplicate = await checkDuplicateInDB({ shopName });
+            
+            document.getElementById('uploadingOverlay').style.display = 'none';
+
+            if (isDuplicate) {
+                return showAlert("Business Exists", `The business name "${shopName}" is already registered.`);
+            }
+
+            transitionPanels(3, 4);
+        }
+
+        function validateStep4() {
+            // REAL IFSC VALIDATION (4 Letters, 0, 6 Alphanumerics)
+            const ifsc = document.getElementById('k_ifsc').value.toUpperCase();
+            const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+            const ifscError = document.getElementById('ifsc_error');
+
+            if (!ifscRegex.test(ifsc)) {
+                ifscError.style.display = "block";
+                document.getElementById('k_ifsc').style.borderColor = "var(--danger)";
+                return;
+            } else {
+                ifscError.style.display = "none";
+                document.getElementById('k_ifsc').style.borderColor = "#e2e8f0";
+            }
+
+            const acc1 = document.getElementById('k_acc').value;
+            const acc2 = document.getElementById('k_acc_verify').value;
+            const errorMsg = document.getElementById('acc_error');
+
+            if (!acc1 || !acc2) return showAlert("Missing Details", "Bank account numbers are required.");
+            if (acc1 !== acc2) {
+                errorMsg.style.display = "block";
+                document.getElementById('k_acc_verify').style.borderColor = "var(--danger)";
+                return;
+            } else {
+                errorMsg.style.display = "none";
+                document.getElementById('k_acc_verify').style.borderColor = "#e2e8f0";
+            }
+
+            generateSummary();
+        }
+
+        function generateSummary() {
+            document.getElementById('sum_name').innerText = document.getElementById('p_name').value;
+            document.getElementById('sum_phone').innerText = document.getElementById('p_phone').value;
+            document.getElementById('sum_email').innerText = document.getElementById('p_email').value;
+            document.getElementById('sum_shopName').innerText = document.getElementById('s_name').value;
+            document.getElementById('sum_ifsc').innerText = document.getElementById('k_ifsc').value.toUpperCase();
+            
+            const imgContainer = document.getElementById('sum_images');
+            let htmlContent = '<div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;">'; 
+
+            if(uploadedDocs.aadhaar.length > 0) {
+                htmlContent += `<div style="text-align: center;"><span style="font-size: 11px; font-weight: 700; color: var(--text-sub);">AADHAAR</span><br><img src="${uploadedDocs.aadhaar[0]}" style="width: 70px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid #ccc; margin-top: 5px;"></div>`;
+            }
+            if(uploadedDocs.pan.length > 0) {
+                htmlContent += `<div style="text-align: center;"><span style="font-size: 11px; font-weight: 700; color: var(--text-sub);">PAN</span><br><img src="${uploadedDocs.pan[0]}" style="width: 70px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid #ccc; margin-top: 5px;"></div>`;
+            }
+            if(uploadedDocs.gst.length > 0 && document.getElementById('gst_yes').checked) {
+                htmlContent += `<div style="text-align: center;"><span style="font-size: 11px; font-weight: 700; color: var(--text-sub);">GST</span><br><img src="${uploadedDocs.gst[0]}" style="width: 70px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid #ccc; margin-top: 5px;"></div>`;
+            }
+
+            htmlContent += '</div>';
+            imgContainer.innerHTML = htmlContent;
+            
+            transitionPanels(4, 5);
+        }
+
+        async function submitFinalApplication() {
+            document.getElementById('uploadingOverlay').style.display = 'flex';
+            document.querySelector('#uploadingOverlay h2').innerText = "Transmitting to Secure Servers...";
+
+            const emailInput = document.getElementById('p_email').value;
+            const nameInput = document.getElementById('p_name').value;
+            const shopInput = document.getElementById('s_name').value;
+
+            // Updated final application data (removed category/years)
+            const finalApplicationData = {
+                email: emailInput,
+                status: "Pending Verification",
+                personal: { name: nameInput, phone: document.getElementById('p_phone').value, email: emailInput },
+                kyc: { ifsc: document.getElementById('k_ifsc').value, accountNo: document.getElementById('k_acc').value },
+                shop: { name: shopInput },
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                // Actual Cloudflare API Call
+                const response = await fetch(`${API_BASE_URL}/submit-seller-verification`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(finalApplicationData)
+                });
+
+                if(!response.ok) throw new Error("API Failure");
+
+                const refNum = "ARY-" + Math.floor(100000000 + Math.random() * 900000000);
+                document.getElementById('refNumberDisplay').innerText = refNum;
+
+                // EMAILJS API TRIGGER 
+                try {
+                    await emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", {
+                        to_email: emailInput,
+                        to_name: nameInput,
+                        shop_name: shopInput,
+                        ref_id: refNum,
+                        message: "Your application has been received and is under compliance review."
+                    });
+                    console.log("Email sent successfully!");
+                } catch (emailError) {
+                    console.error("EmailJS Failed. Ensure Keys/IDs are correct.", emailError);
+                }
+
+                document.getElementById('uploadingOverlay').style.display = 'none';
+                document.getElementById('successModal').style.display = 'flex';
+
+            } catch(e) {
+                document.getElementById('uploadingOverlay').style.display = 'none';
+                showAlert("System Error", "Connection to the secure database failed. Please verify your internet connection and try again.");
+            }
+        }
+    </script>
+</body>
+</html>
