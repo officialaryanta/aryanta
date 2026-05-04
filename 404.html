@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 | Page Not Found </title>
+    <!-- Tailwind for layout utilities -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gold: #d4af37;
+            --deep-black: #030303;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--deep-black);
+            color: #ffffff;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        /* Cinematic Background */
+        #canvas-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Dynamic Glows */
+        .glow {
+            position: absolute;
+            width: 60vw;
+            height: 60vw;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.1) 0%, rgba(0,0,0,0) 70%);
+            border-radius: 50%;
+            z-index: 2;
+            pointer-events: none;
+            filter: blur(80px);
+        }
+
+        .glow-1 { top: -20%; left: -10%; animation: drift 25s infinite alternate; }
+        .glow-2 { bottom: -20%; right: -10%; animation: drift 30s infinite alternate-reverse; }
+
+        @keyframes drift {
+            from { transform: translate(0, 0) scale(1); }
+            to { transform: translate(150px, 100px) scale(1.1); }
+        }
+
+        /* Prime Card with Animated Border */
+        .prime-card {
+            position: relative;
+            z-index: 10;
+            background: var(--deep-black);
+            padding: 4rem 2rem;
+            border-radius: 40px;
+            text-align: center;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 1);
+            animation: slideUp 1s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+        }
+
+        /* Conic Gradient Border */
+        .prime-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(
+                transparent, 
+                transparent, 
+                var(--primary-gold),
+                transparent
+            );
+            animation: rotate 4s linear infinite;
+            z-index: -2;
+        }
+
+        /* Inner card mask */
+        .prime-card::after {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            background: var(--deep-black);
+            border-radius: 37px;
+            z-index: -1;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo-wrapper {
+            margin-bottom: 2rem;
+            position: relative;
+            display: inline-block;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 35px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .logo {
+            width: 140px;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 30px;
+            filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.3));
+            transition: all 0.4s ease;
+        }
+
+        /* Bold 404 Text */
+        .error-code {
+            font-size: clamp(6rem, 18vw, 10rem);
+            font-weight: 800;
+            line-height: 0.85;
+            margin-bottom: 1rem;
+            background: linear-gradient(180deg, #ffffff 50%, #888 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -4px;
+        }
+
+        /* Bold Status Text */
+        .status-message {
+            font-size: clamp(1.5rem, 5vw, 2.2rem);
+            font-weight: 800;
+            color: #ffffff;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            letter-spacing: 1px;
+        }
+
+        .brand-sub {
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5rem;
+            color: var(--primary-gold);
+            margin-bottom: 1.5rem;
+            display: block;
+        }
+
+        /* Easy to understand description */
+        .description {
+            color: #bbbbbb;
+            font-weight: 400;
+            line-height: 1.6;
+            margin-bottom: 3rem;
+            font-size: 1.1rem;
+            max-width: 420px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* High Visibility Button */
+        .prime-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+            color: #000000 !important;
+            padding: 1.2rem 3.5rem;
+            border-radius: 100px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 15px 40px rgba(255, 255, 255, 0.15);
+        }
+
+        .prime-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 50px rgba(212, 175, 55, 0.3);
+            background: var(--primary-gold);
+            color: #ffffff !important;
+        }
+
+        .noise {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://grainy-gradients.vercel.app/noise.svg');
+            opacity: 0.05;
+            pointer-events: none;
+            z-index: 5;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="noise"></div>
+    <canvas id="canvas-bg"></canvas>
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+
+    <main class="prime-card">
+        <div class="logo-wrapper">
+            <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta" class="logo">
+        </div>
+        
+        <span class="brand-sub">Aryanta</span>
+        <div class="error-code">404</div>
+        <h1 class="status-message">PAGE NOT FOUND</h1>
+        
+        <p class="description">
+           We couldn't find that page.
+        </p>
+
+        <a href="https://aryanta.in" class="prime-button">
+            Back to Home
+        </a>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('canvas-bg');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function initCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 1.8;
+                this.speedX = (Math.random() - 0.5) * 0.3;
+                this.speedY = (Math.random() - 0.5) * 0.3;
+                this.opacity = Math.random() * 0.5;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset();
+            }
+            draw() {
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function createParticles() {
+            const count = (canvas.width * canvas.height) / 15000;
+            particles = Array.from({length: count}, () => new Particle());
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', () => {
+            initCanvas();
+            createParticles();
+        });
+
+        initCanvas();
+        createParticles();
+        animate();
+    </script>
+</body>
+</html>
