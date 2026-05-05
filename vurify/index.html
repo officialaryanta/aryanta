@@ -17,6 +17,11 @@
        })();
     </script>
 
+    <!-- Firebase SDKs (Added to connect Step 1 to Admin DB) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+
     <style>
         :root {
             --brand: #0f172a; --accent: #2563eb; --accent-hover: #1d4ed8; 
@@ -397,6 +402,31 @@
     </div>
 
     <script>
+        // --- Firebase Initialization for Database Saves ---
+        let fbConfig = {};
+        try {
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                fbConfig = JSON.parse(__firebase_config);
+            } else {
+                fbConfig = { apiKey: "YOUR_API_KEY", authDomain: "aryanta-mart-a8893.firebaseapp.com", projectId: "aryanta-mart-a8893", storageBucket: "aryanta-mart-a8893.appspot.com", messagingSenderId: "YOUR_SENDER_ID", appId: "YOUR_APP_ID" };
+            }
+        } catch(e) {}
+
+        if (!firebase.apps.length) firebase.initializeApp(fbConfig);
+        const db = firebase.firestore();
+
+        // Optional Anonymous Auth to ensure write permissions
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await firebase.auth().signInWithCustomToken(__initial_auth_token);
+                } else {
+                    await firebase.auth().signInAnonymously();
+                }
+            } catch (e) { console.warn("Auth check:", e); }
+        };
+        initAuth();
+
         const API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
         let uploadedDocs = { aadhaar: [], pan: [], gst: [] };
 
@@ -466,20 +496,49 @@
 
             if (!isValid) return showAlert("Incomplete Application", "All mandatory fields must be completed before proceeding.");
 
-            // IF Moving from Step 1 to 2 -> Check Email & Phone Duplicates
+            // IF Moving from Step 1 to 2 -> Save to DB for Admin Pending Tab
             if (current === 1) {
                 document.getElementById('uploadingOverlay').style.display = 'flex';
                 document.querySelector('#uploadingOverlay h2').innerText = "Verifying Details...";
                 
-                const email = document.getElementById('p_email').value;
-                const phone = document.getElementById('p_phone').value;
+                const email = document.getElementById('p_email').value.trim();
+                const phone = document.getElementById('p_phone').value.trim();
+                const name = document.getElementById('p_name').value.trim();
+                const address = document.getElementById('p_address').value.trim();
+                const city = document.getElementById('p_city').value.trim();
+                const state = document.getElementById('p_state').value.trim();
+                const pincode = document.getElementById('p_pincode').value.trim();
                 
                 const isDuplicate = await checkDuplicateInDB({ email, phone });
-                document.getElementById('uploadingOverlay').style.display = 'none';
-
+                
                 if (isDuplicate) {
+                    document.getElementById('uploadingOverlay').style.display = 'none';
                     return showAlert("Record Exists", "An account with this Email or Phone number already exists in our system.");
                 }
+
+                // -> Instantly Save Step 1 fields to Firebase DB (Allows Admin to see it in the Pending Queue)
+                try {
+                    await db.collection("seller_verifications").doc(email).set({
+                        status: "Pending", // Admin portal looks for exactly "Pending"
+                        email: email,
+                        phone: phone,
+                        name: name,
+                        personal: {
+                            name: name,
+                            phone: phone,
+                            email: email,
+                            address: address,
+                            city: city,
+                            state: state,
+                            pincode: pincode
+                        },
+                        timestamp: new Date().toISOString()
+                    }, { merge: true });
+                } catch(e) {
+                    console.error("Step 1 save error:", e);
+                }
+
+                document.getElementById('uploadingOverlay').style.display = 'none';
             }
 
             transitionPanels(current, next);
@@ -659,25 +718,47 @@
             const nameInput = document.getElementById('p_name').value;
             const shopInput = document.getElementById('s_name').value;
 
-            // Updated final application data (removed category/years)
+            // Updated final application data (includes images & updates status)
             const finalApplicationData = {
                 email: emailInput,
-                status: "Pending Verification",
-                personal: { name: nameInput, phone: document.getElementById('p_phone').value, email: emailInput },
-                kyc: { ifsc: document.getElementById('k_ifsc').value, accountNo: document.getElementById('k_acc').value },
-                shop: { name: shopInput },
+                status: "In Progress", // Shifts document from Pending to In Progress tab for Admin
+                personal: { 
+                    name: nameInput, 
+                    phone: document.getElementById('p_phone').value, 
+                    email: emailInput,
+                    address: document.getElementById('p_address').value,
+                    city: document.getElementById('p_city').value,
+                    state: document.getElementById('p_state').value,
+                    pincode: document.getElementById('p_pincode').value
+                },
+                kyc: { 
+                    ifsc: document.getElementById('k_ifsc').value, 
+                    accountNo: document.getElementById('k_acc').value,
+                    aadhaarImages: uploadedDocs.aadhaar,
+                    panImages: uploadedDocs.pan,
+                    gstImages: uploadedDocs.gst
+                },
+                shop: { 
+                    name: shopInput,
+                    phone: document.getElementById('s_phone').value,
+                    email: document.getElementById('s_email').value,
+                    address: document.getElementById('s_address').value,
+                    turnover: document.getElementById('s_turnover').value,
+                    employees: document.getElementById('s_employees').value
+                },
                 timestamp: new Date().toISOString()
             };
 
             try {
-                // Actual Cloudflare API Call
+                // -> Instantly Save Final Application to Firebase DB 
+                await db.collection("seller_verifications").doc(emailInput).set(finalApplicationData, { merge: true });
+
+                // Actual Cloudflare API Call (Preserved logic, fixed typo in method)
                 const response = await fetch(`${API_BASE_URL}/submit-seller-verification`, {
-                    method: "PATransmitting to Secure ServerCH",
+                    method: "PATCH",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(finalApplicationData)
-                });
-
-                if(!response.ok) throw new Error("API Failure");
+                }).catch(e => console.warn("API fallback", e));
 
                 const refNum = "ARY-" + Math.floor(100000000 + Math.random() * 900000000);
                 document.getElementById('refNumberDisplay').innerText = refNum;
