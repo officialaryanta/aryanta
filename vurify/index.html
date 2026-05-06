@@ -8,6 +8,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
+    <!-- Firebase SDK (For direct and lightning-fast database queries) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
     <!-- EmailJS SDK -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
@@ -163,7 +167,7 @@
             
             <!-- STATE 1: INITIAL WELCOME -->
             <div id="welcomeStateInitial">
-                <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta Logo" onerror="this.src='https://via.placeholder.com/100/0f172a/fff?text=A'">
+                <img src="aryanta.jpeg" alt="Aryanta Logo" onerror="this.src='https://via.placeholder.com/100/0f172a/fff?text=A'">
                 <h2>Official Seller Portal</h2>
                 <p>Register your business on Aryanta today and Start selling.</p>
                 <div style="display: flex; flex-direction: column; gap: 15px;">
@@ -183,12 +187,12 @@
                 
                 <div class="input-group" style="text-align: left; margin-bottom: 15px;">
                     <label class="input-label">Email Address</label>
-                    <input type="email" id="init_email" class="modern-input" placeholder="official@example.com" required>
+                    <input type="email" id="init_email" class="modern-input" placeholder="official@example.com" required onkeydown="if(event.key === 'Enter') handleInitialSubmit()">
                 </div>
                 
                 <div class="input-group" style="text-align: left; margin-bottom: 25px;">
                     <label class="input-label">Mobile Number</label>
-                    <input type="tel" id="init_phone" class="modern-input" placeholder="10-digit number" inputmode="numeric" maxlength="10" required>
+                    <input type="tel" id="init_phone" class="modern-input" placeholder="10-digit number" inputmode="numeric" maxlength="10" required onkeydown="if(event.key === 'Enter') handleInitialSubmit()">
                 </div>
 
                 <div style="display: flex; gap: 10px;">
@@ -205,7 +209,7 @@
                 
                 <div class="input-group" style="text-align: left; margin-bottom: 25px;">
                     <label class="input-label" style="text-align: center;">Enter 4-Digit OTP</label>
-                    <input type="text" id="init_otp" class="modern-input" placeholder="0000" maxlength="4" style="text-align: center; letter-spacing: 15px; font-size: 24px; font-weight: 800;" required>
+                    <input type="text" id="init_otp" class="modern-input" placeholder="0000" maxlength="4" style="text-align: center; letter-spacing: 15px; font-size: 24px; font-weight: 800;" required onkeydown="if(event.key === 'Enter') verifyOTP()">
                 </div>
 
                 <div style="display: flex; gap: 10px;">
@@ -223,6 +227,22 @@
                 <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
                     <button class="btn btn-primary" onclick="window.location.href='https://aryanta.in/seller'">
                         Go to Seller Panel to Login <i class="fas fa-sign-in-alt"></i>
+                    </button>
+                    <button class="btn btn-secondary" onclick="showRegistrationState()">
+                        Use Different Details
+                    </button>
+                </div>
+            </div>
+
+            <!-- STATE 5: PENDING APPLICATION -->
+            <div id="welcomeStatePending" style="display: none; animation: documentIn 0.4s ease;">
+                <i class="fas fa-clock" style="font-size: 60px; color: #f59e0b; margin-bottom: 20px;"></i>
+                <h2 style="color: var(--brand);">Application Pending</h2>
+                <p>You have an incomplete or pending application. You can continue to update your details.</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+                    <button class="btn btn-primary" onclick="proceedToOtpFromPending()">
+                        Continue with Details <i class="fas fa-arrow-right"></i>
                     </button>
                     <button class="btn btn-secondary" onclick="showRegistrationState()">
                         Use Different Details
@@ -322,7 +342,7 @@
                 <div class="btn-group"><button type="button" class="btn btn-secondary" onclick="prevStep(2, 1)"><i class="fas fa-arrow-left"></i> Back</button><button type="button" class="btn btn-primary" onclick="validateStep2()">Proceed to Business <i class="fas fa-arrow-right"></i></button></div>
             </div>
 
-            <!-- STEP 3: BUSINESS INFO (Removed Category & Years) -->
+            <!-- STEP 3: BUSINESS INFO -->
             <div class="form-panel" id="step3">
                 <div class="panel-title"><i class="fas fa-store-alt"></i> Business Profile</div>
                 <div class="input-grid">
@@ -336,7 +356,7 @@
                 <div class="btn-group"><button type="button" class="btn btn-secondary" onclick="prevStep(3, 2)"><i class="fas fa-arrow-left"></i> Back</button><button type="button" class="btn btn-primary" onclick="validateStep3()">Proceed to Bank <i class="fas fa-arrow-right"></i></button></div>
             </div>
 
-            <!-- STEP 4: BANK DETAILS (New Dedicated Step) -->
+            <!-- STEP 4: BANK DETAILS -->
             <div class="form-panel" id="step4">
                 <div class="panel-title"><i class="fas fa-university"></i> Bank Account Information</div>
                 <p style="color: var(--text-sub); margin-bottom: 25px; font-size: 14px;">Enter the official bank account details where payments will be settled.</p>
@@ -361,7 +381,7 @@
                 <div class="btn-group"><button type="button" class="btn btn-secondary" onclick="prevStep(4, 3)"><i class="fas fa-arrow-left"></i> Back</button><button type="button" class="btn btn-primary" onclick="validateStep4()">Review Application <i class="fas fa-file-contract"></i></button></div>
             </div>
 
-            <!-- STEP 5: FINAL SUMMARY (Removed Save Copy) -->
+            <!-- STEP 5: FINAL SUMMARY -->
             <div class="form-panel" id="step5">
                 <div class="panel-title"><i class="fas fa-clipboard-check"></i> Final Review</div>
                 <p style="color: var(--text-sub); margin-bottom: 20px; font-size: 14px;">Please review your official application details before final submission.</p>
@@ -386,7 +406,6 @@
 
                 <div class="btn-group">
                     <button type="button" class="btn btn-secondary" onclick="prevStep(5, 4)"><i class="fas fa-edit"></i> Edit Details</button>
-                    <!-- "Save Copy" button removed as requested -->
                     <button type="button" class="btn btn-pay" onclick="submitFinalApplication()">Submit Official Application <i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
@@ -411,19 +430,18 @@
         <p style="color: var(--text-sub); font-size: 15px; margin-top: 10px; font-weight: 600;" id="uploadingText">Establishing secure connection & saving records.</p>
     </div>
 
-    <!-- SUCCESS MODAL (With Premium Support Section) -->
+    <!-- SUCCESS MODAL -->
     <div id="successModal">
         <div class="success-box">
             <i class="fas fa-check-circle" style="font-size: 70px; color: var(--success); margin-bottom: 20px;"></i>
             <h2 style="font-size: 26px; font-weight: 900; margin-bottom: 12px;">Application Authorized</h2>
             <p style="font-size: 14px; color: var(--text-sub); line-height: 1.6;">
             Thank you for applying to Aryanta. Your account is currently under review. Once the verification process is complete, you will receive your PIN and account access details within 24 hours via SMS, email, or other registered communication methods. Please wait for confirmation.
-  </p>
+            </p>
             
             <div style="margin-top: 25px; font-size: 11px; font-weight: 800; color: var(--text-sub); text-transform: uppercase;">Official Reference Identifier</div>
             <div class="ref-box" id="refNumberDisplay"></div>
             
-            <!-- PREMIUM SUPPORT SECTION DEZIN -->
             <div class="support-card">
                 <div class="support-item">
                     <div class="icon-box"><i class="fas fa-envelope-open-text"></i></div>
@@ -432,9 +450,7 @@
                         <strong><a href="mailto:support@aryanta.in">support@aryanta.in</a></strong>
                     </div>
                 </div>
-                
                 <div class="support-divider"></div>
-                
                 <div class="support-item">
                     <div class="icon-box"><i class="fas fa-headset"></i></div>
                     <div>
@@ -457,6 +473,23 @@
         };
         let uploadedDocs = { aadhaar: [], pan: [], gst: [] };
 
+        // ==========================================
+        // PURE FIREBASE SDK CONFIGURATION
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "aryanta-mart-a8893.firebaseapp.com",
+            projectId: "aryanta-mart-a8893",
+            storageBucket: "aryanta-mart-a8893.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
         // Fetch dynamic API keys on load
         window.onload = async function() {
             try {
@@ -467,7 +500,6 @@
                     API_KEYS.EMAILJS_OTP_SERVICE = data.emailjsOtpService || "";
                     API_KEYS.EMAILJS_OTP_TEMPLATE = data.emailjsOtpTemplate || "";
                 }
-                // Initialize EmailJS ONLY after we get the real public key
                 if (API_KEYS.EMAILJS_PUBLIC) {
                     emailjs.init(API_KEYS.EMAILJS_PUBLIC);
                 }
@@ -476,13 +508,15 @@
             }
         };
 
-        // --- NEW WELCOME OVERLAY LOGIC ---
+        let pendingApplicantData = null;
 
+        // --- UI STATE MANAGEMENT ---
         function showInitialState() {
             document.getElementById('welcomeStateInitial').style.display = 'block';
             document.getElementById('welcomeStateReg').style.display = 'none';
             document.getElementById('welcomeStateOTP').style.display = 'none';
             document.getElementById('welcomeStateExists').style.display = 'none';
+            document.getElementById('welcomeStatePending').style.display = 'none';
         }
 
         function showRegistrationState() {
@@ -490,52 +524,97 @@
             document.getElementById('welcomeStateReg').style.display = 'block';
             document.getElementById('welcomeStateOTP').style.display = 'none';
             document.getElementById('welcomeStateExists').style.display = 'none';
+            document.getElementById('welcomeStatePending').style.display = 'none';
+            setTimeout(() => document.getElementById('init_email').focus(), 100);
         }
 
         // ==========================================
-        // SECURE HASHING FOR OTP (Client Side Encryption)
+        // PERFECT DATA COMPILER FOR DATABASE SYNC
         // ==========================================
+        function buildApplicationData(statusLabel) {
+            const emailInput = document.getElementById('p_email').value || document.getElementById('init_email').value;
+            const phoneInput = document.getElementById('p_phone').value || document.getElementById('init_phone').value;
+            
+            // This exact structure matches how seller.html checks and reads information
+            return {
+                email: emailInput || "",
+                phone: phoneInput || "",
+                status: statusLabel,
+                personal: { 
+                    name: document.getElementById('p_name').value || "", 
+                    phone: phoneInput || "", 
+                    email: emailInput || "",
+                    address: document.getElementById('p_address').value || "",
+                    city: document.getElementById('p_city').value || "",
+                    state: document.getElementById('p_state').value || "",
+                    pincode: document.getElementById('p_pincode').value || ""
+                },
+                kyc: { 
+                    ifsc: document.getElementById('k_ifsc').value || "", 
+                    accountNo: document.getElementById('k_acc').value || "",
+                    aadhaarImages: uploadedDocs.aadhaar || [],
+                    panImages: uploadedDocs.pan || [],
+                    gstImages: uploadedDocs.gst || []
+                },
+                shop: { 
+                    name: document.getElementById('s_name').value || "",
+                    phone: document.getElementById('s_phone').value || "",
+                    email: document.getElementById('s_email').value || "",
+                    address: document.getElementById('s_address').value || "",
+                    turnover: document.getElementById('s_turnover').value || "",
+                    employees: document.getElementById('s_employees').value || ""
+                },
+                timestamp: new Date().toISOString()
+            };
+        }
+
+        // Secure OTP Hash logic
         async function generateSecureHash(text) {
-            const msgUint8 = new TextEncoder().encode(text);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            if (window.crypto && window.crypto.subtle) {
+                try {
+                    const msgUint8 = new TextEncoder().encode(text);
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                } catch(e) { return btoa(text).split('').reverse().join(''); }
+            } else {
+                return btoa(text).split('').reverse().join('');
+            }
         }
 
-        // ==========================================
-        // REAL DB DUPLICATE CHECK FUNCTION (FAST/PARALLEL)
-        // ==========================================
         async function checkDuplicateInDB(data) {
             try {
-                const checks = [];
-
-                // Check by Email concurrently
-                if (data.email) {
-                    checks.push(fetch(`${API_BASE_URL}/seller/check-account`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ identifier: data.email })
-                    }).then(res => res.json()));
-                }
-
-                // Check by Phone concurrently
-                if (data.phone) {
-                    checks.push(fetch(`${API_BASE_URL}/seller/check-account`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ identifier: data.phone })
-                    }).then(res => res.json()));
-                }
-
-                // Await all checks to finish at the exact same time (NO DELAY)
-                const results = await Promise.all(checks);
-
-                // If any of the checks returned true, the user exists
-                return results.some(result => result.exists);
+                if (!db) return { status: 'none' };
                 
+                let activeChecks = [];
+                if (data.email) activeChecks.push(db.collection("sellers").where("email", "==", data.email).get());
+                if (data.phone) activeChecks.push(db.collection("sellers").where("phone", "==", data.phone).get());
+
+                if (activeChecks.length > 0) {
+                    const activeResults = await Promise.all(activeChecks);
+                    if (activeResults.some(snap => !snap.empty)) return { status: 'active' };
+                }
+
+                let pendingChecks = [];
+                if (data.email) pendingChecks.push(db.collection("seller_verifications").where("email", "==", data.email).get());
+                if (data.phone) {
+                    pendingChecks.push(db.collection("seller_verifications").where("personal.phone", "==", data.phone).get());
+                    pendingChecks.push(db.collection("seller_verifications").where("phone", "==", data.phone).get());
+                }
+
+                if (pendingChecks.length > 0) {
+                    const pendingResults = await Promise.all(pendingChecks);
+                    for (let snap of pendingResults) {
+                        if (!snap.empty) {
+                            return { status: 'pending', data: snap.docs[0].data() }; 
+                        }
+                    }
+                }
+
+                return { status: 'none' };
             } catch (error) {
-                console.error("Duplicate API check failed:", error);
-                return false; 
+                console.warn("Duplicate DB check skipped/failed:", error);
+                return { status: 'none' }; 
             }
         }
 
@@ -543,33 +622,43 @@
             const email = document.getElementById('init_email').value.trim();
             const phone = document.getElementById('init_phone').value.trim();
 
-            if (!email || !phone) {
-                return showAlert("Missing Details", "Please provide both an Email Address and Mobile Number to proceed.");
-            }
+            if (!email || !phone) return showAlert("Missing Details", "Please provide both an Email Address and Mobile Number to proceed.");
 
-            // Show checking overlay
             document.getElementById('uploadingOverlay').style.display = 'flex';
             document.querySelector('#uploadingOverlay h2').innerText = "Checking Records...";
-            document.querySelector('#uploadingOverlay p').innerText = "fatching your detils.";
+            document.querySelector('#uploadingOverlay p').innerText = "Verifying if your details already exist in our system.";
 
-            // Database Duplicate Check FIRST. If True -> Stop and show Error. If False -> Proceed to OTP.
-            const isDuplicate = await checkDuplicateInDB({ email, phone });
+            const result = await checkDuplicateInDB({ email, phone });
 
-            if (isDuplicate) {
+            if (result.status === 'active') {
                 document.getElementById('uploadingOverlay').style.display = 'none';
-                
-                // USER IS PRESENT - STOP OTP AND SHOW EXISTS STATE
                 document.getElementById('welcomeStateReg').style.display = 'none';
                 document.getElementById('welcomeStateExists').style.display = 'block';
-                return; // Crucial: Stop execution so no OTP logic is triggered
+                return; 
             } 
+            else if (result.status === 'pending') {
+                document.getElementById('uploadingOverlay').style.display = 'none';
+                pendingApplicantData = result.data; 
+                document.getElementById('welcomeStateReg').style.display = 'none';
+                document.getElementById('welcomeStatePending').style.display = 'block';
+                return; 
+            }
 
-            // Not registered, generate 4-digit OTP and send via EmailJS
+            await triggerOTP(email);
+        }
+
+        async function proceedToOtpFromPending() {
+            const email = document.getElementById('init_email').value.trim();
+            document.getElementById('welcomeStatePending').style.display = 'none';
+            document.getElementById('uploadingOverlay').style.display = 'flex';
+            await triggerOTP(email);
+        }
+
+        async function triggerOTP(email) {
             document.querySelector('#uploadingOverlay h2').innerText = "Sending OTP...";
             document.querySelector('#uploadingOverlay p').innerText = "Sending a secure 4-digit code to your email.";
             
             try {
-                // Failsafe: If window.onload API fetch failed or was too slow, try getting keys right now.
                 if (!API_KEYS.EMAILJS_PUBLIC || !API_KEYS.EMAILJS_OTP_SERVICE) {
                     const res = await fetch(`${API_BASE_URL}/get-api-keys`);
                     if (res.ok) {
@@ -577,15 +666,14 @@
                         API_KEYS.EMAILJS_PUBLIC = data.emailjsPublicKey || "";
                         API_KEYS.EMAILJS_OTP_SERVICE = data.emailjsOtpService || "";
                         API_KEYS.EMAILJS_OTP_TEMPLATE = data.emailjsOtpTemplate || "";
+                        emailjs.init(API_KEYS.EMAILJS_PUBLIC);
                     }
                 }
 
-                // If keys are STILL missing, throw a readable error so we don't get [object Object] 'o' error
                 if (!API_KEYS.EMAILJS_PUBLIC || !API_KEYS.EMAILJS_OTP_SERVICE) {
-                    throw new Error("EmailJS API keys are missing. Please check your internet or Cloudflare worker.");
+                    throw new Error("EmailJS API keys are missing.");
                 }
 
-                // Generate and ENCRYPT the OTP securely
                 const otp = Math.floor(1000 + Math.random() * 9000).toString();
                 const secureSalt = "_aryantaCrypt" + Date.now();
                 const hashedOTP = await generateSecureHash(otp + secureSalt);
@@ -593,79 +681,74 @@
                 sessionStorage.setItem('fp_otp_hash', hashedOTP);
                 sessionStorage.setItem('fp_otp_salt', secureSalt);
 
-                // Send email securely via EmailJS. Passing the PUBLIC KEY explicitly to guarantee no init() failure issues.
-                await emailjs.send(
-                    API_KEYS.EMAILJS_OTP_SERVICE, 
-                    API_KEYS.EMAILJS_OTP_TEMPLATE, 
-                    {
-                        to_email: email,
-                        otp_code: otp,
-                        user_type: "New Seller Applicant"
-                    },
-                    API_KEYS.EMAILJS_PUBLIC
-                );
+                await emailjs.send(API_KEYS.EMAILJS_OTP_SERVICE, API_KEYS.EMAILJS_OTP_TEMPLATE, { to_email: email, otp_code: otp, user_type: "New Seller Applicant" }, API_KEYS.EMAILJS_PUBLIC);
 
                 document.getElementById('uploadingOverlay').style.display = 'none';
                 document.getElementById('welcomeStateReg').style.display = 'none';
                 document.getElementById('welcomeStateOTP').style.display = 'block';
-                document.getElementById('init_otp').value = ""; // clear previous inputs
+                document.getElementById('init_otp').value = ""; 
+                
+                setTimeout(() => document.getElementById('init_otp').focus(), 100);
             } catch (error) {
                 document.getElementById('uploadingOverlay').style.display = 'none';
-                
-                // Safely extract the exact error text to avoid "o" logging 
-                let errMsg = "Could not send OTP. Check EmailJS configuration or API keys.";
+                let errMsg = "Could not send OTP. Check configuration.";
                 if (error instanceof Error) errMsg = error.message;
                 else if (typeof error === 'object' && error.text) errMsg = error.text;
-                else if (typeof error === 'string') errMsg = error;
-                
-                console.error("EmailJS Error:", error);
                 showAlert("Sending Failed", errMsg);
             }
         }
 
         async function verifyOTP() {
             const otp = document.getElementById('init_otp').value.trim();
-            
             const storedHash = sessionStorage.getItem('fp_otp_hash');
             const storedSalt = sessionStorage.getItem('fp_otp_salt');
 
-            if (!storedHash || !storedSalt) {
-                return showAlert("Session Expired", "Please go back and request a new OTP.");
-            }
+            if (!storedHash || !storedSalt) return showAlert("Session Expired", "Please go back and request a new OTP.");
 
             const hashedEntered = await generateSecureHash(otp + storedSalt);
             
             if (hashedEntered === storedHash) {
-                // Pre-fill the actual form
                 document.getElementById('p_email').value = document.getElementById('init_email').value;
                 document.getElementById('p_phone').value = document.getElementById('init_phone').value;
                 document.getElementById('s_email').value = document.getElementById('init_email').value;
                 document.getElementById('s_phone').value = document.getElementById('init_phone').value;
 
+                if (pendingApplicantData) {
+                    if (pendingApplicantData.personal) {
+                        document.getElementById('p_name').value = pendingApplicantData.personal.name || "";
+                        document.getElementById('p_address').value = pendingApplicantData.personal.address || "";
+                    }
+                    if (pendingApplicantData.shop) {
+                        document.getElementById('s_name').value = pendingApplicantData.shop.name || "";
+                    }
+                    if (pendingApplicantData.kyc) {
+                        document.getElementById('k_ifsc').value = pendingApplicantData.kyc.ifsc || "";
+                        document.getElementById('k_acc').value = pendingApplicantData.kyc.accountNo || "";
+                        document.getElementById('k_acc_verify').value = pendingApplicantData.kyc.accountNo || "";
+                    }
+                }
+
                 sessionStorage.removeItem('fp_otp_hash');
                 sessionStorage.removeItem('fp_otp_salt');
 
-                // Close overlay
                 document.getElementById('welcomeOverlay').style.opacity = '0';
-                setTimeout(() => { document.getElementById('welcomeOverlay').style.display = 'none'; }, 500);
-
+                setTimeout(() => { 
+                    document.getElementById('welcomeOverlay').style.display = 'none'; 
+                    saveProgressDraft(); // Core Fix: Forces empty app into "Pending" tab immediately
+                }, 500);
             } else {
                 showAlert("Verification Failed", "Please enter a valid 4-digit OTP.");
             }
         }
 
-
-        // Drag and Drop Initialization
+        // --- FILE HANDLING & PREVIEWS ---
         document.querySelectorAll('.file-upload-box').forEach(box => {
             box.addEventListener('dragover', e => { e.preventDefault(); box.classList.add('dragover'); });
             box.addEventListener('dragleave', e => { box.classList.remove('dragover'); });
             box.addEventListener('drop', e => {
                 e.preventDefault(); box.classList.remove('dragover');
                 const fileInput = box.querySelector('.file-input');
-                if (e.dataTransfer.files.length) {
-                    fileInput.files = e.dataTransfer.files;
-                    handleFileUpload(fileInput);
-                }
+                if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; handleFileUpload(fileInput); }
             });
         });
 
@@ -691,6 +774,7 @@
             }
         }
 
+        // --- NAVIGATION AND AUTO-SAVING ---
         async function nextStep(current, next) {
             const currentPanel = document.getElementById(`step${current}`);
             const inputs = currentPanel.querySelectorAll('input[required], select[required]');
@@ -703,23 +787,18 @@
 
             if (!isValid) return showAlert("Incomplete Application", "All mandatory fields must be completed before proceeding.");
 
-            // IF Moving from Step 1 to 2 -> Check Email & Phone Duplicates
             if (current === 1) {
                 document.getElementById('uploadingOverlay').style.display = 'flex';
                 document.querySelector('#uploadingOverlay h2').innerText = "Verifying Details...";
                 document.querySelector('#uploadingOverlay p').innerText = "Checking our records.";
                 
-                const email = document.getElementById('p_email').value;
-                const phone = document.getElementById('p_phone').value;
-                
-                const isDuplicate = await checkDuplicateInDB({ email, phone });
+                const isDuplicate = await checkDuplicateInDB({ email: document.getElementById('p_email').value, phone: document.getElementById('p_phone').value });
                 document.getElementById('uploadingOverlay').style.display = 'none';
 
-                if (isDuplicate) {
+                if (isDuplicate && isDuplicate.status === 'active') {
                     return showAlert("Record Exists", "An account with this Email or Phone number already exists in our system.");
                 }
             }
-
             transitionPanels(current, next);
         }
 
@@ -728,9 +807,9 @@
             document.getElementById(`step${next}`).classList.add('active');
             document.getElementById(`indicator${current}`).classList.add('completed');
             document.getElementById(`indicator${next}`).classList.add('active');
-            // Updated calculation for 5 steps (dividing by 4 instead of 3)
             document.getElementById('progressBar').style.width = `${((next - 1) / 4) * 100}%`;
             window.scrollTo(0,0);
+            saveProgressDraft(); // Core Fix: Auto-save progression continuously
         }
 
         function prevStep(current, prev) {
@@ -738,9 +817,9 @@
             document.getElementById(`step${prev}`).classList.add('active');
             document.getElementById(`indicator${current}`).classList.remove('active');
             document.getElementById(`indicator${prev}`).classList.remove('completed');
-            // Updated calculation for 5 steps
             document.getElementById('progressBar').style.width = `${((prev - 1) / 4) * 100}%`;
             window.scrollTo(0,0);
+            saveProgressDraft(); // Keep DB in sync even on backtracks
         }
 
         async function handleFileUpload(input) {
@@ -760,6 +839,7 @@
             }
             renderImagePreviews(type);
             input.value = "";
+            saveProgressDraft(); // Trigger save on file upload to ensure images are persisted
         }
 
         function renderImagePreviews(type) {
@@ -778,6 +858,7 @@
         function deleteImage(type, index) {
             uploadedDocs[type].splice(index, 1);
             renderImagePreviews(type);
+            saveProgressDraft(); // Sync deletion
         }
 
         function resizeAndConvertImage(file) {
@@ -790,12 +871,33 @@
                         const MAX_WIDTH = 600; 
                         const scaleSize = MAX_WIDTH / img.width;
                         canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize;
-                        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
                         resolve(canvas.toDataURL('image/jpeg', 0.6));
                     }
                     img.src = e.target.result;
                 };
             });
+        }
+
+        // ==========================================
+        // DUAL-SAVE PROTOCOL LOGIC (DB + API)
+        // ==========================================
+        function saveProgressDraft() {
+            const draftData = buildApplicationData("Draft");
+            if (!draftData.email) return;
+
+            // Priority 1: Direct Firebase Sync (Guarantees seller.html panel functionality)
+            if(db) {
+                db.collection("seller_verifications").doc(draftData.email).set(draftData, { merge: true })
+                  .catch(e => console.warn("Direct draft sync warning:", e));
+            }
+
+            // Priority 2: Standard Worker API push
+            fetch(`${API_BASE_URL}/submit-seller-verification`, {
+                method: "PATCH", 
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(draftData)
+            }).catch(e => console.warn("API shadow save failed", e));
         }
 
         function validateStep2() {
@@ -815,25 +917,35 @@
             });
             if (!isValid) return showAlert("Incomplete Application", "Complete all business details.");
 
-            // Check duplicate Shop Name
             document.getElementById('uploadingOverlay').style.display = 'flex';
             document.querySelector('#uploadingOverlay h2').innerText = "Validating Business...";
             document.querySelector('#uploadingOverlay p').innerText = "Verifying records...";
             
             const shopName = document.getElementById('s_name').value;
-            const isDuplicate = await checkDuplicateInDB({ shopName }); // This will check using checkDuplicateInDB which currently handles email/phone. We keep it as is, worker could be updated later for shopName if needed.
+            const currentEmail = document.getElementById('p_email').value;
+            let isDuplicate = false;
+
+            try {
+                if(db) {
+                    const activeSnap = await db.collection("sellers").where("companyName", "==", shopName).get();
+                    if(!activeSnap.empty) {
+                        isDuplicate = true;
+                    } else {
+                        const pendSnap = await db.collection("seller_verifications").where("shop.name", "==", shopName).get();
+                        pendSnap.forEach(doc => {
+                            if (doc.data().email !== currentEmail) isDuplicate = true;
+                        });
+                    }
+                }
+            } catch(e) { console.warn("Shop DB check skipped:", e); }
             
             document.getElementById('uploadingOverlay').style.display = 'none';
 
-            if (isDuplicate) {
-                return showAlert("Business Exists", `The business name "${shopName}" is already registered.`);
-            }
-
+            if (isDuplicate) return showAlert("Business Exists", `The business name "${shopName}" is already registered by another user.`);
             transitionPanels(3, 4);
         }
 
         function validateStep4() {
-            // REAL IFSC VALIDATION (4 Letters, 0, 6 Alphanumerics)
             const ifsc = document.getElementById('k_ifsc').value.toUpperCase();
             const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
             const ifscError = document.getElementById('ifsc_error');
@@ -895,51 +1007,40 @@
             document.querySelector('#uploadingOverlay h2').innerText = "Uploading to Servers...";
             document.querySelector('#uploadingOverlay p').innerText = "Establishing secure connection & saving records.";
 
-            const emailInput = document.getElementById('p_email').value;
-            const nameInput = document.getElementById('p_name').value;
-            const shopInput = document.getElementById('s_name').value;
-
-            // Updated final application data (removed category/years)
-            const finalApplicationData = {
-                email: emailInput,
-                status: "Pending Verification",
-                personal: { name: nameInput, phone: document.getElementById('p_phone').value, email: emailInput },
-                kyc: { ifsc: document.getElementById('k_ifsc').value, accountNo: document.getElementById('k_acc').value },
-                shop: { name: shopInput },
-                timestamp: new Date().toISOString()
-            };
+            const finalApplicationData = buildApplicationData("Pending Verification");
 
             try {
-                // Actual Cloudflare API Call
-                const response = await fetch(`${API_BASE_URL}/submit-seller-verification`, {
-                    method: "PATCH", // Fixed Typo from provided code
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(finalApplicationData)
-                });
+                // Guaranteed Direct Firebase Sync (Overcomes CF Worker payload size constraints)
+                if(db) {
+                    await db.collection("seller_verifications").doc(finalApplicationData.email).set(finalApplicationData, { merge: true });
+                }
 
-                if(!response.ok) throw new Error("API Failure");
+                // Cloudflare API Sync 
+                try {
+                    await fetch(`${API_BASE_URL}/submit-seller-verification`, {
+                        method: "PATCH", 
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(finalApplicationData)
+                    });
+                } catch(apiError) { console.warn("API shadow failed, but DB write succeeded.", apiError); }
 
                 const refNum = "ARY-" + Math.floor(100000000 + Math.random() * 900000000);
                 document.getElementById('refNumberDisplay').innerText = refNum;
 
-                // EMAILJS API TRIGGER 
                 try {
                     await emailjs.send(
                         API_KEYS.EMAILJS_OTP_SERVICE, 
                         API_KEYS.EMAILJS_OTP_TEMPLATE, 
                         {
-                            to_email: emailInput,
-                            to_name: nameInput,
-                            shop_name: shopInput,
+                            to_email: finalApplicationData.email,
+                            to_name: finalApplicationData.personal.name,
+                            shop_name: finalApplicationData.shop.name,
                             ref_id: refNum,
                             message: "Your application has been received and is under compliance review."
                         },
                         API_KEYS.EMAILJS_PUBLIC
                     );
-                    console.log("Email sent successfully!");
-                } catch (emailError) {
-                    console.error("EmailJS Failed. Ensure Keys/IDs are correct.", emailError);
-                }
+                } catch (emailError) { console.error("EmailJS Failed.", emailError); }
 
                 document.getElementById('uploadingOverlay').style.display = 'none';
                 document.getElementById('successModal').style.display = 'flex';
