@@ -51,6 +51,7 @@ let sellerReviews = [];
 let sellerWarranties = []; 
 let sellerSupportTickets = [];
 let sellerNotifications = [];
+let sellerPayouts = [];
 let b2bItems = [];
 let salesChartInstance = null;
 let uploadedImagesArray = [];
@@ -123,12 +124,6 @@ window.closeModal = function(id) {
     if(id === 'scanModal' && html5QrcodeScanner) { try { html5QrcodeScanner.clear(); } catch(e) {} }
 }
 
-function maskName(name) {
-    if(!name) return 'Customer';
-    let parts = name.split(' ');
-    return parts.map(p => p.charAt(0) + '***').join(' ');
-}
-
 function maskEmail(email) {
     if(!email) return 'Hidden'; 
     let parts = email.split("@"); 
@@ -145,30 +140,41 @@ function maskPhone(phone) {
     return "******" + pStr.substring(pStr.length - 4);
 }
 
+// Fix Support Toggle Dropdown issue
 window.toggleCustomSelect = function() {
     const opts = document.querySelector('.custom-select-options');
-    if(opts) opts.classList.toggle('open');
+    if(opts) {
+        if (opts.style.display === 'block') {
+            opts.style.display = 'none';
+        } else {
+            opts.style.display = 'block';
+            opts.style.position = 'absolute';
+            opts.style.background = 'white';
+            opts.style.width = '100%';
+            opts.style.border = '1px solid #e2e8f0';
+            opts.style.zIndex = '100';
+            opts.style.borderRadius = '8px';
+            opts.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+        }
+    }
 }
 
 window.selectOption = function(value) {
     document.getElementById('supCategorySelected').innerText = value;
     document.getElementById('supCategory').value = value;
-    document.querySelector('.custom-select-options').classList.remove('open');
+    const opts = document.querySelector('.custom-select-options');
+    if(opts) opts.style.display = 'none';
 }
 
 // Global click event to close dropdowns when clicking anywhere else
 document.addEventListener('click', function(e) {
     if(!e.target.closest('.custom-select-wrapper')) {
         const opts = document.querySelector('.custom-select-options');
-        if(opts) opts.classList.remove('open');
+        if(opts) opts.style.display = 'none';
     }
     if(!e.target.closest('.search-container')) {
         const sugg = document.getElementById('searchSuggestions');
         if(sugg) sugg.style.display = 'none';
-    }
-    if(!e.target.closest('#notifDropdown') && !e.target.closest('.fa-bell')) {
-        const nd = document.getElementById('notifDropdown');
-        if(nd && nd.classList.contains('open')) nd.classList.remove('open');
     }
 });
 
@@ -255,6 +261,13 @@ function checkSession() {
                         }
                         return;
                     }
+                }
+                
+                // KYC Alert Trigger
+                if(currentSeller.kycRequested) {
+                    document.getElementById("kycAlertBanner").style.display = "block";
+                } else {
+                    document.getElementById("kycAlertBanner").style.display = "none";
                 }
                 
                 applySettingsToUI();
@@ -376,22 +389,16 @@ window.handleLogin = async function() {
 window.handleLogout = function() { localStorage.removeItem('sellerToken'); window.location.reload(); }
 
 // ================= NOTIFICATIONS LOGIC =================
-window.openFullScreenNotifications = function() {
-    document.getElementById("fullNotifModal").style.display = "flex";
-    const list = document.getElementById("fullNotifList");
-    if(adminNotifications.length === 0) {
-        list.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-light); font-size:14px;"><i class="fas fa-bell-slash" style="font-size:30px; margin-bottom:10px;"></i><br>No new messages.</div>`;
-    } else {
-        list.innerHTML = adminNotifications.map(n => `
-            <div style="padding:15px; border-bottom:1px solid var(--border-color); background: var(--surface-2); border-radius: 8px; margin-bottom: 10px;">
-                <div style="font-size:15px; color:var(--text-main); font-weight:700;">${n.text}</div>
-                <div style="font-size:12px; color:var(--text-light); margin-top:5px;"><i class="fas fa-clock"></i> ${new Date(n.time).toLocaleString()}</div>
-            </div>
-        `).join('');
-    }
-    unreadNotifCount = 0;
-    const badge = document.getElementById('notifBadge');
-    if(badge) { badge.style.display = 'none'; badge.innerText = '0'; }
+window.openFullNotif = function(id) {
+    const n = adminNotifications.find(x => x.id === id); if(!n) return;
+    document.getElementById('notifDetailContent').innerHTML = `
+        <div style="background:var(--surface-2); padding:20px; border-radius:12px; border:1px solid var(--border-color);">
+            <div style="font-size:12px; color:var(--text-light); margin-bottom:10px;"><i class="fas fa-clock"></i> ${new Date(n.time).toLocaleString()}</div>
+            <div style="font-size:16px; font-weight:700; color:var(--text-main); line-height:1.6; margin-bottom: 15px;">${n.text}</div>
+            ${n.link ? `<a href="${n.link}" target="_blank" class="btn-prime" style="text-decoration:none;"><i class="fas fa-external-link-alt"></i> View Reference Link</a>` : ''}
+        </div>
+    `;
+    document.getElementById('notificationDetailModal').style.display = 'flex';
 }
 
 function fetchNotifications() {
@@ -408,25 +415,27 @@ function fetchNotifications() {
             
             const badge = document.getElementById("notifBadge");
             if(unreadNotifCount > 0 && badge) { badge.innerText = unreadNotifCount; badge.style.display = "block"; }
+            
+            // Re-render full list if it is active
+            if(document.getElementById("notificationsSection").classList.contains("active")) {
+                const list = document.getElementById("fullNotifList");
+                if(adminNotifications.length === 0) {
+                    list.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-light); font-size:14px;"><i class="fas fa-bell-slash" style="font-size:30px; margin-bottom:10px;"></i><br>No new messages.</div>`;
+                } else {
+                    list.innerHTML = adminNotifications.map(n => `
+                        <div style="padding:15px; border-bottom:1px solid var(--border-color); background: var(--surface-2); border-radius: 8px; margin-bottom: 10px; cursor:pointer;" onclick="openFullNotif('${n.id}')">
+                            <div style="font-size:15px; color:var(--text-main); font-weight:700;">${n.text}</div>
+                            <div style="font-size:12px; color:var(--text-light); margin-top:5px;"><i class="fas fa-clock"></i> ${new Date(n.time).toLocaleString()}</div>
+                        </div>
+                    `).join('');
+                }
+            }
         });
     } catch(e) {}
 }
 
 window.toggleNotifications = function() {
-    const drop = document.getElementById("notifDropdown");
-    if(drop.style.display === "none" || drop.style.display === "") {
-        drop.style.display = "block"; unreadNotifCount = 0; document.getElementById("notifBadge").style.display = "none";
-        const list = document.getElementById("notifList");
-        if(adminNotifications.length === 0) { list.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-light); font-size:13px;">No new messages.</div>`; } 
-        else { list.innerHTML = adminNotifications.map(n => `
-            <div class="notif-item-row" onclick="${n.link ? `window.open('${n.link}')` : ''}">
-                <div class="notif-dot"></div>
-                <div>
-                    <div style="font-size:14px; color:var(--text-main); font-weight:600;">${n.text}</div>
-                    <div style="font-size:11px; color:var(--text-light); margin-top:5px;">${new Date(n.time).toLocaleString()}</div>
-                </div>
-            </div>`).join(''); }
-    } else { drop.style.display = "none"; }
+    showSection('notifications');
 }
 
 // ================= NAVIGATION =================
@@ -462,8 +471,10 @@ window.showSection = function(section) {
         case 'tutorial': loadTutorials(); break;
         case 'qna': loadQna(); break;
         case 'buyB2b': loadB2bStore(); break;
+        case 'support': filterSupportTickets('All'); break;
         case 'settings': loadSettingsUI(); break;
         case 'oldTickets': loadOldTickets(); break; 
+        case 'notifications': fetchNotifications(); break;
     }
 }
 
@@ -472,7 +483,7 @@ window.handleGlobalSearch = function() {
     if(!input) { box.style.display = 'none'; return; }
     let resultsHtml = '';
     const oMatches = sellerOrders.filter(o => (o.id && o.id.toLowerCase().includes(input)) || (o.order_no && o.order_no.toLowerCase().includes(input)) || (o.delivery_name && o.delivery_name.toLowerCase().includes(input)));
-    oMatches.slice(0, 3).forEach(o => { resultsHtml += `<div class="suggestion-item" onclick="viewOrderDetails('${o.id}'); document.getElementById('searchSuggestions').style.display='none';"><strong>📦 Order: ${o.order_no || o.id}</strong><span>Status: ${o.status} | Buyer: ${maskName(o.delivery_name) || 'N/A'}</span></div>`; });
+    oMatches.slice(0, 3).forEach(o => { resultsHtml += `<div class="suggestion-item" onclick="viewOrderDetails('${o.id}'); document.getElementById('searchSuggestions').style.display='none';"><strong>📦 Order: ${o.order_no || o.id}</strong><span>Status: ${o.status} | Buyer: ${o.delivery_name || 'N/A'}</span></div>`; });
     const pMatches = sellerProducts.filter(p => (p.sku && p.sku.toLowerCase().includes(input)) || (p.name && p.name.toLowerCase().includes(input)));
     pMatches.slice(0, 3).forEach(p => { resultsHtml += `<div class="suggestion-item" onclick="editItem('${p.id}'); document.getElementById('searchSuggestions').style.display='none';"><strong>🛒 Product: ${p.name}</strong><span>SKU: ${p.sku || 'N/A'} | ₹${p.price}</span></div>`; });
     if(resultsHtml) { box.innerHTML = resultsHtml; box.style.display = 'block'; } else { box.innerHTML = `<div style="padding:15px; color:var(--text-light); font-size:13px; font-weight:600;">No matches found.</div>`; box.style.display = 'block'; }
@@ -524,6 +535,10 @@ async function initDashboard() {
         // Fetch Fines
         const fineSnap = await db.collection("fines").where("email", "==", userEmailLower).get();
         sellerFines = fineSnap.docs.map(d => ({id: d.id, ...d.data()}));
+
+        // Fetch Payouts
+        const paySnap = await db.collection("seller_payouts").where("sellerEmail", "==", userEmailLower).get();
+        sellerPayouts = paySnap.docs.map(d => ({id: d.id, ...d.data()}));
 
         // Fetch Reviews
         const revSnap = await db.collection("reviews").get();
@@ -1057,7 +1072,7 @@ function loadCompletedScanOrders() {
             <td data-label="Item Details" style="font-size:13px;">${itemsHtml}</td>
             <td data-label="Status"><span class="badge" style="background:#dcfce3; color:#166534;">Ready to Ship</span></td>
             <td data-label="Action">
-                <button class="btn-shiprocket" onclick="event.stopPropagation(); downloadShippingInvoice('${o.id}')"><i class="fas fa-download"></i> Re-Download Slip</button>
+                <button class="btn-shiprocket" onclick="event.stopPropagation(); downloadShippingInvoice('${o.id}')"><i class="fas fa-print"></i> Re-Print Slip</button>
             </td>
         </tr>`;
     });
@@ -1110,150 +1125,173 @@ window.loadAcceptedOrders = function() {
             <td data-label="Item Details" style="font-size:13px;">${itemsHtml}</td>
             <td data-label="Action">
                 <div style="display:flex; flex-direction:column; gap:5px; align-items:flex-end;">
-                    <button class="btn-shiprocket" onclick="event.stopPropagation(); downloadShippingInvoice('${o.id}')"><i class="fas fa-download"></i> Download Shiprocket Slip</button>
+                    <button class="btn-shiprocket" onclick="event.stopPropagation(); downloadShippingInvoice('${o.id}')"><i class="fas fa-print"></i> Get Shiprocket Slip</button>
                 </div>
             </td>
         </tr>`;
     });
 }
 
+// SHIPROCKET INVOICE FETCH VIA CLOUDFLARE WORKER
 window.downloadShippingInvoice = async function(orderId) {
-    showToast("Fetching Shiprocket API via Cloudflare...", "info");
-    setTimeout(() => {
-        showToast(`Shiprocket Invoice generated for ${orderId}. Downloading slip...`, "success");
-        // Here is where the actual API response blob would trigger a download from Shiprocket
-    }, 1500);
+    showToast("Authenticating with Aryanta Logistics...", "info");
+    try {
+        const res = await fetch(`${API_BASE_URL}/shiprocket/generate-awb`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: orderId, sellerEmail: currentSeller.email })
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            if (data.label_url || data.invoice_url || data.url) {
+                // Safely open the Cloudflare URL to download/print Shiprocket generated PDF without internal API exposure
+                window.open(data.label_url || data.invoice_url || data.url, '_blank');
+                showToast("Shiprocket Slip Opened!", "success");
+            } else {
+                showToast("Generating Aryanta Native Print Slip...", "info");
+                processSlips('print', orderId === 'bulk' ? null : orderId);
+            }
+        } else {
+            throw new Error("Logistics API returned " + res.status);
+        }
+    } catch (e) {
+        console.error(e);
+        showToast("Logistics unavailable. Generating native print slip...", "warning");
+        processSlips('print', orderId === 'bulk' ? null : orderId);
+    }
 }
 
-// ================= PRINTING & PDF DOWNLOAD (Kept intact to preserve logic) =================
+// ================= NATIVE BROWSER PRINTING (BUG-FREE GUARANTEE) =================
 window.processSlips = async function(mode, singleId = null) {
-    let selectedIds = []; if(singleId) { selectedIds.push(singleId); } else { document.querySelectorAll('.cb-acc:checked').forEach(cb => selectedIds.push(cb.value)); }
+    let selectedIds = []; 
+    if(singleId) { selectedIds.push(singleId); } 
+    else { document.querySelectorAll('.cb-acc:checked').forEach(cb => selectedIds.push(cb.value)); }
+    
     if(selectedIds.length === 0) return showToast("Select at least one order.", "warning");
 
-    const printArea = document.getElementById("printArea"); let printHtml = '';
+    let printHtml = `<div style="background: white; width: 100%; max-width: 800px; margin: 0 auto;">`;
 
     for(let id of selectedIds) {
         const o = sellerOrders.find(x => x.id === id); if(!o) continue;
-        let myItems = getSellerItemsFromOrder(o); let itemsHtml = myItems.map(i=>`<div style="display:flex; justify-content:space-between; border-bottom:1px solid #e2e8f0; padding:10px 0;"><span style="font-weight:600; font-size:14px;">${i.name} (x${i.qty})</span><span style="font-weight:800; font-size:14px;">₹${i.price}</span></div>`).join('');
+        let myItems = getSellerItemsFromOrder(o); 
+        let itemsHtml = myItems.map(i=>`<tr><td style="padding:10px; border-bottom:1px solid #e2e8f0; font-weight:600;">${i.name}</td><td style="padding:10px; text-align:center; border-bottom:1px solid #e2e8f0;">${i.qty}</td><td style="padding:10px; text-align:right; border-bottom:1px solid #e2e8f0; font-weight:600;">₹${i.price}</td></tr>`).join('');
         
-        let warrStr = "N/A"; const p = sellerProducts.find(x => x.name === myItems[0].name);
-        if(p && p.warranty && p.warranty !== "No Warranty") warrStr = `Valid for ${p.warranty} from delivery date. Keep invoice safe.`;
+        let warrantyText = "No Warranty"; 
+        const p = sellerProducts.find(x => x.name === myItems[0].name);
+        if(p && p.warranty && p.warranty !== "No Warranty") {
+            let validDate = new Date(o.timestamp || Date.now());
+            if(p.warranty.includes('Month')) validDate.setMonth(validDate.getMonth() + parseInt(p.warranty));
+            if(p.warranty.includes('Year')) validDate.setFullYear(validDate.getFullYear() + parseInt(p.warranty));
+            let serial = o.serial_no || "Update SN physically on dispatch";
+            warrantyText = `<strong>Serial No:</strong> <span style="font-family:monospace;">${serial}</span> &nbsp;|&nbsp; <strong>Valid Till:</strong> ${validDate.toLocaleDateString()}`;
+        }
         
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(o.order_no || o.id)}`;
-
         let realName = o.delivery_name || "Customer";
         let realSellerName = currentSeller.companyName || currentSeller.email || "Seller";
-        
-        let safeEmail = maskEmail(o.user_email);
-        let safePhone = maskPhone(o.delivery_phone);
-
-        let paymentStatusUI = o.payment_method && o.payment_method.toLowerCase().includes('cash') 
-            ? `<span style="color:var(--danger); font-weight:800; border: 2px dashed var(--danger); padding: 4px 8px;">CASH ON DELIVERY (COLLECT)</span>`
-            : `<span style="color:var(--success); font-weight:800; border: 2px solid var(--success); padding: 4px 8px;">PRE-PAID (ONLINE)</span>`;
 
         printHtml += `
-        <div class="print-page" style="background:white; color:black;">
-            <div style="border: 2px solid #0f172a; padding:30px; border-radius:16px; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: white;">
-                <div style="display:flex; justify-content:space-between; border-bottom:4px solid #0f172a; padding-bottom:20px; margin-bottom:20px;">
-                    <div><h1 style="margin:0; font-size:28px; color:#0f172a; font-weight:900; letter-spacing:-1px;">ARYANTA</h1><p style="margin:5px 0 0 0; font-size:14px; color:#475569; font-weight:600;">support@aryanta.com | Ph: 06414054676</p></div>
-                    <div style="text-align:right;"><strong style="font-size:20px; color:#059669;">Tax Invoice & Dispatch Slip</strong></div>
-                </div>
-                
-                <div style="display:flex; justify-content:space-between; border-bottom:2px solid #e2e8f0; padding-bottom:25px; margin-bottom:25px;">
-                    <div style="width:55%; border:1px solid #cbd5e1; padding:15px; border-radius:12px; background:#f8fafc;">
-                        <strong style="font-size:16px; color:#0f172a;">SHIP TO:</strong><br>
-                        <strong style="font-size:18px; margin-top:5px; display:block;">${realName}</strong>
-                        <div style="font-size:14px; margin-top:5px; line-height:1.6; color:#1e293b;">
-                            Phone: <strong>${safePhone}</strong><br>
-                            Email: <strong>${safeEmail}</strong><br>
-                            Address: ${o.delivery_address || "N/A"}<br>${o.delivery_city || ""}, ${o.delivery_state || ""} - <strong>${o.delivery_pincode || ""}</strong><br>
-                        </div>
+        <div class="print-page" style="page-break-after: always; padding: 40px; font-family: 'Arial', sans-serif; background: white; color: black; box-sizing: border-box;">
+            <!-- Top Aryanta Details -->
+            <div style="text-align:center; border: 2px solid #0f172a; padding: 20px; border-radius: 8px; margin-bottom:20px;">
+                <h1 style="margin:0; font-size:28px; color:#0f172a; font-weight:900; letter-spacing:1px; text-transform: uppercase;">ARYANTA</h1>
+                <p style="margin:5px 0 0 0; font-size:13px; color:#475569; font-weight:600;">support@aryanta.in | Ph: 06414054676</p>
+                <h2 style="margin:15px 0 0 0; color:#059669; font-size:18px; text-transform: uppercase; letter-spacing: 1px;">Tax Invoice / Dispatch Slip</h2>
+            </div>
+            
+            <!-- Invoice No, Date, Time -->
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px; font-size:13px; font-weight: 600; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                <div><strong>Invoice No:</strong> ${o.order_no || o.id}</div>
+                <div><strong>Date:</strong> ${new Date(o.timestamp || Date.now()).toLocaleDateString()} &nbsp;|&nbsp; <strong>Time:</strong> ${new Date(o.timestamp || Date.now()).toLocaleTimeString()}</div>
+            </div>
+
+            <!-- Customer Details & QR -->
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 15px;">
+                <div style="width:60%;">
+                    <div style="font-size:12px; color:#64748b; text-transform:uppercase; font-weight:800; margin-bottom:5px;">Billed To (Customer)</div>
+                    <div style="font-size:18px; font-weight:800; color:#0f172a; margin-bottom:5px;">${realName}</div>
+                    <div style="font-size:13px; color:#334155; line-height:1.5;">
+                        ${o.delivery_address || "Address Not Provided"}<br>
+                        ${o.delivery_city || ""}, ${o.delivery_state || ""} - <strong>${o.delivery_pincode || ""}</strong>
                     </div>
-                    <div style="width:40%; text-align:right; display:flex; flex-direction:column; align-items:flex-end; justify-content:center;">
-                        <img src="${qrUrl}" crossorigin="anonymous" style="width:120px; height:120px; border:2px solid #cbd5e1; padding:5px; border-radius:12px;"><br>
-                        <strong style="font-size:14px; margin-top:10px;">Order ID: ${o.order_no || o.id}</strong>
-                    </div>
                 </div>
-                
-                <div style="margin-bottom:25px; font-size:14px; border:1px solid #cbd5e1; padding:15px; border-radius:12px; background:#f8fafc; line-height:1.6; display: flex; justify-content: space-between;">
-                    <div><strong style="font-size:16px;">SELLER DETAILS:</strong><br><span style="font-weight:700;">${realSellerName}</span><br>${currentSeller.shopInfo?.address || 'N/A'}<br>City: ${currentSeller.shopInfo?.city || ''}</div>
-                    <div style="text-align:right;"><strong style="font-size:16px;">PAYMENT MODE:</strong><br>${paymentStatusUI}</div>
+                <div style="width:35%; text-align:right;">
+                    <img src="${qrUrl}" crossorigin="anonymous" style="width:90px; height:90px; border:1px solid #e2e8f0; padding:4px; border-radius:8px;">
                 </div>
-                
-                <div style="border:2px solid #0f172a; padding:20px; margin-bottom:25px; border-radius:12px;">
-                    <h4 style="margin:0 0 15px 0; border-bottom:2px solid #0f172a; padding-bottom:10px; font-size:18px;">ITEMS ORDERED</h4>
+            </div>
+
+            <!-- Seller Details -->
+            <div style="margin-bottom:20px; font-size:13px; padding:15px; border-radius:8px; border:1px solid #cbd5e1;">
+                <div style="font-size:11px; color:#64748b; text-transform:uppercase; font-weight:800; margin-bottom:5px;">Dispatched By (Seller)</div>
+                <div style="font-weight:800; font-size:15px; color:#0f172a; margin-bottom:3px;">${realSellerName}</div>
+                <div style="color:#475569;">
+                    ${currentSeller.shopInfo?.address || currentSeller.address || 'Address Not Provided'}<br>
+                    ${currentSeller.shopInfo?.city || currentSeller.city || ''}, ${currentSeller.shopInfo?.state || currentSeller.state || ''} - ${currentSeller.shopInfo?.pincode || currentSeller.pincode || ''}
+                </div>
+            </div>
+
+            <!-- Order Table -->
+            <div style="border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; margin-bottom:20px;">
+                <table style="width:100%; border-collapse: collapse; text-align:left; font-size: 13px;">
+                    <tr style="background-color: #f1f5f9; border-bottom:1px solid #cbd5e1;">
+                        <th style="padding:12px 10px; font-weight:800; color:#334155;">Product Title</th>
+                        <th style="padding:12px 10px; text-align:center; font-weight:800; color:#334155;">Qty</th>
+                        <th style="padding:12px 10px; text-align:right; font-weight:800; color:#334155;">Unit Price</th>
+                    </tr>
                     ${itemsHtml}
-                    <div style="text-align:right; margin-top:15px; font-size:20px; color:#0f172a;"><strong>SELLER PAYOUT: ₹${myItems.reduce((s,i)=>s+(Number(i.price)*Number(i.qty)),0)}</strong></div>
+                </table>
+                <div style="text-align:right; padding: 15px; background: #f8fafc; font-size:16px;">
+                    <strong style="color: #0f172a;">TOTAL AMOUNT: </strong>
+                    <strong style="color: #059669; font-size: 18px;">₹${myItems.reduce((s,i)=>s+(Number(i.price)*Number(i.qty)),0).toLocaleString()}</strong>
                 </div>
-                
-                <div style="border:2px dashed #059669; padding:15px; background:#ecfdf5; font-size:14px; border-radius:12px; color:#064e3b;">
-                    <strong>WARRANTY STATUS:</strong><br>${warrStr}
-                </div>
+            </div>
+
+            <!-- Warranty -->
+            ${p && p.warranty && p.warranty !== "No Warranty" ? `
+            <div style="border:1px dashed #059669; padding:15px; font-size:13px; border-radius:8px; color:#064e3b; text-align:center;">
+                <strong style="font-size:14px; display:block; margin-bottom:5px; text-transform:uppercase;">Warranty Information</strong>
+                ${warrantyText}
+            </div>` : ''}
+            
+            <div style="text-align:center; margin-top:30px; font-size:11px; color:#94a3b8;">
+                Thank you for shopping with Aryanta! This is a system-generated document.
             </div>
         </div>`;
         
         try { db.collection("orders").doc(id).update({ printed: true }); } catch(e) {}
     }
 
-    printArea.innerHTML = printHtml; 
+    printHtml += `</div>`;
 
-    if(mode === 'download') {
-        const loader = document.getElementById("pageLoader");
-        document.getElementById("loaderMessage").innerText = "Generating PDFs...";
-        loader.style.display = "flex"; loader.style.opacity = "1";
-
-        const images = printArea.getElementsByTagName('img');
-        let loadedImages = 0; let totalImages = images.length;
-
-        const triggerPDFGeneration = () => {
-            var opt = { margin: [10, 10], filename: `Aryanta_Invoice_${Date.now()}.pdf`, image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2, useCORS: true, allowTaint: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
-            printArea.style.display = 'block';
-            printArea.style.position = 'absolute';
-            printArea.style.left = '-9999px';
-            html2pdf().set(opt).from(printArea).save().then(() => {
-                printArea.style.display = 'none'; printArea.style.position = 'static'; printArea.style.left = '0';
-                loader.style.opacity = "0"; 
-                setTimeout(() => { loader.style.display = "none"; document.getElementById("loaderMessage").innerText = "SYNCING LIVE DB..."; }, 300);
-                showToast("PDF Downloaded!", "success");
-            }).catch(e => {
-                printArea.style.display = 'none'; printArea.style.position = 'static'; loader.style.display = "none"; showToast("Failed to generate PDF", "error");
-            });
-        };
-
-        if (totalImages === 0) triggerPDFGeneration();
-        else {
-            for (let i = 0; i < totalImages; i++) {
-                if (images[i].complete) { loadedImages++; if (loadedImages === totalImages) triggerPDFGeneration(); } 
-                else { 
-                    images[i].onload = () => { loadedImages++; if (loadedImages === totalImages) triggerPDFGeneration(); }; 
-                    images[i].onerror = () => { loadedImages++; if (loadedImages === totalImages) triggerPDFGeneration(); }; 
-                }
-            }
-        }
-    } else { 
-        showToast("Opening Print Dialog...", "info"); 
-        
-        const loader = document.getElementById("pageLoader");
-        document.getElementById("loaderMessage").innerText = "Preparing Print...";
-        loader.style.display = "flex"; loader.style.opacity = "1";
-        
-        const images = printArea.getElementsByTagName('img');
-        let loadedImages = 0; let totalImages = images.length;
-        
-        const triggerPrint = () => {
-            loader.style.opacity = "0"; 
-            setTimeout(() => { loader.style.display = "none"; document.getElementById("loaderMessage").innerText = "SYNCING LIVE DB..."; }, 300);
-            setTimeout(() => { window.print(); }, 500); 
-        };
-        
-        if (totalImages === 0) triggerPrint();
-        else {
-            for (let i = 0; i < totalImages; i++) {
-                if (images[i].complete) { loadedImages++; if (loadedImages === totalImages) triggerPrint(); } 
-                else { 
-                    images[i].onload = () => { loadedImages++; if (loadedImages === totalImages) triggerPrint(); }; 
-                    images[i].onerror = () => { loadedImages++; if (loadedImages === totalImages) triggerPrint(); }; 
-                }
+    showToast("Opening Print Dialog...", "info"); 
+    const printArea = document.getElementById("printArea");
+    printArea.innerHTML = printHtml;
+    
+    const loader = document.getElementById("pageLoader");
+    document.getElementById("loaderMessage").innerText = "Preparing Print...";
+    loader.style.display = "flex"; loader.style.opacity = "1";
+    
+    const images = printArea.getElementsByTagName('img');
+    let loadedImages = 0; let totalImages = images.length;
+    
+    // Safely trigger print using browser's native capabilities, guaranteeing fully rendered output
+    const triggerPrint = () => {
+        loader.style.opacity = "0"; 
+        setTimeout(() => { 
+            loader.style.display = "none"; 
+            document.getElementById("loaderMessage").innerText = "SYNCING LIVE DB..."; 
+            window.print();
+        }, 300);
+    };
+    
+    if (totalImages === 0) triggerPrint();
+    else {
+        for (let i = 0; i < totalImages; i++) {
+            if (images[i].complete) { loadedImages++; if (loadedImages === totalImages) triggerPrint(); } 
+            else { 
+                images[i].onload = () => { loadedImages++; if (loadedImages === totalImages) triggerPrint(); }; 
+                images[i].onerror = () => { loadedImages++; if (loadedImages === totalImages) triggerPrint(); }; 
             }
         }
     }
@@ -1415,7 +1453,9 @@ window.viewOrderDetails = function(id) {
     let myItems = getSellerItemsFromOrder(o);
     let amount = myItems.reduce((s, i) => s + (Number(i.price) * Number(i.qty)), 0);
     
-    let safeName = maskName(o.delivery_name); let emailDisplay = maskEmail(o.user_email); let phoneDisplay = maskPhone(o.delivery_phone);
+    let safeName = o.delivery_name || "Customer"; 
+    let emailDisplay = maskEmail(o.user_email); 
+    let phoneDisplay = maskPhone(o.delivery_phone);
     let privacyTag = `<br><span style="font-size:10px; color:var(--danger); font-weight:800; text-transform:uppercase;">*Contact Masked for Customer Privacy*</span>`;
 
     let payType = o.payment_method && o.payment_method.toLowerCase().includes('cash') 
@@ -1503,7 +1543,63 @@ window.cancelWarranty = async function(id) {
     } catch(e) {}
 }
 
-// ================= PAYMENTS LEDGER & ADMIN SYNC =================
+// ================= PAYMENTS LEDGER, Payout Slips & ADMIN SYNC =================
+window.viewSettledSlip = function(id) {
+    const p = sellerPayouts.find(x => x.id === id); if(!p) return;
+    const pDate = p.date || p.settledDate ? new Date(p.date || p.settledDate).toLocaleDateString() : '-';
+    const pTime = p.date || p.settledDate ? new Date(p.date || p.settledDate).toLocaleTimeString() : '-';
+
+    const html = `
+        <div style="font-family: sans-serif; color: #0f172a; line-height: 1.5; padding: 10px;">
+            <div style="background: linear-gradient(135deg, #064e3b, #059669); color: white; padding: 25px; border-radius: 12px; text-align: center; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h1 style="margin:0; font-size: 26px; font-weight: 900; letter-spacing: 1px;">ARYANTA</h1>
+                <p style="margin:5px 0 0 0; font-size: 14px; opacity: 0.9;">Payment Settlement Receipt</p>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px;">
+                <div>
+                    <h3 style="margin: 0 0 8px 0; font-size: 13px; color: #64748b; text-transform: uppercase;">Seller Information</h3>
+                    <p style="margin: 0; font-weight: bold; font-size: 16px;">${p.name || currentSeller.companyName}</p>
+                    <p style="margin: 2px 0 0 0; font-size: 13px;">UID: ${currentSeller.uid || '-'}</p>
+                </div>
+                <div style="text-align: right;">
+                    <h3 style="margin: 0 0 8px 0; font-size: 13px; color: #64748b; text-transform: uppercase;">Receipt Details</h3>
+                    <p style="margin: 0; font-size: 13px;"><strong>Slip No:</strong> ${p.id}</p>
+                    <p style="margin: 2px 0 0 0; font-size: 13px;"><strong>Date:</strong> ${pDate} ${pTime}</p>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 25px; border: 1px solid #cbd5e1; border-radius: 12px; padding: 15px; background: #f8fafc;">
+                <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #059669;">Bank Remittance Details</h3>
+                <p style="margin: 0; font-size: 14px;"><strong>Account Number:</strong> ${currentSeller.bankAccount || '-'}</p>
+                <p style="margin: 5px 0 0 0; font-size: 14px;"><strong>IFSC Code:</strong> ${currentSeller.bankIfsc || '-'}</p>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
+                <tr style="background-color: #f1f5f9;">
+                    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #cbd5e1;">Description</th>
+                    <th style="padding: 12px; text-align: right; border-bottom: 1px solid #cbd5e1;">Amount</th>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">Gross Order Value Generated</td>
+                    <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e2e8f0;">₹${(p.gross || 0).toLocaleString()}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #dc2626;">Administrative Deductions</td>
+                    <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e2e8f0; color: #dc2626;">-₹${(p.fines || 0).toLocaleString()}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; font-weight: 900; font-size: 16px;">FINAL SETTLED AMOUNT</td>
+                    <td style="padding: 12px; text-align: right; font-weight: 900; font-size: 18px; color: #059669;">₹${(p.netPayout || 0).toLocaleString()}</td>
+                </tr>
+            </table>
+            <p style="text-align: center; font-size: 12px; color: #64748b;">Admin Note: ${p.adminDesc || 'Processed via Admin'}</p>
+        </div>
+    `;
+    document.getElementById('payoutSlipContent').innerHTML = html;
+    document.getElementById('payoutSlipModal').style.display = 'flex';
+}
+
 window.togglePaymentTab = function(tabId) {
     document.querySelectorAll('.payment-tab').forEach(t => t.style.display = 'none');
     document.getElementById('tab' + tabId.charAt(0).toUpperCase() + tabId.slice(1)).style.display = 'block';
@@ -1533,10 +1629,20 @@ window.loadPayments = function() {
                 let statusMsg = o.adminClearedPayment ? `<span style="color:var(--success); font-weight:bold;"><i class="fas fa-check-circle"></i> Successfully Credited</span>` : `<span style="color:var(--secondary); font-weight:bold;"><i class="fas fa-clock"></i> Processing by Bank</span>`;
                 listUpcoming.innerHTML += `<tr><td data-label="Transfer Date"><strong style="font-size:13px;">${transferDate.toLocaleDateString()}</strong></td><td data-label="Order Ref"><strong style="font-family:monospace; color:var(--primary);">${o.order_no || o.id}</strong></td><td data-label="Status">${statusMsg}</td><td data-label="Gross Amount" style="color:var(--success); font-weight:800; font-size:16px;">₹${amount}</td></tr>`;
             }
-        } else if (o.sellerSettled) {
-            listCompleted.innerHTML += `<tr><td data-label="Settled Date"><strong style="font-size:13px;">${new Date(o.settledDate).toLocaleDateString()}</strong></td><td data-label="Order Ref"><strong style="font-family:monospace; color:var(--primary);">${o.order_no || o.id}</strong></td><td data-label="Amount" style="color:var(--success); font-weight:800; font-size:16px;">₹${o.settlementAmount}</td></tr>`;
-        }
+        } 
     });
+
+    if (sellerPayouts.length === 0) {
+        listCompleted.innerHTML = "<tr><td colspan='3' style='text-align:center;'>No settlements yet.</td></tr>";
+    } else {
+        sellerPayouts.forEach(p => {
+            listCompleted.innerHTML += `<tr class="clickable-row" onclick="viewSettledSlip('${p.id}')">
+                <td data-label="Settled Date"><strong style="font-size:13px;">${new Date(p.date || p.settledDate).toLocaleDateString()}</strong></td>
+                <td data-label="Slip Ref"><strong style="font-family:monospace; color:var(--primary);">${p.id}</strong></td>
+                <td data-label="Amount" style="color:var(--success); font-weight:800; font-size:16px;">₹${(p.netPayout || 0).toLocaleString()}</td>
+            </tr>`;
+        });
+    }
 
     sellerFines.forEach(f => { listFines.innerHTML += `<tr><td data-label="Date"><strong style="font-size:13px;">${new Date(f.timestamp).toLocaleDateString()}</strong></td><td data-label="Reason"><span style="font-weight:600;">${f.reason}</span></td><td data-label="Amount" style="color:var(--danger); font-weight:900; font-size:16px;">-₹${f.amount}</td></tr>`; });
 
@@ -1608,505 +1714,479 @@ window.loadSubscriptionsUI = function() {
 window.processSubscription = async function(planName, method) {
     const cost = planName === 'Go' ? (currentPlanDuration === 'year' ? 4999 : 499) : (currentPlanDuration === 'year' ? 7599 : 799);
     
-    if(method === 'online') {
-        const options = {
-            "key": API_KEYS.RAZORPAY, 
-            "amount": cost * 100, 
-            "currency": "INR", 
-            "name": "Aryanta Seller Network",
-            "description": `${planName} Subscription (${currentPlanDuration})`,
-            "handler": function (res) { finalizeSubscription(planName, cost, "Online Razorpay", res.razorpay_payment_id); },
-            "prefill": { "name": currentSeller.companyName, "email": currentSeller.email, "contact": currentSeller.phone || "" },
-            "theme": { "color": "#059669" }
-        };
-        const rzp = new Razorpay(options); 
-        rzp.open();
-    } else {
+    if(method === 'payout') {
         if(cachedTotalUpcoming < cost) return showToast("Insufficient funds in upcoming payout.", "error");
-        if(!confirm(`Deduct ₹${cost.toLocaleString()} from your upcoming payout for the ${planName} plan?`)) return;
-        try { 
-            await db.collection("fines").add({ email: currentSeller.email, amount: cost, reason: `${planName} Subscription (${currentPlanDuration})`, timestamp: new Date().toISOString() }); 
-            finalizeSubscription(planName, cost, "Payout Deduction", "PAYOUT_" + Date.now()); 
-            try{await initDashboard();}catch(e){} loadPayments(); 
-        } catch(e) {} 
+        if(!confirm(`Deduct ₹${cost} from your upcoming payout for ${planName} Plan?`)) return;
+        
+        try {
+            await db.collection("fines").add({ email: currentSeller.email, amount: cost, reason: `Subscription Auto-Deduct: ${planName} (${currentPlanDuration})`, timestamp: new Date().toISOString() });
+            activateSubscription(planName);
+        } catch(e) { showToast("Failed to process.", "error"); }
+    } else {
+        if (!API_KEYS.RAZORPAY) return showToast("Razorpay Key missing. Online payments disabled.", "error");
+        showToast("Initializing Razorpay Gateway...", "info");
+        var options = {
+            "key": API_KEYS.RAZORPAY, "amount": cost * 100, "currency": "INR", "name": "Aryanta Enterprise", "description": `${planName} Plan Subscription`,
+            "handler": function (response) { activateSubscription(planName); },
+            "prefill": { "name": currentSeller.companyName, "email": currentSeller.email, "contact": currentSeller.phone }, "theme": { "color": "#059669" }
+        };
+        var rzp1 = new Razorpay(options); rzp1.open();
     }
 }
 
-async function finalizeSubscription(planName, cost, method, txId) {
-    const now = new Date();
-    const endDate = new Date();
-    if(currentPlanDuration === 'year') endDate.setFullYear(endDate.getFullYear() + 1);
-    else endDate.setMonth(endDate.getMonth() + 1);
-
-    currentSeller.subscription = planName;
-    currentSeller.subEndDate = endDate.toISOString();
+async function activateSubscription(planName) {
+    const end = new Date(); if(currentPlanDuration === 'year') end.setFullYear(end.getFullYear() + 1); else end.setMonth(end.getMonth() + 1);
+    const subRecord = { plan: planName, duration: currentPlanDuration, method: 'Online / Payout', cost: planName === 'Go' ? (currentPlanDuration === 'year' ? 4999 : 499) : (currentPlanDuration === 'year' ? 7599 : 799), startDate: new Date().toISOString(), endDate: end.toISOString() };
     
-    if(!currentSeller.subHistory) currentSeller.subHistory = [];
-    currentSeller.subHistory.push({
-        plan: planName, duration: currentPlanDuration, cost: cost, method: method, txId: txId, 
-        startDate: now.toISOString(), endDate: endDate.toISOString()
-    });
-
+    currentSeller.subscription = planName; currentSeller.subEndDate = end.toISOString(); 
+    if(!currentSeller.subHistory) currentSeller.subHistory = []; currentSeller.subHistory.push(subRecord);
+    
     localStorage.setItem('sellerToken', JSON.stringify(currentSeller));
-    document.getElementById('verifiedBadge').style.display = 'inline'; 
-    
-    try { 
-        await db.collection("sellers").doc(currentSeller.email).update({ subscription: planName, subEndDate: currentSeller.subEndDate, subHistory: currentSeller.subHistory }); 
-        showToast(`Successfully Upgraded to ${planName} Plan!`, "success"); 
-        applySettingsToUI(); 
-        loadProfile(); 
-        document.getElementById('subExpiryModal').style.display = 'none'; 
-    } catch(e) {}
+    try { await db.collection("sellers").doc(currentSeller.email).update({ subscription: planName, subEndDate: end.toISOString(), subHistory: currentSeller.subHistory }); showToast("Plan Activated!", "success"); loadProfile(); } 
+    catch(e) { showToast("Failed to update database.", "error"); }
 }
 
-
-// ================= SPONSORED ADS WITH DISCOUNT =================
-function calculateAdCost() {
-    let cost = 70;
-    if (currentSeller.subscription === 'Go') cost = Math.round(70 * 0.8);  // 20% off
-    if (currentSeller.subscription === 'Pro') cost = Math.round(70 * 0.55); // 45% off
-    return cost;
-}
-
+// ================= SPONSORED ADS =================
 window.loadAds = function() {
     const list = document.getElementById("adsList"); list.innerHTML = "";
-    let adCount = 0;
     sellerProducts.forEach(p => {
-        adCount++;
-        let adStatus = p.isAd ? `<span class="badge" style="background:#fef08a; color:#854d0e;">Running</span>` : `<span class="badge" style="background:var(--surface-2); color:var(--text-light);">Inactive</span>`;
-        let btn = p.isAd ? `<button class="btn-sm delete" style="padding:10px 15px;" onclick="stopAd('${p.id}')"><i class="fas fa-stop"></i> Stop Ad</button>` : `<button class="btn-sm edit" style="background:var(--primary); padding:10px 15px;" onclick="promptAd('${p.id}')"><i class="fas fa-play"></i> Start Ad</button>`;
-        
-        // Include product image
-        let imgSrc = (p.images && p.images.length > 0) ? p.images[0] : (p.image ? p.image : 'https://via.placeholder.com/40');
-        let imgHtml = `<img src="${imgSrc}" style="width:40px; height:40px; border-radius:8px; object-fit:cover; border:1px solid var(--border-color); margin-right:12px; vertical-align:middle;">`;
-        
-        list.innerHTML += `<tr>
-            <td data-label="Product & Image"><div style="display:flex; align-items:center;">${imgHtml} <strong style="font-size:14px;">${p.name}</strong></div></td>
-            <td data-label="Price"><strong style="font-size:15px; color:var(--primary);">₹${p.price}</strong></td>
-            <td data-label="Ad Status">${adStatus}</td>
-            <td data-label="Action">${btn}</td>
-        </tr>`;
+        let adBadge = p.sponsored ? `<span class="badge" style="background:#fbcfe8; color:#be185d;">Active</span>` : `<span class="badge" style="background:var(--surface-2); color:var(--text-light);">Inactive</span>`;
+        let adAction = p.sponsored ? `<button class="btn-sm" style="background:var(--danger);" onclick="stopAd('${p.id}')">Stop</button>` : `<button class="btn-sm" style="background:#ec4899;" onclick="startAd('${p.id}')">Promote</button>`;
+        list.innerHTML += `<tr><td data-label="Product"><strong style="font-size:14px;">${p.name}</strong></td><td data-label="Price">₹${p.price}</td><td data-label="Status">${adBadge}</td><td data-label="Action">${adAction}</td></tr>`;
     });
-    if(adCount === 0) list.innerHTML = "<tr><td colspan='4' style='text-align:center;'>No products available for ads.</td></tr>";
 }
 
-window.promptAd = function(id) {
-    const joined = new Date(currentSeller.joinedDate || Date.now()); const diffDays = (Date.now() - joined.getTime()) / (1000 * 3600 * 24);
-    let freeAdsAvailable = false;
-    if(currentSeller.subscription === 'Go' || currentSeller.subscription === 'Pro') freeAdsAvailable = true; 
-
-    if((diffDays <= 30 && !currentSeller.usedFreeAd) || freeAdsAvailable) { 
-        if(confirm("Promotional Offer / Plan Perk: Start 1 ad for free?")) { 
-            currentSeller.usedFreeAd = true; localStorage.setItem('sellerToken', JSON.stringify(currentSeller)); executeAdStart(id); 
-            db.collection("sellers").doc(currentSeller.email).update({ usedFreeAd: true });
-        } 
-    } else { 
-        document.getElementById("adProdId").value = id;
-        document.getElementById("adCostDisplay").innerText = `₹${calculateAdCost()}`;
+window.startAd = function(id) {
+    let freeAdsLeft = 0;
+    if(currentSeller.subscription === 'Go') freeAdsLeft = 3; if(currentSeller.subscription === 'Pro') freeAdsLeft = 5;
+    
+    let activeAdsCount = sellerProducts.filter(p => p.sponsored).length;
+    document.getElementById("adProdId").value = id;
+    
+    if(activeAdsCount < freeAdsLeft) {
+        if(confirm(`Use 1 of your ${freeAdsLeft} free Sponsored Ads?`)) { executeAd(id); }
+    } else {
         validatePayoutButtons();
-        document.getElementById("adPaymentModal").style.display = "flex"; 
+        document.getElementById("adPaymentModal").style.display = "flex";
     }
 }
 
 window.payAdOnline = function() {
-    const id = document.getElementById("adProdId").value;
-    const cost = calculateAdCost();
-    const options = {
-        "key": API_KEYS.RAZORPAY, "amount": cost * 100, "currency": "INR", "name": "Aryanta Ads", "description": "24 Hour Sponsored Ad Boost",
-        "handler": function (res) { executeAdStart(id); closeModal("adPaymentModal"); },
-        "prefill": { "name": currentSeller.companyName, "email": currentSeller.email },
-        "theme": { "color": "#ec4899" }
-    };
-    const rzp = new Razorpay(options); rzp.open();
+    if (!API_KEYS.RAZORPAY) return showToast("Razorpay disabled.", "error");
+    var options = { "key": API_KEYS.RAZORPAY, "amount": 7000, "currency": "INR", "name": "Aryanta Ads", "description": "Sponsored Ad (24 Hrs)", "handler": function(res) { closeModal("adPaymentModal"); executeAd(document.getElementById("adProdId").value); }, "prefill": { "email": currentSeller.email, "contact": currentSeller.phone }, "theme": { "color": "#ec4899" } };
+    var rzp1 = new Razorpay(options); rzp1.open();
 }
 
-window.payAdUpcoming = async function() { 
-    const cost = calculateAdCost();
-    if(cachedTotalUpcoming < cost) return showToast("Insufficient funds in upcoming payout.", "error");
-    if(!confirm(`Secure Action: Deduct ₹${cost} from upcoming payout?`)) return;
-    const id = document.getElementById("adProdId").value; 
-    try { await db.collection("fines").add({ email: currentSeller.email, amount: cost, reason: `Ad Boost for 24h: ${id}`, timestamp: new Date().toISOString() }); executeAdStart(id); closeModal("adPaymentModal"); try{await initDashboard();}catch(e){} loadPayments(); } catch(e) {} 
-}
-
-async function executeAdStart(id) { try { await db.collection("products").doc(id).update({ isAd: true }); try{await initDashboard();}catch(e){} loadAds(); showToast("Ad Started. Product boosted!", "success"); } catch(e) {} }
-window.stopAd = async function(id) { try { await db.collection("products").doc(id).update({ isAd: false }); try{await initDashboard();}catch(e){} loadAds(); showToast("Ad Stopped.", "success"); } catch(e) {} }
-
-// ================= BUY B2B SUPPLIES WITH RAZORPAY =================
-let b2bImageIndexes = {}; 
-
-window.loadB2bStore = async function() {
-    const grid = document.getElementById("b2bProductsGrid"); grid.innerHTML = "Loading...";
+window.payAdUpcoming = async function() {
+    if(cachedTotalUpcoming < 70) return showToast("Insufficient funds.", "error");
+    if(!confirm("Deduct ₹70 from upcoming payout?")) return;
     try {
-        const snap = await db.collection("b2b_products").get();
-        if(!snap.empty) {
-            b2bItems = snap.docs.map(d => ({id: d.id, ...d.data()})); grid.innerHTML = "";
-            if(b2bItems.length===0) { grid.innerHTML = "<p>No B2B items currently available from admin.</p>"; return; }
-            
-            b2bItems.forEach(p => {
-                b2bImageIndexes[p.id] = 0;
-                let images = []; if(p.image) images.push(p.image); if(p.images && Array.isArray(p.images)) { images = p.images; } 
-                
-                let imgHtml = ""; let navHtml = "";
-                if (images.length > 0) {
-                    imgHtml = `<img id="b2bImg_${p.id}" src="${images[0]}" onclick="event.stopPropagation(); openImageViewer(this.src)">`;
-                    if (images.length > 1) { navHtml = `<div class="gallery-nav left" onclick="event.stopPropagation(); changeB2bImg('${p.id}', -1)"><i class="fas fa-chevron-left"></i></div><div class="gallery-nav right" onclick="event.stopPropagation(); changeB2bImg('${p.id}', 1)"><i class="fas fa-chevron-right"></i></div>`; }
-                } else { imgHtml = `<div style="width:100%; height:100%; background:#e2e8f0;"></div>`; }
-
-                grid.innerHTML += `
-                <div class="b2b-card" onclick="openB2bBuyModal('${p.id}')">
-                    <div class="b2b-img-box">${navHtml}${imgHtml}</div>
-                    <div class="b2b-content">
-                        <h4 style="margin-bottom:8px; font-size:16px; font-weight:800; color:var(--text-main); line-height:1.2;">${p.name.length > 40 ? p.name.substring(0,40)+'...' : p.name}</h4>
-                        <h3 style="color:var(--primary); font-size:22px; margin-bottom:5px; font-weight:900;">₹${p.price.toLocaleString()}</h3>
-                        <p style="font-size:11px; color:var(--text-light); margin-bottom:15px; font-weight:700;">Min Qty (MOQ): ${p.moq}</p>
-                        <button class="btn-prime w-100" style="padding:12px; font-size:14px; margin-top:auto;" onclick="event.stopPropagation(); openB2bBuyModal('${p.id}')"><i class="fas fa-shopping-bag"></i> Buy Now</button>
-                    </div>
-                </div>`;
-            });
-        } else {
-            grid.innerHTML = "<p>No B2B items currently available from admin.</p>";
-        }
-    } catch(e) { grid.innerHTML = "Error loading B2B store."; }
+        await db.collection("fines").add({ email: currentSeller.email, amount: 70, reason: `Sponsored Ad Fee`, timestamp: new Date().toISOString() });
+        closeModal("adPaymentModal"); executeAd(document.getElementById("adProdId").value);
+    } catch(e) { showToast("Failed to process.", "error"); }
 }
 
-window.changeB2bImg = function(id, dir) {
-    const p = b2bItems.find(x => x.id === id);
-    if(p && p.images && p.images.length > 1) {
-        b2bImageIndexes[id] += dir;
-        if(b2bImageIndexes[id] >= p.images.length) b2bImageIndexes[id] = 0;
-        if(b2bImageIndexes[id] < 0) b2bImageIndexes[id] = p.images.length - 1;
-        document.getElementById(`b2bImg_${id}`).src = p.images[b2bImageIndexes[id]];
-    }
+async function executeAd(id) {
+    try { await db.collection("products").doc(id).update({ sponsored: true, adExpiry: new Date(Date.now() + 86400000).toISOString() }); showToast("Ad is Live for 24 Hrs!", "success"); try{await initDashboard();}catch(e){} loadAds(); } 
+    catch(e) { showToast("Failed to activate ad.", "error"); }
 }
 
-window.openB2bBuyModal = function(id) {
-    const p = b2bItems.find(x => x.id === id); if(!p) return;
-    
-    let imgSrc = p.image || '';
-    document.getElementById("b2bProductInfo").innerHTML = `
-        <div style="display:flex; flex-direction: column; align-items: center; text-align: center; gap: 15px; margin-bottom: 20px;">
-            <img src="${imgSrc}" style="width: 100%; max-height: 250px; object-fit: contain; border-radius: 12px; border: 1px solid var(--border-color);">
-            <div>
-                <h4 style="margin: 0 0 5px; font-size: 18px;">${p.name}</h4>
-                <span style="font-size: 14px; color: var(--text-light); display:block; margin-bottom:10px;">${p.desc || 'Quality B2B Wholesale Item'}</span>
-                <strong style="color: var(--primary); font-size: 24px;">₹${p.price}</strong> <span style="font-size:12px; color:var(--text-light);">/ unit</span>
-            </div>
-        </div>
-    `;
-    document.getElementById("b2bWarrText").innerText = p.warranty || 'No Warranty';
-    
-    document.getElementById("b2bBuyId").value = id; 
-    document.getElementById("b2bMoqLabel").innerText = p.moq;
-    document.getElementById("b2bBuyQty").value = p.moq; document.getElementById("b2bBuyQty").min = p.moq;
-    
-    calcB2bTotal(); 
-    document.getElementById("b2bBuyAddress").value = currentSeller.shopInfo?.address || ""; document.getElementById("b2bBuyCity").value = currentSeller.shopInfo?.city || ""; document.getElementById("b2bBuyPin").value = "";
-    
-    validatePayoutButtons();
-    
-    document.getElementById("b2bStep1").style.display = "block";
-    document.getElementById("b2bStep2").style.display = "none";
-    document.getElementById("buyB2bModal").style.display = "flex";
-}
-
-window.goToB2bStep2 = function() {
-    document.getElementById("b2bStep1").style.display = "none";
-    document.getElementById("b2bStep2").style.display = "block";
-}
-window.goToB2bStep1 = function() {
-    document.getElementById("b2bStep2").style.display = "none";
-    document.getElementById("b2bStep1").style.display = "block";
-}
-
-window.calcB2bTotal = function() {
-    const id = document.getElementById("b2bBuyId").value; const p = b2bItems.find(x => x.id === id); 
-    let qty = parseInt(document.getElementById("b2bBuyQty").value) || 0; if (qty < p.moq) qty = p.moq; 
-    
-    const totalAmount = (p.price * qty) + 70;
-    document.getElementById("b2bBuyTotal").value = totalAmount.toLocaleString('en-IN');
-    
-    const btnPayout = document.getElementById("b2bPayoutBtn");
-    if(cachedTotalUpcoming >= totalAmount) {
-        btnPayout.disabled = false; btnPayout.innerHTML = `<i class="fas fa-wallet"></i> Pay via Upcoming Payout`;
-    } else {
-        btnPayout.disabled = true; btnPayout.innerHTML = `<i class="fas fa-exclamation-circle"></i> Insufficient Balance`;
-    }
-}
-
-window.processB2bBuy = async function(method) {
-    const id = document.getElementById("b2bBuyId").value; const p = b2bItems.find(x => x.id === id); 
-    let qty = parseInt(document.getElementById("b2bBuyQty").value) || p.moq;
-    if(qty < p.moq) return showToast(`Minimum order quantity is ${p.moq}`, "warning");
-    const amount = (p.price * qty) + 70;
-    const add = document.getElementById("b2bBuyAddress").value; const city = document.getElementById("b2bBuyCity").value; const pin = document.getElementById("b2bBuyPin").value;
-    if(!add || !city || !pin) return showToast("Enter full shipping address.", "warning");
-
-    if(method === 'online') { 
-        const options = {
-            "key": API_KEYS.RAZORPAY, "amount": amount * 100, "currency": "INR", "name": "Aryanta B2B Supply", "description": `Purchase ${qty}x ${p.name}`,
-            "handler": function (res) { finalizeB2bBuy(id, amount, qty, "Online Razorpay"); },
-            "prefill": { "name": currentSeller.companyName, "email": currentSeller.email },
-            "theme": { "color": "#10b981" }
-        };
-        const rzp = new Razorpay(options); rzp.open();
-    } 
-    else { 
-        if(cachedTotalUpcoming < amount) return showToast("Insufficient funds in upcoming payout.", "error");
-        if(!confirm(`Deduct ₹${amount.toLocaleString()} from your payout balance?`)) return;
-        try { 
-            await db.collection("fines").add({ email: currentSeller.email, amount: amount, reason: `B2B Purchase (${qty}x ${p.name}) + Shipping`, timestamp: new Date().toISOString() }); 
-            finalizeB2bBuy(id, amount, qty, "Upcoming Payout"); try{await initDashboard();}catch(e){} loadPayments(); 
-        } catch(e) {} 
-    }
-}
-
-async function finalizeB2bBuy(id, amount, qty, method) {
-    const p = b2bItems.find(x => x.id === id);
-    try { 
-        await db.collection("b2b_orders").add({ sellerEmail: currentSeller.email, productId: id, productName: p.name, quantity: qty, amount: amount, paymentMethod: method, timestamp: new Date().toISOString(), status: "Pending" }); 
-        closeModal("buyB2bModal"); showToast("B2B Purchase Successful! Admin will ship it.", "success"); 
-    } catch(e) {}
+window.stopAd = async function(id) {
+    try { await db.collection("products").doc(id).update({ sponsored: false, adExpiry: null }); showToast("Ad Stopped.", "info"); try{await initDashboard();}catch(e){} loadAds(); } 
+    catch(e) { showToast("Failed to stop ad.", "error"); }
 }
 
 // ================= CUSTOMER Q&A =================
 window.loadQna = function() {
-    const list = document.getElementById("qnaList"); list.innerHTML = ""; let qCount = 0;
+    const list = document.getElementById("qnaList"); list.innerHTML = "";
+    let qCount = 0;
     sellerProducts.forEach(p => {
-        if(p.qa && Array.isArray(p.qa)) {
+        if(p.qa && p.qa.length > 0) {
             p.qa.forEach(q => {
-                qCount++; const isAns = q.answer && q.answer.trim() !== '';
-                const status = isAns ? `<span class="badge" style="background:#dcfce3; color:#166534;">Answered</span>` : `<span class="badge" style="background:#fee2e2; color:#991b1b;">Pending</span>`;
-                
-                let btn = '';
-                if(isAns) {
-                    btn = `<button class="btn-sm edit" style="padding:10px;" onclick="openQnaModal('${p.id}','${q.id}', '${q.question.replace(/'/g, "\\'")}', '${q.answer.replace(/'/g, "\\'")}')"><i class="fas fa-edit"></i></button>
-                           <button class="btn-sm delete" style="padding:10px;" onclick="deleteQnaAnswer('${p.id}','${q.id}')"><i class="fas fa-trash"></i></button>`;
-                } else {
-                    btn = `<button class="btn-sm edit" style="padding:10px 15px;" onclick="openQnaModal('${p.id}','${q.id}', '${q.question.replace(/'/g, "\\'")}', '')"><i class="fas fa-reply"></i> Reply</button>`;
-                }
-
-                list.innerHTML += `<tr>
-                    <td data-label="Product"><div style="font-size:12px; font-weight:600; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div></td>
-                    <td data-label="Q&A" style="white-space: normal; line-height: 1.5; min-width: 250px;">
-                        <strong style="font-size:14px; color:#1e3a8a; display:block; margin-bottom:5px;">Q: ${cleanTextLinks(q.question)}</strong>
-                        ${isAns ? `<span style="font-size:13px; color:#064e3b; display:block; background:#ecfdf5; padding:8px; border-radius:8px;">A: ${cleanTextLinks(q.answer)}</span>` : ''}
-                        <span style="font-size:10px; color:var(--text-light); font-weight:800; text-transform:uppercase; display:block; margin-top:5px;">By: ${maskName(q.user)}</span>
-                    </td>
-                    <td data-label="Status">${status}</td><td data-label="Action"><div style="display:flex; justify-content:flex-end; gap:5px;">${btn}</div></td>
-                </tr>`;
+                qCount++;
+                let st = q.answer ? `<span style="color:var(--success); font-weight:800;"><i class="fas fa-check"></i> Answered</span>` : `<span style="color:var(--warning); font-weight:800; animation:pulse 2s infinite;"><i class="fas fa-exclamation-circle"></i> Unanswered</span>`;
+                let btn = q.answer ? `<button class="btn-sm edit" onclick="openQnaModal('${p.id}', '${q.id}')">Edit Reply</button>` : `<button class="btn-sm" style="background:#3b82f6;" onclick="openQnaModal('${p.id}', '${q.id}')">Answer Now</button>`;
+                list.innerHTML += `<tr style="border-bottom:1px solid #e2e8f0;"><td data-label="Product"><strong style="font-size:13px; color:var(--primary);">${p.name}</strong></td><td data-label="Q&A"><div style="font-weight:700; color:var(--text-main); margin-bottom:5px;">Q: ${q.question}</div><div style="font-size:13px; color:var(--text-light);"><span style="font-weight:800; color:var(--secondary);">A:</span> ${q.answer || '<em>Waiting for your reply</em>'}</div></td><td data-label="Status">${st}</td><td data-label="Action">${btn}</td></tr>`;
             });
         }
     });
-    if(qCount === 0) list.innerHTML = "<tr><td colspan='4' style='text-align:center; font-weight:600;'>No questions from customers.</td></tr>";
+    if(qCount === 0) list.innerHTML = "<tr><td colspan='4' style='text-align:center; font-weight:600;'>No customer questions yet.</td></tr>";
 }
 
-window.openQnaModal = function(pId, qId, qText, existingAns) { 
-    document.getElementById("qnaProdId").value = pId; document.getElementById("qnaQid").value = qId; 
-    document.getElementById("qnaTextDisplay").innerHTML = cleanTextLinks(`"${qText}"`); 
-    document.getElementById("qnaAnsText").value = existingAns || ""; 
-    document.getElementById("qnaModal").style.display = "flex"; 
+window.openQnaModal = function(pId, qId) {
+    const p = sellerProducts.find(x => x.id === pId); if(!p) return;
+    const q = p.qa.find(x => x.id === qId); if(!q) return;
+    document.getElementById("qnaProdId").value = pId; document.getElementById("qnaQid").value = qId;
+    document.getElementById("qnaTextDisplay").innerText = "Q: " + q.question;
+    document.getElementById("qnaAnsText").value = q.answer || "";
+    document.getElementById("qnaModal").style.display = "flex";
 }
 
 window.submitQnaAnswer = async function() {
-    const pId = document.getElementById("qnaProdId").value; const qId = document.getElementById("qnaQid").value; const ans = document.getElementById("qnaAnsText").value.trim(); if(!ans) return showToast("Enter an answer.", "warning");
-    const p = sellerProducts.find(x => x.id === pId); if(!p) return; const updatedQA = p.qa.map(q => { if(q.id === qId) { return { ...q, answer: ans, seller: true }; } return q; });
-    try { await db.collection("products").doc(pId).update({ qa: updatedQA }); closeModal('qnaModal'); try{await initDashboard();}catch(e){} loadQna(); showToast("Answer published!", "success"); } catch(e) {}
+    const pId = document.getElementById("qnaProdId").value; const qId = document.getElementById("qnaQid").value;
+    const ans = document.getElementById("qnaAnsText").value.trim(); if(!ans) return showToast("Answer cannot be empty.", "warning");
+    
+    const p = sellerProducts.find(x => x.id === pId); if(!p) return;
+    let newQa = p.qa.map(q => { if(q.id === qId) return {...q, answer: ans}; return q; });
+    
+    try { await db.collection("products").doc(pId).update({ qa: newQa }); closeModal("qnaModal"); showToast("Answer Published!", "success"); try{await initDashboard();}catch(e){} loadQna(); } 
+    catch(e) { showToast("Failed to publish.", "error"); }
 }
 
-window.deleteQnaAnswer = async function(pId, qId) {
-    if(!confirm("Are you sure you want to delete your answer? The question will return to Pending.")) return;
-    const p = sellerProducts.find(x => x.id === pId); if(!p) return; 
-    const updatedQA = p.qa.map(q => { if(q.id === qId) { return { ...q, answer: "", seller: false }; } return q; });
-    try { await db.collection("products").doc(pId).update({ qa: updatedQA }); try{await initDashboard();}catch(e){} loadQna(); showToast("Answer Deleted", "success"); } catch(e) {}
+// ================= SUPPORT TICKETS =================
+window.submitSupportTicket = async function() {
+    const cat = document.getElementById("supCategory").value;
+    const phone = document.getElementById("supPhone").value.trim();
+    const desc = document.getElementById("supDesc").value.trim();
+    if(!cat || !phone || !desc) return showToast("All fields are required.", "warning");
+
+    try {
+        await db.collection("seller_support_tickets").add({
+            ticketId: 'TKT-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+            email: currentSeller.email, sellerName: currentSeller.companyName || currentSeller.email, phone: phone,
+            subject: cat, message: desc, status: "Open", timestamp: new Date().toISOString()
+        });
+        showToast("Support Ticket Submitted. Admin will review shortly.", "success");
+        document.getElementById("supPhone").value = ""; document.getElementById("supDesc").value = "";
+        document.getElementById('supCategorySelected').innerText = "-- Select Issue Type --"; document.getElementById('supCategory').value = "";
+        try{await initDashboard();}catch(e){} 
+        showSection('oldTickets');
+    } catch(e) { showToast("Failed to submit.", "error"); }
 }
 
-// ================= ADMIN SUPPORT TICKET TABS (WITH NEW FILTER LOGIC) =================
-window.filterSupportTickets = function(filter) {
-    const list = document.getElementById("oldTicketsListContainer");
-    if (!sellerSupportTickets || sellerSupportTickets.length === 0) {
-        list.innerHTML = "<div class='panel-box' style='text-align:center;'>No tickets found.</div>";
-        return;
-    }
+window.loadOldTickets = function() {
+    filterSupportTickets('All');
+}
+
+window.filterSupportTickets = function(filterStatus) {
+    const cont = document.getElementById("oldTicketsListContainer"); if(!cont) return;
+    let html = `<div style="display:flex; gap:10px; margin-bottom: 20px; overflow-x:auto; padding-bottom:5px;">
+        <button class="btn-sm" style="background:${filterStatus==='All'?'var(--primary)':'var(--surface-2)'}; color:${filterStatus==='All'?'white':'var(--text-light)'}; padding:10px 20px;" onclick="filterSupportTickets('All')">All</button>
+        <button class="btn-sm" style="background:${filterStatus==='Open'?'var(--warning)':'var(--surface-2)'}; color:${filterStatus==='Open'?'white':'var(--text-light)'}; padding:10px 20px;" onclick="filterSupportTickets('Open')">Open / Review</button>
+        <button class="btn-sm" style="background:${filterStatus==='Waiting for User'?'var(--secondary)':'var(--surface-2)'}; color:${filterStatus==='Waiting for User'?'white':'var(--text-light)'}; padding:10px 20px;" onclick="filterSupportTickets('Waiting for User')">Requires Your Reply</button>
+        <button class="btn-sm" style="background:${filterStatus==='Resolved'?'var(--success)':'var(--surface-2)'}; color:${filterStatus==='Resolved'?'white':'var(--text-light)'}; padding:10px 20px;" onclick="filterSupportTickets('Resolved')">Resolved</button>
+    </div>`;
 
     let filtered = sellerSupportTickets;
-    if (filter !== 'All') {
-        filtered = sellerSupportTickets.filter(t => t.status === filter);
+    if(filterStatus !== 'All') {
+        if(filterStatus === 'Open') filtered = sellerSupportTickets.filter(t => t.status === 'Open' || t.status === 'In Progress');
+        else filtered = sellerSupportTickets.filter(t => t.status === filterStatus || (filterStatus === 'Resolved' && t.status === 'Complete'));
     }
 
-    if (filtered.length === 0) {
-        list.innerHTML = `<div class='panel-box' style='text-align:center;'>No tickets found for status: ${filter}</div>`;
-        return;
-    }
+    if(filtered.length === 0) {
+        html += `<div style="text-align:center; padding:30px; color:var(--text-light); font-weight:600;"><i class="fas fa-ticket-alt" style="font-size:40px; margin-bottom:15px; opacity:0.3;"></i><br>No tickets found for this filter.</div>`;
+    } else {
+        filtered.forEach(t => {
+            let stBadge = '';
+            if(t.status === 'Resolved' || t.status === 'Complete') stBadge = `<span class="badge" style="background:#dcfce3; color:#166534;"><i class="fas fa-check-double"></i> Resolved</span>`;
+            else if(t.status === 'Waiting for User') stBadge = `<span class="badge" style="background:#eff6ff; color:#1e3a8a; animation:pulse 2s infinite;"><i class="fas fa-reply"></i> Action Required</span>`;
+            else stBadge = `<span class="badge" style="background:#fffbeb; color:#b45309;"><i class="fas fa-clock"></i> Under Admin Review</span>`;
 
-    let html = "";
-    filtered.forEach(data => {
-        let badgeColor = (data.status === 'Completed' || data.status === 'Closed') ? '#10b981' : (data.status === 'Pending' ? '#f59e0b' : '#64748b');
-        
-        html += `
-            <div class="panel-box" style="margin-bottom:15px; cursor:pointer; padding:20px; transition:0.2s;" onclick="viewTicketDetails('${data.id}')" onmouseover="this.style.borderColor='var(--secondary)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border-color)'; this.style.transform='none'">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    <strong style="font-size:16px; color:var(--text-main);">${data.reason}</strong>
-                    <span class="badge" style="background:${badgeColor}; color:white;">${data.status}</span>
+            html += `
+            <div class="panel-box" style="margin-bottom:15px; cursor:pointer; transition:0.3s; border:1px solid var(--border-color);" onclick="openTicketDetail('${t.id}')">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <strong style="font-family:monospace; color:var(--primary); font-size:16px;">${t.ticketId || t.id}</strong>${stBadge}
                 </div>
-                <div style="font-size:13px; color:var(--text-light);"><i class="fas fa-clock"></i> ${new Date(data.timestamp).toLocaleString()}</div>
-            </div>
-        `;
-    });
-    list.innerHTML = html;
+                <div style="font-weight:800; font-size:15px; color:var(--text-main); margin-bottom:8px;">${t.subject || 'Support Query'}</div>
+                <div style="font-size:13px; color:var(--text-light);"><i class="fas fa-calendar-alt"></i> ${new Date(t.timestamp).toLocaleString()}</div>
+            </div>`;
+        });
+    }
+    cont.innerHTML = html;
 }
 
-window.submitSupportTicket = async function() {
-    const cat = document.getElementById("supCategory").value; 
-    if(!cat) return showToast("Please select an Issue Category.", "warning");
-
-    const phone = document.getElementById("supPhone").value; const desc = document.getElementById("supDesc").value;
-    try { 
-        await db.collection("seller_support_tickets").add({ email: currentSeller.email, name: currentSeller.companyName, phone, reason: cat, description: desc, status: "Pending", timestamp: new Date().toISOString() }); 
-        showToast("Support Ticket submitted. Admin will resolve this soon.", "success"); 
-        
-        document.getElementById("supDesc").value = ""; 
-        document.getElementById("supCategory").value = "";
-        document.getElementById("supCategorySelected").innerText = "-- Select Issue Type --";
-        try{await initDashboard();}catch(e){}
-    } catch(e) { showToast("Error sending ticket", "error"); }
-}
-
-window.loadOldTickets = async function() {
-    // Wait a bit to ensure global array is populated from fetch
-    setTimeout(() => { filterSupportTickets('All'); }, 500); 
-}
-
-window.viewTicketDetails = function(id) {
+window.openTicketDetail = function(id) {
     const t = sellerSupportTickets.find(x => x.id === id); if(!t) return;
     
-    let adminReply = t.adminReply ? `<div style="margin-top:15px; padding:15px; background:#ecfdf5; border-radius:12px; border:1px solid #a7f3d0;"><strong style="color:var(--success);">Admin Reply:</strong><br>${cleanTextLinks(t.adminReply)}</div>` : `<div style="margin-top:15px; padding:10px; color:var(--text-light); font-style:italic;">No reply from admin yet.</div>`;
-
-    document.getElementById("ticketDetailContent").innerHTML = `
-        <strong style="font-size:16px;">${t.reason}</strong><br>
-        <span style="font-size:12px; color:var(--text-light);">${new Date(t.timestamp).toLocaleString()}</span>
-        <div style="margin-top:15px;"><strong style="font-size:14px;">Your Message:</strong><br>${cleanTextLinks(t.description)}</div>
-        ${adminReply}
+    let html = `
+        <div style="background:var(--surface-2); padding:15px; border-radius:12px; margin-bottom:20px; font-weight:600; font-size:14px; border:1px solid var(--border-color);">
+            <strong style="color:var(--text-light); text-transform:uppercase; font-size:11px;">Your Original Query:</strong><br><br>
+            ${t.message || t.description || 'No description provided.'}
+        </div>
     `;
+
+    if(t.adminReply) {
+        html += `
+        <div style="background:#f5f3ff; padding:15px; border-radius:12px; margin-bottom:20px; font-weight:600; font-size:14px; border:1px solid #c7d2fe;">
+            <strong style="color:#4338ca; text-transform:uppercase; font-size:11px;"><i class="fas fa-user-shield"></i> Admin Reply:</strong><br><br>
+            ${t.adminReply}
+        </div>`;
+    }
+
+    if(t.sellerReply) {
+        html += `
+        <div style="background:#f0fdf4; padding:15px; border-radius:12px; margin-bottom:20px; font-weight:600; font-size:14px; border:1px solid #bbf7d0;">
+            <strong style="color:#166534; text-transform:uppercase; font-size:11px;"><i class="fas fa-user"></i> Your Follow-up:</strong><br><br>
+            ${t.sellerReply}
+        </div>`;
+    }
+
+    if(t.status === 'Waiting for User') {
+        html += `
+        <div style="margin-top:20px; border-top:1px solid var(--border-color); padding-top:20px;">
+            <label style="color:var(--secondary);"><i class="fas fa-reply"></i> Send Follow-up Response to Admin</label>
+            <textarea id="replyTktMsg" class="input-field" style="height:100px;" placeholder="Provide additional details or attachments..." aria-label="Reply Message"></textarea>
+            <button class="btn-prime w-100" style="background:var(--secondary); padding:15px;" onclick="sendTicketReply('${t.id}')">Submit Reply</button>
+        </div>`;
+    } else if (t.status !== 'Complete' && t.status !== 'Resolved') {
+         html += `<div style="text-align:center; color:var(--warning); font-weight:800; font-size:13px; padding:10px; background:#fffbeb; border-radius:8px;"><i class="fas fa-clock"></i> Ticket is under review by admin. You will be notified of updates.</div>`;
+    } else {
+        html += `<div style="text-align:center; color:var(--success); font-weight:800; font-size:13px; padding:10px; background:#f0fdf4; border-radius:8px;"><i class="fas fa-check-double"></i> Ticket Resolved & Closed.</div>`;
+    }
+
+    document.getElementById("ticketDetailContent").innerHTML = html;
     document.getElementById("ticketDetailModal").style.display = "flex";
 }
 
-// ================= FORGOT PASSWORD =================
-async function generateSecureHash(text) {
-    const msgUint8 = new TextEncoder().encode(text);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-window.openForgotPass = function() {
-    document.getElementById('stepEmail').style.display = 'block';
-    document.getElementById('stepOTP').style.display = 'none';
-    document.getElementById('stepReset').style.display = 'none';
-    document.getElementById('fpIdentifier').value = '';
-    document.getElementById('fpOTP').value = '';
-    document.getElementById('fpNewPass').value = '';
-    document.getElementById('fpConfirmPass').value = '';
-    document.getElementById('fpNoAccountMsg').style.display = 'none';
+window.sendTicketReply = async function(id) {
+    const msg = document.getElementById("replyTktMsg").value.trim();
+    if(!msg) return showToast("Reply cannot be empty.", "warning");
     
-    document.getElementById('forgotPassModal').style.display = 'flex';
-}
-
-window.checkAccountAndSendOTP = async function() {
-    const identifier = document.getElementById('fpIdentifier').value.trim();
-    if(!identifier) return showToast("Enter your email or phone number", "warning");
-    
-    const btn = document.getElementById('fpNextBtn');
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking Database...';
-    document.getElementById('fpNoAccountMsg').style.display = 'none';
-
     try {
-        const snapEmail = await db.collection("sellers").where("email", "==", identifier).get();
-        let targetEmail = null;
-        
-        if(!snapEmail.empty) {
-            targetEmail = snapEmail.docs[0].data().email;
-        } else {
-            const snapPhone = await db.collection("sellers").where("phone", "==", identifier).get();
-            if(!snapPhone.empty) {
-                targetEmail = snapPhone.docs[0].data().email;
-            }
-        }
-        
-        if (!targetEmail) {
-            btn.innerHTML = '<i class="fas fa-arrow-right"></i> Next';
-            document.getElementById('fpNoAccountMsg').style.display = 'block';
-            return;
-        }
+        await db.collection("seller_support_tickets").doc(id).update({
+            sellerReply: msg, status: "In Progress", timestamp: new Date().toISOString()
+        });
+        showToast("Reply sent to admin.", "success");
+        closeModal("ticketDetailModal");
+        try{await initDashboard();}catch(e){}
+        filterSupportTickets('All');
+    } catch(e) { showToast("Failed to send reply.", "error"); }
+}
 
-        await sendSecureOTP(targetEmail);
+// ================= B2B WHOLESALE STORE =================
+function loadB2bStore() {
+    const grid = document.getElementById("b2bProductsGrid"); grid.innerHTML = "";
+    db.collection("b2b_products").get().then(snap => {
+        b2bItems = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        if(b2bItems.length === 0) { grid.innerHTML = "<div style='grid-column: 1/-1; text-align:center; padding:50px; font-weight:600; color:var(--text-light);'>No B2B items listed by admin yet.</div>"; return; }
+        
+        b2bItems.forEach(p => {
+            let img = p.image || "https://via.placeholder.com/260";
+            let stockHtml = p.stock > 0 ? `<span style="color:var(--success); font-weight:800;"><i class="fas fa-check"></i> In Stock</span>` : `<span style="color:var(--danger); font-weight:800;"><i class="fas fa-times"></i> Out of Stock</span>`;
+            
+            grid.innerHTML += `
+            <div class="b2b-card" onclick="${p.stock > 0 ? `openBuyB2bModal('${p.id}')` : ''}">
+                <div class="b2b-img-box"><img src="${img}"></div>
+                <div class="b2b-content">
+                    <span style="font-size:11px; color:var(--text-light); font-weight:800; text-transform:uppercase; margin-bottom:5px;">${p.category || 'General'}</span>
+                    <strong style="font-size:16px; margin-bottom:8px; line-height:1.4;">${p.name}</strong>
+                    <div style="font-size:13px; color:var(--text-light); margin-bottom:15px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${p.description || ''}</div>
+                    <div style="margin-top:auto; display:flex; justify-content:space-between; align-items:flex-end;">
+                        <div>
+                            <strong style="color:var(--primary); font-size:22px; display:block;">₹${p.price} <span style="font-size:12px; color:var(--text-light);">/unit</span></strong>
+                            <span style="font-size:12px; font-weight:800;">Min Qty: ${p.moq || 1}</span>
+                        </div>
+                        ${stockHtml}
+                    </div>
+                </div>
+            </div>`;
+        });
+    }).catch(e=>{});
+}
 
-    } catch(e) {
-        showToast("Network Error checking database.", "error");
-        btn.innerHTML = '<i class="fas fa-arrow-right"></i> Next';
+window.openBuyB2bModal = function(id) {
+    const p = b2bItems.find(x => x.id === id); if(!p) return;
+    document.getElementById("b2bBuyId").value = id;
+    document.getElementById("b2bBuyQty").value = p.moq || 1;
+    document.getElementById("b2bBuyQty").min = p.moq || 1;
+    document.getElementById("b2bMoqLabel").innerText = p.moq || 1;
+    document.getElementById("b2bWarrText").innerText = "Standard Admin Guarantee";
+    
+    document.getElementById("b2bProductInfo").innerHTML = `
+        <div style="display:flex; gap:15px; background:var(--surface-2); padding:15px; border-radius:12px; margin-bottom:20px; border:1px solid var(--border-color);">
+            <img src="${p.image || 'https://via.placeholder.com/80'}" style="width:80px; height:80px; border-radius:8px; object-fit:cover;">
+            <div>
+                <strong style="font-size:16px; display:block; margin-bottom:5px;">${p.name}</strong>
+                <span style="font-size:13px; color:var(--text-light); display:block; margin-bottom:8px;">Base Price: <strong style="color:var(--primary);">₹${p.price}</strong> / unit</span>
+                <span class="badge" style="background:#dcfce3; color:#166534;">Verified Enterprise Supplier</span>
+            </div>
+        </div>
+    `;
+    
+    // Auto-fill address if available
+    if(currentSeller.shopInfo) {
+        document.getElementById("b2bBuyAddress").value = currentSeller.shopInfo.address || '';
+        document.getElementById("b2bBuyCity").value = currentSeller.shopInfo.city || '';
+        document.getElementById("b2bBuyPin").value = currentSeller.shopInfo.pincode || '';
+    } else {
+        document.getElementById("b2bBuyAddress").value = currentSeller.address || '';
+        document.getElementById("b2bBuyCity").value = currentSeller.city || '';
+        document.getElementById("b2bBuyPin").value = currentSeller.pincode || '';
+    }
+
+    goToB2bStep1(); calcB2bTotal(); document.getElementById("buyB2bModal").style.display = "flex";
+}
+
+window.calcB2bTotal = function() {
+    const id = document.getElementById("b2bBuyId").value; const p = b2bItems.find(x => x.id === id); if(!p) return;
+    let qty = parseInt(document.getElementById("b2bBuyQty").value) || p.moq || 1;
+    if(qty < (p.moq||1)) qty = p.moq || 1;
+    const total = (qty * p.price) + 70; // 70 flat shipping
+    document.getElementById("b2bBuyTotal").value = `₹${total}`;
+    
+    const payoutBtn = document.getElementById("b2bPayoutBtn");
+    if(payoutBtn) {
+        if(cachedTotalUpcoming >= total) { payoutBtn.disabled = false; payoutBtn.innerHTML = '<i class="fas fa-wallet"></i> Pay via Upcoming Payout'; }
+        else { payoutBtn.disabled = true; payoutBtn.innerHTML = '<i class="fas fa-exclamation-circle"></i> Insufficient Payout Balance'; }
     }
 }
 
-async function sendSecureOTP(email) {
-    const otp = Math.floor(1000 + Math.random() * 9000).toString();
-    const secureSalt = "_aryantaCrypt" + Date.now();
+window.goToB2bStep2 = function() { document.getElementById("b2bStep1").style.display = "none"; document.getElementById("b2bStep2").style.display = "block"; }
+window.goToB2bStep1 = function() { document.getElementById("b2bStep2").style.display = "none"; document.getElementById("b2bStep1").style.display = "block"; }
+
+window.processB2bBuy = async function(method) {
+    const id = document.getElementById("b2bBuyId").value; const p = b2bItems.find(x => x.id === id); if(!p) return;
+    let qty = parseInt(document.getElementById("b2bBuyQty").value) || p.moq || 1;
+    const totalAmount = (qty * p.price) + 70;
     
-    const hashedOTP = await generateSecureHash(otp + secureSalt);
+    const addr = document.getElementById("b2bBuyAddress").value.trim(); const city = document.getElementById("b2bBuyCity").value.trim(); const pin = document.getElementById("b2bBuyPin").value.trim();
+    if(!addr || !city || !pin) return showToast("Complete shipping address is required.", "warning");
+
+    const orderData = {
+        productId: p.id, productName: p.name, productImage: p.image || '', pricePerUnit: p.price, qty: qty, shippingFee: 70, totalPrice: totalAmount,
+        sellerEmail: currentSeller.email, sellerName: currentSeller.companyName || currentSeller.email, sellerPhone: currentSeller.phone || '',
+        address: addr, city: city, pincode: pin, status: "Pending", date: new Date().toISOString(), paymentMethod: method
+    };
+
+    if(method === 'payout') {
+        if(cachedTotalUpcoming < totalAmount) return showToast("Insufficient payout balance.", "error");
+        if(!confirm(`Deduct ₹${totalAmount} from your payout?`)) return;
+        try {
+            await db.collection("fines").add({ email: currentSeller.email, amount: totalAmount, reason: `B2B Wholesale Purchase: ${p.name} (x${qty})`, timestamp: new Date().toISOString() });
+            await finalizeB2bOrder(orderData, p, qty);
+        } catch(e) { showToast("Transaction failed.", "error"); }
+    } else {
+        if (!API_KEYS.RAZORPAY) return showToast("Razorpay disabled.", "error");
+        showToast("Connecting to Payment Gateway...", "info");
+        var options = { "key": API_KEYS.RAZORPAY, "amount": totalAmount * 100, "currency": "INR", "name": "Aryanta Wholesale", "description": `B2B Order: ${p.name}`, "handler": function(res) { finalizeB2bOrder(orderData, p, qty); }, "prefill": { "email": currentSeller.email, "contact": currentSeller.phone }, "theme": { "color": "#10b981" } };
+        var rzp1 = new Razorpay(options); rzp1.open();
+    }
+}
+
+async function finalizeB2bOrder(orderData, product, qtyBought) {
+    try {
+        await db.collection("b2b_orders").add(orderData);
+        let newStock = product.stock - qtyBought; if(newStock < 0) newStock = 0;
+        await db.collection("b2b_products").doc(product.id).update({ stock: newStock });
+        showToast("B2B Order Confirmed! Admin will ship soon.", "success");
+        closeModal("buyB2bModal"); loadB2bStore();
+    } catch(e) { showToast("Failed to log order securely.", "error"); }
+}
+
+// ================= PASSWORD RESET LOGIC (Firebase + EmailJS OTP) =================
+window.openForgotPass = function() {
+    document.getElementById("fpIdentifier").value = "";
+    document.getElementById("fpOTP").value = "";
+    document.getElementById("fpNewPass").value = "";
+    document.getElementById("fpConfirmPass").value = "";
+    document.getElementById("fpNoAccountMsg").style.display = "none";
     
-    sessionStorage.setItem('fp_otp_hash', hashedOTP);
-    sessionStorage.setItem('fp_otp_salt', secureSalt);
-    sessionStorage.setItem('fp_email_lock', email);
+    document.getElementById("stepEmail").style.display = "block";
+    document.getElementById("stepOTP").style.display = "none";
+    document.getElementById("stepReset").style.display = "none";
+    
+    document.getElementById("forgotPassModal").style.display = "flex";
+}
+
+window.checkAccountAndSendOTP = async function() {
+    const identifier = document.getElementById("fpIdentifier").value.trim().toLowerCase();
+    if(!identifier) return showToast("Please enter Email or Phone Number", "warning");
+
+    const btn = document.getElementById("fpNextBtn");
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Checking...`;
+    btn.disabled = true;
+    document.getElementById("fpNoAccountMsg").style.display = "none";
 
     try {
-        await emailjs.send(API_KEYS.EMAILJS_OTP_SERVICE, API_KEYS.EMAILJS_OTP_TEMPLATE, {
-            to_email: email,
-            otp_code: otp,
-            user_type: "Seller Partner"
-        });
+        let sellerDoc = null; let foundEmail = null;
+
+        const emailSnap = await db.collection("sellers").where("email", "==", identifier).get();
+        if(!emailSnap.empty) { sellerDoc = emailSnap.docs[0].data(); foundEmail = sellerDoc.email; }
+        else {
+            const phoneSnap = await db.collection("sellers").where("phone", "==", identifier).get();
+            if(!phoneSnap.empty) { sellerDoc = phoneSnap.docs[0].data(); foundEmail = sellerDoc.email; }
+        }
+
+        if(!sellerDoc || !foundEmail) {
+            document.getElementById("fpNoAccountMsg").style.display = "block";
+            btn.innerHTML = `<i class="fas fa-arrow-right"></i> Next`;
+            btn.disabled = false;
+            return;
+        }
+
+        const otp = Math.floor(1000 + Math.random() * 9000).toString();
+        const salt = Math.random().toString(36).substring(2, 15);
+        const encoder = new TextEncoder(); const data = encoder.encode(otp + salt); const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer)); const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         
-        showToast("Secure OTP Sent to your Email!", "success");
-        document.getElementById('stepEmail').style.display = 'none';
-        document.getElementById('stepOTP').style.display = 'block';
-        document.getElementById('fpNextBtn').innerHTML = '<i class="fas fa-arrow-right"></i> Next';
+        sessionStorage.setItem('fp_otp_hash', hashHex);
+        sessionStorage.setItem('fp_otp_salt', salt);
+        sessionStorage.setItem('fp_email_lock', foundEmail);
+
+        if(API_KEYS.EMAILJS_PUBLIC) emailjs.init(API_KEYS.EMAILJS_PUBLIC);
+        
+        let templateParams = {
+            to_email: foundEmail,
+            to_name: sellerDoc.companyName || sellerDoc.name || 'Seller',
+            otp_code: otp,
+            reply_to: "support@aryanta.in"
+        };
+
+        if(API_KEYS.EMAILJS_OTP_SERVICE && API_KEYS.EMAILJS_OTP_TEMPLATE) {
+            await emailjs.send(API_KEYS.EMAILJS_OTP_SERVICE, API_KEYS.EMAILJS_OTP_TEMPLATE, templateParams);
+        } else {
+             // Fallback console log if keys missing (for dev)
+             console.log(`[DEV MODE] OTP for ${foundEmail} is: ${otp}`);
+        }
+
+        showToast("OTP sent securely to registered email.", "success");
+        document.getElementById("stepEmail").style.display = "none";
+        document.getElementById("stepOTP").style.display = "block";
+
     } catch(e) {
-        showToast("Failed to send email. Check EmailJS config.", "error");
-        document.getElementById('fpNextBtn').innerHTML = '<i class="fas fa-arrow-right"></i> Next';
+        showToast("Network error. Please try again.", "error");
+    } finally {
+        btn.innerHTML = `<i class="fas fa-arrow-right"></i> Next`;
+        btn.disabled = false;
     }
 }
 
 window.verifyOTP = async function() {
-    const entered = document.getElementById('fpOTP').value.trim();
-    const storedHash = sessionStorage.getItem('fp_otp_hash');
-    const storedSalt = sessionStorage.getItem('fp_otp_salt');
-    
-    if(!storedHash || !storedSalt) return showToast("Session expired, please request OTP again.", "error");
-    
-    const hashedEntered = await generateSecureHash(entered + storedSalt);
-    
-    if (hashedEntered === storedHash) {
-        showToast("OTP Verified Successfully!", "success");
-        document.getElementById('stepOTP').style.display = 'none';
-        document.getElementById('stepReset').style.display = 'block';
+    const enteredOTP = document.getElementById("fpOTP").value.trim();
+    if(enteredOTP.length !== 4) return showToast("Enter complete 4-digit OTP", "warning");
+
+    const savedHash = sessionStorage.getItem('fp_otp_hash');
+    const salt = sessionStorage.getItem('fp_otp_salt');
+    if(!savedHash || !salt) return showToast("Session expired. Start again.", "error");
+
+    const encoder = new TextEncoder(); const data = encoder.encode(enteredOTP + salt); const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer)); const computedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    if(computedHash === savedHash) {
+        showToast("OTP Verified successfully!", "success");
+        document.getElementById("stepOTP").style.display = "none";
+        document.getElementById("stepReset").style.display = "block";
     } else {
-        showToast("Incorrect OTP!", "error");
+        showToast("Invalid OTP. Try again.", "error");
     }
 }
 
 window.resetPassword = async function() {
-    const newPass = document.getElementById('fpNewPass').value.trim();
-    const confirmPass = document.getElementById('fpConfirmPass').value.trim();
+    const p1 = document.getElementById("fpNewPass").value.trim();
+    const p2 = document.getElementById("fpConfirmPass").value.trim();
+    const lockedEmail = sessionStorage.getItem('fp_email_lock');
 
-    if(newPass.length < 6) return showToast("Password must be at least 6 characters long", "warning");
-    if(newPass !== confirmPass) return showToast("Passwords do not match!", "error");
-    
-    const targetEmail = sessionStorage.getItem('fp_email_lock');
-    
+    if(!lockedEmail) return showToast("Security error. Restart process.", "error");
+    if(p1.length < 6) return showToast("Password must be at least 6 characters.", "warning");
+    if(p1 !== p2) return showToast("Passwords do not match.", "error");
+
     try {
-        await db.collection("sellers").doc(targetEmail).update({ password: newPass });
-        showToast("Password updated successfully! Logging you in...", "success");
-        closeModal('forgotPassModal');
+        await db.collection("sellers").doc(lockedEmail).update({ password: p1 });
+        showToast("Password Reset Successful! You can now login.", "success");
+        closeModal("forgotPassModal");
         
-        document.getElementById("loginId").value = targetEmail;
-        document.getElementById("loginPass").value = newPass;
+        document.getElementById("loginId").value = lockedEmail;
+        document.getElementById("loginPass").value = p1;
         handleLogin();
 
         sessionStorage.removeItem('fp_otp_hash');
@@ -2134,13 +2214,28 @@ async function fetchAppKeysAndBoot() {
             API_KEYS.EMAILJS_OTP_TEMPLATE = data.emailjsOtpTemplate || API_KEYS.EMAILJS_OTP_TEMPLATE;
         }
 
-        if (API_KEYS.EMAILJS_PUBLIC) {
-            emailjs.init(API_KEYS.EMAILJS_PUBLIC);
-        }
+        if (API_KEYS.EMAILJS_PUBLIC) emailjs.init(API_KEYS.EMAILJS_PUBLIC);
     } catch(e) {
-        console.warn("Failed to fetch API keys from Cloudflare URL. Using fallback if available.", e);
+        console.warn("Failed to fetch secure API keys.", e);
+    } finally {
+        initializeFirebase();
+        checkSession();
     }
-    checkSession();
 }
 
-window.onload = function() { fetchAppKeysAndBoot(); };
+// Ensure DOM DOM Updates are injected properly on load
+document.addEventListener("DOMContentLoaded", () => {
+    // Fix fontawesome icon for delivered orders to be perfectly visible
+    const deliveredIcons = document.querySelectorAll('.fa-box-check');
+    deliveredIcons.forEach(icon => {
+        icon.className = 'fas fa-check-circle';
+    });
+    
+    // Hide print button from payout slip modal
+    const payoutPrintBtn = document.querySelector('#payoutSlipModal .btn-prime');
+    if(payoutPrintBtn) {
+        payoutPrintBtn.style.display = 'none';
+    }
+
+    fetchAppKeysAndBoot();
+});
