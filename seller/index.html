@@ -17,7 +17,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
+    <link rel="stylesheet" href="https://printjs-4de6.kxcdn.com/print.min.css">
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
@@ -81,6 +82,8 @@
         @keyframes marqueeAnim { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
 
         #accountStatusBanner { display: none; background: #991b1b; color: white; padding: 14px 20px; text-align: center; font-weight: 700; font-size: 14px; box-shadow: var(--shadow-sm); z-index: 1009; position: relative; letter-spacing: 0.5px; }
+        #kycAlertBanner { display: none; background: #ef4444; color: white; padding: 14px 20px; text-align: center; font-weight: 700; font-size: 14px; box-shadow: var(--shadow-sm); z-index: 1009; position: relative; cursor: pointer; transition: 0.2s; }
+        #kycAlertBanner:hover { background: #dc2626; }
 
         .top-bar-container { padding: 15px 35px; }
         .top-bar { display: flex; justify-content: space-between; align-items: center; background: var(--white); padding: 15px 25px; border-radius: var(--radius); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); }
@@ -109,6 +112,16 @@
         .stat-card p { color: var(--text-light); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
         .smart-badge { position:absolute; top:15px; right:15px; background:linear-gradient(45deg, #059669, #10b981); color:white; font-size:10px; padding:4px 10px; border-radius:20px; font-weight:bold; letter-spacing:0.5px;}
         .panel-box { background: var(--white); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 25px; box-shadow: var(--shadow-sm); margin-bottom: 20px; }
+
+        /* Custom Support Dropdown CSS */
+        .custom-select-wrapper { position: relative; width: 100%; margin: 8px 0 20px; }
+        .custom-select-trigger { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-main); transition: 0.2s; }
+        .custom-select-trigger:hover { border-color: var(--primary); background: var(--white); box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.1); }
+        .custom-select-options { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--white); border: 1px solid var(--border-color); border-radius: 10px; box-shadow: var(--shadow-lg); z-index: 2000; margin-top: 5px; max-height: 250px; overflow-y: auto; }
+        .custom-select-options.open { display: block; animation: scaleIn 0.2s ease; }
+        .custom-option { padding: 12px 18px; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-main); border-bottom: 1px solid var(--surface-2); transition: 0.2s; }
+        .custom-option:last-child { border-bottom: none; }
+        .custom-option:hover { background: var(--primary); color: white; }
 
         /* Tables */
         .table-container { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; border: 1px solid var(--border-color); margin-bottom: 25px; }
@@ -257,7 +270,7 @@
             
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="btn-prime" style="flex: 1; background: var(--secondary); font-size: 13px; padding: 12px;" onclick="openForgotPass()"><i class="fas fa-lock"></i> Forgot Pass</button>
-                <button class="btn-prime" style="flex: 1; background: #f59e0b; font-size: 13px; padding: 12px;" onclick="window.location.href='https://aryanta.in/sellerpanlevurification.html'"><i class="fas fa-user-plus"></i> Apply to Sell</button>
+                <button class="btn-prime" style="flex: 1; background: #f59e0b; font-size: 13px; padding: 12px;" onclick="window.location.href='https://aryanta.in/seller'"><i class="fas fa-user-plus"></i> Apply to Sell</button>
             </div>
         </div>
     </div>
@@ -270,6 +283,11 @@
         
         <!-- Persistent Banner for Blocked/Suspended Accounts -->
         <div id="accountStatusBanner">Your account is restricted. You are forced into Offline Mode. Contact Support.</div>
+        
+        <!-- Dynamic KYC Alert Banner -->
+        <div id="kycAlertBanner" onclick="showSection('profile'); openKycModal();">
+            <i class="fas fa-exclamation-triangle"></i> Admin requested you to upload fresh KYC/GST documents. Click here to upload!
+        </div>
 
         <!-- SIDEBAR -->
         <aside class="sidebar" id="mobileSidebar">
@@ -277,6 +295,7 @@
             
             <div class="nav-item active" onclick="showSection('home')"><i class="fas fa-chart-pie"></i> Dashboard</div>
             <div class="nav-item" onclick="showSection('profile')"><i class="fas fa-user-circle"></i> Profile Info</div>
+            <div class="nav-item" onclick="showSection('notifications')"><i class="fas fa-bell"></i> All Notifications</div>
             
             <div style="border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 20px;"></div>
             
@@ -285,7 +304,7 @@
             <div class="nav-item" onclick="showSection('acceptedOrders')"><i class="fas fa-check-square" style="color: #60a5fa;"></i> Accepted Orders <span id="badge-accepted" class="nav-badge" style="background:#3b82f6;">0</span></div>
             <div class="nav-item" onclick="showSection('completedScan')"><i class="fas fa-clipboard-check" style="color: #10b981;"></i> Completed Scanning</div>
             <div class="nav-item" onclick="showSection('shippedOrders')"><i class="fas fa-truck-fast" style="color: #34d399;"></i> Shipped Orders</div>
-            <div class="nav-item" onclick="showSection('deliveredOrders')"><i class="fas fa-box-check" style="color: #10b981;"></i> Delivered Orders</div>
+            <div class="nav-item" onclick="showSection('deliveredOrders')"><i class="fas fa-check-circle" style="color: #10b981;"></i> Delivered Orders</div>
             
             <div style="border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 20px;"></div>
             
@@ -423,12 +442,21 @@
                         </div>
 
                         <h4 style="margin-top:30px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">KYC & GST Documents</h4>
-                        <div id="kycStatusBox" style="margin-top:15px; padding:25px; background:var(--surface-2); border-radius:12px; text-align:center; border: 2px dashed #cbd5e1;">
-                            <p style="margin-bottom:10px; font-weight:600; font-size:15px;">Upload your GST and KYC documents to unlock verified features and seamless payouts.</p>
-                            <div id="kycStatusIndicator" style="margin-bottom:15px;"></div>
-                            <button class="btn-prime" onclick="openKycModal()"><i class="fas fa-upload"></i> Upload KYC Documents</button>
+                        <div id="kycStatusBoxWrapper">
+                            <div id="kycStatusBox" style="margin-top:15px; padding:25px; background:var(--surface-2); border-radius:12px; text-align:center; border: 2px dashed #cbd5e1;">
+                                <p style="margin-bottom:10px; font-weight:600; font-size:15px;">Upload your GST and KYC documents to unlock verified features and seamless payouts.</p>
+                                <div id="kycStatusIndicator" style="margin-bottom:15px;"></div>
+                                <button class="btn-prime" onclick="openKycModal()"><i class="fas fa-upload"></i> Upload KYC Documents</button>
+                            </div>
                         </div>
                     </div>
+                </section>
+                
+                <section id="notificationsSection" class="data-section">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                        <h3 style="font-size:22px; margin:0;"><i class="fas fa-bell"></i> All Notifications</h3>
+                    </div>
+                    <div id="fullNotifList" class="panel-box" style="padding: 10px;">Loading...</div>
                 </section>
 
                 <section id="inventorySection" class="data-section">
@@ -464,10 +492,10 @@
                             <input type="checkbox" id="selectAllAcc" class="custom-cb" aria-label="Select All Accepted" onclick="toggleSelectAllAcc(this)"> 
                             <label for="selectAllAcc" style="margin:0 0 0 10px; font-size:14px; cursor:pointer; font-weight: bold;">Select All Orders</label>
                         </div>
-                        <!-- SIDE BY SIDE DOWNLOAD BUTTONS -->
+                        <!-- SIDE BY SIDE PRINT BUTTONS -->
                         <div style="display:flex; gap: 15px; flex-wrap: wrap;">
-                            <button class="btn-pdf" onclick="processSlips('download')"><i class="fas fa-file-pdf"></i> Download Slips</button>
-                            <button class="btn-shiprocket" onclick="downloadShippingInvoice('bulk')"><i class="fas fa-rocket"></i> Shiprocket Slips</button>
+                            <button class="btn-pdf" onclick="processSlips('print')"><i class="fas fa-print"></i> Print Slips</button>
+                            <button class="btn-shiprocket" onclick="downloadShippingInvoice('bulk')"><i class="fas fa-print"></i> Print Shiprocket</button>
                         </div>
                     </div>
                     
@@ -485,7 +513,7 @@
                 </section>
 
                 <section id="deliveredOrdersSection" class="data-section">
-                    <h3 style="color: #10b981; margin-bottom: 20px; font-size:22px;"><i class="fas fa-box-check"></i> Delivered Orders</h3>
+                    <h3 style="color: #10b981; margin-bottom: 20px; font-size:22px;"><i class="fas fa-check-circle"></i> Delivered Orders</h3>
                     <div class="panel-box" style="background:#ecfdf5; border:1px solid #a7f3d0;">
                         <p style="font-size: 14px; color: #064e3b; margin: 0; font-weight:600;">These orders have been successfully marked delivered by the admin. Payments will reflect in your ledger.</p>
                     </div>
@@ -532,7 +560,7 @@
                         <div class="table-container"><table class="admin-table"><thead><tr><th>Transfer Date</th><th>Order Ref</th><th>Status</th><th>Gross Amount</th></tr></thead><tbody id="payUpcomingList"></tbody></table></div>
                     </div>
                     
-                    <div id="tabCompleted" class="payment-tab" style="display:none;"><div class="table-container"><table class="admin-table"><thead><tr><th>Settled Date</th><th>Order Ref</th><th>Amount</th></tr></thead><tbody id="payCompletedList"></tbody></table></div></div>
+                    <div id="tabCompleted" class="payment-tab" style="display:none;"><div class="table-container"><table class="admin-table"><thead><tr><th>Settled Date</th><th>Slip Ref ID</th><th>Final Amount</th></tr></thead><tbody id="payCompletedList"></tbody></table></div></div>
                     <div id="tabFines" class="payment-tab" style="display:none;"><div class="table-container"><table class="admin-table"><thead><tr><th>Date</th><th>Reason</th><th>Amount Deducted</th></tr></thead><tbody id="payFinesList"></tbody></table></div></div>
                 </section>
 
@@ -709,6 +737,24 @@
     </div>
 
     <!-- Modals -->
+    <div class="modal" id="notificationDetailModal">
+        <div class="modal-content" style="width: 500px;">
+            <span class="close-modal" onclick="closeModal('notificationDetailModal')"><i class="fas fa-times"></i></span>
+            <h3 style="color: var(--primary); margin-bottom: 15px; font-size:20px;"><i class="fas fa-bell"></i> Notification Detail</h3>
+            <div id="notifDetailContent"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="payoutSlipModal">
+        <div class="modal-content" style="width: 700px; max-width: 95%;">
+            <span class="close-modal" onclick="closeModal('payoutSlipModal')"><i class="fas fa-times"></i></span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="color: var(--primary); margin:0; font-size:22px;"><i class="fas fa-receipt"></i> Payment Settlement Slip</h3>
+            </div>
+            <div id="payoutSlipContent" style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;"></div>
+        </div>
+    </div>
+
     <div class="modal" id="kycModal">
         <div class="modal-content" style="width: 500px; text-align: center;">
             <span class="close-modal" onclick="closeModal('kycModal')"><i class="fas fa-times"></i></span>
