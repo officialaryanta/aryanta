@@ -7,12 +7,312 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Aryanta | Store</title>
-    <link rel="stylesheet" href="style.css">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono&display=swap" rel="stylesheet">
     
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <style>
+        :root {
+            --primary: #0a0a0a; --primary-hover: #262626; --accent: #0f172a; --danger: #ef4444; --success: #10b981;
+            --bg-color: #f8fafc; --surface: #ffffff; --text-main: #0f172a; --text-muted: #64748b; --border: #e2e8f0;
+            --shadow-sm: 0 4px 6px -1px rgba(0,0,0,0.05); 
+            --shadow-md: 0 10px 25px -5px rgba(0,0,0,0.08); 
+            --shadow-lg: 0 25px 50px -12px rgba(0,0,0,0.15);
+            --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            --font-main: 'Plus Jakarta Sans', sans-serif; --font-mono: 'Space Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-main); -webkit-tap-highlight-color: transparent; }
+        
+        /* Flexbox body to push footer to bottom when 1 item is shown */
+        body { display: flex; flex-direction: column; min-height: 100vh; background-color: var(--bg-color); color: var(--text-main); overflow-x: hidden; padding-top: 80px; transition: background 0.5s ease; }
+        .main-content { flex: 1 0 auto; display: flex; flex-direction: column; width: 100%; }
+
+        .mt-10 { margin-top: 10px; } .mt-20 { margin-top: 20px; } .mt-40 { margin-top: 40px; } .mb-15 { margin-bottom: 15px; } 
+        .w-100 { width: 100%; } .text-center { text-align: center; } 
+        .flex-row-between { display: flex; justify-content: space-between; align-items: center; }
+        .glass-effect { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
+        .premium-hover { transition: var(--transition); cursor: pointer; } .premium-hover:hover { opacity: 0.8; transform: translateY(-2px); }
+        .bounce-hover:hover { transform: translateY(-5px) scale(1.02); box-shadow: var(--shadow-lg); }
+
+        .desktop-only { display: inline; }
+
+        /* Loaders & Bars */
+        .page-loader { position: fixed; inset: 0; background: var(--surface); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s ease; }
+        .page-loader.hidden { opacity: 0; pointer-events: none; }
+        .spinner { width: 50px; height: 50px; border: 3px solid #f1f5f9; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s infinite; margin-bottom: 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Festive / Special Day */
+        .festive-bar { background: linear-gradient(90deg, #e11d48, #be123c, #e11d48); color: white; text-align: center; padding: 10px; font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; animation: gradientShift 3s ease infinite; background-size: 200% 200%; position: fixed; top: 0; width: 100%; z-index: 5001; }
+        @keyframes gradientShift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+        body.theme-special-day { background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); padding-top: 115px; }
+        .theme-special-day .top-bar { top: 38px; border-bottom: 2px solid #fda4af; box-shadow: 0 4px 15px rgba(225, 29, 72, 0.1); background: rgba(255, 255, 255, 0.98); }
+
+        /* Navigation */
+        .top-bar { height: 75px; position: fixed; top: 0; left: 0; width: 100%; padding: 12px 5%; display: flex; align-items: center; justify-content: space-between; z-index: 5000; transition: top 0.3s ease; }
+        .nav-left { display: flex; align-items: center; gap: 15px; }
+        .menu-trigger { font-size: 22px; cursor: pointer; color: var(--primary); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .menu-trigger:hover { transform: scale(1.2) rotate(5deg); }
+        .brand-logo { display: flex; align-items: center; gap: 10px; font-size: 24px; font-weight: 800; cursor: pointer; letter-spacing: -1px; }
+        .brand-img { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); }
+        .prime-dot { color: var(--accent); }
+
+        /* Search Bar & Mic */
+        .nav-search { display: flex; align-items: center; background: var(--bg-color); border-radius: 12px; padding: 10px 15px; border: 1px solid var(--border); position: relative; }
+        .nav-search input { flex: 1; border: none; outline: none; background: transparent; font-size: 15px; width: 100%; padding-right: 65px; }
+        .cat-trigger { color: var(--primary); font-size: 18px; padding-right: 5px; display: flex; align-items: center; cursor: pointer; transition: 0.3s; }
+        .cat-trigger:hover { color: var(--accent); }
+        .search-divider { width: 1px; height: 20px; background: var(--border); margin: 0 12px; }
+        
+        .mic-btn { position: absolute; right: 40px; top: 50%; transform: translateY(-50%); color: var(--primary); cursor: pointer; z-index: 10; font-size: 16px; transition: 0.3s; }
+        .mic-btn:hover { color: var(--danger); transform: translateY(-50%) scale(1.1); }
+        .search-clear { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); cursor: pointer; z-index: 10; font-size: 16px; transition: 0.3s;}
+        .search-clear:hover { color: var(--danger); }
+        .search-dropdown { position: absolute; top: 100%; left: 0; width: 100%; background: #fff; border: 1px solid #ddd; border-radius: 8px; margin-top: 5px; max-height: 250px; overflow-y: auto; z-index: 5000; display: none; box-shadow: var(--shadow-md);}
+        .search-item { padding: 10px; font-size: 14px; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 10px; transition: background 0.3s; }
+        .search-item:hover { background: #f8fafc; }
+
+        .desktop-search { width: 45%; max-width: 700px; display: flex; }
+        .mobile-only-search { display: none; }
+        .search-container { position: fixed; top: 75px; left: 0; width: 100%; padding: 10px 5%; z-index: 4999; transition: transform 0.4s; }
+        .search-container.hide-search { transform: translateY(-100%); }
+        .theme-special-day .search-container { top: 113px; }
+
+        .nav-actions { display: flex; align-items: center; gap: 20px; }
+        .user-trigger { background: transparent; border: none; font-weight: 700; font-size: 15px; color: var(--primary); display: flex; align-items: center; cursor: pointer; outline: none; transition: 0.3s;}
+        .user-trigger:hover { opacity: 0.7; }
+        .nav-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
+        
+        .cart-icon { position: relative; font-size: 22px; cursor: pointer; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .cart-icon:hover { transform: scale(1.15) rotate(-5deg); }
+        .badge { position: absolute; top: -8px; right: -8px; background: var(--accent); color: white; font-size: 11px; font-weight: bold; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); opacity: 0; transform: scale(0); }
+        .badge.show { opacity: 1 !important; transform: scale(1) !important; }
+
+        /* Modals */
+        .modal { position: fixed; inset: 0; z-index: 6500; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.4s ease, visibility 0.4s ease; }
+        .modal.show { opacity: 1; visibility: visible; pointer-events: auto; }
+        .dimmer { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); z-index: 5400; cursor: pointer; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.4s ease, visibility 0.4s ease; }
+        .dimmer.show { opacity: 1; visibility: visible; pointer-events: auto; }
+
+        /* Sidebar Panels */
+        .side-panel { position: fixed; left: 0; top: 0; width: 320px; height: 100%; background: var(--surface); z-index: 5500; transform: translateX(-100%); transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1); display: flex; flex-direction: column; box-shadow: var(--shadow-lg); }
+        .side-panel.open { transform: translateX(0); }
+        .right-panel { left: auto; right: 0; transform: translateX(100%); }
+        .right-panel.open { transform: translateX(0); }
+        
+        .panel-header { padding: 40px 30px 20px; border-bottom: 1px solid var(--border); position: relative;}
+        .close-sidebar { position: absolute; top: 20px; right: 20px; font-size: 20px; cursor: pointer; color: var(--text-muted); transition: 0.3s;}
+        .close-sidebar:hover { color: var(--danger); transform: rotate(90deg); }
+        
+        .avatar-img { width: 55px; height: 55px; border-radius: 50%; border: 2px solid var(--border); object-fit: cover; }
+        .user-greeting span { font-weight: 800; font-size: 18px; display: block; margin-top: 10px;}
+        .user-greeting small { color: var(--accent); font-weight: 700; }
+        
+        .panel-links { flex-grow: 1; padding: 20px 0; overflow-y: auto; overflow-x: hidden; }
+        .panel-links a { display: flex; align-items: center; gap: 15px; padding: 18px 30px; text-decoration: none; color: var(--text-main); font-weight: 600; font-size: 15px; opacity: 0; transform: translateX(-40px); transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        
+        .side-panel.open .panel-links a:nth-child(1) { transition-delay: 0.1s; opacity: 1; transform: translateX(0); }
+        .side-panel.open .panel-links a:nth-child(2) { transition-delay: 0.15s; opacity: 1; transform: translateX(0); }
+        .side-panel.open .panel-links a:nth-child(3) { transition-delay: 0.2s; opacity: 1; transform: translateX(0); }
+        .side-panel.open .panel-links a:nth-child(4) { transition-delay: 0.25s; opacity: 1; transform: translateX(0); }
+        .side-panel.open .panel-links a:nth-child(5) { transition-delay: 0.3s; opacity: 1; transform: translateX(0); }
+        .side-panel.open .panel-links a:nth-child(6) { transition-delay: 0.35s; opacity: 1; transform: translateX(0); }
+        .side-panel.open .panel-links a:nth-child(7) { transition-delay: 0.4s; opacity: 1; transform: translateX(0); }
+        .side-panel.open .panel-links a:nth-child(8) { transition-delay: 0.45s; opacity: 1; transform: translateX(0); }
+        
+        .panel-links a:hover { background: var(--bg-color); color: var(--primary); padding-left: 40px; }
+        
+        .sidebar-footer { padding: 25px 30px; border-top: 1px solid var(--border); text-align: center; }
+        .btn-sidebar-logout { width: 100%; padding: 15px; background: #fee2e2; color: var(--danger); border: 1px solid #fca5a5; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+
+        /* Filter Panel Styles */
+        .filter-section { margin-bottom: 25px; }
+        .filter-section h4 { margin-bottom: 12px; font-size: 16px; font-weight: 800; color: var(--primary); }
+        .filter-label { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 14px; font-weight: 500; cursor: pointer; }
+        .filter-label input[type="radio"] { accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; }
+
+        /* Category Modal */
+        #categoryModal { align-items: flex-end; }
+        .bottom-sheet { background: var(--surface); width: 100%; max-width: 600px; padding: 30px; margin: 0 auto; box-shadow: var(--shadow-lg); max-height: 80vh; overflow-y: auto; border-radius: 24px 24px 0 0; transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal.show .bottom-sheet { transform: translateY(0); }
+        .category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+        .btn-mini { padding: 8px 16px; font-size: 13px; border-radius: 8px; font-weight: 700; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); transition: 0.3s; }
+        .btn-mini:hover { background: var(--primary); color: white; }
+        .exit-modal { position: absolute; right: 20px; top: 20px; font-size: 20px; cursor: pointer; color: #cbd5e1; z-index: 10; background: rgba(0,0,0,0.5); border-radius: 50%; padding: 4px 10px; box-shadow: var(--shadow-sm); transition: 0.3s;}
+        .exit-modal:hover { color: var(--danger); transform: scale(1.1) rotate(90deg); background: rgba(0,0,0,0.8); }
+
+        /* Broadcast & System Popups */
+        .custom-alert-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(8px); z-index: 9999; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.4s ease, visibility 0.4s ease; }
+        .custom-alert-overlay.show { opacity: 1; visibility: visible; pointer-events: auto; }
+        .custom-alert-box { background: var(--surface); padding: 35px; border-radius: 24px; max-width: 400px; width: 90%; text-align: center; box-shadow: var(--shadow-lg); border: 1px solid var(--border); transform: translateY(40px); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .custom-alert-overlay.show .custom-alert-box { transform: translateY(0); }
+        
+        #systemPopup .modal-content { background: var(--surface); padding: 30px; border-radius: 20px; max-width: 400px; width: 90%; text-align: center; transform: scale(0.8); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #systemPopup.show .modal-content { transform: scale(1); }
+
+        /* VOICE SEARCH MODAL (New) */
+        .voice-mic-icon.listening { animation: micPulse 1.5s infinite; color: var(--danger); }
+        @keyframes micPulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.4); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
+        #voiceSearchModal .modal-content { background: rgba(15, 20, 30, 0.85); backdrop-filter: blur(20px); border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); width: 90%; max-width: 400px; transform: scale(0.9); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #voiceSearchModal.show .modal-content { transform: scale(1); }
+
+        /* PREMIUM QUICK VIEW MODAL (Redesigned) */
+        #quickViewModal.show { background: rgba(0,0,0,0.75); backdrop-filter: blur(10px); }
+        .qv-premium-container { display: flex; flex-direction: row; background: rgba(15, 20, 30, 0.6) !important; backdrop-filter: blur(40px) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; max-width: 850px !important; width: 90% !important; border-radius: 30px !important; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.5); padding: 0 !important; transform: translateY(40px) scale(0.95); transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); opacity: 0;}
+        #quickViewModal.show .qv-premium-container { transform: translateY(0) scale(1); opacity: 1; }
+        
+        .qv-left-img { flex: 1; background: rgba(255,255,255,0.03); display: flex; justify-content: center; align-items: center; position: relative; padding: 40px; }
+        .qv-right-details { flex: 1; padding: 40px; display: flex; flex-direction: column; justify-content: center; }
+        
+        #qvImage { max-width: 100%; max-height: 350px; object-fit: contain; animation: floatPremium 6s ease-in-out infinite; filter: drop-shadow(0 20px 30px rgba(0,0,0,0.4)); cursor: pointer; }
+        @keyframes floatPremium { 0% { transform: translateY(0px); } 50% { transform: translateY(-12px); } 100% { transform: translateY(0px); } }
+        
+        #qvDesc { display: block; max-height: 120px; overflow-y: auto; padding-right: 5px; line-height: 1.6; color: #cbd5e1; margin-bottom: 20px; font-size: 14px;}
+        #qvDesc::-webkit-scrollbar { width: 4px; } #qvDesc::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
+        .qv-price-box { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); padding: 15px 25px; border-radius: 16px; display: inline-block; margin-bottom: 25px; box-shadow: 0 10px 20px rgba(0,0,0,0.2);}
+
+        /* PREMIUM SINGLE BANNER (Reverted from Flipkart style) */
+        .hidden-by-search { display: none !important; }
+        .banner-slider-container { width: 100%; max-width: 1400px; margin: 0 auto 20px; padding: 0 5%; position: relative; }
+        .banner-slider { width: 100%; position: relative; border-radius: 16px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow-sm); aspect-ratio: 24 / 7; min-height: 150px;}
+        .f-track { width: 100%; height: 100%; position: relative; }
+        .f-slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-repeat: no-repeat; background-position: center; cursor: pointer; background-color: #f8fafc; opacity: 0; transition: opacity 1s ease-in-out; z-index: 1; }
+        .f-slide.active { opacity: 1; z-index: 2; }
+        
+        .f-nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.95); border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 16px; cursor: pointer; z-index: 10; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); opacity: 0;}
+        .banner-slider:hover .f-nav-btn { opacity: 1; }
+        .f-nav-btn:hover { background: white; transform: translateY(-50%) scale(1.15); color: var(--primary); }
+        .prev-btn { left: 15px; } .next-btn { right: 15px; }
+
+        /* Scrollers & Category Pills */
+        .category-scroll-wrapper { width: 100%; overflow-x: auto; padding: 0 5% 15px; max-width: 1400px; margin: 0 auto; scrollbar-width: none; }
+        .category-scroll-wrapper::-webkit-scrollbar { display: none; }
+        .category-filters { display: flex; gap: 12px; width: max-content; padding-bottom: 5px; }
+        .cat-pill { padding: 10px 22px; border-radius: 100px; background: var(--surface); border: 1px solid var(--border); font-weight: 600; font-size: 14px; cursor: pointer; transition: var(--transition); display: flex; align-items: center; gap: 8px;}
+        .cat-pill.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: var(--shadow-sm); transform: translateY(-2px); }
+        .cat-pill:hover:not(.active) { background: var(--bg-color); transform: translateY(-3px); box-shadow: var(--shadow-sm); }
+        
+        .global-filter-btn { padding: 10px 20px; border-radius: 12px; background: var(--primary); color: white; border: none; font-weight: 800; font-size: 14px; cursor: pointer; box-shadow: var(--shadow-md); display: flex; align-items: center; gap: 8px; transition: 0.3s;}
+        .global-filter-btn:hover { background: var(--primary-hover); transform: translateY(-3px); }
+
+        .section-title { font-size: 18px; margin-bottom: 15px; padding-left: 5px; color: var(--primary); font-weight: 800; display: flex; align-items: center; gap: 8px;}
+
+        /* PRODUCT LIST (Grid & Amazon List View) */
+        .product-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 0 5% 60px; max-width: 1400px; margin: 0 auto; }
+        .list-item-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 15px; transition: var(--transition); box-shadow: var(--shadow-sm); position: relative; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: pointer; height: 100%;}
+        .list-item-card:hover { box-shadow: var(--shadow-md); border-color: var(--primary); transform: translateY(-6px); }
+
+        .list-desc { display: none; font-size: 13px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+        
+        .product-list.list-view { grid-template-columns: 1fr; max-width: 1000px; gap: 15px; }
+        .product-list.list-view .list-item-card { flex-direction: row; align-items: stretch; padding: 15px; gap: 20px; }
+        .product-list.list-view .list-image-container { width: 180px; height: 180px; flex-shrink: 0; }
+        .product-list.list-view .list-info { justify-content: flex-start; align-items: flex-start; }
+        .product-list.list-view .list-info h4 { font-size: 18px; margin-bottom: 8px; }
+        .product-list.list-view .list-info .price { font-size: 24px; margin-bottom: 15px; }
+        .product-list.list-view .list-desc { display: -webkit-box; }
+        .product-list.list-view .list-actions { flex-direction: row; width: 100%; max-width: 400px; margin-top: auto;}
+
+        .list-image-container { width: 100%; height: 220px; position: relative; background: var(--surface); border-radius: 6px; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        .p-img-layer { width: 100%; height: 100%; object-fit: contain; position: absolute; top:0; left:0; opacity: 0; transition: opacity 0.5s cubic-bezier(0.25, 1, 0.5, 1); } 
+        .p-img-layer.active { opacity: 1; z-index: 2; }
+
+        .b-img-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.65); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 13px; cursor: pointer; z-index: 10; display: flex; justify-content: center; align-items: center; opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .list-image-container:hover .b-img-nav { opacity: 1; }
+        .b-img-nav:hover { background: rgba(0,0,0,0.95); transform: translateY(-50%) scale(1.15); }
+        .b-prev { left: 8px; } .b-next { right: 8px; }
+
+        .list-info { flex-grow: 1; display: flex; flex-direction: column; width: 100%; }
+        .list-info h4 { font-size: 16px; font-weight: 800; margin-bottom: 6px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .list-info .stars { color: #f59e0b; font-size: 13px; margin-bottom: 10px; font-weight: 600; }
+        .list-info .price { font-size: 20px; font-weight: 800; color: var(--primary); margin-bottom: 10px; }
+
+        .list-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: auto; }
+        .btn-list-buy, .btn-list-add { flex: 1; padding: 12px; border-radius: 10px; font-weight: 800; font-size: 14px; cursor: pointer; transition: var(--transition); border: 2px solid var(--primary); font-family: var(--font-main); }
+        .btn-list-buy { background: var(--primary); color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-list-buy:hover { background: var(--primary-hover); transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+        .btn-add { background: transparent; color: var(--primary); }
+        .btn-add:hover { background: var(--bg-color); transform: translateY(-3px); }
+        .btn-remove { background: #fee2e2; color: var(--danger); border-color: #fca5a5; }
+        .btn-remove:hover { background: #fecaca; transform: translateY(-3px); }
+
+        /* Full Screen Image Viewer Modal */
+        #fullScreenImgModal { background: rgba(0,0,0,0.95); z-index: 7000; flex-direction: column; }
+        .fs-top-bar { position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; z-index: 7010; }
+        .fs-main-view { flex-grow: 1; width: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; padding: 80px 20px; position: relative;}
+        .fs-uid-tag { position: absolute; bottom: 120px; right: 20px; background: rgba(255,255,255,0.9); color: black; font-weight: 800; padding: 6px 12px; border-radius: 6px; font-size: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 7010;}
+        .fs-thumbnails { height: 100px; width: 100%; display: flex; justify-content: center; align-items: center; gap: 10px; padding: 10px; overflow-x: auto; background: rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.1);}
+        .fs-thumb { width: 60px; height: 60px; border-radius: 8px; border: 2px solid transparent; cursor: pointer; object-fit: contain; background: white; opacity: 0.6; transition: 0.3s;}
+        .fs-thumb.active { border-color: var(--primary); opacity: 1; transform: scale(1.1);}
+
+        .btn-outline { background: transparent; border: 1px solid var(--border); padding: 16px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; color: var(--text-main); transition: 0.3s;}
+        .btn-outline:hover { background: rgba(255,255,255,0.1); }
+        .btn-prime { background: var(--primary); color: white; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: var(--transition); display: flex; justify-content: center; align-items: center; gap: 8px;}
+        .btn-prime:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.2); }
+
+        .toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 16px 30px; border-radius: 100px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow-lg); transition: bottom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 9999; }
+        .toast-notification.show { bottom: 40px; }
+        
+        .wishlist-icon { transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .wishlist-icon:active { transform: scale(0.5); }
+        .wishlist-icon.active-heart { color: var(--danger); animation: heartPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes heartPop { 0% { transform: scale(1); } 50% { transform: scale(1.5); } 100% { transform: scale(1); } }
+
+        /* Curved Footer */
+        .premium-footer { background: #0a0a0a; color: white; padding: 50px 5% 30px; text-align: center; margin-top: auto; border-radius: 40px 40px 0 0; width: 100%;}
+
+        @media (min-width: 1024px) {
+            .product-list { grid-template-columns: repeat(4, 1fr); }
+            .product-list.list-view { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 900px) {
+            .banner-slider { aspect-ratio: 16 / 7; }
+            .product-list { grid-template-columns: repeat(3, 1fr); }
+            .product-list.list-view { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            body { padding-top: 130px; }
+            body.theme-special-day { padding-top: 165px; }
+            .desktop-only { display: none !important; }
+            .desktop-search { display: none; }
+            .mobile-only-search { display: block; }
+            .top-bar { padding: 10px 15px; height: 65px; }
+            .search-container { top: 65px; padding: 10px 15px; }
+            .theme-special-day .search-container { top: 103px; }
+            .brand-text { font-size: 20px; }
+            
+            /* Banner layout full width fix */
+            .banner-slider-container { padding: 0 !important; max-width: 100%; margin-bottom: 15px; }
+            .banner-slider { border-radius: 0; aspect-ratio: 16 / 7; }
+            .f-nav-btn { opacity: 1; width: 30px; height: 30px; font-size: 12px; }
+
+            .product-list { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0 10px 60px;}
+            .list-item-card { padding: 12px; gap: 10px; }
+            .list-image-container { height: 160px; }
+            .list-info h4 { font-size: 14px; }
+            .list-info .price { font-size: 18px; }
+            .list-actions { flex-direction: column; }
+            
+            .product-list.list-view .list-item-card { flex-direction: row; align-items: stretch; padding: 12px; gap: 12px;}
+            .product-list.list-view .list-image-container { width: 120px; height: 120px; }
+            .product-list.list-view .list-info h4 { font-size: 14px; margin-bottom: 5px; }
+            .product-list.list-view .list-info .price { font-size: 18px; margin-bottom: 10px; }
+            .product-list.list-view .list-actions { flex-direction: column; max-width: 100%; margin-top: auto;}
+
+            .b-img-nav { opacity: 1; width: 24px; height: 24px; font-size: 10px; background: rgba(0,0,0,0.5); } 
+            
+            /* Premium Modal Mobile Responsive */
+            .qv-premium-container { flex-direction: column; border-radius: 24px !important; max-height: 90vh; overflow-y: auto;}
+            .qv-left-img { padding: 20px; height: auto; min-height: 250px; }
+            .qv-right-details { padding: 25px; justify-content: flex-start; }
+            #qvImage { max-height: 220px; }
+        }
+    </style>
 </head>
 <body>
 
@@ -20,37 +320,53 @@
         <div class="spinner"></div>
         <p class="loader-text" style="font-weight: 700; letter-spacing: 2px;">ARYANTA STORE</p>
     </div>
-
     <div id="festiveAnnouncement" class="festive-bar" style="display:none;"></div>
 
     <header class="top-bar glass-effect">
         <div class="nav-left">
             <div class="menu-trigger" onclick="openSidebar()"><i class="fas fa-bars-staggered"></i></div>
-            <div class="brand-logo" onclick="location.href='index.html'">ARYANTA<span class="prime-dot">.</span></div>
+            <div class="brand-logo" onclick="location.href='https://aryanta.in/'">
+                <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta Logo" class="brand-img">
+                <span class="brand-text">ARYANTA<span class="prime-dot">.</span></span>
+            </div>
         </div>
         
-        <div class="nav-search ai-search-bar" style="position: relative;">
-            <i class="fas fa-search ai-icon" style="color: #64748b;"></i>
-            <input type="text" id="searchInput" autocomplete="off" spellcheck="false" placeholder="Search for products...">
-            <i class="fas fa-times search-clear" id="searchClearBtn" style="display: none;" title="Clear search"></i>
-            <div id="searchDropdown" class="search-dropdown"></div>
+        <div class="desktop-search nav-search">
+            <div class="cat-trigger premium-hover" onclick="openCategoryModal()" title="Categories"><i class="fas fa-layer-group"></i></div>
+            <div class="search-divider"></div>
+            <input type="text" id="desktopSearchInput" autocomplete="off" spellcheck="false" placeholder="Search products, brands, IDs and press Enter...">
+            <i class="fas fa-microphone mic-btn desktop-mic" onclick="startDictation('desktopSearchInput')" title="Search by Voice"></i>
+            <i class="fas fa-times search-clear desktop-clear" style="display: none;" title="Clear search"></i>
+            <div class="search-dropdown desktop-dropdown"></div>
         </div>
-        
+
         <div class="nav-actions">
-            <button class="login-trigger premium-hover" id="accountBtn">Sign In</button>
-            <div class="cart-icon" onclick="openUI('fullCartPage')">
+            <button class="user-trigger" id="accountBtn"></button>
+            <div class="cart-icon" onclick="location.href='https://aryanta.in/cart'">
                 <i class="fas fa-shopping-bag"></i>
-                <span class="badge" id="cartBadge" style="opacity: 0; transform: scale(0);">0</span>
+                <span class="badge" id="cartBadge">0</span>
             </div>
         </div>
     </header>
 
+    <div class="search-container glass-effect mobile-only-search" id="searchContainer">
+        <div class="nav-search ai-search-bar">
+            <div class="cat-trigger premium-hover" onclick="openCategoryModal()" title="Categories"><i class="fas fa-layer-group"></i></div>
+            <div class="search-divider"></div>
+            <input type="text" id="mobileSearchInput" autocomplete="off" spellcheck="false" placeholder="Search and press Enter...">
+            <i class="fas fa-microphone mic-btn mobile-mic" onclick="startDictation('mobileSearchInput')" title="Search by Voice"></i>
+            <i class="fas fa-times search-clear mobile-clear" style="display: none;" title="Clear search"></i>
+            <div class="search-dropdown mobile-dropdown"></div>
+        </div>
+    </div>
+
+    <!-- Animated Sidebar Panel (Left) -->
     <aside class="side-panel" id="sidebar">
         <div class="panel-header">
+            <i class="fas fa-times close-sidebar" onclick="closeAllModals()"></i>
             <div class="user-profile">
                 <div style="position: relative;">
                     <img id="sidebarAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Guest" alt="avatar" class="avatar-img">
-                    <div id="primeCrownBadge" style="display:none; position:absolute; top:-10px; right:-5px; font-size:20px; color:#fbbf24; text-shadow: 0 2px 4px rgba(0,0,0,0.5); transform: rotate(15deg);"><i class="fas fa-crown"></i></div>
                 </div>
                 <div class="user-greeting">
                     <span id="sidebarUser">Welcome Guest</span>
@@ -59,539 +375,1196 @@
             </div>
         </div>
         <nav class="panel-links">
-           <a href="javascript:void(0)" onclick="location.href='index.html'" class="stagger-link"><i class="fas fa-compass"></i> Discover</a>
-            <a href="javascript:void(0)" id="sidebarAccountLink" class="stagger-link"><i class="fas fa-user-circle"></i> My Profile</a>
+             <a href="https://aryanta.in/"><i class="fas fa-compass"></i> Discover</a>
+            <a href="javascript:void(0)" id="sidebarAccountLink"><i class="fas fa-user-circle"></i> My Profile</a>
+            <a href="https://aryanta.in/cart/"><i class="fas fa-shopping-cart"></i> My Cart</a>
             <a href="wishlist.html"><i class="fas fa-heart"></i> My Wishlist</a>
-            <a href="track.html"><i class="fas fa-box-open"></i> My Orders</a>
-            <a href="warrenty.html"><i class="fas fa-shield-alt"></i> Claim warrenty</a>
-            <a href="sellerpanlevurification.html"><i class="fas fa-headset"></i> Sell on Our Platform</a>
-            <a href="support.html"><i class="fas fa-headset"></i> Support</a>
+            <a href="https://aryanta.in/track/"><i class="fas fa-box-open"></i> My Orders</a>
+            <a href="https://aryanta.in/warrenty/"><i class="fas fa-shield-alt"></i> Claim Warranty</a>
+            <a href="https://aryanta.in/vurify/"><i class="fas fa-store"></i> Sell on Our Platform</a>
+            <a href="https://aryanta.in/support/"><i class="fas fa-headset"></i> Support</a>
         </nav>
         <div class="sidebar-footer">
             <button class="btn-sidebar-logout bounce-hover" id="sidebarLogoutBtn" onclick="logOut()" style="display:none;">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </button>
-            <p style="margin-top: 15px;">Aryanta © 2026</p>
+        </div>
+    </aside>
+
+    <!-- Filter Sidebar (Right) -->
+    <aside class="side-panel right-panel" id="filterSidebar">
+        <div class="panel-header">
+            <i class="fas fa-times close-sidebar" onclick="closeAllModals()"></i>
+            <h3 style="font-size: 22px; font-weight: 800;">Filters</h3>
+        </div>
+        <div class="panel-links" style="padding: 20px 30px;">
+            <div class="filter-section">
+                <h4>Price Range</h4>
+                <label class="filter-label"><input type="radio" name="priceFilter" value="all" checked onchange="applySidebarFilter()"> All Prices</label>
+                <label class="filter-label"><input type="radio" name="priceFilter" value="99" onchange="applySidebarFilter()"> Under ₹99</label>
+                <label class="filter-label"><input type="radio" name="priceFilter" value="199" onchange="applySidebarFilter()"> Under ₹199</label>
+                <label class="filter-label"><input type="radio" name="priceFilter" value="499" onchange="applySidebarFilter()"> Under ₹499</label>
+                <label class="filter-label"><input type="radio" name="priceFilter" value="899" onchange="applySidebarFilter()"> Under ₹899</label>
+                <label class="filter-label"><input type="radio" name="priceFilter" value="1499" onchange="applySidebarFilter()"> Under ₹1499</label>
+            </div>
+            <div class="filter-section">
+                <h4>Customer Reviews</h4>
+                <label class="filter-label"><input type="radio" name="ratingFilter" value="all" checked onchange="applySidebarFilter()"> All Ratings</label>
+                <label class="filter-label"><input type="radio" name="ratingFilter" value="new" onchange="applySidebarFilter()"> New Arrivals</label>
+                <label class="filter-label"><input type="radio" name="ratingFilter" value="4" onchange="applySidebarFilter()"> 4 Stars & Up <i class="fas fa-star" style="color:#f59e0b; font-size:12px;"></i></label>
+                <label class="filter-label"><input type="radio" name="ratingFilter" value="3" onchange="applySidebarFilter()"> 3 Stars & Up <i class="fas fa-star" style="color:#f59e0b; font-size:12px;"></i></label>
+            </div>
+            <button class="btn-prime w-100 mt-20" onclick="closeAllModals()">Apply Filters</button>
         </div>
     </aside>
 
     <div class="dimmer" id="overlay" onclick="closeAllModals()"></div>
 
-    <div id="toastNotification" class="toast-notification"><i class="fas fa-check-circle"></i> <span id="toastMessage">Action successful</span></div>
-
-    <div class="custom-alert-overlay" id="customAlertOverlay" style="display: none; z-index: 9999;">
-        <div class="custom-alert-box">
-            <div class="alert-icon-wrapper"><i class="fas fa-info-circle"></i></div>
-            <h3 id="alertTitle">Notice</h3>
-            <p id="alertMessage">Message goes here.</p>
-            <div class="alert-actions">
-                <button class="btn-cancel" id="alertCancelBtn" onclick="closeAlert(false)" style="display:none;">Cancel</button>
-                <button class="btn-prime-alert" id="alertOkBtn" onclick="closeAlert(true)">Got it</button>
+    <!-- Category Modal -->
+    <div class="modal" id="categoryModal">
+        <div class="modal-content bottom-sheet">
+            <div class="flex-row-between mb-15" style="border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+                <h3 style="font-size: 20px; font-weight: 800;">Browse Categories</h3>
+                <button class="btn-mini" style="color:var(--text-main);" onclick="closeAllModals()"><i class="fas fa-times"></i></button>
             </div>
+            <div class="category-grid" id="categoryGrid"></div>
         </div>
     </div>
 
-    <div class="custom-alert-overlay" id="broadcastModal" style="display: none; z-index: 10000; background: rgba(15, 23, 42, 0.85);">
-        <div class="custom-alert-box" style="border: 2px solid var(--primary); animation: slideUpFade 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+    <!-- Broadcast Modal -->
+    <div class="custom-alert-overlay" id="broadcastModal">
+        <div class="custom-alert-box" style="border: 2px solid var(--primary);">
             <div class="alert-icon-wrapper" style="font-size: 50px; color: #fbbf24;"><i class="fas fa-satellite-dish"></i></div>
             <h3 id="broadcastTitle" style="font-size: 24px; color: var(--primary);">Announcement</h3>
             <p id="broadcastMessage" style="font-size: 16px; font-weight: 500; color: var(--text-main); margin-bottom: 30px;"></p>
-            <button class="btn-prime w-100 bounce-hover" onclick="document.getElementById('broadcastModal').style.display='none'">Awesome!</button>
+            <button class="btn-prime w-100 bounce-hover" onclick="closeAllModals()">Awesome!</button>
         </div>
     </div>
 
-    <div class="modal" id="categoryModal" style="display: none; align-items: flex-end;">
-        <div class="modal-content bottom-sheet" style="border-radius: 24px 24px 0 0; width: 100%; max-width: 600px; padding: 30px; margin: 0 auto; max-height: 80vh;">
-            <div class="flex-row-between mb-15" style="border-bottom: 1px solid var(--border); padding-bottom: 15px;">
-                <h3 style="font-size: 20px; font-weight: 800;">Browse Categories</h3>
-                <button class="btn-mini" onclick="closeCategoryModal()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="category-grid" id="categoryGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; overflow-y: auto; max-height: 60vh; padding-top: 10px;"></div>
+    <!-- System Notice Modal -->
+    <div class="modal" id="systemPopup">
+        <div class="modal-content">
+            <h3 id="popupTitle" style="font-size: 22px; margin-bottom: 15px;">Notice</h3>
+            <p id="popupDesc" style="color: var(--text-muted); margin-bottom: 20px;"></p>
+            <button class="btn-list-buy w-100 bounce-hover" onclick="closeAllModals();">Okay</button>
         </div>
     </div>
 
-    <div class="modal" id="swipeGalleryModal" style="background: rgba(0,0,0,0.95); display: none; flex-direction: column;">
-        <span class="exit-modal" onclick="closeSwipeGallery()" style="color: white; right: 20px; top: 20px; z-index: 7001;"><i class="fas fa-times"></i></span>
-        <div id="swipeGalleryContainer" style="width: 100%; flex-grow: 1; display: flex; justify-content: center; align-items: center; touch-action: none; cursor: grab;">
-            <img id="swipeGalleryImg" src="" style="max-width: 100%; max-height: 80vh; object-fit: contain; transition: transform 0.2s ease-out; user-select: none;">
-        </div>
-        <div id="swipeGalleryThumbnails" class="thumbnail-container swipe-thumbnails"></div>
-    </div>
-
-    <div class="modal" id="imageZoomModal" style="background: rgba(10,10,10,0.95); display: none; flex-direction: column;">
-        <span class="exit-modal" onclick="closeImageZoom()" style="color: white; right: 30px; top: 30px; z-index: 6001;"><i class="fas fa-times"></i></span>
-        <div style="flex-grow: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; width: 100%;">
-            <img id="zoomedImage" src="" style="width: 100%; height: 100%; object-fit: contain; transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); transform: scale(1); border-radius: 8px;">
-        </div>
-        <div style="padding: 30px; display: flex; justify-content: center; gap: 20px; z-index: 6001;">
-            <button class="btn-zoom" onclick="zoomImage(0.25)" style="background: white; border: none; padding: 10px 15px; border-radius: 8px;"><i class="fas fa-search-plus"></i></button>
-            <button class="btn-zoom" onclick="zoomImage(-0.25)" style="background: white; border: none; padding: 10px 15px; border-radius: 8px;"><i class="fas fa-search-minus"></i></button>
-            <button class="btn-zoom" onclick="resetZoom()" style="background: white; border: none; padding: 10px 15px; border-radius: 8px;"><i class="fas fa-compress"></i></button>
+    <!-- Voice Search Modal -->
+    <div class="modal" id="voiceSearchModal">
+        <div class="modal-content" style="padding: 40px 30px; text-align: center; color: white;">
+            <div class="voice-mic-icon listening" style="font-size: 60px; margin-bottom: 25px;"><i class="fas fa-microphone"></i></div>
+            <h3 id="voiceStatusText" style="font-size: 22px; margin-bottom: 15px; font-weight: 800;">Listening...</h3>
+            <p id="voiceLiveText" style="font-size: 18px; color: #94a3b8; font-style: italic; min-height: 27px;">Speak now</p>
+            <button class="btn-outline bounce-hover" style="margin-top: 35px; width: 100%; border-color: rgba(255,255,255,0.2); color: white;" onclick="stopDictation()">Cancel</button>
         </div>
     </div>
 
-    <div class="modal" id="authModal" style="display: none;">
-        <div class="modal-content auth-content premium-auth-card">
+    <!-- PREMIUM QUICK VIEW MODAL -->
+    <div class="modal" id="quickViewModal">
+        <div class="modal-content qv-premium-container">
             <span class="exit-modal" onclick="closeAllModals()"><i class="fas fa-times"></i></span>
-            <div class="auth-brand-header"><h2>ARYANTA<span class="prime-dot">.</span></h2></div>
-
-            <div id="loginView" class="fade-view">
-                <h3 class="auth-title">Welcome Back</h3>
-                <p class="auth-subtitle">Sign in to your account.</p>
-                <div id="googleAuthBtnLogin" style="display: flex; justify-content: center; margin-bottom: 20px;"></div>
-                <div class="divider-elegant text-center"><span class="bg-surface px-10" style="color:var(--text-muted); font-size:12px;">OR LOGIN WITH OTP</span></div>
-                <div class="input-group-auth"><i class="fas fa-envelope icon"></i><input type="email" id="loginEmail" class="auth-input" placeholder="Email Address"></div>
-                <button class="btn-prime w-100 bounce-hover" id="loginBtn" onclick="handleLogin()" style="padding: 18px; font-size: 16px;">Send OTP</button>
-                <p class="switch-prompt">New to Aryanta? <span onclick="goToStep('signup')">Create an account</span></p>
-            </div>
             
-            <div id="signupView" class="fade-view" style="display:none;">
-                <h3 class="auth-title">Join Us</h3>
-                <p class="auth-subtitle" id="signupSubtitle">Create an account to start shopping.</p>
-                <div id="googleAuthBtnSignup" style="display: flex; justify-content: center; margin-bottom: 20px;"></div>
-                <div class="divider-elegant text-center"><span class="bg-surface px-10" style="color:var(--text-muted); font-size:12px;">OR REGISTER MANUALLY</span></div>
-                <div class="auth-scroll-container">
-                    <div class="input-group-auth"><i class="fas fa-user icon"></i><input type="text" id="regName" class="auth-input" placeholder="Full Name" required></div>
-                    <div class="input-group-auth"><i class="fas fa-envelope icon"></i><input type="email" id="regEmail" class="auth-input" placeholder="Email Address" required></div>
-                    <div class="input-group-auth"><i class="fas fa-phone icon"></i><input type="tel" id="regPhone" class="auth-input" placeholder="Phone Number" required></div>
-                    <div class="input-group-auth"><i class="fas fa-map-marker-alt icon"></i><input type="text" id="regAddress" class="auth-input" placeholder="Street Address"></div>
-                    <div class="input-row" style="gap: 10px; display: flex;">
-                        <div class="input-group-auth" style="margin-bottom:0; flex: 1;"><input type="text" id="regCity" class="auth-input" placeholder="City" style="padding-left:15px;"></div>
-                        <div class="input-group-auth" style="margin-bottom:0; flex: 1;"><input type="text" id="regState" class="auth-input" placeholder="State" style="padding-left:15px;"></div>
+            <div class="qv-left-img">
+                <div style="position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;" onclick="event.stopPropagation();">
+                    <img id="qvImage" src="" onclick="openFullScreenFromQv()">
+                    <div id="qvImgNav" style="display:none; position: absolute; width: 100%; top: 50%; transform: translateY(-50%); pointer-events: none;">
+                        <button class="b-img-nav b-prev" style="left: -15px; background:rgba(255,255,255,0.2); pointer-events: auto;" onclick="event.stopPropagation(); slideQvImg(-1)"><i class="fas fa-chevron-left"></i></button>
+                        <button class="b-img-nav b-next" style="right: -15px; background:rgba(255,255,255,0.2); pointer-events: auto;" onclick="event.stopPropagation(); slideQvImg(1)"><i class="fas fa-chevron-right"></i></button>
                     </div>
-                    <div class="input-group-auth mt-10"><i class="fas fa-map-pin icon"></i><input type="text" id="regPincode" class="auth-input" placeholder="Pincode (Mandatory)"></div>
                 </div>
-                <button class="btn-prime w-100 bounce-hover mt-10" id="signupBtn" onclick="handleSignup()" style="padding: 18px; font-size: 16px;">Send OTP</button>
-                <p class="switch-prompt">Already a member? <span onclick="goToStep('login')">Sign In</span></p>
+                <div style="position: absolute; bottom: 20px; right: 20px; background: rgba(0,0,0,0.6); padding: 6px 12px; border-radius: 6px; font-size: 12px; color: #cbd5e1; cursor: pointer; backdrop-filter: blur(5px);" onclick="openFullScreenFromQv()"><i class="fas fa-expand"></i> Expand</div>
             </div>
             
-            <div id="otpView" class="fade-view" style="display:none;">
-                <h3 class="auth-title">Enter OTP</h3>
-                <p class="auth-subtitle">Enter the 4-digit code sent to your email.</p>
-                <div class="otp-container" id="otpInputs">
-                    <input type="text" class="otp-box-premium" maxlength="1"><input type="text" class="otp-box-premium" maxlength="1"><input type="text" class="otp-box-premium" maxlength="1"><input type="text" class="otp-box-premium" maxlength="1">
-                </div>
-                <button class="btn-prime w-100 bounce-hover" onclick="completeAuth()" style="padding: 18px; font-size: 16px;">Verify & Proceed <i class="fas fa-arrow-right" style="margin-left: 8px;"></i></button>
-            </div>
-        </div>
-    </div>
-
-    <div class="full-page right-slide" id="fullWalletPage">
-        <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
-            <h2>My Wallet</h2>
-            <div style="width: 70px;"></div>
-        </div>
-        <div class="full-page-body" style="padding: 40px 5%; max-width: 800px; margin: 0 auto;">
-            <div class="wallet-card" style="background: linear-gradient(135deg, #0f172a, #1e293b); color: white; padding: 40px; border-radius: 24px; box-shadow: var(--shadow-lg); text-align: center; margin-bottom: 30px;">
-                <h3 style="font-weight: 500; font-size: 16px; color: #cbd5e1; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px;">Available Balance</h3>
-                <div style="font-size: 60px; font-weight: 900; letter-spacing: -2px; margin-bottom: 20px;" id="walletBalanceDisplay">₹0</div>
-                <button class="btn-outline" style="color: white; border-color: rgba(255,255,255,0.3); margin: 0 auto; padding: 10px 30px;" onclick="showToast('Add funds coming soon!')"><i class="fas fa-plus"></i> Add Funds</button>
-            </div>
-            
-            <h3 style="margin-bottom: 20px; font-size: 20px;">Recent Transactions</h3>
-            <div class="panel-box text-center" id="walletHistoryContainer" style="padding: 40px;">
-                <i class="fas fa-receipt" style="font-size: 40px; color: var(--border); margin-bottom: 15px;"></i>
-                <p style="color: var(--text-muted); font-weight: 600;">No recent transactions found.</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="full-page" id="fullAccountPage">
-        <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
-            <h2>My Profile</h2>
-            <button class="btn-logout-header premium-hover" onclick="logOut()"><i class="fas fa-power-off"></i> Logout</button>
-        </div>
-        <div class="full-page-body account-body">
-            <div class="account-grid">
-                <div class="profile-card panel-box">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3 style="margin: 0;">Personal Information</h3>
-                        <span id="profilePrimeTag" class="badge" style="display:none; background:#fefce8; color:#a16207; border:1px solid #fde047; font-size:12px;"><i class="fas fa-crown"></i> Prime Member</span>
-                    </div>
-                    <div class="avatar-selection">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" class="avatar-opt" onclick="selectAvatar(this.src)">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" class="avatar-opt" onclick="selectAvatar(this.src)">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Jack" class="avatar-opt" onclick="selectAvatar(this.src)">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Luna" class="avatar-opt" onclick="selectAvatar(this.src)">
-                    </div>
-                    
-                    <div class="form-group"><label>Full Name</label><input type="text" id="accName" class="modern-input editable-input"></div>
-                    <div class="form-group"><label>Email Address</label><input type="text" id="accEmail" class="modern-input read-only-input" readonly></div>
-                    <div class="form-group"><label>Phone Number</label><input type="text" id="accPhone" class="modern-input editable-input"></div>
-                    
-                    <h4 class="section-divider-title">Default Address</h4>
-                    <div class="form-group"><label>Street Address</label><input type="text" id="accAddress" class="modern-input editable-input"></div>
-                    <div class="input-row" style="display: flex; gap: 15px;">
-                        <div class="form-group w-100"><label>City</label><input type="text" id="accCity" class="modern-input editable-input"></div>
-                        <div class="form-group w-100"><label>State</label><input type="text" id="accState" class="modern-input editable-input"></div>
-                        <div class="form-group w-100"><label>Pincode</label><input type="text" id="accPincode" class="modern-input editable-input"></div>
-                    </div>
-                    
-                    <button class="btn-prime w-100 mt-10 bounce-hover" onclick="saveProfileDetails()"><i class="fas fa-save"></i> Save Profile Details</button>
+            <div class="qv-right-details">
+                <div class="flex-row-between" style="align-items: flex-start; margin-bottom: 10px;">
+                    <h4 id="qvTitle" style="font-size: 24px; font-weight: 800; line-height: 1.3; flex: 1; padding-right: 15px; color: white;"></h4>
+                    <button id="qvShareBtn" class="btn-mini bounce-hover" style="font-size: 16px; padding: 8px 12px; background: rgba(255,255,255,0.15); color: white; border:none; border-radius: 10px;" title="Share"><i class="fas fa-share-alt"></i></button>
                 </div>
                 
-                <div class="address-card panel-box">
-                    <div class="flex-row-between" style="margin-bottom: 25px;">
-                        <h3 style="margin: 0;">Address Book</h3>
-                        <button class="btn-outline btn-mini" onclick="document.getElementById('newAddressForm').style.display='block'"><i class="fas fa-plus"></i> Add New</button>
-                    </div>
-                    
-                    <div id="addressList" class="address-list"></div>
-                    
-                    <div id="newAddressForm" class="premium-form-card" style="display:none; margin-top:20px;">
-                        <h4 style="margin-bottom: 15px; font-size: 15px;">Add New Address</h4>
-                        <div class="input-row" style="display: flex; gap: 10px;">
-                            <input type="text" id="newAddName" class="modern-input" placeholder="Recipient Name">
-                            <input type="tel" id="newAddPhone" class="modern-input" placeholder="Phone Number">
-                        </div>
-                        <textarea id="newAddText" class="modern-input" placeholder="Full Street Address"></textarea>
-                        <div class="input-row" style="display: flex; gap: 10px;">
-                            <input type="text" id="newCity" class="modern-input" placeholder="City">
-                            <input type="text" id="newState" class="modern-input" placeholder="State">
-                            <input type="text" id="newPin" class="modern-input" placeholder="Pincode">
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <button class="btn-cancel w-100" onclick="document.getElementById('newAddressForm').style.display='none'">Cancel</button>
-                            <button class="btn-prime w-100 bounce-hover" onclick="saveNewAddress()"><i class="fas fa-save"></i> Save</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="full-page right-slide" id="fullProductPage">
-        <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
-            <div class="cart-icon" onclick="openUI('fullCartPage')" style="margin-right: 15px;">
-                <i class="fas fa-shopping-bag"></i>
-                <span class="badge" id="fpCartBadge" style="opacity: 0; transform: scale(0);">0</span>
-            </div>
-        </div>
-        <div class="full-page-body product-page-body">
-            <div class="product-hero">
-                <div class="product-visual prime-visual-bg" style="position: relative; flex-direction: column; padding: 40px;">
-                    <div style="width: 100%; display: flex; justify-content: center;">
-                        <img id="fpImage" src="" alt="Product" class="main-prod-img" onclick="openSwipeGallery()" style="cursor: pointer;">
-                    </div>
-                    <div id="fpThumbnails" class="thumbnail-container"></div>
-                </div>
-
-                <div class="product-data">
-                    <div class="flex-row-between w-100">
-                        <span class="category-tag"><i class="fas fa-crown"></i> Aryanta Quality</span>
-                        <div style="display: flex; gap: 15px; font-size: 20px;">
-                            <i class="fas fa-share-nodes premium-hover" onclick="shareProduct()" style="color: var(--text-muted);" title="Share"></i>
-                            <i class="far fa-heart premium-hover" id="fpWishlistBtn" onclick="toggleWishlistFromPage()" style="color: var(--danger);" title="Save to Wishlist"></i>
-                        </div>
-                    </div>
-
-                    <h1 id="fpName" class="display-title">Product Name</h1>
-                    
-                    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-                        <div class="rating-stars premium-hover" style="display: inline-flex; align-items: center; gap: 10px; background: var(--surface); padding: 8px 15px; border-radius: 100px; box-shadow: var(--shadow-sm); border: 1px solid var(--border);" onclick="openUI('fullReviewPage')">
-                            <span id="fpStarsAvg" style="color: #f59e0b; font-size: 16px;"></span>
-                            <span class="verified-text" id="fpRatingCount" style="margin-left: 0;"></span>
-                            <i class="fas fa-chevron-right" style="font-size: 12px; color: var(--primary);"></i>
-                        </div>
-                        
-                        <button class="btn-outline bounce-hover btn-mini" style="font-size: 14px; padding: 8px 15px; border-radius: 100px; display: inline-flex;" onclick="openQAPage()"><i class="fas fa-comments"></i> Product Questions & Answers</button>
-                    </div>
-
-                    <div class="seller-info" id="fpSellerInfo" style="margin-bottom: 20px; font-size: 14px; color: var(--text-muted);">
-                        </div>
-
-                    <div class="price-block">
-                        <h2 class="display-price"><span id="fpMrp" style="text-decoration: line-through; color: #94a3b8; font-size: 0.5em; margin-right: 10px; font-weight: 500; display:none;"></span><span id="fpPrice">₹0</span></h2>
-                        <span class="inclusive-taxes">Inclusive of all taxes</span>
-                    </div>
-                    
-                    <div class="divider-elegant"></div>
-                    <p id="fpDesc" class="display-desc">Description goes here.</p>
-                    
-                    <div class="divider-elegant"></div>
-                    <div id="fpHighlights" class="highlights-box" style="display: none; font-size: 14px; margin-bottom: 20px; color: var(--text-muted);"></div>
-
-                    <div id="fpDeliveryBox" style="background: var(--surface); border: 1px solid var(--border); padding: 15px; border-radius: 12px; margin-bottom: 25px; display: flex; align-items: center; gap: 15px;">
-                        <i class="fas fa-truck-fast" style="font-size: 24px; color: var(--primary);"></i>
-                        <div>
-                            <div style="font-weight: 700; font-size: 14px;">Estimated Delivery</div>
-                            <div style="font-size: 15px; color: var(--success); font-weight: 800;">Order now, receive by <span id="fpDeliveryDate"></span></div>
-                        </div>
-                    </div>
-
-                    <div id="fpWarrantyBox" class="warranty-box" style="display: none; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 12px; margin-bottom: 25px; color: #166534; font-weight: 600;">
-                        <i class="fas fa-shield-check" style="font-size: 18px; margin-right: 8px;"></i> 
-                        <span id="fpWarrantyText">Warranty valid for max: 1 Year</span>
-                    </div>
-
-                    <div class="action-dock">
-                        <button class="btn-add-cart" id="addToBagBtn" onclick="addToCartFromPage()"><i class="fas fa-shopping-bag"></i> Add to Bag</button>
-                        <button class="btn-buy-now bounce-hover" onclick="buyNowFromPage()"><i class="fas fa-bolt"></i> Buy Now</button>
-                    </div>
-                    <div class="trust-badges">
-                        <div class="badge-item"><i class="fas fa-shield-check"></i> <span>Secure Payment</span></div>
-                        <div class="badge-item"><i class="fas fa-shipping-fast"></i> <span>Fast Shipping</span></div>
-                        <div class="badge-item"><i class="fas fa-undo"></i> <span>7 Days Return</span></div>
-                    </div>
-
-                </div>
-            </div>
-            <div class="related-section mt-40 fade-in-up">
-                <h3 class="section-title" style="text-align: center; margin-bottom: 30px; font-size: 28px;">More Like This</h3>
-                <div id="relatedProductsShelf" class="product-list"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="full-page right-slide" id="fullQAPage">
-        <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
-            <h2>Q & A</h2>
-            <div style="width: 60px;"></div>
-        </div>
-        <div class="full-page-body" style="padding: 30px 5%; max-width: 900px; margin: 0 auto;">
-            <div class="flex-row-between mb-15">
-                <h3>Customer Questions</h3>
-                <button class="btn-prime bounce-hover btn-mini" id="qaSubmitBtn" onclick="askQuestion()">Ask a Question</button>
-            </div>
-            <div id="qaList" style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;"></div>
-        </div>
-    </div>
-
-    <div class="full-page right-slide" id="fullReviewPage">
-         <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
-            <h2>Customer Reviews</h2>
-            <div style="width: 60px;"></div>
-        </div>
-        <div class="full-page-body" style="padding: 30px 5%; max-width: 900px; margin: 0 auto;">
-            
-            <div class="panel-box mb-15 review-header-card">
-                <img id="revProdImg" src="" class="rev-prod-img" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px;">
-                <div style="flex-grow: 1;">
-                    <h3 id="revProdName" style="margin-bottom: 5px; font-size: 18px;">Product</h3>
-                    <div style="font-size: 28px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 10px;">
-                        <span id="revScore">0.0</span> 
-                        <span id="revStars" style="color: #f59e0b; font-size: 20px;"></span>
-                    </div>
-                    <p class="sub-text" id="revCount" style="margin-top: 5px;">0 reviews</p>
-                </div>
-                <button class="btn-prime bounce-hover" onclick="toggleReviewForm()"><i class="fas fa-pen"></i> Write Review</button>
-            </div>
-
-            <div id="reviewFormContainer" class="panel-box mb-15 slide-down" style="display: none; background: #f8fafc; border: 2px solid var(--border);">
-                <div class="flex-row-between" style="margin-bottom: 15px;">
-                    <h3 style="font-size: 18px;">Share Your Experience</h3>
-                    <button class="btn-mini" onclick="toggleReviewForm()"><i class="fas fa-times"></i></button>
-                </div>
-                <div id="starSelector" style="font-size: 32px; color: #cbd5e1; margin-bottom: 20px; cursor: pointer; display: flex; gap: 8px; justify-content: center;">
-                    <i class="fas fa-star" onclick="setReviewStars(1)"></i><i class="fas fa-star" onclick="setReviewStars(2)"></i><i class="fas fa-star" onclick="setReviewStars(3)"></i><i class="fas fa-star" onclick="setReviewStars(4)"></i><i class="fas fa-star" onclick="setReviewStars(5)"></i>
-                </div>
-                <textarea id="revText" class="modern-input" placeholder="What did you love about it? (Optional: Tell us more...)" style="min-height: 120px; resize: none;"></textarea>
+                <div style="font-size: 13px; color: #94a3b8; margin-bottom: 15px; font-family: var(--font-mono);" id="qvId"></div>
+                <div class="stars" id="qvStars" style="color: #f59e0b; font-size: 14px; margin-bottom: 15px; font-weight: 600;"></div>
                 
-                <input type="file" id="revImage" accept="image/*" multiple style="display: none;">
-                <div class="drop-zone" id="revDropZone" style="padding: 25px; text-align: center; border: 2px dashed var(--border); border-radius: 16px; margin-bottom: 20px; cursor: pointer; transition: 0.3s; background: var(--surface);">
-                    <i class="fas fa-camera" style="font-size: 28px; color: var(--text-muted); margin-bottom: 10px;"></i> 
-                    <div style="font-size: 15px; font-weight: 600; color: var(--primary);">Attach Photos (Max 5)</div>
-                </div>
-
-                <input type="hidden" id="editingReviewId" value="">
-                <button class="btn-prime w-100 bounce-hover" id="submitReviewBtn" onclick="submitReview()"><i class="fas fa-paper-plane"></i> Submit Review</button>
-            </div>
-
-            <div id="reviewsList" class="mt-20"></div>
-        </div>
-    </div>
-
-    <div class="full-page right-slide" id="fullWishlistPage">
-        <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
-            <h2>My Wishlist</h2>
-            <button class="btn-outline btn-mini" style="margin-right: 15px;" onclick="shareWishlist()"><i class="fas fa-share-alt"></i> Share</button>
-        </div>
-        <div class="full-page-body" style="padding: 40px 5%; max-width: 1200px; margin: 0 auto;">
-            <div id="wishlistShelf" class="product-list"></div>
-        </div>
-    </div>
-
-    <div class="full-page right-slide" id="fullCartPage">
-        <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
-            <h2>Your Bag</h2>
-            <div style="width: 70px;"></div>
-        </div>
-        <div class="full-page-body cart-body">
-            <div class="cart-layout">
-                <div class="cart-items-container" id="cartItemsContainer"></div>
-                <div class="cart-summary-panel">
-                    <h3>Order Summary</h3>
-                    <div class="summary-line"><span>Subtotal</span> <strong id="cartSubtotal">₹0</strong></div>
-                    <div class="summary-line"><span>Shipping</span> <strong style="color:var(--text-muted); font-size: 13px;">Calculated Next</strong></div>
-                    <div class="divider-elegant"></div>
-                    <div class="summary-line total-line"><span>Total</span> <strong id="cartTotalValue">₹0</strong></div>
-                    <button class="btn-prime w-100 btn-large mt-20 bounce-hover" onclick="openCheckoutFromCart()">Checkout <i class="fas fa-arrow-right" style="margin-left: 8px;"></i></button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="full-page right-slide" id="fullCheckoutPage">
-        <div class="full-page-header glass-effect">
-            <button class="btn-back premium-hover" onclick="closeCheckout()"><i class="fas fa-arrow-left"></i> Back</button>
-            <h2>Checkout</h2>
-            <div style="width: 70px;"></div>
-        </div>
-        <div class="full-page-body checkout-body" style="padding: 40px 5%; max-width: 800px; margin: 0 auto;">
-            
-            <div id="checkoutStep1" class="fade-view step-container premium-checkout-panel">
-                <div class="step-indicator">Step 1 of 2: Shipping</div>
-                <div class="flex-row-between" style="margin-bottom: 25px;">
-                    <h2 style="margin: 0;">Delivery Details</h2>
-                    <button class="btn-outline btn-mini" onclick="useDefaultAddress()" title="Use profile default address"><i class="fas fa-undo"></i> Default Address</button>
-                </div>
+                <div id="qvDesc"></div>
+                <div id="qvStockNotice"></div>
                 
-                <div class="checkout-input-grid">
-                    <div class="input-group"><label>Name</label><input type="text" id="chkName" class="modern-input" placeholder="Full Name"></div>
-                    <div class="input-group"><label>Phone Number</label><input type="tel" id="chkPhone" class="modern-input" placeholder="Mobile No."></div>
-                </div>
-                <div class="input-group w-100"><label>Address</label><textarea id="chkAddress" class="modern-input" placeholder="Complete Address"></textarea></div>
-                <div class="checkout-input-grid">
-                    <div class="input-group"><label>City</label><input type="text" id="chkCity" class="modern-input" placeholder="City"></div>
-                    <div class="input-group"><label>Pincode</label><input type="text" id="chkPincode" class="modern-input" placeholder="Pincode"></div>
-                </div>
-                <div class="saved-addresses" id="checkoutAddressList" style="margin-top: 30px;"></div>
-                <button class="btn-prime w-100 btn-large mt-20 bounce-hover" id="calcShippingBtn" onclick="calculateShippingAndProceed()">Next Step <i class="fas fa-arrow-right"></i></button>
-            </div>
-
-            <div id="checkoutStep2" class="fade-view step-container premium-checkout-panel" style="display:none;">
-                <div class="step-indicator">Step 2 of 2: Payment</div>
-                <h2 style="margin-bottom: 20px;">Review & Pay</h2>
-                
-                <button id="walletUseBtn" class="btn-outline w-100 bounce-hover" style="margin-bottom: 15px; font-weight: 700; display: none;" onclick="toggleWalletCheckout()"><i class="fas fa-wallet"></i> Use Wallet Balance</button>
-
-                <div class="coupon-section" style="margin-bottom: 25px; border-bottom: 1px dashed var(--border); padding-bottom: 20px;">
-                    <div id="couponToggle" style="color:var(--primary); font-weight:800; cursor:pointer; display:flex; align-items:center; gap:8px;" onclick="document.getElementById('couponBox').style.display='block'; this.style.display='none';"><i class="fas fa-tag"></i> Have a promo code?</div>
-                    
-                    <div id="couponBox" style="display:none; background:#f8fafc; padding:20px; border-radius:12px; border:1px dashed #cbd5e1;">
-                        <h4 style="font-size:14px; margin-bottom:10px;">Enter Offer Details</h4>
-                        <div style="display:flex; gap:10px; margin-bottom: 10px;">
-                            <input type="text" id="couponCode" class="modern-input" placeholder="Promo Code" style="margin-bottom:0; flex: 2; text-transform: uppercase;">
-                            <button class="btn-prime" id="promoCheckBtn" onclick="validateAndShowCouponChoice()">Apply</button>
-                        </div>
-                        
-                        <div id="couponChoiceBox" style="display:none; margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
-                            <p style="font-size: 13px; font-weight: 700; margin-bottom: 10px; color: var(--success);"><i class="fas fa-check-circle"></i> Valid! You got a discount. Where do you want to apply it?</p>
-                            <div style="display: flex; gap: 10px;">
-                                <button class="btn-outline" style="flex:1; border-color: var(--primary); font-size:13px;" onclick="applyCouponChoice('total')">Apply to Order Total</button>
-                                <button class="btn-outline" style="flex:1; border-color: var(--primary); font-size:13px;" onclick="applyCouponChoice('shipping')">Apply to Shipping Fee</button>
-                            </div>
-                        </div>
-
-                        <p id="couponMessage" style="font-size:13px; margin-top:8px; display:none; font-weight: 600;"></p>
-                    </div>
+                <div class="qv-price-box">
+                    <span style="font-size: 14px; color: #94a3b8; display:block; margin-bottom: 6px; font-weight: 600;">Exclusive Offer</span>
+                    <div id="qvPrice" style="font-size: 32px; font-weight: 800; color: white; letter-spacing: -1px;"></div>
                 </div>
 
-                <div class="mini-receipt">
-                    <div class="summary-line"><span>Items:</span> <strong id="sumItems">₹0</strong></div>
-                    <div class="summary-line"><span>Shipping:</span> <strong id="sumShipping">₹0</strong></div>
-                    
-                    <div class="summary-line" id="discountRow" style="display:none; color: var(--success);">
-                        <span>Discount:</span> <strong id="sumDiscount">-₹0</strong>
-                    </div>
-
-                    <div class="divider-elegant" style="margin: 15px 0;"></div>
-                    <div class="summary-line total-line"><span>Total:</span> <strong id="sumTotal" style="color:var(--primary);">₹0</strong></div>
-                </div>
-
-                <h3 class="mt-20 mb-15" style="font-size: 18px;">Select Payment Method</h3>
-                <div class="payment-options">
-                    <label class="pay-radio premium-radio">
-                        <input type="radio" name="payMethod" value="online" checked>
-                        <div class="radio-content">
-                            <strong><i class="fas fa-credit-card"></i> Pay Online</strong><br>
-                            <span>100% Secure transaction.</span>
-                        </div>
-                    </label>
-                    <label class="pay-radio premium-radio">
-                        <input type="radio" name="payMethod" value="cod">
-                        <div class="radio-content">
-                            <strong><i class="fas fa-money-bill-wave"></i> Cash on Delivery</strong><br>
-                            <span style="color: var(--danger); font-weight: 600;">Only shipping fee charged now.</span>
-                        </div>
-                    </label>
-                </div>
-                <div class="action-row mt-20" style="display: flex; gap: 15px;">
-                    <button class="btn-cancel w-100" onclick="document.getElementById('checkoutStep2').style.display='none'; document.getElementById('checkoutStep1').style.display='block';">Back</button>
-                    <button class="btn-prime w-100 bounce-hover" id="payBtn" onclick="processPayment()"><i class="fas fa-lock"></i> Pay Now</button>
+                <div style="display: flex; gap: 15px; width: 100%;">
+                    <button id="qvAddBtn" class="btn-list-add" style="flex: 1; border-color: rgba(255,255,255,0.4); color: white; background: transparent; transition: 0.3s; padding: 16px;">Add to Cart</button>
+                    <button id="qvBuyBtn" class="btn-list-buy bounce-hover" style="flex: 1; background: #10b981; border-color: #10b981; color: white; padding: 16px; box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);">Buy Now</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="modal" id="orderSuccessModal" style="z-index: 6500;">
-        <div class="modal-content success-content receipt-wrapper" style="text-align: center;">
-            <div class="success-animation-container"><i class="fas fa-check-circle" style="font-size: 70px; color: var(--success); margin-bottom: 20px; animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></i></div>
-            <h1 class="success-title" style="color:var(--primary); font-size:32px;">Order Confirmed</h1>
-            <p class="success-subtitle" style="color:var(--text-muted); font-weight:600; margin-bottom:30px;">Your order has been placed.</p>
-            
-            <div class="physical-receipt-slip slide-up-receipt">
-                <div class="receipt-cutout top"></div>
-                <div class="receipt-header-brand"><h2>ARYANTA</h2><p>Order Summary</p></div>
-                <div class="receipt-meta"><p><span>Order No:</span> <strong id="recOrderNo"></strong></p><p><span>Payment Method:</span> <strong id="recPayMethod"></strong></p><p><span>Shipping To:</span> <strong id="recAddress" style="text-align: right; max-width: 60%;"></strong></p></div>
-                <div class="receipt-divider-dashed"></div>
-                <table class="receipt-table-modern"><thead><tr><th>Details</th><th>Qty</th><th class="text-right">Amount</th></tr></thead><tbody id="recTableBody"></tbody></table>
-                <div class="receipt-divider-dashed"></div>
-                <div class="receipt-totals-modern">
-                    <div class="calc-row"><span>Subtotal</span> <span id="recItemsTotal"></span></div>
-                    <div class="calc-row"><span>Shipping</span> <span id="recShipping"></span></div>
-                    <div class="calc-row" id="recDiscountRow" style="display:none; color:var(--success);"><span>Discount</span> <span id="recDiscountAmount"></span></div>
-                    <div class="calc-row grand-calc"><span>Total</span> <span id="recGrandTotal"></span></div>
-                </div>
-                <div class="receipt-cutout bottom"></div>
-            </div>
-            
-            <button class="btn-prime w-100 btn-large mt-20" onclick="closeOrderSuccess()"><i class="fas fa-shopping-bag"></i> Continue Shopping</button>
+    <!-- Full Screen Image Modal -->
+    <div class="modal" id="fullScreenImgModal">
+        <div class="fs-top-bar">
+            <button id="fsDownload" class="btn-mini" style="background:rgba(255,255,255,0.2); color:white; border:none; padding:10px 15px;" title="Download"><i class="fas fa-download"></i></button>
+            <button class="btn-mini" style="background:rgba(255,255,255,0.2); color:white; border:none; padding:10px 15px;" onclick="closeAllModals()"><i class="fas fa-times"></i></button>
         </div>
+        <div class="fs-main-view">
+            <img id="fsMainImg" src="" style="max-width:100%; max-height:100%; object-fit:contain;">
+        </div>
+        <div id="fsUid" class="fs-uid-tag">UID: -</div>
+        <div id="fsThumbnails" class="fs-thumbnails"></div>
     </div>
 
+    <div id="toastNotification" class="toast-notification"><i class="fas fa-check-circle"></i> <span id="toastMessage">Action successful</span></div>
+
+    <!-- Main Content Layout -->
     <main class="main-content">
-        <section class="banner-slider-container">
-            <div id="bannerSlider" class="banner-slider"></div>
+        <!-- Premium Full Width Banner -->
+        <section class="banner-slider-container mt-20" id="mainBannerSection">
+            <div class="banner-slider" id="fMainSlider">
+                <button class="f-nav-btn prev-btn" onclick="slideMainBanner(-1)"><i class="fas fa-chevron-left"></i></button>
+                <button class="f-nav-btn next-btn" onclick="slideMainBanner(1)"><i class="fas fa-chevron-right"></i></button>
+                <div class="f-track" id="mainBannerTrack"></div>
+            </div>
         </section>
 
-        <div class="category-scroll-wrapper mt-20" id="recentlyViewedContainer" style="display:none;">
-            <h3 class="section-title" style="font-size: 18px; margin-bottom: 15px; padding-left: 5px; color: var(--primary);">Recently Viewed <i class="fas fa-history" style="font-size:14px;"></i></h3>
-            <div class="category-filters" id="recentShelf" style="padding-bottom: 10px;"></div>
-        </div>
-        
-        <div class="category-scroll-wrapper mt-20">
-            <div class="category-filters" id="categoryFilters"></div>
+        <!-- Top Actions (Categories + Global Filter) -->
+        <div class="mt-20 flex-row-between" id="categoriesDisplayContainer" style="max-width: 1400px; margin-left: auto; margin-right: auto; padding: 0 5%; flex-wrap: wrap; gap: 15px;">
+            <div class="category-scroll-wrapper" id="categoryScroll" style="padding: 0; flex: 1; min-width: 60%;">
+                <div class="category-filters" id="categoryFilters"></div>
+            </div>
+            <button class="global-filter-btn" onclick="openSidebar('filterSidebar')"><i class="fas fa-sliders-h"></i> Filters</button>
         </div>
 
+        <!-- Filter Active Warning Indicator -->
+        <div id="activeFilterNotice" style="display:none; max-width: 1400px; margin: 10px auto; padding: 0 5%;">
+            <div style="background: var(--bg-color); border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 10px;">
+                <i class="fas fa-filter" style="color:var(--primary);"></i> Filters Applied 
+                <span style="color: var(--danger); cursor: pointer; text-decoration: underline;" onclick="clearSidebarFilters()">Clear</span>
+            </div>
+        </div>
+
+        <!-- Recently Viewed Section -->
+        <div class="mt-20" id="recentlyViewedContainer" style="display:none; max-width: 1400px; margin-left: auto; margin-right: auto; padding: 0 5%; margin-bottom: 20px;">
+            <h3 class="section-title"><i class="fas fa-history" style="font-size:16px;"></i> Recently Viewed</h3>
+            <div class="category-scroll-wrapper" id="recentShelfScroll" style="padding: 0;">
+                <div class="category-filters" id="recentShelf" style="padding-bottom: 10px;"></div>
+            </div>
+        </div>
+
+        <!-- Main Product Shelf -->
         <div class="product-list" id="productShelf"></div>
         
-        <div class="text-center w-100 mt-20 mb-15">
-            <button id="loadMoreBtn" class="btn-outline bounce-hover" style="display: none; margin: 0 auto; width: 220px;" onclick="loadMoreProducts()">View More Products</button>
+        <!-- Loader for Infinite Scroll -->
+        <div id="infiniteScrollLoader" style="display: none; width: 100%; justify-content: center; padding: 20px 0 40px;">
+            <div class="spinner" style="width: 30px; height: 30px; border-width: 2px;"></div>
         </div>
-
-        <footer class="premium-footer">
-            <div style="max-width: 800px; margin: 0 auto;">
-                <p style="font-size: 15px; line-height: 1.8; font-weight: 500; margin-bottom: 25px; color: #e2e8f0;">
-                  Experience shopping at its finest. We offer carefully selected high-quality products for our valued customers.
-                </p>
-                <div class="social-links" style="display: flex; justify-content: center; gap: 25px; margin-bottom: 25px; font-size: 22px;">
-                    <a href="https://instagram.com/official.aryanta" target="_blank" style="color: white; transition: 0.3s;"><i class="fab fa-instagram"></i></a>
-                    <a href="https://x.com/officialaryanta" target="_blank" style="color: white; transition: 0.3s;"><i class="fab fa-twitter"></i></a>
-                    <a href="https://www.facebook.com/share/1E8hFiNnmw/" target="_blank" style="color: white; transition: 0.3s;"><i class="fab fa-facebook-f"></i></a>
-                </div>
-                <p style="font-size: 13px; color: #94a3b8; font-family: var(--font-mono); font-weight: 600; letter-spacing: 1px;">&copy; Aryanta 2026. All rights reserved.</p>
-            </div>
-        </footer>
     </main>
 
-    <script src="java.js"></script>
+    <!-- Curved Footer -->
+    <footer class="premium-footer">
+        <div style="max-width: 800px; margin: 0 auto;">
+            <p style="font-size: 15px; line-height: 1.8; font-weight: 500; margin-bottom: 25px; color: #e2e8f0;">
+              Experience shopping at its finest. We offer carefully selected high-quality products for our valued customers.
+            </p>
+            <div class="social-links" style="display: flex; justify-content: center; gap: 25px; margin-bottom: 25px; font-size: 22px;">
+                <a href="https://instagram.com/official.aryanta" target="_blank" style="color: white; transition: 0.3s;"><i class="fab fa-instagram"></i></a>
+                <a href="https://x.com/officialaryanta" target="_blank" style="color: white; transition: 0.3s;"><i class="fab fa-twitter"></i></a>
+                <a href="https://www.facebook.com/share/1E8hFiNnmw/" target="_blank" style="color: white; transition: 0.3s;"><i class="fab fa-facebook-f"></i></a>
+            </div>
+            <p style="font-size: 14px; margin-bottom: 10px; font-weight: 500; color: #94a3b8;"><i class="fas fa-envelope"></i> support@aryanta.in | <i class="fas fa-phone-alt"></i> 06414054676</p>
+            <p style="font-size: 13px; color: #64748b; font-family: var(--font-mono); font-weight: 600; letter-spacing: 1px;">&copy; Aryanta 2026. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
+        const PROJECT_ID = "aryanta-mart-a8893"; 
+        
+        let allProducts = [];
+        let baseCategoryProducts = []; 
+        let currentlyDisplayed = 0;
+        
+        const INITIAL_BATCH = 40; 
+        const SCROLL_BATCH = 30; 
+
+        let siteConfig = { isSpecialDay: false, specialDayName: "" };
+        let wishlist = []; 
+        let cart = []; 
+        let imageCarousels = {}; 
+        
+        let allBannersData = [];
+        let mainBannerIndex = 0;
+        let bannerTimer;
+        let isFetchingMore = false;
+        
+        // Modal History State Logic
+        let modalsOpen = 0;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            cart = JSON.parse(localStorage.getItem('local_cart')) || [];
+            wishlist = JSON.parse(localStorage.getItem('local_wishlist')) || [];
+            checkSession();
+            updateCartBadge();
+            
+            const cachedBanners = localStorage.getItem('cached_banners');
+            if(cachedBanners) {
+                allBannersData = JSON.parse(cachedBanners);
+                renderGridBanners(allBannersData);
+            }
+            const cachedProducts = localStorage.getItem('cached_products');
+            if(cachedProducts) {
+                allProducts = JSON.parse(cachedProducts);
+                baseCategoryProducts = shuffleArray(allProducts.filter(p => !p.isDummy));
+                document.getElementById('pageLoader').classList.add('hidden');
+                renderCategoryPills();
+                renderRecentlyViewed();
+                currentlyDisplayed = 0;
+                loadMoreProducts(INITIAL_BATCH);
+            }
+
+            fetchAppConfig();
+            listenForBroadcasts();
+            fetchBanners();
+            fetchProducts(cachedProducts ? true : false);
+            
+            initScrollLogic();
+            setupSearch("desktopSearchInput", ".desktop-clear", ".desktop-dropdown");
+            setupSearch("mobileSearchInput", ".mobile-clear", ".mobile-dropdown");
+            setupBannerWheel();
+
+            window.addEventListener('popstate', (e) => {
+                if (modalsOpen > 0) {
+                    closeAllModals(true); 
+                }
+                document.querySelectorAll('.search-dropdown').forEach(d => d.style.display = 'none');
+            });
+            
+            document.addEventListener('touchstart', (e) => {
+                if(!e.target.closest('.nav-search') && !e.target.closest('.search-dropdown')) {
+                    document.querySelectorAll('.search-dropdown').forEach(d => d.style.display = 'none');
+                }
+            }, {passive: true});
+            document.addEventListener('click', (e) => {
+                if(!e.target.closest('.nav-search') && !e.target.closest('.search-dropdown')) {
+                    document.querySelectorAll('.search-dropdown').forEach(d => d.style.display = 'none');
+                }
+            });
+        });
+
+        function checkSession() {
+            const session = JSON.parse(localStorage.getItem('active_session'));
+            const accBtn = document.getElementById('accountBtn');
+            const hr = new Date().getHours();
+            let greeting = hr < 12 ? "Good Morning" : (hr < 18 ? "Good Afternoon" : "Good Evening");
+            
+            if (session && session.email) {
+                document.getElementById('sidebarUser').innerText = session.name;
+                let roleTxt = session.isPrime ? "Prime Member <i class='fas fa-crown' style='color:#f59e0b;'></i>" : "Store Member";
+                document.getElementById('sidebarRole').innerHTML = `${greeting}, <br>${roleTxt}`;
+                document.getElementById('sidebarLogoutBtn').style.display = "flex"; 
+                
+                let avatar = session.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(session.email)}`;
+                document.getElementById('sidebarAvatar').src = avatar;
+                
+                accBtn.innerHTML = `<img src="${avatar}" class="nav-avatar" title="My Profile"> <span class="desktop-only" style="margin-left:8px; font-weight:700;">${session.name.split(' ')[0]}</span>`;
+                accBtn.onclick = () => location.href = 'https://aryanta.in/profile';
+                document.getElementById('sidebarAccountLink').onclick = () => location.href = 'https://aryanta.in/profile';
+            } else {
+                document.getElementById('sidebarUser').innerText = 'Welcome Guest'; 
+                document.getElementById('sidebarRole').innerText = `${greeting}, Sign in for best deals`; 
+                document.getElementById('sidebarLogoutBtn').style.display = "none";
+                
+                accBtn.innerHTML = `<i class="fas fa-user-circle" style="font-size:22px;"></i> <span class="desktop-only" style="margin-left:6px; font-weight:700;">Sign In</span>`;
+                accBtn.onclick = () => location.href = 'https://aryanta.in/login'; 
+                document.getElementById('sidebarAccountLink').onclick = () => location.href = 'https://aryanta.in/login';
+            }
+        }
+
+        function updateCartBadge() {
+            let count = cart.reduce((total, item) => total + (item.qty || 1), 0);
+            const badge = document.getElementById('cartBadge');
+            badge.innerText = count;
+            count > 0 ? badge.classList.add('show') : badge.classList.remove('show');
+        }
+
+        function logOut() { localStorage.removeItem('active_session'); location.reload(); }
+
+        let toastTimer;
+        function showToast(message) {
+            const toast = document.getElementById('toastNotification');
+            document.getElementById('toastMessage').innerText = message;
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        async function saveCartToDB() {
+            const session = JSON.parse(localStorage.getItem('active_session'));
+            if(session && session.email) {
+                try { await fetch(`${API_BASE_URL}/update-user`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ email: session.email, updates: { cart: cart }, projectId: PROJECT_ID }) }); } catch(e) {}
+            }
+        }
+
+        async function saveWishlistToDB() {
+            const session = JSON.parse(localStorage.getItem('active_session'));
+            if(session && session.email) {
+                try { await fetch(`${API_BASE_URL}/update-user`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ email: session.email, updates: { wishlist: wishlist }, projectId: PROJECT_ID }) }); } catch(e) {}
+            }
+        }
+
+        async function fetchAppConfig() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/config`);
+                const data = await res.json();
+
+                if(data && data.special_day && data.special_day.isActive) {
+                    const now = new Date();
+                    const start = new Date(data.special_day.startTime);
+                    const end = new Date(data.special_day.endTime);
+                    if(now >= start && now <= end) {
+                        siteConfig.isSpecialDay = true;
+                        siteConfig.specialDayName = data.special_day.eventName;
+                        document.body.classList.add('theme-special-day');
+                        const festiveBar = document.getElementById('festiveAnnouncement');
+                        if(festiveBar) {
+                            festiveBar.style.display = 'block';
+                            festiveBar.innerText = `🎉 ${siteConfig.specialDayName} is LIVE! Enjoy exclusive offers. 🎉`;
+                        }
+                    }
+                }
+                if (data && data.showPopup && !sessionStorage.getItem('popupShown')) {
+                    document.getElementById('popupTitle').innerText = data.popupTitle || "Notice";
+                    document.getElementById('popupDesc').innerText = data.popupDesc || "Welcome to Aryanta Store.";
+                    openModalId('systemPopup');
+                    sessionStorage.setItem('popupShown', 'true');
+                }
+            } catch (e) {}
+        }
+
+        async function listenForBroadcasts() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/get-broadcasts`);
+                const data = await res.json();
+                if(data && data.length > 0) {
+                    const b = data[0]; 
+                    const lastSeen = localStorage.getItem('last_seen_broadcast');
+                    if(lastSeen !== b.id) {
+                        document.getElementById('broadcastTitle').innerText = b.title;
+                        document.getElementById('broadcastMessage').innerText = b.message;
+                        openModalId('broadcastModal');
+                        localStorage.setItem('last_seen_broadcast', b.id);
+                    }
+                }
+            } catch(e) { }
+        }
+
+        async function fetchBanners() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/banners`);
+                const banners = await res.json();
+                if (banners && banners.length > 0) {
+                    allBannersData = banners;
+                    localStorage.setItem('cached_banners', JSON.stringify(banners));
+                    renderGridBanners(banners);
+                }
+            } catch(e) {}
+        }
+
+        function renderGridBanners(banners) {
+            const mainTrack = document.getElementById('mainBannerTrack');
+            if(!mainTrack || banners.length === 0) return;
+            
+            mainTrack.innerHTML = banners.map((b, i) => {
+                let clk = b.link ? `onclick="window.location.href='${b.link}'"` : '';
+                return `<div class="f-slide ${i === 0 ? 'active' : ''}" id="mBannerSlide-${i}" style="background-image: url('${b.imageUrl}'); background-size: cover;" ${clk}></div>`;
+            }).join('');
+
+            mainBannerIndex = 0;
+            
+            clearInterval(bannerTimer);
+            if(banners.length > 1) {
+                bannerTimer = setInterval(() => slideMainBanner(1), 3500);
+            }
+        }
+
+        window.slideMainBanner = function(step) {
+            const track = document.getElementById('mainBannerTrack');
+            if(!track || !track.children.length) return;
+            const total = track.children.length;
+            
+            let oldActive = document.getElementById(`mBannerSlide-${mainBannerIndex}`);
+            if(oldActive) oldActive.classList.remove('active');
+            
+            mainBannerIndex = (mainBannerIndex + step + total) % total;
+            
+            let newActive = document.getElementById(`mBannerSlide-${mainBannerIndex}`);
+            if(newActive) newActive.classList.add('active');
+            
+            clearInterval(bannerTimer);
+            if(total > 1) bannerTimer = setInterval(() => slideMainBanner(1), 4000);
+        }
+
+        function setupBannerWheel() {
+            const slider = document.getElementById('fMainSlider');
+            if(slider) {
+                slider.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    slideMainBanner(e.deltaY > 0 ? 1 : -1);
+                }, { passive: false });
+            }
+        }
+
+        function shuffleArray(array) {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        async function fetchProducts(isSilentlyUpdating) {
+            try {
+                const res = await fetch(`${API_BASE_URL}/products`);
+                const freshData = await res.json();
+                
+                if(!isSilentlyUpdating || freshData.length !== allProducts.length) {
+                    allProducts = freshData;
+                    baseCategoryProducts = shuffleArray(allProducts.filter(p => !p.isDummy)); 
+                    localStorage.setItem('cached_products', JSON.stringify(allProducts));
+                    
+                    document.getElementById('pageLoader').classList.add('hidden');
+                    renderCategoryPills();
+                    currentlyDisplayed = 0;
+                    document.getElementById('productShelf').innerHTML = '';
+                    renderRecentlyViewed();
+                    loadMoreProducts(INITIAL_BATCH); 
+                    
+                    injectGoogleMerchantData(allProducts);
+                }
+            } catch(err) {
+                if(!isSilentlyUpdating) document.getElementById('pageLoader').classList.add('hidden');
+            }
+        }
+
+        // Smart SEO Google Merchant JSON-LD Injection
+        function injectGoogleMerchantData(products) {
+            const existing = document.getElementById('merchant-ld');
+            if(existing) existing.remove();
+            
+            const script = document.createElement('script');
+            script.type = 'application/ld+json';
+            script.id = 'merchant-ld';
+            
+            const itemList = {
+                "@context": "https://schema.org",
+                "@type": "ItemList",
+                "itemListElement": products.filter(p=>!p.isDummy).slice(0, 100).map((p, index) => {
+                    let schema = {
+                        "@type": "ListItem",
+                        "position": index + 1,
+                        "item": {
+                            "@type": "Product",
+                            "url": `https://aryanta.in/product?id=${p.id}`,
+                            "name": p.name,
+                            "image": p.images && p.images.length > 0 ? p.images : [p.image],
+                            "description": p.desc || `Buy premium ${p.name} at Aryanta Store. Quality guaranteed.`,
+                            "sku": p.id,
+                            "brand": { "@type": "Brand", "name": p.brand || "Aryanta" },
+                            "offers": {
+                                "@type": "Offer",
+                                "url": `https://aryanta.in/product?id=${p.id}`,
+                                "priceCurrency": "INR",
+                                "price": p.price,
+                                "priceValidUntil": new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+                                "itemCondition": "https://schema.org/NewCondition",
+                                "availability": p.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+                            }
+                        }
+                    };
+                    if(p.reviewCount && p.reviewCount > 0 && p.avgRating && p.avgRating !== "New") {
+                        schema.item.aggregateRating = {
+                            "@type": "AggregateRating",
+                            "ratingValue": p.avgRating,
+                            "reviewCount": p.reviewCount
+                        };
+                    }
+                    return schema;
+                })
+            };
+            script.text = JSON.stringify(itemList);
+            document.head.appendChild(script);
+        }
+
+        function renderCategoryPills() {
+            let cats = Array.from(new Set(allProducts.filter(p=>!p.isDummy).map(p => p.category || 'Other')));
+            const topCats = cats.slice(0, 15); 
+            
+            const container = document.getElementById('categoryFilters');
+            container.innerHTML = `<button class="cat-pill active" id="pill-All" onclick="filterCategory('All')">All Categories</button>`;
+            
+            const grid = document.getElementById('categoryGrid');
+            grid.innerHTML = `<button class="cat-pill" style="justify-content: center; padding: 15px;" onclick="filterCategory('All')">All Categories</button>`;
+            
+            cats.forEach(c => {
+                if(topCats.includes(c)) {
+                    const btn = document.createElement('button');
+                    btn.className = 'cat-pill';
+                    btn.onclick = () => filterCategory(c);
+                    btn.innerText = c;
+                    container.appendChild(btn);
+                }
+                const gBtn = document.createElement('button');
+                gBtn.className = 'cat-pill';
+                gBtn.style.justifyContent = 'center';
+                gBtn.style.padding = '15px';
+                gBtn.onclick = () => filterCategory(c);
+                gBtn.innerText = c;
+                grid.appendChild(gBtn);
+            });
+        }
+
+        window.openCategoryModal = function() {
+            openModalId('categoryModal');
+        }
+
+        window.filterCategory = function(cat) {
+            document.querySelectorAll('.cat-pill').forEach(el => el.classList.remove('active'));
+            
+            if(cat === 'All') {
+                const btnAll = document.getElementById('pill-All');
+                if(btnAll) btnAll.classList.add('active');
+                baseCategoryProducts = shuffleArray(allProducts.filter(p=>!p.isDummy));
+            } else {
+                baseCategoryProducts = shuffleArray(allProducts.filter(p => !p.isDummy && (p.category || 'Other') === cat));
+            }
+            
+            applySidebarFilterLogic();
+            closeAllModals(); 
+        }
+
+        window.loadMoreProducts = function(batchCount = SCROLL_BATCH) {
+            if(isFetchingMore) return;
+            isFetchingMore = true;
+            
+            const container = document.getElementById('productShelf');
+            const loader = document.getElementById('infiniteScrollLoader');
+            loader.style.display = 'flex';
+            
+            setTimeout(() => {
+                const nextBatch = baseCategoryProducts.slice(currentlyDisplayed, currentlyDisplayed + batchCount);
+                if(nextBatch.length === 0) { 
+                    loader.style.display = 'none'; 
+                    isFetchingMore = false;
+                    return; 
+                } 
+
+                nextBatch.forEach(p => {
+                    if(p.isDummy) return;
+                    
+                    let inCart = cart.some(i => i.id === p.id);
+                    let imgArr = p.images && p.images.length > 0 ? p.images : [p.image || 'https://via.placeholder.com/300'];
+                    imageCarousels[p.id] = { index: 0, arr: imgArr };
+                    
+                    let imgNav = imgArr.length > 1 ? `
+                        <button class="b-img-nav b-prev" onclick="event.stopPropagation(); slideImg('${p.id}', -1)"><i class="fas fa-chevron-left"></i></button>
+                        <button class="b-img-nav b-next" onclick="event.stopPropagation(); slideImg('${p.id}', 1)"><i class="fas fa-chevron-right"></i></button>
+                    ` : '';
+
+                    let imgNodes = imgArr.map((src, i) => `<img class="p-img-layer ${i === 0 ? 'active' : ''}" id="p-img-${p.id}-${i}" src="${src}" alt="${p.name}">`).join('');
+
+                    let isWished = wishlist.includes(p.id);
+                    let wishClass = isWished ? 'fas fa-heart active-heart' : 'far fa-heart';
+                    let wishColor = isWished ? 'var(--danger)' : 'var(--text-muted)';
+                    
+                    let rCount = p.reviewCount ? p.reviewCount : 0;
+                    let starUI = p.avgRating && p.avgRating !== "New" && rCount > 0 ? `${p.avgRating} <i class="fas fa-star" style="font-size:10px;"></i> <span style="color:var(--text-muted); font-size:11px; margin-left:4px;">(${rCount} reviews)</span>` : `<i class="fas fa-star" style="font-size:10px; color:#cbd5e1;"></i> <span style="color:var(--text-muted); font-size:11px; margin-left:4px;">New Arrival</span>`;
+
+                    let stockStatus = (p.stock && p.stock < 10 && p.stock > 0) ? `<div style="color:var(--danger); font-size:12px; font-weight:700; margin-top:-5px; margin-bottom:10px;">Only ${p.stock} left in stock</div>` : '';
+
+                    let descHtml = `<div class="list-desc">${p.desc || 'Premium Aryanta product with high-quality standards.'}</div>`;
+
+                    const div = document.createElement('div');
+                    div.className = 'list-item-card';
+                    
+                    bindLongPress(div, p); 
+                    
+                    div.innerHTML = `
+                        <i id="wish-${p.id}" class="${wishClass} premium-hover wishlist-icon" style="position: absolute; top: 15px; right: 15px; font-size: 20px; z-index: 20; color: ${wishColor};" onclick="event.stopPropagation(); toggleWishlist('${p.id}')"></i>
+                        
+                        <div class="list-image-container" id="img-cont-${p.id}">
+                            ${imgNodes}
+                            ${imgNav}
+                        </div>
+                        
+                        <div class="list-info">
+                            <h4>${p.name}</h4>
+                            <div class="stars">${starUI}</div>
+                            ${stockStatus}
+                            ${descHtml}
+                            <div class="price">₹${Number(p.price).toLocaleString('en-IN')}</div>
+                            <div class="list-actions">
+                                <button id="cartBtn-${p.id}" class="btn-list-add ${inCart ? 'btn-remove' : 'btn-add'}" onclick="event.stopPropagation(); toggleCart('${p.id}')">
+                                    ${inCart ? 'Remove Cart' : 'Add to Cart'}
+                                </button>
+                                <button class="btn-list-buy" onclick="event.stopPropagation(); directBuyNow('${p.id}')">Buy Now</button>
+                            </div>
+                        </div>`;
+                        
+                    container.appendChild(div);
+                });
+
+                currentlyDisplayed += batchCount;
+                loader.style.display = 'none';
+                isFetchingMore = false;
+            }, 100);
+        }
+
+        window.slideImg = function(id, step) {
+            let d = imageCarousels[id];
+            if(!d) return;
+            let oldIndex = d.index;
+            d.index = (d.index + step + d.arr.length) % d.arr.length;
+            
+            let oldImg = document.getElementById(`p-img-${id}-${oldIndex}`);
+            let newImg = document.getElementById(`p-img-${id}-${d.index}`);
+            
+            if(oldImg) oldImg.classList.remove('active');
+            if(newImg) newImg.classList.add('active');
+        }
+
+        // --- FILTER SIDEBAR LOGIC ---
+        window.applySidebarFilter = function() {
+            applySidebarFilterLogic();
+        }
+        
+        function applySidebarFilterLogic() {
+            const priceVal = document.querySelector('input[name="priceFilter"]:checked').value;
+            const rateVal = document.querySelector('input[name="ratingFilter"]:checked').value;
+            
+            let filtered = allProducts.filter(p => !p.isDummy);
+            
+            const dInput = document.getElementById("desktopSearchInput").value.toLowerCase().trim();
+            const mInput = document.getElementById("mobileSearchInput").value.toLowerCase().trim();
+            const query = dInput || mInput;
+            
+            if (query !== "") {
+                const terms = query.split(' ');
+                filtered = filtered.filter(p => terms.every(t => 
+                    p.name.toLowerCase().includes(t) || 
+                    (p.brand || "").toLowerCase().includes(t) || 
+                    (p.id || "").toLowerCase().includes(t) || 
+                    fuzzyMatch(p.name, t)
+                ));
+                document.getElementById('mainBannerSection').classList.add('hidden-by-search');
+                document.getElementById('productShelf').classList.add('list-view');
+                
+                document.getElementById('categoriesDisplayContainer').style.display = 'none';
+                document.getElementById('recentlyViewedContainer').style.display = 'none';
+            } else {
+                document.getElementById('mainBannerSection').classList.remove('hidden-by-search');
+                document.getElementById('productShelf').classList.remove('list-view');
+                
+                document.getElementById('categoriesDisplayContainer').style.display = 'flex';
+                if(JSON.parse(localStorage.getItem('recently_viewed') || '[]').length > 0) {
+                    document.getElementById('recentlyViewedContainer').style.display = 'block';
+                }
+            }
+            
+            const activeCatPill = document.querySelector('.cat-pill.active');
+            if(activeCatPill && activeCatPill.innerText !== 'All Categories') {
+                filtered = filtered.filter(p => (p.category || 'Other') === activeCatPill.innerText);
+            }
+
+            if(priceVal !== 'all') {
+                filtered = filtered.filter(p => Number(p.price) <= Number(priceVal));
+            }
+            
+            if(rateVal === 'new') {
+                filtered = filtered.filter(p => p.avgRating === 'New' || !p.reviewCount);
+            } else if (rateVal !== 'all') {
+                filtered = filtered.filter(p => Number(p.avgRating) >= Number(rateVal));
+            }
+
+            if(priceVal !== 'all' || rateVal !== 'all' || query !== "") {
+                document.getElementById('activeFilterNotice').style.display = 'block';
+            } else {
+                document.getElementById('activeFilterNotice').style.display = 'none';
+            }
+
+            baseCategoryProducts = shuffleArray(filtered);
+            currentlyDisplayed = 0;
+            document.getElementById('productShelf').innerHTML = "";
+            loadMoreProducts(INITIAL_BATCH);
+        }
+
+        window.clearSidebarFilters = function() {
+            document.querySelector('input[name="priceFilter"][value="all"]').checked = true;
+            document.querySelector('input[name="ratingFilter"][value="all"]').checked = true;
+            document.getElementById('desktopSearchInput').value = "";
+            document.getElementById('mobileSearchInput').value = "";
+            
+            applySidebarFilterLogic();
+            document.getElementById('activeFilterNotice').style.display = 'none';
+        }
+
+        // --- AMAZON STYLE LONG PRESS (QUICK VIEW) ---
+        function bindLongPress(element, product) {
+            let isLongPress = false;
+            let pressTimer;
+
+            const startPress = (e) => {
+                if (e.type === 'click' && e.detail !== 0) return;
+                isLongPress = false;
+                pressTimer = setTimeout(() => {
+                    isLongPress = true;
+                    showQuickView(product);
+                }, 550); 
+            };
+
+            const cancelPress = () => { clearTimeout(pressTimer); };
+
+            element.addEventListener('touchstart', startPress, {passive: true});
+            element.addEventListener('touchend', cancelPress);
+            element.addEventListener('touchmove', cancelPress);
+            element.addEventListener('mousedown', startPress);
+            element.addEventListener('mouseup', cancelPress);
+            element.addEventListener('mouseleave', cancelPress);
+
+            element.addEventListener('click', (e) => {
+                if (isLongPress) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+                if (!e.target.closest('button') && !e.target.closest('.b-img-nav') && !e.target.closest('i.fa-heart')) {
+                    trackRecentlyViewed(product); 
+                    window.location.href = `https://aryanta.in/product?id=${product.id}`;
+                }
+            });
+        }
+
+        let qvCurrentProduct = null;
+        let qvImageIndex = 0;
+
+        function showQuickView(product) {
+            qvCurrentProduct = product;
+            qvImageIndex = 0;
+            let imgArr = product.images && product.images.length > 0 ? product.images : [product.image];
+            
+            document.getElementById('qvImage').src = imgArr[0];
+            
+            const qvImgNav = document.getElementById('qvImgNav');
+            if(imgArr.length > 1) {
+                qvImgNav.style.display = 'block';
+            } else {
+                qvImgNav.style.display = 'none';
+            }
+
+            document.getElementById('qvTitle').innerText = product.name;
+            document.getElementById('qvId').innerText = `ID: ${product.id} ${product.brand ? ' | Brand: '+product.brand : ''}`;
+            document.getElementById('qvDesc').innerText = product.desc || "Aryanta Premium Quality Product. Carefully selected for you. 100% Genuine product ensuring you get the best value.";
+            document.getElementById('qvPrice').innerText = `₹${Number(product.price).toLocaleString('en-IN')}`;
+            
+            let stockHtml = (product.stock && product.stock < 10 && product.stock > 0) ? `<div style="color:var(--danger); font-size:13px; font-weight:800; margin-bottom:15px;"><i class="fas fa-fire"></i> Low Stock: Only ${product.stock} left!</div>` : '';
+            document.getElementById('qvStockNotice').innerHTML = stockHtml;
+
+            let rCount = product.reviewCount ? product.reviewCount : 0;
+            let starUI = product.avgRating && product.avgRating !== "New" && rCount > 0 ? `${product.avgRating} <i class="fas fa-star" style="font-size:11px;"></i> (${rCount} Ratings)` : `New Release`;
+            document.getElementById('qvStars').innerHTML = starUI;
+
+            let inCart = cart.some(i => i.id === product.id);
+            const qvAdd = document.getElementById('qvAddBtn');
+            qvAdd.innerText = inCart ? 'Remove from Cart' : 'Add to Cart';
+            qvAdd.className = inCart ? 'btn-list-add btn-remove' : 'btn-list-add btn-add';
+            if(!inCart) qvAdd.style.color = "white"; 
+            
+            qvAdd.onclick = () => { toggleCart(product.id); showQuickView(product); };
+            document.getElementById('qvBuyBtn').onclick = () => { directBuyNow(product.id); };
+
+            const shareBtn = document.getElementById('qvShareBtn');
+            shareBtn.innerHTML = '<i class="fas fa-share-alt"></i>';
+            shareBtn.onclick = () => copyShareLink(product.id);
+
+            openModalId('quickViewModal');
+        }
+
+        window.slideQvImg = function(step) {
+            if(!qvCurrentProduct) return;
+            let imgArr = qvCurrentProduct.images && qvCurrentProduct.images.length > 0 ? qvCurrentProduct.images : [qvCurrentProduct.image];
+            qvImageIndex = (qvImageIndex + step + imgArr.length) % imgArr.length;
+            document.getElementById('qvImage').src = imgArr[qvImageIndex];
+        }
+
+        window.openFullScreenFromQv = function() {
+            if(qvCurrentProduct) {
+                openFullScreen(qvCurrentProduct);
+            }
+        }
+
+        // --- FULL SCREEN IMAGE VIEWER ---
+        function openFullScreen(product) {
+            let imgArr = product.images && product.images.length > 0 ? product.images : [product.image];
+            
+            document.getElementById('fsMainImg').src = imgArr[qvImageIndex];
+            document.getElementById('fsUid').innerText = `UID: ${product.id}`;
+            
+            const dlBtn = document.getElementById('fsDownload');
+            dlBtn.onclick = () => {
+                const a = document.createElement('a');
+                a.href = imgArr[qvImageIndex];
+                a.download = `Aryanta_${product.id}.jpg`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+
+            const thumbsContainer = document.getElementById('fsThumbnails');
+            if(imgArr.length > 1) {
+                thumbsContainer.style.display = 'flex';
+                thumbsContainer.innerHTML = imgArr.map((src, i) => `
+                    <img class="fs-thumb ${i === qvImageIndex ? 'active' : ''}" src="${src}" onclick="changeFsImage(${i}, '${src}')">
+                `).join('');
+            } else {
+                thumbsContainer.style.display = 'none';
+            }
+
+            openModalId('fullScreenImgModal');
+        }
+
+        window.changeFsImage = function(index, src) {
+            document.getElementById('fsMainImg').src = src;
+            qvImageIndex = index; 
+            document.getElementById('qvImage').src = src; 
+            
+            document.querySelectorAll('.fs-thumb').forEach((el, i) => {
+                if(i === index) el.classList.add('active');
+                else el.classList.remove('active');
+            });
+            
+            const dlBtn = document.getElementById('fsDownload');
+            dlBtn.onclick = () => {
+                const a = document.createElement('a');
+                a.href = src;
+                a.download = `Aryanta_Img_${index}.jpg`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+        }
+
+
+        window.copyShareLink = function(id) {
+            const url = `https://aryanta.in/product?id=${id}`;
+            const btn = document.getElementById('qvShareBtn');
+            const oldHtml = btn.innerHTML;
+            
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(url).then(() => {
+                    btn.innerHTML = '<i class="fas fa-check" style="color:var(--success);"></i>';
+                    showToast('Link copied!');
+                    setTimeout(() => btn.innerHTML = oldHtml, 2000);
+                });
+            } else {
+                let textArea = document.createElement("textarea");
+                textArea.value = url;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    btn.innerHTML = '<i class="fas fa-check" style="color:var(--success);"></i>';
+                    showToast('Link copied!');
+                    setTimeout(() => btn.innerHTML = oldHtml, 2000);
+                } catch (error) {
+                    showToast('Failed to copy');
+                }
+                textArea.remove();
+            }
+        }
+
+        // --- CART LOGIC ---
+        window.toggleCart = function(id) {
+            const product = allProducts.find(p => p.id === id);
+            if(!product) return;
+            
+            const idx = cart.findIndex(i => i.id === id);
+            const btn = document.getElementById(`cartBtn-${id}`);
+            
+            if (idx > -1) {
+                cart.splice(idx, 1);
+                if(btn) { btn.innerText = "Add to Cart"; btn.className = "btn-list-add btn-add"; }
+                showToast("Item removed from Cart");
+            } else {
+                cart.push({ ...product, qty: 1 });
+                if(btn) { btn.innerText = "Remove Cart"; btn.className = "btn-list-add btn-remove"; }
+                showToast("Item added to Cart");
+            }
+            
+            localStorage.setItem('local_cart', JSON.stringify(cart));
+            updateCartBadge();
+            saveCartToDB();
+        }
+
+        window.directBuyNow = function(id) {
+            const product = allProducts.find(p => p.id === id);
+            if(!product) return;
+            
+            const idx = cart.findIndex(i => i.id === id);
+            if (idx === -1) { 
+                cart.push({ ...product, qty: 1 }); 
+                localStorage.setItem('local_cart', JSON.stringify(cart)); 
+                saveCartToDB();
+            }
+            window.location.href = 'https://aryanta.in/cart';
+        }
+
+        window.toggleWishlist = function(id) {
+            let idx = wishlist.indexOf(id);
+            let icon = document.getElementById(`wish-${id}`);
+            if (idx > -1) {
+                wishlist.splice(idx, 1);
+                if(icon) { icon.className = "far fa-heart premium-hover wishlist-icon"; icon.style.color = "var(--text-muted)"; }
+                showToast("Removed from Wishlist");
+            } else {
+                wishlist.push(id);
+                if(icon) { icon.className = "fas fa-heart premium-hover wishlist-icon active-heart"; icon.style.color = "var(--danger)"; }
+                showToast("Added to Wishlist");
+            }
+            localStorage.setItem('local_wishlist', JSON.stringify(wishlist));
+            saveWishlistToDB();
+        }
+
+        function trackRecentlyViewed(p) {
+            let viewed = JSON.parse(localStorage.getItem('recently_viewed')) || [];
+            viewed = viewed.filter(item => item.id !== p.id); 
+            viewed.unshift(p); 
+            if(viewed.length > 7) viewed = viewed.slice(0, 7); 
+            localStorage.setItem('recently_viewed', JSON.stringify(viewed));
+        }
+
+        function renderRecentlyViewed() {
+            let viewed = JSON.parse(localStorage.getItem('recently_viewed')) || [];
+            const container = document.getElementById('recentShelf');
+            const wrapper = document.getElementById('recentlyViewedContainer');
+            
+            if(viewed.length === 0) { wrapper.style.display = 'none'; return; }
+            wrapper.style.display = 'block';
+            
+            container.innerHTML = viewed.map(p => {
+                let imgUrl = p.images && p.images.length > 0 ? p.images[0] : (p.image || 'https://via.placeholder.com/100');
+                let truncTitle = p.name.split(' ').slice(0, 3).join(' ') + '...';
+
+                return `
+                    <div class="cat-pill premium-hover" style="padding: 8px 15px; border-radius: 12px; min-width: 200px; justify-content:flex-start;" onclick="window.location.href='https://aryanta.in/productid=${p.id}'">
+                        <img src="${imgUrl}" style="width: 35px; height: 35px; object-fit: contain; background: transparent; border-radius: 6px; margin-right: 10px;">
+                        <div style="display:flex; flex-direction:column; overflow:hidden;">
+                            <strong style="font-size:12px;">${truncTitle}</strong>
+                            <span style="font-size:12px; color:var(--primary); font-weight:800;">₹${Number(p.price).toLocaleString('en-IN')}</span>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        // --- UI / SCROLL LOGIC ---
+        function openSidebar(id = 'sidebar') { 
+            document.getElementById(id).classList.add('open'); 
+            document.getElementById('overlay').classList.add('show');
+            pushModalState();
+        }
+        function openModalId(id) {
+            document.getElementById(id).classList.add('show');
+            document.getElementById('overlay').classList.add('show');
+            pushModalState();
+        }
+        
+        function pushModalState() {
+            if (modalsOpen === 0) {
+                history.pushState({modal: true}, '');
+            }
+            modalsOpen++;
+        }
+
+        window.closeAllModals = function(fromPopstate = false) {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('filterSidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('show');
+            document.getElementById('categoryModal').classList.remove('show');
+            document.getElementById('broadcastModal').classList.remove('show');
+            document.getElementById('quickViewModal').classList.remove('show');
+            document.getElementById('systemPopup').classList.remove('show');
+            document.getElementById('fullScreenImgModal').classList.remove('show');
+            document.getElementById('voiceSearchModal').classList.remove('show');
+            
+            if(speechRecognitionRef) {
+                speechRecognitionRef.stop();
+            }
+            
+            if (modalsOpen > 0 && !fromPopstate) {
+                history.back(); 
+            }
+            modalsOpen = 0;
+        }
+
+        function attachHorizontalScroll(id) {
+            const el = document.getElementById(id);
+            if(el) {
+                el.addEventListener('wheel', (e) => {
+                    if (e.deltaY !== 0) {
+                        e.preventDefault();
+                        el.scrollBy({ left: e.deltaY > 0 ? 300 : -300, behavior: 'smooth' });
+                    }
+                }, { passive: false });
+            }
+        }
+
+        function initScrollLogic() {
+            let lastScroll = 0;
+            const searchContainer = document.getElementById('searchContainer');
+            window.addEventListener("scroll", () => {
+                let st = window.pageYOffset;
+                if (window.innerWidth <= 768) {
+                    st > lastScroll && st > 50 ? searchContainer.classList.add('hide-search') : searchContainer.classList.remove('hide-search');
+                }
+                lastScroll = st <= 0 ? 0 : st; 
+                
+                document.querySelectorAll('.search-dropdown').forEach(d => d.style.display = 'none');
+                
+                // Infinite Scroll Check
+                if ((window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 800)) {
+                    if(currentlyDisplayed < baseCategoryProducts.length) {
+                        loadMoreProducts(SCROLL_BATCH);
+                    }
+                }
+            }, { passive: true });
+
+            attachHorizontalScroll('recentShelfScroll');
+            attachHorizontalScroll('categoryScroll');
+        }
+
+        function fuzzyMatch(str, pattern) {
+            pattern = pattern.toLowerCase();
+            str = str.toLowerCase();
+            let patternIdx = 0; let strIdx = 0;
+            while (patternIdx < pattern.length && strIdx < str.length) {
+                if (pattern[patternIdx] === str[strIdx]) patternIdx++;
+                strIdx++;
+            }
+            return patternIdx === pattern.length;
+        }
+
+        // --- WEB SPEECH API / MIC SEARCH ---
+        let speechRecognitionRef = null;
+        window.startDictation = function(inputId) {
+            if (window.hasOwnProperty('webkitSpeechRecognition') || window.hasOwnProperty('SpeechRecognition')) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                speechRecognitionRef = new SpeechRecognition();
+                speechRecognitionRef.continuous = true; 
+                speechRecognitionRef.interimResults = true;
+                speechRecognitionRef.lang = "en-US";
+                
+                const inputElement = document.getElementById(inputId);
+                
+                document.getElementById('voiceLiveText').innerText = "Speak now...";
+                document.getElementById('voiceStatusText').innerText = "Listening...";
+                openModalId('voiceSearchModal');
+                
+                speechRecognitionRef.start();
+
+                speechRecognitionRef.onresult = function(e) {
+                    let transcript = '';
+                    for (let i = e.resultIndex; i < e.results.length; i++) {
+                        transcript += e.results[i][0].transcript;
+                    }
+                    document.getElementById('voiceLiveText').innerText = `"${transcript}"`;
+                    
+                    if (e.results[e.results.length - 1].isFinal) {
+                        inputElement.value = transcript;
+                        setTimeout(() => {
+                            stopDictation();
+                            executeSearch();
+                        }, 600);
+                    }
+                };
+
+                speechRecognitionRef.onerror = function(e) {
+                    document.getElementById('voiceStatusText').innerText = "Error";
+                    document.getElementById('voiceLiveText').innerText = "Didn't catch that. Please try again.";
+                    setTimeout(() => stopDictation(), 2000);
+                };
+                
+                speechRecognitionRef.onend = function() {
+                    if(document.getElementById('voiceSearchModal').classList.contains('show')) {
+                        stopDictation();
+                    }
+                };
+            } else {
+                showToast("Voice search not supported in this browser.");
+            }
+        }
+
+        window.stopDictation = function() {
+            if(speechRecognitionRef) speechRecognitionRef.stop();
+            closeAllModals();
+        }
+
+        function executeSearch() {
+            applySidebarFilterLogic(); 
+        }
+
+        function setupSearch(inputId, clearSelector, dropSelector) {
+            const input = document.getElementById(inputId);
+            const clearBtn = document.querySelector(clearSelector);
+            const dropdown = document.querySelector(dropSelector);
+            let searchTimeout;
+            if(!input) return;
+
+            input.addEventListener("input", function () {
+                clearTimeout(searchTimeout);
+                const query = this.value.toLowerCase().trim();
+                clearBtn.style.display = query !== "" ? "block" : "none";
+
+                if (query === "") {
+                    dropdown.style.display = "none";
+                    executeSearch();
+                    return;
+                }
+
+                searchTimeout = setTimeout(() => {
+                    const terms = query.split(' ');
+                    const filtered = allProducts.filter(p => !p.isDummy && terms.every(t => 
+                        p.name.toLowerCase().includes(t) || 
+                        (p.brand || "").toLowerCase().includes(t) || 
+                        (p.id || "").toLowerCase().includes(t) || 
+                        fuzzyMatch(p.name, t)
+                    ));
+                    dropdown.innerHTML = filtered.slice(0, 5).map(p => `
+                        <div class="search-item" onclick="window.location.href='https://aryanta.in/product?id=${p.id}'">
+                            <img src="${p.images && p.images.length > 0 ? p.images[0] : p.image}" style="width: 40px; height: 40px; object-fit: contain;">
+                            <div style="display:flex; flex-direction:column; overflow:hidden;">
+                                <span style="font-weight: 600; font-size: 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</span>
+                                <span style="font-weight: 800; font-size: 12px; color:var(--primary);">₹${Number(p.price).toLocaleString('en-IN')}</span>
+                            </div>
+                        </div>`).join("");
+                    dropdown.style.display = filtered.length > 0 ? "block" : "none";
+                }, 100); 
+            });
+
+            input.addEventListener("keypress", function(e) {
+                if(e.key === "Enter") {
+                    e.preventDefault();
+                    dropdown.style.display = "none";
+                    executeSearch();
+                    this.blur(); 
+                }
+            });
+
+            clearBtn.addEventListener("click", function() {
+                input.value = ""; clearBtn.style.display = "none"; dropdown.style.display = "none";
+                executeSearch();
+            });
+        }
+    </script>
 </body>
 </html>
