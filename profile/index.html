@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aryanta |Login</title>
+    <title>Aryanta |Profile</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono&display=swap" rel="stylesheet">
     
     <style>
@@ -15,6 +13,7 @@
             --primary-hover: #333333; 
             --accent: #2563eb; 
             --danger: #ef4444; 
+            --warning: #f59e0b;
             --success: #10b981;
             --bg-color: #f4f4f5; 
             --surface: rgba(255, 255, 255, 0.85); 
@@ -31,7 +30,6 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-main); -webkit-font-smoothing: antialiased; }
         
-        /* Premium Animated Background */
         body { 
             background: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%);
             background-size: 200% 200%;
@@ -50,6 +48,7 @@
             100% { background-position: 0% 50%; }
         }
 
+        /* Top Bar */
         .top-bar { 
             height: 70px; position: fixed; top: 0; left: 0; width: 100%; padding: 0 5%; 
             display: flex; align-items: center; justify-content: space-between; z-index: 5000; 
@@ -57,102 +56,142 @@
             border-bottom: 1px solid rgba(255,255,255,0.3); transition: 0.3s; 
         }
         .nav-left { display: flex; align-items: center; gap: 15px; }
-        .brand-logo { font-size: 22px; font-weight: 800; cursor: pointer; letter-spacing: -0.5px; text-decoration: none; color: var(--primary); }
+        .brand-logo-btn { font-size: 22px; font-weight: 800; cursor: pointer; letter-spacing: -0.5px; color: var(--primary); display: flex; align-items: center; gap: 10px; background: none; border: none; padding: 0; outline: none; font-family: var(--font-main); }
+        
+        /* Curved Logo - Not Circle */
+        .brand-logo-btn img { width: 38px; height: 38px; border-radius: 12px; object-fit: cover; box-shadow: var(--shadow-sm); border: 2px solid white; }
+        
         .prime-dot { color: var(--accent); }
-        .nav-actions { display: flex; align-items: center; gap: 20px; }
+        .nav-actions { display: flex; align-items: center; gap: 15px; }
         
-        .store-link { font-weight: 600; font-size: 14px; color: var(--primary); text-decoration: none; display: flex; align-items: center; gap: 8px; transition: var(--transition); background: white; padding: 8px 16px; border-radius: 100px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
-        .store-link:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-        
-        .support-btn { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 100px; font-weight: 600; font-size: 14px; text-decoration: none; display: flex; align-items: center; gap: 8px; transition: var(--transition); }
-        .support-btn:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .store-btn { font-family: var(--font-main); cursor: pointer; font-weight: 600; font-size: 14px; color: var(--primary); display: flex; align-items: center; gap: 8px; transition: var(--transition); background: white; padding: 8px 16px; border-radius: 100px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); outline: none; }
+        .store-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
-        .auth-wrapper {
-            flex-grow: 1; display: flex; justify-content: center; align-items: center; padding: 40px 20px;
+        .btn-danger { background: var(--danger); color: white; border: none; padding: 8px 16px; border-radius: 100px; font-weight: 600; font-size: 14px; cursor: pointer; transition: var(--transition); display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow-sm); outline: none; }
+        .btn-danger:hover { background: #dc2626; transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+        .profile-wrapper {
+            flex-grow: 1; display: flex; justify-content: center; padding: 20px 20px 60px 20px;
         }
 
-        .premium-auth-card { 
-            width: 100%; max-width: 440px; padding: 40px; 
+        .premium-card { 
+            width: 100%; max-width: 1000px; padding: 40px; 
             background: rgba(255, 255, 255, 0.6);
             backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
             box-shadow: 0 24px 64px -12px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.6) inset; 
             border-radius: 32px; position: relative; overflow: hidden;
-            transition: height 0.4s ease;
+            transition: height 0.4s ease; margin: 0 auto;
         }
 
-        /* Ambient Glow Effects */
-        .premium-auth-card::before { content: ''; position: absolute; top: -100px; left: -100px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(37, 99, 235, 0.05) 0%, transparent 70%); border-radius: 50%; z-index: 0; pointer-events: none; }
-        .premium-auth-card::after { content: ''; position: absolute; bottom: -100px; right: -100px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, transparent 70%); border-radius: 50%; z-index: 0; pointer-events: none; }
+        /* Ambient Glow */
+        .premium-card::before { content: ''; position: absolute; top: -100px; left: -100px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(37, 99, 235, 0.05) 0%, transparent 70%); border-radius: 50%; z-index: 0; pointer-events: none; }
+        .premium-card::after { content: ''; position: absolute; bottom: -100px; right: -100px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, transparent 70%); border-radius: 50%; z-index: 0; pointer-events: none; }
 
-        .auth-content { position: relative; z-index: 1; }
-        .auth-brand-header { text-align: center; margin-bottom: 25px; }
-        .auth-brand-header img { width: 64px; height: 64px; border-radius: 20px; margin-bottom: 12px; box-shadow: var(--shadow-sm); object-fit: cover; border: 2px solid white; }
-        .auth-title { font-size: 28px; font-weight: 800; margin-bottom: 6px; text-align: center; color: var(--primary); letter-spacing: -0.5px; }
-        .auth-subtitle { text-align: center; color: var(--text-muted); font-size: 15px; margin-bottom: 30px; font-weight: 500; line-height: 1.5; }
+        .content-layer { position: relative; z-index: 1; }
 
-        .input-group-auth { position: relative; margin-bottom: 16px; }
-        .input-group-auth .icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: #a1a1aa; font-size: 16px; transition: var(--transition); pointer-events: none; }
-        .auth-input { width: 100%; padding: 16px 20px 16px 48px; border: 1.5px solid rgba(0,0,0,0.08); border-radius: 16px; font-size: 15px; outline: none; background: rgba(255,255,255,0.9); transition: var(--transition); font-weight: 500; color: var(--text-main); }
-        .auth-input:focus { border-color: var(--primary); background: #ffffff; box-shadow: 0 8px 16px -4px rgba(0,0,0,0.05); }
-        .auth-input:focus + .icon, .input-group-auth:focus-within .icon { color: var(--primary); }
+        /* Dynamic Layout (Desktop Split vs Mobile Stack) */
+        .profile-layout { display: grid; grid-template-columns: 1fr; gap: 40px; }
+        @media (min-width: 992px) {
+            .profile-layout { grid-template-columns: 1fr 1fr; gap: 60px; }
+            .profile-left { border-right: 1px solid rgba(0,0,0,0.08); padding-right: 40px; }
+        }
 
-        .btn-prime { background: var(--primary); color: white; border: none; padding: 16px 24px; border-radius: 16px; font-weight: 700; cursor: pointer; transition: var(--transition); font-size: 15px; width: 100%; display: flex; justify-content: center; align-items: center; gap: 10px; position: relative; overflow: hidden; }
+        /* Profile Header */
+        .profile-header { display: flex; align-items: center; gap: 20px; margin-bottom: 35px; padding-bottom: 25px; border-bottom: 1px solid rgba(0,0,0,0.08); }
+        .avatar-container { position: relative; display: inline-block; cursor: pointer; }
+        .profile-avatar { width: 85px; height: 85px; border-radius: 50%; box-shadow: var(--shadow-md); object-fit: cover; border: 3px solid white; background: white; transition: var(--transition); }
+        .avatar-edit-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); color: white; display: flex; justify-content: center; align-items: center; border-radius: 50%; opacity: 0; transition: var(--transition); border: 2px solid transparent; }
+        .avatar-container:hover .avatar-edit-overlay { opacity: 1; border-color: var(--surface); }
+        .avatar-container:hover .profile-avatar { transform: scale(0.95); }
+        
+        .profile-info h2 { font-size: 26px; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .profile-info p { color: var(--text-muted); font-size: 15px; font-weight: 500; }
+        .google-badge { font-size: 12px; background: #e8f0fe; color: #1a73e8; padding: 3px 8px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; border: 1px solid #d2e3fc;}
+
+        /* Sections */
+        .section-title { font-size: 16px; font-weight: 800; color: var(--primary); margin-bottom: 15px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
+        .info-box { background: rgba(255,255,255,0.8); padding: 16px 20px; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); }
+        .info-label { font-size: 12px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .info-value { font-size: 15px; font-weight: 600; color: var(--primary); word-break: break-all; }
+
+        /* Address List (Interactive Blocks) */
+        .address-list { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
+        .address-item { background: rgba(255,255,255,0.8); padding: 20px; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); position: relative; transition: var(--transition); display: block; cursor: pointer; }
+        .address-item:hover { box-shadow: var(--shadow-md); border-color: rgba(0,0,0,0.1); background: #ffffff; transform: translateY(-2px); }
+        
+        .address-item-title { font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; font-size: 15px; }
+        .address-item-details { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+        .address-item-icon { color: var(--text-muted); font-size: 18px; transition: var(--transition); }
+        .address-item:hover .address-item-icon { color: var(--primary); transform: translateX(3px); }
+
+        /* Buttons & Inputs */
+        .btn-action { background: white; color: var(--primary); border: 1.5px solid rgba(0,0,0,0.1); padding: 14px 24px; border-radius: 16px; font-weight: 600; cursor: pointer; transition: var(--transition); font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; box-shadow: var(--shadow-sm); font-family: var(--font-main); outline: none; }
+        .btn-action:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        
+        .btn-prime { background: var(--primary); color: white; border: none; padding: 16px 24px; border-radius: 16px; font-weight: 700; cursor: pointer; transition: var(--transition); font-size: 15px; width: 100%; display: flex; justify-content: center; align-items: center; gap: 10px; font-family: var(--font-main); outline: none; }
         .btn-prime:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 12px 24px -6px rgba(0,0,0,0.2); }
         .btn-prime:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
 
-        .btn-outline { background: rgba(255,255,255,0.5); color: var(--primary); border: 1.5px solid rgba(0,0,0,0.1); padding: 14px 24px; border-radius: 16px; font-weight: 600; cursor: pointer; transition: var(--transition); font-size: 14px; width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; backdrop-filter: blur(10px); }
-        .btn-outline:hover { background: white; border-color: var(--primary); transform: translateY(-1px); }
+        .input-group { position: relative; margin-bottom: 16px; }
+        .input-group .icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: #a1a1aa; font-size: 16px; pointer-events: none; transition: var(--transition); }
+        .form-input { width: 100%; padding: 16px 20px 16px 48px; border: 1.5px solid rgba(0,0,0,0.08); border-radius: 16px; font-size: 15px; outline: none; background: rgba(255,255,255,0.9); transition: var(--transition); font-weight: 500; color: var(--text-main); font-family: var(--font-main); }
+        .form-input:focus { border-color: var(--primary); background: #ffffff; box-shadow: 0 8px 16px -4px rgba(0,0,0,0.05); }
+        .form-input:focus + .icon { color: var(--primary); }
 
-        .divider-elegant { height: 1px; background: linear-gradient(90deg, transparent, rgba(0,0,0,0.1), transparent); margin: 25px 0; position: relative; text-align: center; }
-        .divider-elegant span { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fdfbfb; padding: 0 12px; color: #a1a1aa; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; border-radius: 100px; }
+        /* Custom File Input Upload Button */
+        .custom-file-upload { position: relative; display: inline-block; width: 100%; margin-bottom: 20px; }
+        .custom-file-upload input[type="file"] { display: none; }
 
-        .switch-prompt { text-align: center; margin-top: 25px; font-size: 14px; color: var(--text-muted); font-weight: 500; }
-        .switch-prompt span { color: var(--primary); font-weight: 700; cursor: pointer; text-decoration: underline; text-decoration-color: transparent; transition: var(--transition); }
-        .switch-prompt span:hover { text-decoration-color: var(--primary); }
+        /* Avatar Preset Selection - 4x2 Grid Enforced */
+        .avatar-group-label { text-align: left; font-size: 12px; font-weight: 800; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .preset-avatars { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 20px; flex-wrap: nowrap; }
+        .preset-avatars img { width: 60px; height: 60px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: var(--transition); box-shadow: var(--shadow-sm); object-fit: cover; flex-shrink: 0; }
+        .preset-avatars img:hover { transform: scale(1.05); }
+        .preset-avatars img.selected { border-color: var(--accent); transform: scale(1.1); box-shadow: var(--shadow-md); }
 
-        .fade-view { display: none; opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; transform: translateY(10px); }
-        .fade-view.active { display: block; opacity: 1; transform: translateY(0); animation: smoothEnter 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
-        
-        @keyframes smoothEnter {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        /* Footer Styles - No URLs */
+        .premium-footer { background: var(--primary); color: white; padding: 60px 20px; text-align: center; border-radius: 40px 40px 0 0; position: relative; overflow: hidden; animation: slideUp 1s ease-out; }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .social-btn { background: none; border: none; color: white; transition: 0.3s; font-size: 22px; display: inline-block; cursor: pointer; padding: 0; outline: none; }
+        .social-btn:hover { transform: translateY(-5px); color: var(--warning); }
+        .footer-text { font-size: 15px; line-height: 1.8; font-weight: 500; margin-bottom: 25px; color: #e2e8f0; max-width: 800px; margin-left: auto; margin-right: auto; }
 
-        /* OTP Inputs */
-        .otp-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; }
-        .otp-box-premium { width: 55px; height: 65px; text-align: center; font-size: 28px; font-weight: 800; border: 1.5px solid rgba(0,0,0,0.1); border-radius: 16px; background: rgba(255,255,255,0.8); outline: none; font-family: var(--font-mono); transition: var(--transition); }
-        .otp-box-premium:focus { border-color: var(--primary); background: white; transform: translateY(-2px); box-shadow: 0 12px 24px -6px rgba(0,0,0,0.1); }
+        /* Overlays & Modals */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: 0.3s; padding: 20px; }
+        .modal-overlay.show { opacity: 1; pointer-events: all; }
+        .modal-box { background: white; padding: 35px; border-radius: 28px; width: 100%; max-width: 450px; box-shadow: var(--shadow-lg); transform: scale(0.95); transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative; max-height: 90vh; overflow-y: auto; }
+        .modal-overlay.show .modal-box { transform: scale(1); }
+        .modal-close { position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer; transition: var(--transition); z-index: 10; outline: none; }
+        .modal-close:hover { color: var(--danger); }
+        .modal-title { font-size: 22px; font-weight: 800; margin-bottom: 20px; color: var(--primary); }
 
-        /* Scrollable form */
-        .auth-scroll-container { max-height: 320px; overflow-y: auto; padding-right: 5px; margin-bottom: 20px; }
-        .auth-scroll-container::-webkit-scrollbar { width: 4px; }
-        .auth-scroll-container::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
+        .auth-scroll-container { max-height: 350px; overflow-y: auto; padding-right: 8px; margin-bottom: 15px; }
+        .auth-scroll-container::-webkit-scrollbar { width: 6px; }
+        .auth-scroll-container::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
 
-        .toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 14px 24px; border-radius: 100px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow-lg); transition: bottom 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 9999; }
+        .toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 14px 24px; border-radius: 100px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow-lg); transition: bottom 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 10000; }
         .toast-notification.show { bottom: 40px; }
 
-        .custom-alert-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: 0.3s; }
-        .custom-alert-overlay.show { opacity: 1; pointer-events: all; }
-        .custom-alert-box { background: white; padding: 35px; border-radius: 28px; max-width: 380px; width: 90%; text-align: center; box-shadow: var(--shadow-lg); transform: scale(0.95); transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
-        .custom-alert-overlay.show .custom-alert-box { transform: scale(1); }
-        .alert-icon-wrapper { font-size: 40px; color: var(--danger); margin-bottom: 15px; }
-        .custom-alert-box h3 { font-size: 22px; font-weight: 800; margin-bottom: 8px; color: var(--primary); }
-        .custom-alert-box p { font-size: 14px; color: var(--text-muted); margin-bottom: 25px; line-height: 1.5; }
-        
         .loader-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.85); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 32px; opacity: 0; pointer-events: none; transition: 0.3s; }
         .loader-overlay.active { opacity: 1; pointer-events: all; }
         .spinner { width: 40px; height: 40px; border: 3px solid rgba(0,0,0,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 15px; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        @media (max-width: 992px) {
+            .premium-card { max-width: 600px; }
+        }
         @media (max-width: 768px) {
-            .premium-auth-card { padding: 30px 20px; border-radius: 24px; box-shadow: none; background: transparent; border: none; backdrop-filter: none; }
-            .auth-wrapper { padding: 10px 0; align-items: flex-start; }
+            .premium-card { padding: 30px 20px; border-radius: 24px; box-shadow: none; background: transparent; border: none; backdrop-filter: none; }
+            .profile-wrapper { padding: 10px 0; align-items: flex-start; }
             body { background: white; padding-top: 70px; }
             .top-bar { padding: 0 15px; height: 60px; background: white; border-bottom: 1px solid var(--border); }
-            .brand-logo { font-size: 20px; }
-            .auth-title { font-size: 26px; }
-            .support-btn span { display: none; } /* Hide text on mobile for space */
-            .store-link span { display: none; }
+            .brand-logo-btn { font-size: 20px; }
+            .brand-logo-btn img { width: 30px; height: 30px; }
+            .info-grid { grid-template-columns: 1fr; gap: 10px; }
+            .store-btn span { display: none; }
+            .premium-footer { border-radius: 24px 24px 0 0; padding: 40px 20px; }
+            .preset-avatars img { width: 50px; height: 50px; }
         }
     </style>
 </head>
@@ -160,168 +199,241 @@
 
     <header class="top-bar">
         <div class="nav-left">
-            <a href="https://aryanta.in/" class="brand-logo">ARYANTA<span class="prime-dot">.</span></a>
+            <button type="button" id="navStoreBtn" class="store-btn" style="margin-right: 15px;"><i class="fas fa-arrow-left"></i> <span>Store</span></button>
+            <button type="button" id="navLogoBtn" class="brand-logo-btn">
+                <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta Logo">
+                ARYANTA<span class="prime-dot">.</span>
+            </button>
         </div>
         <div class="nav-actions">
-            <a href="support.html" class="support-btn"><i class="fas fa-headset"></i> <span>Support</span></a>
-            <a href="https://aryanta.in/" class="store-link"><i class="fas fa-arrow-left"></i> <span>Store</span></a>
+            <button type="button" id="navLogoutBtn" class="btn-danger" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
         </div>
     </header>
 
-    <div class="auth-wrapper">
-        <div class="premium-auth-card">
+    <div class="profile-wrapper">
+        <div class="premium-card" id="mainCard" style="display: none;">
             
             <div class="loader-overlay" id="cardLoader">
                 <div class="spinner"></div>
-                <h4 id="loaderText" style="font-weight: 700; color: var(--primary); font-size: 15px;">Securely Processing...</h4>
+                <h4 id="loaderText" style="font-weight: 700; color: var(--primary); font-size: 15px;">Updating Secure Vault...</h4>
             </div>
 
-            <div class="auth-content">
-                <div class="auth-brand-header">
-                    <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta Logo">
-                </div>
-
-                <!-- VIEW 0: Already Logged In -->
-                <div id="loggedInView" class="fade-view">
-                    <h3 class="auth-title">Welcome Back!</h3>
-                    <p class="auth-subtitle">You are currently securely logged in as <strong id="activeUserName" style="color:var(--primary);"></strong>.</p>
-                    
-                    <button class="btn-prime" onclick="window.location.href='https://aryanta.in/'" style="margin-bottom: 15px;">Continue to Store <i class="fas fa-arrow-right"></i></button>
-                    <button class="btn-outline" onclick="handleLogout()" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.3);"><i class="fas fa-sign-out-alt"></i> Secure Logout</button>
-                </div>
-
-                <!-- VIEW 1: Identify / Front Page -->
-                <div id="identifyView" class="fade-view">
-                    <h3 class="auth-title">Welcome</h3>
-                    <p class="auth-subtitle">Log in or create an account to continue.</p>
-                    
-                    <div id="googleAuthBtnLogin" style="display: flex; justify-content: center; margin-bottom: 20px;"></div>
-                    
-                    <div class="divider-elegant"><span>OR CONTINUE WITH</span></div>
-                    
-                    <div class="input-group-auth">
-                        <i class="fas fa-envelope icon"></i>
-                        <input type="text" id="identifyInput" class="auth-input" placeholder="Email Address or Phone Number" autocomplete="off">
-                    </div>
-                    
-                    <button class="btn-prime" id="identifyBtn" onclick="handleIdentify()">Continue <i class="fas fa-arrow-right"></i></button>
-                    
-                    <div style="display: flex; gap: 10px; margin-top: 15px;">
-                        <button class="btn-outline" style="flex: 1;" onclick="switchView('signupView')">Create Account</button>
-                        <button class="btn-outline" style="flex: 1; border-color: rgba(0,0,0,0.1); color: var(--text-muted);" onclick="switchView('recoverView')">Recover</button>
-                    </div>
-
-                    <p style="text-align: center; margin-top: 25px; font-size: 12px; color: #a1a1aa; font-weight: 600;">
-                        <i class="fas fa-lock" style="margin-right: 4px;"></i> End-to-End Encrypted
-                    </p>
-                </div>
-
-                <!-- VIEW 1.5: Login with Password -->
-                <div id="loginPasswordView" class="fade-view">
-                    <button class="store-link" style="background:none;border:none;box-shadow:none;padding:0;margin-bottom:20px;cursor:pointer;font-size:14px;color:var(--text-muted);" onclick="switchView('identifyView')"><i class="fas fa-arrow-left"></i> Change User</button>
-                    <h3 class="auth-title">Enter Password</h3>
-                    <p class="auth-subtitle">Welcome back, <strong id="loginUserName" style="color:var(--primary);"></strong>!</p>
-                    
-                    <div class="input-group-auth">
-                        <i class="fas fa-key icon"></i>
-                        <input type="password" id="loginPassword" class="auth-input" placeholder="Your Secure Password">
-                    </div>
-                    
-                    <button class="btn-prime" id="loginSubmitBtn" onclick="handlePasswordLogin()">Secure Login <i class="fas fa-unlock-alt"></i></button>
-                    <p class="switch-prompt"><span onclick="switchView('recoverView')">Forgot Password?</span></p>
-                </div>
-
-                <!-- VIEW 2: Sign Up (Form) -->
-                <div id="signupView" class="fade-view">
-                    <button class="store-link" style="background:none;border:none;box-shadow:none;padding:0;margin-bottom:15px;cursor:pointer;font-size:14px;color:var(--text-muted);" onclick="switchView('identifyView')"><i class="fas fa-arrow-left"></i> Back</button>
-                    <h3 class="auth-title" style="font-size: 24px;">Create Account</h3>
-                    <p class="auth-subtitle" id="signupSubtitle" style="margin-bottom: 20px;">Complete your secure profile.</p>
-                    
-                    <div class="auth-scroll-container">
-                        <div class="input-group-auth"><i class="fas fa-user icon"></i><input type="text" id="regName" class="auth-input" placeholder="Full Name" required></div>
-                        <div class="input-group-auth"><i class="fas fa-envelope icon"></i><input type="email" id="regEmail" class="auth-input" placeholder="Email Address" required></div>
-                        <div class="input-group-auth"><i class="fas fa-phone icon"></i><input type="tel" id="regPhone" class="auth-input" placeholder="Phone Number" required></div>
-                        
-                        <!-- Create & Confirm Passwords -->
-                        <div class="input-group-auth"><i class="fas fa-lock icon"></i><input type="password" id="regPassword" class="auth-input" placeholder="Create Secure Password" required></div>
-                        <div class="input-group-auth"><i class="fas fa-check-circle icon"></i><input type="password" id="regConfirmPassword" class="auth-input" placeholder="Verify Password" required></div>
-                        
-                        <div class="input-group-auth mt-10" style="margin-top: 20px;"><i class="fas fa-map-marker-alt icon"></i><input type="text" id="regAddress" class="auth-input" placeholder="Street Address"></div>
-                        <div style="display: flex; gap: 10px;">
-                            <div class="input-group-auth" style="flex: 1;"><input type="text" id="regCity" class="auth-input" placeholder="City" style="padding-left:15px;"></div>
-                            <div class="input-group-auth" style="flex: 1;"><input type="text" id="regPincode" class="auth-input" placeholder="Pincode" style="padding-left:15px;"></div>
+            <!-- View: Authenticated Profile Layer -->
+            <div class="content-layer profile-layout" id="authenticatedProfileView">
+                
+                <!-- Left Column: Profile -->
+                <div class="profile-left">
+                    <div class="profile-header">
+                        <div class="avatar-container" onclick="openAvatarModal()" title="Edit Profile Image">
+                            <img src="" id="userAvatar" class="profile-avatar" alt="User">
+                            <div class="avatar-edit-overlay"><i class="fas fa-camera"></i></div>
+                        </div>
+                        <div class="profile-info">
+                            <h2 id="userNameDisplay">Loading...</h2>
+                            <p id="userEmailDisplay">loading@secure.identity</p>
                         </div>
                     </div>
-                    
-                    <button class="btn-prime" id="signupBtn" onclick="handleSignup()">Create Account <i class="fas fa-user-plus"></i></button>
+
+                    <div class="section-title"><i class="fas fa-shield-alt"></i> Personal Vault</div>
+                    <div class="info-grid">
+                        <div class="info-box">
+                            <div class="info-label">Phone Number</div>
+                            <div class="info-value" id="userPhoneDisplay">-</div>
+                        </div>
+                        <div class="info-box">
+                            <div class="info-label">Account Status</div>
+                            <div class="info-value" id="userStatusDisplay" style="color: var(--success);"><i class="fas fa-check-circle"></i> Active</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 35px;">
+                        <button type="button" class="btn-action" onclick="openPassChangeModal()"><i class="fas fa-key"></i> Update Secure Password</button>
+                    </div>
                 </div>
 
-                <!-- VIEW 3: Recover Account -->
-                <div id="recoverView" class="fade-view">
-                    <button class="store-link" style="background:none;border:none;box-shadow:none;padding:0;margin-bottom:15px;cursor:pointer;font-size:14px;color:var(--text-muted);" onclick="switchView('identifyView')"><i class="fas fa-arrow-left"></i> Back</button>
-                    <h3 class="auth-title">Recover Account</h3>
-                    <p class="auth-subtitle">Enter your registered email address to receive a secure recovery code.</p>
-                    
-                    <div class="input-group-auth">
-                        <i class="fas fa-envelope icon"></i>
-                        <input type="email" id="recoverEmail" class="auth-input" placeholder="Registered Email Address">
+                <!-- Right Column: Addresses -->
+                <div class="profile-right">
+                    <div class="section-title" style="justify-content: space-between;">
+                        <span><i class="fas fa-map-marker-alt"></i> Delivery Locations</span>
+                        <button type="button" class="store-btn" style="padding: 4px 10px; font-size: 12px; border:none; box-shadow:none; background:transparent;" onclick="openAddressModal()"><i class="fas fa-plus"></i> Add New</button>
                     </div>
                     
-                    <button class="btn-prime" id="recoverBtn" onclick="handleRecoverIdentify()">Send Recovery OTP <i class="fas fa-paper-plane"></i></button>
-                </div>
-
-                <!-- VIEW 4: OTP Verification -->
-                <div id="otpView" class="fade-view">
-                    <button class="store-link" style="background:none;border:none;box-shadow:none;padding:0;margin-bottom:15px;cursor:pointer;font-size:14px;color:var(--text-muted);" onclick="switchView('identifyView')"><i class="fas fa-arrow-left"></i> Start Over</button>
-                    <h3 class="auth-title">Verify Identity</h3>
-                    <p class="auth-subtitle">Enter the 4-digit security code sent to your device.</p>
-                    
-                    <div class="otp-container" id="otpInputs">
-                        <input type="text" class="otp-box-premium" maxlength="1" oninput="moveToNext(this, 1)" onkeydown="moveToPrev(event, this, 0)">
-                        <input type="text" class="otp-box-premium" maxlength="1" oninput="moveToNext(this, 2)" onkeydown="moveToPrev(event, this, 1)">
-                        <input type="text" class="otp-box-premium" maxlength="1" oninput="moveToNext(this, 3)" onkeydown="moveToPrev(event, this, 2)">
-                        <input type="text" class="otp-box-premium" maxlength="1" onkeydown="moveToPrev(event, this, 3)">
+                    <div class="address-list" id="addressListContainer">
+                        <!-- Dynamic Addresses Will Populate Here Inline -->
                     </div>
-                    
-                    <button class="btn-prime" id="verifyOtpBtn" onclick="verifyOTP()">Verify Code <i class="fas fa-check-circle"></i></button>
-                    <p class="switch-prompt">Didn't receive code? <span onclick="resendOTP()">Resend OTP</span></p>
-                </div>
-
-                <!-- VIEW 5: Create New Password (After Recovery) -->
-                <div id="newPasswordView" class="fade-view">
-                    <h3 class="auth-title">Reset Password</h3>
-                    <p class="auth-subtitle">Create and verify a new secure password.</p>
-                    
-                    <div class="input-group-auth">
-                        <i class="fas fa-lock icon"></i>
-                        <input type="password" id="newPasswordInput" class="auth-input" placeholder="New Secure Password">
-                    </div>
-                    <div class="input-group-auth">
-                        <i class="fas fa-check-circle icon"></i>
-                        <input type="password" id="newPasswordConfirmInput" class="auth-input" placeholder="Verify New Password">
-                    </div>
-                    
-                    <button class="btn-prime" id="resetPassBtn" onclick="saveNewPassword()">Save & Login <i class="fas fa-save"></i></button>
                 </div>
 
             </div>
         </div>
     </div>
 
-    <!-- UI Components -->
-    <div id="toastNotification" class="toast-notification"><i class="fas fa-check-circle"></i> <span id="toastMessage">Action successful</span></div>
+    <!-- Animated Footer -->
+    <footer class="premium-footer">
+        <div style="max-width: 800px; margin: 0 auto;">
+            <p class="footer-text">
+                Experience shopping at its finest. We offer carefully selected high-quality products for our valued customers.
+            </p>
+            <div class="social-links" style="display: flex; justify-content: center; gap: 25px; margin-bottom: 25px;">
+                <button type="button" id="socialInstaBtn" class="social-btn"><i class="fab fa-instagram"></i></button>
+                <button type="button" id="socialXBtn" class="social-btn"><i class="fab fa-twitter"></i></button>
+                <button type="button" id="socialFbBtn" class="social-btn"><i class="fab fa-facebook-f"></i></button>
+            </div>
+            <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 8px;">email: support@aryanta.in &nbsp;|&nbsp; phone: 06414054676</p>
+            <p style="font-size: 13px; color: #94a3b8; font-weight: 600;">© Aryanta 2026. All rights reserved.</p>
+        </div>
+    </footer>
 
-    <div class="custom-alert-overlay" id="customAlertOverlay">
-        <div class="custom-alert-box">
-            <div class="alert-icon-wrapper" id="alertIcon"><i class="fas fa-exclamation-triangle"></i></div>
-            <h3 id="alertTitle">Notice</h3>
-            <p id="alertMessage">Message goes here.</p>
-            <button class="btn-prime" style="background:var(--primary);color:white;" onclick="document.getElementById('customAlertOverlay').classList.remove('show')">Understood</button>
+    <!-- Modal: View Detailed Address -->
+    <div class="modal-overlay" id="viewAddressModal">
+        <div class="modal-box">
+            <button type="button" class="modal-close" onclick="closeModal('viewAddressModal')"><i class="fas fa-times"></i></button>
+            <h3 class="modal-title" style="margin-bottom: 10px;"><i class="fas fa-map-marked-alt" style="color: var(--accent);"></i> Location Details</h3>
+            
+            <div id="viewAddressContent" style="margin-bottom: 25px; line-height: 1.8; color: var(--text-main); font-size: 15px; background: var(--bg-color); padding: 20px; border-radius: 16px; border: 1px solid var(--border);">
+                <!-- Details injected via JS -->
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;" id="viewAddressActions">
+                <!-- Action Buttons injected via JS depending on if Primary or not -->
+            </div>
+            
+            <div id="makePrimaryBtnContainer">
+                <!-- Make Primary button injected via JS -->
+            </div>
         </div>
     </div>
 
+    <!-- Modal: Confirm Delete Address (Replaces default confirm popup) -->
+    <div class="modal-overlay" id="deleteConfirmModal">
+        <div class="modal-box" style="text-align: center; max-width: 400px;">
+            <div style="font-size: 45px; color: var(--danger); margin-bottom: 15px;"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3 class="modal-title" style="color: var(--danger); margin-bottom: 10px;">Remove Location</h3>
+            <p style="color: var(--text-muted); font-size: 15px; line-height: 1.6; margin-bottom: 25px;">
+                Are you sure you want to permanently delete this address from your secure vault? This action cannot be undone.
+            </p>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" class="btn-action" style="flex: 1;" onclick="closeModal('deleteConfirmModal')">Cancel</button>
+                <button type="button" class="btn-prime" style="flex: 1; background: var(--danger);" onclick="executeRemoveAddress()">Yes, Remove</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Edit Avatar (4x4 Grid Enforced) -->
+    <div class="modal-overlay" id="avatarModal">
+        <div class="modal-box">
+            <button type="button" class="modal-close" onclick="closeModal('avatarModal')"><i class="fas fa-times"></i></button>
+            <h3 class="modal-title">Choose Avatar</h3>
+            
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 15px; text-align: center;">Select a character or securely upload your own image.</p>
+            
+            <!-- Male Characters (Top 4) -->
+            <div class="avatar-group-label">Male Characters</div>
+            <div class="preset-avatars" id="presetAvatarContainerMale">
+                <img src="https://api.dicebear.com/9.x/avataaars/svg?seed=Destiny" onclick="selectPresetAvatar(this)" data-url="https://api.dicebear.com/9.x/avataaars/svg?seed=Destiny">
+                <img src="https://api.dicebear.com/9.x/avataaars/svg?seed=Leah" onclick="selectPresetAvatar(this)" data-url="https://api.dicebear.com/9.x/avataaars/svg?seed=Leah">
+                <img src="https://api.dicebear.com/9.x/avataaars/svg?seed=Nolan" onclick="selectPresetAvatar(this)" data-url="https://api.dicebear.com/9.x/avataaars/svg?seed=Nolan">
+                <img src="https://api.dicebear.com/9.x/avataaars/svg?seed=Riley" onclick="selectPresetAvatar(this)" data-url="https://api.dicebear.com/9.x/avataaars/svg?seed=Riley">
+            </div>
+
+            <!-- Female Characters (Bottom 4) -->
+            <div class="avatar-group-label" style="margin-top: 15px;">Female Characters</div>
+            <div class="preset-avatars" id="presetAvatarContainerFemale">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Jocelyn" onclick="selectPresetAvatar(this)" data-url="https://api.dicebear.com/7.x/avataaars/svg?seed=Jocelyn">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Eliza" onclick="selectPresetAvatar(this)" data-url="https://api.dicebear.com/7.x/avataaars/svg?seed=Eliza">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Sophia" onclick="selectPresetAvatar(this)" data-url="https://api.dicebear.com/7.x/avataaars/svg?seed=Sophia">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Liliana" onclick="selectPresetAvatar(this)" data-url="https://api.dicebear.com/7.x/avataaars/svg?seed=Liliana">
+            </div>
+
+            <div style="text-align: center; margin: 20px 0;">
+                <span style="font-size: 12px; color: var(--text-muted); font-weight: 700;">OR UPLOAD CUSTOM</span>
+            </div>
+
+            <!-- Custom designed file input -->
+            <div class="custom-file-upload">
+                <input type="file" id="customAvatarInput" accept="image/*" onchange="handleFileUI(this)">
+                <button type="button" class="btn-action" id="uploadFileTriggerBtn" onclick="document.getElementById('customAvatarInput').click()">
+                    <i class="fas fa-cloud-upload-alt"></i> <span id="uploadFileNameText">Select Image from Device</span>
+                </button>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-direction: column;">
+                <button type="button" class="btn-prime" id="saveAvatarBtn" onclick="saveAvatarSelection()">Save Profile Image <i class="fas fa-camera"></i></button>
+                <button type="button" class="btn-action" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.2);" onclick="removeCustomAvatar()">Remove Custom Image</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Change Password -->
+    <div class="modal-overlay" id="passChangeModal">
+        <div class="modal-box">
+            <button type="button" class="modal-close" onclick="closeModal('passChangeModal')"><i class="fas fa-times"></i></button>
+            <h3 class="modal-title">Change Password</h3>
+            
+            <div id="passChangeStep1">
+                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">For security, please enter your current password.</p>
+                <div class="input-group">
+                    <i class="fas fa-lock icon"></i>
+                    <input type="password" id="currentPassInput" class="form-input" placeholder="Current Password">
+                </div>
+                <button type="button" class="btn-prime" id="verifyPassBtn" onclick="verifyCurrentPassword()">Verify Identity <i class="fas fa-arrow-right"></i></button>
+            </div>
+
+            <div id="passChangeStep2" style="display: none;">
+                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Enter your new secure password.</p>
+                <div class="input-group">
+                    <i class="fas fa-key icon"></i>
+                    <input type="password" id="newPassInput" class="form-input" placeholder="New Password">
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-check-circle icon"></i>
+                    <input type="password" id="newPassConfirmInput" class="form-input" placeholder="Confirm New Password">
+                </div>
+                <button type="button" class="btn-prime" id="savePassBtn" onclick="saveNewPassword()">Update Securely <i class="fas fa-save"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Add / Edit Address -->
+    <div class="modal-overlay" id="addressModal">
+        <div class="modal-box">
+            <button type="button" class="modal-close" onclick="closeModal('addressModal')"><i class="fas fa-times"></i></button>
+            <h3 class="modal-title" id="addressModalTitle">Add New Address</h3>
+            
+            <div class="auth-scroll-container">
+                <div class="input-group">
+                    <i class="fas fa-user icon"></i>
+                    <input type="text" id="newNameInput" class="form-input" placeholder="Receiver Name">
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-phone icon"></i>
+                    <input type="tel" id="newPhoneInput" class="form-input" placeholder="Contact Number">
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-map-marker-alt icon"></i>
+                    <input type="text" id="newStreetInput" class="form-input" placeholder="Street Address / House No.">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <div class="input-group" style="flex: 1;">
+                        <input type="text" id="newCityInput" class="form-input" placeholder="City" style="padding-left:15px;">
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <input type="text" id="newStateInput" class="form-input" placeholder="State" style="padding-left:15px;">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-map-pin icon"></i>
+                    <input type="text" id="newPinInput" class="form-input" placeholder="Pincode">
+                </div>
+            </div>
+            <button type="button" class="btn-prime" id="saveAddressBtn" onclick="saveAddress()">Save Location <i class="fas fa-save"></i></button>
+        </div>
+    </div>
+
+    <!-- Notifications -->
+    <div id="toastNotification" class="toast-notification"><i class="fas fa-info-circle"></i> <span id="toastMessage">Message</span></div>
+
     <script>
-        // Highly refined and professional console warning
+        // Exact Security Logs Requested
         console.log(
             "%c🛑 ARYANTA Data Is Encrupted code #4076", 
             "color: #ef4444; font-size: 22px; font-weight: 900; font-family: sans-serif;"
@@ -331,43 +443,56 @@
             "color: #71717a; font-size: 14px; font-weight: bold; font-family: sans-serif;"
         );
 
-        // --- CORE CONFIGURATION ---
         const API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
-        const PROJECT_ID = "aryanta-mart-a8893"; 
-        
-        let API_KEYS = {
-            GOOGLE_CLIENT_ID: "", EMAILJS_PUBLIC: "", EMAILJS_OTP_SERVICE: "", EMAILJS_OTP_TEMPLATE: ""
-        };
+        const PROJECT_ID = "aryanta-mart-a8893";
+        let currentUserData = null;
+        let selectedAvatarUrl = "";
+        let currentlyViewingAddressIndex = -1;
+        let isEditingAddress = false;
+        let addressIndexToDelete = -1;
 
-        let currentAuthMode = ''; 
-        let identifierValue = '';
-        let hashedOTP = "";
-        let generatedRawOTP = "";
-        let tempUserData = null; 
-        let isGoogleFlow = false;
-
-        // --- UI UTILITIES ---
-        function switchView(viewId) {
-            // Fix double animation bug by hiding active views instantly, then triggering fade-in for new view
-            const views = document.querySelectorAll('.fade-view');
-            views.forEach(v => {
-                v.classList.remove('active');
-                v.style.display = 'none';
-            });
-            
-            const targetView = document.getElementById(viewId);
-            if (targetView) {
-                targetView.style.display = 'block';
-                // Small delay to ensure display:block applies before opacity transition triggers
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        targetView.classList.add('active');
+        // JS Navigation Handlers (Hides URLs completely from browser hover states)
+        document.addEventListener('DOMContentLoaded', () => {
+            const bindClick = (id, url) => {
+                const el = document.getElementById(id);
+                if(el) {
+                    el.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        window.location.href = url;
                     });
+                }
+            };
+            
+            bindClick('navStoreBtn', 'https://aryanta.in/login/');
+            bindClick('navLogoBtn', 'https://aryanta.in/');
+            
+            const logoutBtn = document.getElementById('navLogoutBtn');
+            if(logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    handleLogout();
                 });
             }
+
+            bindClick('socialInstaBtn', 'https://instagram.com/official.aryanta');
+            bindClick('socialXBtn', 'https://x.com/officialaryanta');
+            bindClick('socialFbBtn', 'https://www.facebook.com/share/1E8hFiNnmw/');
+        });
+
+        function encryptPayload(payloadObj) {
+            const safePayload = { ...payloadObj };
+            if(safePayload.password) delete safePayload.password;
+            const jsonString = JSON.stringify(safePayload);
+            return btoa(encodeURIComponent(jsonString)).split('').reverse().join('');
         }
 
-        function toggleLoader(show, text = "Securely Processing...") {
+        async function secureHash(string) {
+            const msgBuffer = new TextEncoder().encode(string); 
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function toggleLoader(show, text = "Updating Vault...") {
             const loader = document.getElementById('cardLoader');
             document.getElementById('loaderText').innerText = text;
             if(show) loader.classList.add('active');
@@ -395,398 +520,485 @@
             toastTimer = setTimeout(() => { toast.classList.remove('show'); }, 3000);
         }
 
-        function showAlert(message, title = "Security Notice", isError = true) {
-            document.getElementById('alertTitle').innerText = title;
-            document.getElementById('alertMessage').innerText = message;
-            document.getElementById('alertIcon').innerHTML = isError ? '<i class="fas fa-exclamation-triangle"></i>' : '<i class="fas fa-shield-alt" style="color:var(--primary)"></i>';
-            document.getElementById('customAlertOverlay').classList.add('show');
-        }
-
-        function moveToNext(input, index) {
-            if (input.value.length === 1 && index < 4) {
-                document.querySelectorAll('.otp-box-premium')[index].focus();
-            }
-        }
-
-        function moveToPrev(e, input, index) {
-            if (e.key === 'Backspace' && input.value === '' && index > 0) {
-                document.querySelectorAll('.otp-box-premium')[index - 1].focus();
-            }
-        }
-
-        function handleLogout() {
-            localStorage.removeItem('active_session');
-            showToast("Logged out securely.");
-            setTimeout(() => location.reload(), 1000);
-        }
-
-        // --- CRYPTO UTILITIES ---
-        async function secureHash(string) {
-            const msgBuffer = new TextEncoder().encode(string); 
-            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-
-        // Advanced Client-Side obfuscation for network inspection protection
-        function encryptPayload(payloadObj) {
-            // Strip out plaintext passwords just in case
-            const safePayload = { ...payloadObj };
-            if(safePayload.password) delete safePayload.password;
-            
-            const jsonString = JSON.stringify(safePayload);
-            // Visual encryption: Base64 + URI Encode + Reversed string mapping
-            const base64Str = btoa(encodeURIComponent(jsonString));
-            const visuallyEncrypted = base64Str.split('').reverse().join('');
-            
-            console.log("Transmission Payload Encrypted. Key: [HIDDEN]");
-            return visuallyEncrypted; 
-        }
-
-        // --- INITIALIZATION ---
-        async function bootApp() {
-            try {
-                const res = await fetch(`${API_BASE_URL}/get-api-keys`);
-                const data = await res.json();
-                
-                API_KEYS.GOOGLE_CLIENT_ID = data.googleClientId || "";
-                API_KEYS.EMAILJS_PUBLIC = data.emailjsPublicKey || "";
-                API_KEYS.EMAILJS_OTP_SERVICE = data.emailjsOtpService || "";
-                API_KEYS.EMAILJS_OTP_TEMPLATE = data.emailjsOtpTemplate || "";
-
-                if (API_KEYS.EMAILJS_PUBLIC) emailjs.init(API_KEYS.EMAILJS_PUBLIC);
-                initGoogleAuth();
-            } catch(e) {
-                console.warn("API Key sync deferred.");
-            }
-        }
+        function openModal(id) { document.getElementById(id).classList.add('show'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
         window.onload = async () => {
             const session = JSON.parse(localStorage.getItem('active_session'));
-            if (session && session.email) {
-                document.getElementById('activeUserName').innerText = session.name.split(' ')[0];
-                switchView('loggedInView');
-            } else {
-                switchView('identifyView');
-            }
-            await bootApp();
-        };
-
-        // Step 1: Identify Email or Phone
-        async function handleIdentify() {
-            identifierValue = document.getElementById('identifyInput').value.trim();
-            if(!identifierValue) return showAlert("Please enter your Email Address or Phone Number.");
-
-            toggleButtonState('identifyBtn', true);
-            // Show specific loading text to indicate checking process
-            toggleLoader(true, "Checking Identity Database...");
             
-            try {
-                // Simulate network latency if too fast to show user the check is happening
-                await new Promise(r => setTimeout(r, 600)); 
-
-                const res = await fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(identifierValue)}`);
-                const data = await res.json();
-
-                if (data && data.email) {
-                    currentAuthMode = 'login';
-                    tempUserData = data;
-                    document.getElementById('loginUserName').innerText = data.name.split(' ')[0];
-                    switchView('loginPasswordView');
-                } else {
-                    currentAuthMode = 'signup';
-                    if(identifierValue.includes('@')) {
-                        document.getElementById('regEmail').value = identifierValue;
-                    } else {
-                        document.getElementById('regPhone').value = identifierValue;
-                    }
-                    switchView('signupView');
-                }
-            } catch(e) {
-                showAlert("Unable to connect to security servers. Please try again.");
-            } finally {
-                toggleButtonState('identifyBtn', false, 'Continue <i class="fas fa-arrow-right"></i>');
-                toggleLoader(false);
+            if (!session || !session.email) {
+                window.location.href = 'https://aryanta.in/login/';
+                return;
             }
-        }
-
-        async function handlePasswordLogin() {
-            const pass = document.getElementById('loginPassword').value;
-            if(!pass) return showAlert("Please enter your secure password.");
             
-            toggleButtonState('loginSubmitBtn', true);
-            toggleLoader(true, "Verifying Credentials...");
-            
-            const hashed = await secureHash(pass);
-            
-            if (hashed === tempUserData.passwordHash) {
-                finalizeLogin(tempUserData, 'Password');
-            } else if (!tempUserData.passwordHash) {
-                showAlert("Password not set. Please use 'Recover Account' to set a new password, or login with Google.");
-                toggleButtonState('loginSubmitBtn', false, 'Secure Login <i class="fas fa-unlock-alt"></i>');
-                toggleLoader(false);
-            } else {
-                showAlert("Incorrect password. Please try again or use account recovery.");
-                toggleButtonState('loginSubmitBtn', false, 'Secure Login <i class="fas fa-unlock-alt"></i>');
-                toggleLoader(false);
-            }
-        }
-
-        async function handleSignup() {
-            const name = document.getElementById('regName').value.trim();
-            const email = document.getElementById('regEmail').value.trim();
-            const phone = document.getElementById('regPhone').value.trim();
-            const password = document.getElementById('regPassword').value;
-            const confirmPassword = document.getElementById('regConfirmPassword').value;
-            const address = document.getElementById('regAddress').value.trim();
-            const city = document.getElementById('regCity').value.trim();
-            const pincode = document.getElementById('regPincode').value.trim();
-
-            if (!name || !email || !phone || !password || !confirmPassword || !pincode) {
-                return showAlert("Please fill all mandatory fields.");
-            }
-
-            // Verify Password Match explicitly as requested
-            if (password !== confirmPassword) {
-                return showAlert("Passwords do not match. Please verify your password entry.");
-            }
-
-            toggleButtonState('signupBtn', true);
-            toggleLoader(true, "Initializing Protocol...");
-
-            const hashedPassword = await secureHash(password);
-
-            tempUserData = {
-                action: 'signup',
-                name: name, email: email, phone: phone, passwordHash: hashedPassword, 
-                address: address, city: city, pincode: pincode, state: "",
-                timestamp: new Date().toISOString(), projectId: PROJECT_ID,
-                avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=" + encodeURIComponent(name),
-                addresses: [], cart: [], wishlist: [], wallet: 0
-            };
+            document.getElementById('mainCard').style.display = 'block';
+            toggleLoader(true, "Decrypting Identity...");
 
             try {
-                if (isGoogleFlow) {
-                    await completeRegistrationBackend();
-                } else {
-                    currentAuthMode = 'signup';
-                    await dispatchSecureOTP(email, name);
-                    switchView('otpView');
-                }
-            } catch(e) {
-                showAlert("Failed to initialize verification protocol.");
-            } finally {
-                toggleButtonState('signupBtn', false, 'Create Account <i class="fas fa-user-plus"></i>');
-                toggleLoader(false);
-            }
-        }
-
-        async function handleRecoverIdentify() {
-            const email = document.getElementById('recoverEmail').value.trim();
-            if(!email) return showAlert("Please enter your registered email address.");
-            
-            toggleButtonState('recoverBtn', true);
-            toggleLoader(true, "Locating Profile...");
-            
-            try {
-                const res = await fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(email)}`);
+                const res = await fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(session.email)}`);
                 const data = await res.json();
                 
-                if(data && data.email) {
-                    tempUserData = data;
-                    currentAuthMode = 'recover';
-                    await dispatchSecureOTP(data.email, data.name);
-                    switchView('otpView');
+                if (data && data.email) {
+                    normalizeUserData(data); 
+                    currentUserData = data;
+                    localStorage.setItem('active_session', JSON.stringify(data)); 
+                    renderProfile();
                 } else {
-                    showAlert("We could not find an account with that email address.");
+                    handleLogout();
                 }
             } catch(e) {
-                showAlert("Recovery system is currently offline.");
+                normalizeUserData(session);
+                currentUserData = session;
+                renderProfile();
+                showToast("Offline Mode: Using locally encrypted data.");
             } finally {
-                toggleButtonState('recoverBtn', false, 'Send Recovery OTP <i class="fas fa-paper-plane"></i>');
                 toggleLoader(false);
+            }
+        };
+
+        function normalizeUserData(data) {
+            if (!data.addresses || !Array.isArray(data.addresses)) {
+                data.addresses = [];
+                if (data.address || data.city) {
+                    data.addresses.push({
+                        name: data.name || "My Name",
+                        phone: data.phone || "My Phone",
+                        street: data.address || "",
+                        city: data.city || "",
+                        state: data.state || "",
+                        pincode: data.pincode || ""
+                    });
+                }
             }
         }
 
-        async function saveNewPassword() {
-            const newPass = document.getElementById('newPasswordInput').value;
-            const confirmNewPass = document.getElementById('newPasswordConfirmInput').value;
+        function renderProfile() {
+            document.getElementById('userNameDisplay').innerHTML = `${currentUserData.name} ${currentUserData.loginMethod && currentUserData.loginMethod.includes('Google') ? '<span class="google-badge"><i class="fab fa-google"></i></span>' : ''}`;
+            document.getElementById('userEmailDisplay').innerText = currentUserData.email;
+            document.getElementById('userPhoneDisplay').innerText = currentUserData.phone || "Not Provided";
             
-            if(!newPass || !confirmNewPass) return showAlert("Please fill out both password fields.");
-            if(newPass !== confirmNewPass) return showAlert("Passwords do not match. Please verify your new password.");
+            const statusVal = (currentUserData.status || 'Active').toLowerCase();
+            const statusEl = document.getElementById('userStatusDisplay');
+            if (statusVal === 'blocked') {
+                statusEl.innerHTML = `<i class="fas fa-ban"></i> Blocked`;
+                statusEl.style.color = 'var(--danger)';
+            } else if (statusVal === 'deactive') {
+                statusEl.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Deactive`;
+                statusEl.style.color = 'var(--warning)';
+            } else {
+                statusEl.innerHTML = `<i class="fas fa-check-circle"></i> Active`;
+                statusEl.style.color = 'var(--success)';
+            }
+
+            const avatarImg = document.getElementById('userAvatar');
+            if(currentUserData.avatar) {
+                avatarImg.src = currentUserData.avatar;
+            } else {
+                avatarImg.src = "https://api.dicebear.com/7.x/avataaars/svg?seed=" + encodeURIComponent(currentUserData.name);
+            }
+
+            renderAddresses();
+        }
+
+        // --- INTERACTIVE CLICKABLE ADDRESS CARDS ---
+        function renderAddresses() {
+            const container = document.getElementById('addressListContainer');
+            container.innerHTML = ''; 
             
-            toggleButtonState('resetPassBtn', true);
-            toggleLoader(true, "Updating Security Keys...");
+            if (currentUserData.addresses && currentUserData.addresses.length > 0) {
+                currentUserData.addresses.forEach((addr, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'address-item';
+                    
+                    // Card is completely clickable and triggers modal logic
+                    div.onclick = () => viewAddressDetails(index);
+                    
+                    const titleHtml = index === 0 
+                        ? `<i class="fas fa-star" style="color: var(--warning); font-size:14px;"></i> Primary Location` 
+                        : `<i class="fas fa-map-marker-alt" style="color: var(--accent); font-size:14px;"></i> Saved Location ${index + 1}`;
+
+                    div.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                            <div class="address-item-title" style="margin: 0;">${titleHtml}</div>
+                            <div class="address-item-icon"><i class="fas fa-chevron-right"></i></div>
+                        </div>
+                        <div class="address-item-details" style="font-size: 15px;">
+                            <strong style="color: var(--primary);">${addr.name}</strong> <span style="color: var(--text-muted); font-size: 13px;">(${addr.phone})</span><br>
+                            <span style="color: var(--text-muted); margin-top: 6px; display: inline-block;">${addr.street}, ${addr.city}, ${addr.state} - <strong>${addr.pincode}</strong></span>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            } else {
+                container.innerHTML = `<p style="color: var(--text-muted); font-size: 14px; text-align: center; padding: 20px;">No locations saved yet.</p>`;
+            }
+        }
+
+        function viewAddressDetails(index) {
+            currentlyViewingAddressIndex = index;
+            const addr = currentUserData.addresses[index];
             
-            const hashed = await secureHash(newPass);
+            // Build the read-only details UI
+            const contentHtml = `
+                <div style="margin-bottom: 10px;"><strong>Receiver Name:</strong> <span style="float: right;">${addr.name}</span></div>
+                <div style="margin-bottom: 10px;"><strong>Contact No:</strong> <span style="float: right;">${addr.phone}</span></div>
+                <div style="margin-bottom: 10px;"><strong>Street/House:</strong> <div style="color: var(--text-muted); margin-top: 4px;">${addr.street}</div></div>
+                <div style="margin-bottom: 10px;"><strong>City:</strong> <span style="float: right;">${addr.city}</span></div>
+                <div style="margin-bottom: 10px;"><strong>State:</strong> <span style="float: right;">${addr.state}</span></div>
+                <div><strong>Pincode:</strong> <span style="float: right;">${addr.pincode}</span></div>
+            `;
+            
+            document.getElementById('viewAddressContent').innerHTML = contentHtml;
+            
+            const actionsContainer = document.getElementById('viewAddressActions');
+            const primaryContainer = document.getElementById('makePrimaryBtnContainer');
+            
+            if (index === 0) {
+                // Primary Address Constraint: Only Edit button allowed
+                actionsContainer.innerHTML = `
+                    <button type="button" class="btn-action" style="flex: 1;" onclick="openEditAddress(${index})"><i class="fas fa-edit"></i> Edit Address</button>
+                `;
+                primaryContainer.innerHTML = '';
+            } else {
+                // Secondary Address Controls: Edit, Delete, Make Primary
+                actionsContainer.innerHTML = `
+                    <button type="button" class="btn-action" style="flex: 1;" onclick="openEditAddress(${index})"><i class="fas fa-edit"></i> Edit</button>
+                    <button type="button" class="btn-action" style="flex: 1; color: var(--danger); border-color: rgba(239, 68, 68, 0.3);" onclick="promptRemoveAddress(${index})"><i class="fas fa-trash"></i> Delete</button>
+                `;
+                primaryContainer.innerHTML = `
+                    <button type="button" class="btn-action" style="width: 100%; border-color: var(--accent); color: var(--accent);" onclick="makePrimaryAddress(${index})"><i class="fas fa-star"></i> Set as Primary Location</button>
+                `;
+            }
+            
+            openModal('viewAddressModal');
+        }
+
+        // --- AVATAR EDITOR LOGIC ---
+        function openAvatarModal() {
+            selectedAvatarUrl = "";
+            document.querySelectorAll('.preset-avatars img').forEach(img => img.classList.remove('selected'));
+            document.getElementById('customAvatarInput').value = "";
+            document.getElementById('uploadFileNameText').innerText = "Select Image from Device";
+            openModal('avatarModal');
+        }
+
+        function selectPresetAvatar(imgElement) {
+            document.querySelectorAll('.preset-avatars img').forEach(img => img.classList.remove('selected'));
+            imgElement.classList.add('selected');
+            selectedAvatarUrl = imgElement.getAttribute('data-url');
+            document.getElementById('uploadFileNameText').innerText = "Select Image from Device"; 
+            document.getElementById('customAvatarInput').value = "";
+        }
+
+        function handleFileUI(inputElement) {
+            if (inputElement.files && inputElement.files.length > 0) {
+                document.getElementById('uploadFileNameText').innerText = "1 Custom Image Ready";
+                document.querySelectorAll('.preset-avatars img').forEach(img => img.classList.remove('selected'));
+                selectedAvatarUrl = ""; 
+            }
+        }
+
+        async function saveAvatarSelection() {
+            const fileInput = document.getElementById('customAvatarInput');
+            let finalAvatar = selectedAvatarUrl;
+
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                if (file.size > 2000000) return showToast("Image is too large. Please use an image under 2MB.");
+                
+                try {
+                    toggleButtonState('saveAvatarBtn', true);
+                    finalAvatar = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.onerror = (e) => reject("File read error");
+                        reader.readAsDataURL(file);
+                    });
+                } catch(e) {
+                    toggleButtonState('saveAvatarBtn', false, 'Save Profile Image <i class="fas fa-camera"></i>');
+                    return showToast("Failed to process local image.");
+                }
+            }
+
+            if (!finalAvatar) return showToast("Please select a preset or upload an image.");
+
+            toggleButtonState('saveAvatarBtn', true);
+
+            try {
+                await fetch(`${API_BASE_URL}/update-user`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email: currentUserData.email, 
+                        updates: { avatar: finalAvatar }, 
+                        projectId: PROJECT_ID,
+                        _enc_packet: encryptPayload({ action: 'update_avatar' })
+                    })
+                });
+                
+                currentUserData.avatar = finalAvatar;
+                localStorage.setItem('active_session', JSON.stringify(currentUserData));
+                renderProfile();
+                showToast("Profile identity updated.");
+                closeModal('avatarModal');
+            } catch(e) {
+                showToast("Failed to sync avatar with cloud vault.");
+            } finally {
+                toggleButtonState('saveAvatarBtn', false, 'Save Profile Image <i class="fas fa-camera"></i>');
+            }
+        }
+
+        async function removeCustomAvatar() {
+            const defaultAvatarUrl = "https://api.dicebear.com/7.x/avataaars/svg?seed=" + encodeURIComponent(currentUserData.name);
+            
+            toggleLoader(true, "Removing Image...");
             
             try {
                 await fetch(`${API_BASE_URL}/update-user`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        email: tempUserData.email, 
-                        updates: { passwordHash: hashed }, 
-                        projectId: PROJECT_ID 
+                        email: currentUserData.email, 
+                        updates: { avatar: defaultAvatarUrl }, 
+                        projectId: PROJECT_ID,
+                        _enc_packet: encryptPayload({ action: 'remove_avatar' })
                     })
                 });
                 
-                tempUserData.passwordHash = hashed;
-                showToast("Password updated securely.");
-                finalizeLogin(tempUserData, 'Password Reset');
+                currentUserData.avatar = defaultAvatarUrl;
+                localStorage.setItem('active_session', JSON.stringify(currentUserData));
+                renderProfile();
+                showToast("Custom image removed permanently.");
+                closeModal('avatarModal');
             } catch(e) {
-                showAlert("Failed to update password. Server Error.");
-                toggleButtonState('resetPassBtn', false, 'Save & Login <i class="fas fa-save"></i>');
+                showToast("Failed to remove avatar from database.");
+            } finally {
                 toggleLoader(false);
             }
         }
 
-        async function dispatchSecureOTP(email, name) {
-            generatedRawOTP = Math.floor(1000 + Math.random() * 9000).toString(); 
-            hashedOTP = await secureHash(generatedRawOTP);
-            
-            try {
-                await emailjs.send(API_KEYS.EMAILJS_OTP_SERVICE, API_KEYS.EMAILJS_OTP_TEMPLATE, { 
-                    to_email: email, to_name: name || "Aryanta User", otp_code: generatedRawOTP 
-                });
-                showToast("Verification code dispatched to your email."); 
-            } catch (err) {
-                console.error("Email verification dispatch failed.");
-                throw new Error("EmailJS Failure");
+        // --- PASSWORD CHANGE LOGIC ---
+        function openPassChangeModal() {
+            if(!currentUserData.passwordHash) {
+                showToast("You signed up with Google and haven't set a password yet.");
+                return;
             }
+            document.getElementById('passChangeStep1').style.display = 'block';
+            document.getElementById('passChangeStep2').style.display = 'none';
+            document.getElementById('currentPassInput').value = '';
+            openModal('passChangeModal');
         }
 
-        async function resendOTP() {
-            toggleLoader(true, "Dispatching Code...");
-            try {
-                await dispatchSecureOTP(tempUserData.email, tempUserData.name);
-            } catch(e) {
-                showAlert("Failed to resend OTP.");
-            }
-            toggleLoader(false);
-        }
-
-        async function verifyOTP() {
-            const inputs = document.querySelectorAll('.otp-box-premium');
-            let otp = ''; inputs.forEach(i => otp += i.value); 
+        async function verifyCurrentPassword() {
+            const currentPass = document.getElementById('currentPassInput').value;
+            if(!currentPass) return showToast("Enter current password.");
             
-            if(otp.length !== 4) return showAlert("Please enter the complete 4-digit code.");
+            toggleButtonState('verifyPassBtn', true);
+            const hashed = await secureHash(currentPass);
             
-            toggleButtonState('verifyOtpBtn', true);
-            toggleLoader(true, "Verifying Token...");
-            
-            const hash = await secureHash(otp);
-            
-            if (hash === hashedOTP) {
-                if (currentAuthMode === 'signup') {
-                    await completeRegistrationBackend();
-                } else if (currentAuthMode === 'recover') {
-                    switchView('newPasswordView');
-                    toggleButtonState('verifyOtpBtn', false, 'Verify Code <i class="fas fa-check-circle"></i>');
-                    toggleLoader(false);
-                }
+            if (hashed === currentUserData.passwordHash) {
+                document.getElementById('passChangeStep1').style.display = 'none';
+                document.getElementById('passChangeStep2').style.display = 'block';
             } else {
-                showAlert("Invalid verification code. Please try again.");
-                toggleButtonState('verifyOtpBtn', false, 'Verify Code <i class="fas fa-check-circle"></i>');
-                toggleLoader(false);
+                showToast("Incorrect current password.");
             }
+            toggleButtonState('verifyPassBtn', false, 'Verify Identity <i class="fas fa-arrow-right"></i>');
         }
 
-        async function completeRegistrationBackend() {
-            // Apply stringent visual encryption on payload so network inspectors see unreadable data
-            const securePayload = { 
-                encrypted_data: encryptPayload(tempUserData), 
-                ...tempUserData 
-            };
-            // Strictly delete raw password if mistakenly assigned
-            if(securePayload.password) delete securePayload.password;
+        async function saveNewPassword() {
+            const newPass = document.getElementById('newPassInput').value;
+            const newPassConfirm = document.getElementById('newPassConfirmInput').value;
+            
+            if(!newPass || !newPassConfirm) return showToast("Fill all fields.");
+            if(newPass !== newPassConfirm) return showToast("Passwords do not match.");
+            
+            toggleButtonState('savePassBtn', true);
+            const newHashed = await secureHash(newPass);
 
             try {
-                await fetch(`${API_BASE_URL}/add-user`, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify(securePayload) 
+                await fetch(`${API_BASE_URL}/update-user`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email: currentUserData.email, 
+                        updates: { passwordHash: newHashed }, 
+                        projectId: PROJECT_ID,
+                        _enc_packet: encryptPayload({ action: 'update_pass' })
+                    })
                 });
-                finalizeLogin(tempUserData, 'Account Created');
-            } catch (error) {
-                showAlert("Account generation failed on the server side.");
-                toggleButtonState('verifyOtpBtn', false, 'Verify Code <i class="fas fa-check-circle"></i>');
-                toggleLoader(false);
+                currentUserData.passwordHash = newHashed;
+                localStorage.setItem('active_session', JSON.stringify(currentUserData));
+                showToast("Password updated securely.");
+                closeModal('passChangeModal');
+            } catch(e) {
+                showToast("Failed to update password.");
+            } finally {
+                toggleButtonState('savePassBtn', false, 'Update Securely <i class="fas fa-save"></i>');
             }
         }
 
-        function finalizeLogin(userData, loginMethod = 'Google/SSO') {
-            localStorage.setItem('active_session', JSON.stringify(userData)); 
-
-            fetch(`${API_BASE_URL}/update-user`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    email: userData.email, 
-                    updates: { lastLogin: new Date().toISOString(), loginMethod: loginMethod }, 
-                    projectId: PROJECT_ID 
-                })
-            }).catch(e => console.log("Login sync error"));
-
-            showToast(`Authentication Successful.`); 
+        // --- ADDRESS EDITING & SAVING LOGIC ---
+        function openAddressModal() {
+            isEditingAddress = false;
+            currentlyViewingAddressIndex = -1;
+            document.getElementById('addressModalTitle').innerText = "Add New Address";
             
-
-            setTimeout(() => { window.location.href = 'https://aryanta.in/'; }, 1000);
+            document.getElementById('newNameInput').value = '';
+            document.getElementById('newPhoneInput').value = '';
+            document.getElementById('newStreetInput').value = '';
+            document.getElementById('newCityInput').value = '';
+            document.getElementById('newStateInput').value = '';
+            document.getElementById('newPinInput').value = '';
+            
+            openModal('addressModal');
         }
 
-        function parseJwt(token) {
-            var base64Url = token.split('.')[1];
-            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            return JSON.parse(jsonPayload);
+        function openEditAddress(index) {
+            closeModal('viewAddressModal');
+            isEditingAddress = true;
+            currentlyViewingAddressIndex = index;
+            document.getElementById('addressModalTitle').innerText = "Edit Location details";
+            
+            const addr = currentUserData.addresses[index];
+            
+            document.getElementById('newNameInput').value = addr.name;
+            document.getElementById('newPhoneInput').value = addr.phone;
+            document.getElementById('newStreetInput').value = addr.street;
+            document.getElementById('newCityInput').value = addr.city;
+            document.getElementById('newStateInput').value = addr.state;
+            document.getElementById('newPinInput').value = addr.pincode;
+            
+            setTimeout(() => { openModal('addressModal'); }, 300);
         }
 
-        async function handleGoogleCredentialResponse(response) {
-            toggleLoader(true, "Synchronizing Identity...");
-            const data = parseJwt(response.credential);
-            
+        async function saveAddress() {
+            const name = document.getElementById('newNameInput').value.trim();
+            const phone = document.getElementById('newPhoneInput').value.trim();
+            const street = document.getElementById('newStreetInput').value.trim();
+            const city = document.getElementById('newCityInput').value.trim();
+            const state = document.getElementById('newStateInput').value.trim();
+            const pincode = document.getElementById('newPinInput').value.trim();
+
+            if(!name || !phone || !street || !city || !state || !pincode) return showToast("Please fill out all address fields.");
+
+            toggleButtonState('saveAddressBtn', true);
+
+            const addressObj = { name, phone, street, city, state, pincode };
+            let updatedAddresses = [...currentUserData.addresses];
+
+            if (isEditingAddress && currentlyViewingAddressIndex > -1) {
+                updatedAddresses[currentlyViewingAddressIndex] = addressObj;
+            } else {
+                updatedAddresses.push(addressObj);
+            }
+
             try {
-                const checkRes = await fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(data.email)}`);
-                const existingUser = await checkRes.json();
+                await fetch(`${API_BASE_URL}/update-user`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email: currentUserData.email, 
+                        updates: { addresses: updatedAddresses }, 
+                        projectId: PROJECT_ID,
+                        _enc_packet: encryptPayload({ action: isEditingAddress ? 'edit_address' : 'add_address' })
+                    })
+                });
+                
+                currentUserData.addresses = updatedAddresses;
+                localStorage.setItem('active_session', JSON.stringify(currentUserData));
+                renderAddresses();
+                showToast(isEditingAddress ? "Location updated." : "Location saved securely.");
+                closeModal('addressModal');
+            } catch(e) {
+                showToast("Failed to save location.");
+            } finally {
+                toggleButtonState('saveAddressBtn', false, 'Save Location <i class="fas fa-save"></i>');
+            }
+        }
 
-                if(existingUser && existingUser.email) {
-                    finalizeLogin(existingUser, 'Google Auth');
-                } else {
-                    isGoogleFlow = true;
-                    currentAuthMode = 'signup';
-                    
-                    document.getElementById('regName').value = data.name;
-                    document.getElementById('regEmail').value = data.email;
-                    document.getElementById('regEmail').readOnly = true; 
-                    
-                    switchView('signupView');
-                    document.getElementById('signupSubtitle').innerText = "Google verified! Set a password and add your delivery details to finish.";
-                    toggleLoader(false);
-                }
-            } catch (error) {
+        async function makePrimaryAddress(index) {
+            closeModal('viewAddressModal');
+            toggleLoader(true, "Updating Primary Vault...");
+            
+            let updatedAddresses = [...currentUserData.addresses];
+            // Swap logic: Move the selected index to 0, push 0 to index
+            let temp = updatedAddresses[0];
+            updatedAddresses[0] = updatedAddresses[index];
+            updatedAddresses[index] = temp;
+
+            try {
+                await fetch(`${API_BASE_URL}/update-user`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email: currentUserData.email, 
+                        updates: { addresses: updatedAddresses }, 
+                        projectId: PROJECT_ID,
+                        _enc_packet: encryptPayload({ action: 'make_primary_address' })
+                    })
+                });
+                
+                currentUserData.addresses = updatedAddresses;
+                localStorage.setItem('active_session', JSON.stringify(currentUserData));
+                renderAddresses();
+                showToast("Primary location successfully updated.");
+            } catch(e) {
+                showToast("Failed to update primary location.");
+            } finally {
                 toggleLoader(false);
-                showAlert("Google Authentication Sync Failed.");
             }
         }
 
-        function initGoogleAuth() {
-            if(window.google && API_KEYS.GOOGLE_CLIENT_ID) {
-                try {
-                    google.accounts.id.initialize({
-                        client_id: API_KEYS.GOOGLE_CLIENT_ID,
-                        callback: handleGoogleCredentialResponse
-                    });
-                    
-                    const btnLogin = document.getElementById("googleAuthBtnLogin");
-                    if (btnLogin) {
-                        google.accounts.id.renderButton(
-                            btnLogin, { theme: "outline", size: "large", shape: "rectangular", text: "continue_with" }
-                        );
-                    }
-                } catch(e) { console.log(e); }
+        // --- Custom Delete Confirmation Logic ---
+        function promptRemoveAddress(index) {
+            if (index === 0) {
+                return showToast("Primary location cannot be deleted. Please set another location as primary first.");
+            }
+            addressIndexToDelete = index;
+            closeModal('viewAddressModal');
+            setTimeout(() => { openModal('deleteConfirmModal'); }, 300);
+        }
+
+        async function executeRemoveAddress() {
+            if (addressIndexToDelete < 1) return;
+            
+            closeModal('deleteConfirmModal');
+            toggleLoader(true, "Modifying Vault...");
+            
+            const updatedAddresses = [...currentUserData.addresses];
+            updatedAddresses.splice(addressIndexToDelete, 1);
+
+            try {
+                await fetch(`${API_BASE_URL}/update-user`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email: currentUserData.email, 
+                        updates: { addresses: updatedAddresses }, 
+                        projectId: PROJECT_ID,
+                        _enc_packet: encryptPayload({ action: 'remove_address' })
+                    })
+                });
+                
+                currentUserData.addresses = updatedAddresses;
+                localStorage.setItem('active_session', JSON.stringify(currentUserData));
+                renderAddresses();
+                showToast("Address permanently removed.");
+            } catch(e) {
+                showToast("Failed to remove address.");
+            } finally {
+                toggleLoader(false);
+                addressIndexToDelete = -1;
             }
         }
+
+        function handleLogout() {
+            // Securely wipe all login data from the browser before exiting
+            localStorage.removeItem('active_session');
+            currentUserData = null;
+            window.location.href = 'https://aryanta.in/login/';
+        }
+
     </script>
 </body>
 </html>
