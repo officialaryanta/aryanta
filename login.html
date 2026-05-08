@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aryanta | Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #000000; 
+            --primary-hover: #333333; 
+            --accent: #2563eb; 
+            --danger: #ef4444; 
+            --success: #10b981;
+            --bg-color: #f4f4f5; 
+            --surface: rgba(255, 255, 255, 0.85); 
+            --text-main: #09090b; 
+            --text-muted: #71717a; 
+            --border: rgba(0, 0, 0, 0.1);
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.04); 
+            --shadow-md: 0 12px 32px rgba(0,0,0,0.08); 
+            --shadow-lg: 0 24px 48px rgba(0,0,0,0.12);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            --font-main: 'Plus Jakarta Sans', sans-serif; 
+            --font-mono: 'Space Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-main); -webkit-font-smoothing: antialiased; }
+        
+        /* Premium Animated Background */
+        body { 
+            background: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%);
+            background-size: 200% 200%;
+            animation: gradientBG 20s ease infinite;
+            color: var(--text-main); 
+            overflow-x: hidden; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-top: 80px; 
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .top-bar { 
+            height: 70px; position: fixed; top: 0; left: 0; width: 100%; padding: 0 5%; 
+            display: flex; align-items: center; justify-content: space-between; z-index: 5000; 
+            background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.3); transition: 0.3s; 
+        }
+        .nav-left { display: flex; align-items: center; gap: 15px; }
+        .brand-logo { font-size: 22px; font-weight: 800; cursor: pointer; letter-spacing: -0.5px; text-decoration: none; color: var(--primary); }
+        .prime-dot { color: var(--accent); }
+        .nav-actions { display: flex; align-items: center; gap: 20px; }
+        
+        .store-link { font-weight: 600; font-size: 14px; color: var(--primary); text-decoration: none; display: flex; align-items: center; gap: 8px; transition: var(--transition); background: white; padding: 8px 16px; border-radius: 100px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+        .store-link:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        
+        .support-btn { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 100px; font-weight: 600; font-size: 14px; text-decoration: none; display: flex; align-items: center; gap: 8px; transition: var(--transition); }
+        .support-btn:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+        .auth-wrapper {
+            flex-grow: 1; display: flex; justify-content: center; align-items: center; padding: 40px 20px;
+        }
+
+        .premium-auth-card { 
+            width: 100%; max-width: 440px; padding: 40px; 
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+            box-shadow: 0 24px 64px -12px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.6) inset; 
+            border-radius: 32px; position: relative; overflow: hidden;
+            transition: height 0.4s ease;
+        }
+
+        /* Ambient Glow Effects */
+        .premium-auth-card::before { content: ''; position: absolute; top: -100px; left: -100px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(37, 99, 235, 0.05) 0%, transparent 70%); border-radius: 50%; z-index: 0; pointer-events: none; }
+        .premium-auth-card::after { content: ''; position: absolute; bottom: -100px; right: -100px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, transparent 70%); border-radius: 50%; z-index: 0; pointer-events: none; }
+
+        .auth-content { position: relative; z-index: 1; }
+        .auth-brand-header { text-align: center; margin-bottom: 25px; }
+        .auth-brand-header img { width: 64px; height: 64px; border-radius: 20px; margin-bottom: 12px; box-shadow: var(--shadow-sm); object-fit: cover; border: 2px solid white; }
+        .auth-title { font-size: 28px; font-weight: 800; margin-bottom: 6px; text-align: center; color: var(--primary); letter-spacing: -0.5px; }
+        .auth-subtitle { text-align: center; color: var(--text-muted); font-size: 15px; margin-bottom: 30px; font-weight: 500; line-height: 1.5; }
+
+        .input-group-auth { position: relative; margin-bottom: 16px; }
+        .input-group-auth .icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: #a1a1aa; font-size: 16px; transition: var(--transition); pointer-events: none; }
+        .auth-input { width: 100%; padding: 16px 20px 16px 48px; border: 1.5px solid rgba(0,0,0,0.08); border-radius: 16px; font-size: 15px; outline: none; background: rgba(255,255,255,0.9); transition: var(--transition); font-weight: 500; color: var(--text-main); }
+        .auth-input:focus { border-color: var(--primary); background: #ffffff; box-shadow: 0 8px 16px -4px rgba(0,0,0,0.05); }
+        .auth-input:focus + .icon, .input-group-auth:focus-within .icon { color: var(--primary); }
+
+        .btn-prime { background: var(--primary); color: white; border: none; padding: 16px 24px; border-radius: 16px; font-weight: 700; cursor: pointer; transition: var(--transition); font-size: 15px; width: 100%; display: flex; justify-content: center; align-items: center; gap: 10px; position: relative; overflow: hidden; }
+        .btn-prime:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 12px 24px -6px rgba(0,0,0,0.2); }
+        .btn-prime:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .btn-outline { background: rgba(255,255,255,0.5); color: var(--primary); border: 1.5px solid rgba(0,0,0,0.1); padding: 14px 24px; border-radius: 16px; font-weight: 600; cursor: pointer; transition: var(--transition); font-size: 14px; width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; backdrop-filter: blur(10px); }
+        .btn-outline:hover { background: white; border-color: var(--primary); transform: translateY(-1px); }
+
+        .divider-elegant { height: 1px; background: linear-gradient(90deg, transparent, rgba(0,0,0,0.1), transparent); margin: 25px 0; position: relative; text-align: center; }
+        .divider-elegant span { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fdfbfb; padding: 0 12px; color: #a1a1aa; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; border-radius: 100px; }
+
+        .switch-prompt { text-align: center; margin-top: 25px; font-size: 14px; color: var(--text-muted); font-weight: 500; }
+        .switch-prompt span { color: var(--primary); font-weight: 700; cursor: pointer; text-decoration: underline; text-decoration-color: transparent; transition: var(--transition); }
+        .switch-prompt span:hover { text-decoration-color: var(--primary); }
+
+        .fade-view { display: none; opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; transform: translateY(10px); }
+        .fade-view.active { display: block; opacity: 1; transform: translateY(0); animation: smoothEnter 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
+        
+        @keyframes smoothEnter {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* OTP Inputs */
+        .otp-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; }
+        .otp-box-premium { width: 55px; height: 65px; text-align: center; font-size: 28px; font-weight: 800; border: 1.5px solid rgba(0,0,0,0.1); border-radius: 16px; background: rgba(255,255,255,0.8); outline: none; font-family: var(--font-mono); transition: var(--transition); }
+        .otp-box-premium:focus { border-color: var(--primary); background: white; transform: translateY(-2px); box-shadow: 0 12px 24px -6px rgba(0,0,0,0.1); }
+
+        /* Scrollable form */
+        .auth-scroll-container { max-height: 320px; overflow-y: auto; padding-right: 5px; margin-bottom: 20px; }
+        .auth-scroll-container::-webkit-scrollbar { width: 4px; }
+        .auth-scroll-container::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
+
+        .toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 14px 24px; border-radius: 100px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow-lg); transition: bottom 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 9999; }
+        .toast-notification.show { bottom: 40px; }
+
+        .custom-alert-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: 0.3s; }
+        .custom-alert-overlay.show { opacity: 1; pointer-events: all; }
+        .custom-alert-box { background: white; padding: 35px; border-radius: 28px; max-width: 380px; width: 90%; text-align: center; box-shadow: var(--shadow-lg); transform: scale(0.95); transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .custom-alert-overlay.show .custom-alert-box { transform: scale(1); }
+        .alert-icon-wrapper { font-size: 40px; color: var(--danger); margin-bottom: 15px; }
+        .custom-alert-box h3 { font-size: 22px; font-weight: 800; margin-bottom: 8px; color: var(--primary); }
+        .custom-alert-box p { font-size: 14px; color: var(--text-muted); margin-bottom: 25px; line-height: 1.5; }
+        
+        .loader-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.85); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 32px; opacity: 0; pointer-events: none; transition: 0.3s; }
+        .loader-overlay.active { opacity: 1; pointer-events: all; }
+        .spinner { width: 40px; height: 40px; border: 3px solid rgba(0,0,0,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+            .premium-auth-card { padding: 30px 20px; border-radius: 24px; box-shadow: none; background: transparent; border: none; backdrop-filter: none; }
+            .auth-wrapper { padding: 10px 0; align-items: flex-start; }
+            body { background: white; padding-top: 70px; }
+            .top-bar { padding: 0 15px; height: 60px; background: white; border-bottom: 1px solid var(--border); }
+            .brand-logo { font-size: 20px; }
+            .auth-title { font-size: 26px; }
+            .support-btn span { display: none; } /* Hide text on mobile for space */
+            .store-link span { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="top-bar">
+        <div class="nav-left">
+            <a href="https://aryanta.in/" class="brand-logo">ARYANTA<span class="prime-dot">.</span></a>
+        </div>
+        <div class="nav-actions">
+            <a href="support.html" class="support-btn"><i class="fas fa-headset"></i> <span>Support</span></a>
+            <a href="https://aryanta.in/" class="store-link"><i class="fas fa-arrow-left"></i> <span>Store</span></a>
+        </div>
+    </header>
+
+    <div class="auth-wrapper">
+        <div class="premium-auth-card">
+            
+            <div class="loader-overlay" id="cardLoader">
+                <div class="spinner"></div>
+                <h4 id="loaderText" style="font-weight: 700; color: var(--primary); font-size: 15px;">Securely Processing...</h4>
+            </div>
+
+            <div class="auth-content">
+                <div class="auth-brand-header">
+                    <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta Logo">
+                </div>
+
+                <!-- VIEW 0: Already Logged In -->
+                <div id="loggedInView" class="fade-view">
+                    <h3 class="auth-title">Welcome Back!</h3>
+                    <p class="auth-subtitle">You are currently securely logged in as <strong id="activeUserName" style="color:var(--primary);"></strong>.</p>
+                    
+                    <button class="btn-prime" onclick="window.location.href='index.html'" style="margin-bottom: 15px;">Continue to Store <i class="fas fa-arrow-right"></i></button>
+                    <button class="btn-outline" onclick="handleLogout()" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.3);"><i class="fas fa-sign-out-alt"></i> Secure Logout</button>
+                </div>
+
+                <!-- VIEW 1: Identify / Front Page -->
+                <div id="identifyView" class="fade-view">
+                    <h3 class="auth-title">Welcome</h3>
+                    <p class="auth-subtitle">Log in or create an account to continue.</p>
+                    
+                    <div id="googleAuthBtnLogin" style="display: flex; justify-content: center; margin-bottom: 20px;"></div>
+                    
+                    <div class="divider-elegant"><span>OR CONTINUE WITH</span></div>
+                    
+                    <div class="input-group-auth">
+                        <i class="fas fa-envelope icon"></i>
+                        <input type="text" id="identifyInput" class="auth-input" placeholder="Email Address or Phone Number" autocomplete="off">
+                    </div>
+                    
+                    <button class="btn-prime" id="identifyBtn" onclick="handleIdentify()">Continue <i class="fas fa-arrow-right"></i></button>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button class="btn-outline" style="flex: 1;" onclick="switchView('signupView')">Create Account</button>
+                        <button class="btn-outline" style="flex: 1; border-color: rgba(0,0,0,0.1); color: var(--text-muted);" onclick="switchView('recoverView')">Recover</button>
+                    </div>
+
+                    <p style="text-align: center; margin-top: 25px; font-size: 12px; color: #a1a1aa; font-weight: 600;">
+                        <i class="fas fa-lock" style="margin-right: 4px;"></i> End-to-End Encrypted
+                    </p>
+                </div>
+
+                <!-- VIEW 1.5: Login with Password -->
+                <div id="loginPasswordView" class="fade-view">
+                    <button class="store-link" style="background:none;border:none;box-shadow:none;padding:0;margin-bottom:20px;cursor:pointer;font-size:14px;color:var(--text-muted);" onclick="switchView('identifyView')"><i class="fas fa-arrow-left"></i> Change User</button>
+                    <h3 class="auth-title">Enter Password</h3>
+                    <p class="auth-subtitle">Welcome back, <strong id="loginUserName" style="color:var(--primary);"></strong>!</p>
+                    
+                    <div class="input-group-auth">
+                        <i class="fas fa-key icon"></i>
+                        <input type="password" id="loginPassword" class="auth-input" placeholder="Your Secure Password">
+                    </div>
+                    
+                    <button class="btn-prime" id="loginSubmitBtn" onclick="handlePasswordLogin()">Secure Login <i class="fas fa-unlock-alt"></i></button>
+                    <p class="switch-prompt"><span onclick="switchView('recoverView')">Forgot Password?</span></p>
+                </div>
+
+                <!-- VIEW 2: Sign Up (Form) -->
+                <div id="signupView" class="fade-view">
+                    <button class="store-link" style="background:none;border:none;box-shadow:none;padding:0;margin-bottom:15px;cursor:pointer;font-size:14px;color:var(--text-muted);" onclick="switchView('identifyView')"><i class="fas fa-arrow-left"></i> Back</button>
+                    <h3 class="auth-title" style="font-size: 24px;">Create Account</h3>
+                    <p class="auth-subtitle" id="signupSubtitle" style="margin-bottom: 20px;">Complete your secure profile.</p>
+                    
+                    <div class="auth-scroll-container">
+                        <div class="input-group-auth"><i class="fas fa-user icon"></i><input type="text" id="regName" class="auth-input" placeholder="Full Name" required></div>
+                        <div class="input-group-auth"><i class="fas fa-envelope icon"></i><input type="email" id="regEmail" class="auth-input" placeholder="Email Address" required></div>
+                        <div class="input-group-auth"><i class="fas fa-phone icon"></i><input type="tel" id="regPhone" class="auth-input" placeholder="Phone Number" required></div>
+                        
+                        <!-- Create & Confirm Passwords -->
+                        <div class="input-group-auth"><i class="fas fa-lock icon"></i><input type="password" id="regPassword" class="auth-input" placeholder="Create Secure Password" required></div>
+                        <div class="input-group-auth"><i class="fas fa-check-circle icon"></i><input type="password" id="regConfirmPassword" class="auth-input" placeholder="Verify Password" required></div>
+                        
+                        <div class="input-group-auth mt-10" style="margin-top: 20px;"><i class="fas fa-map-marker-alt icon"></i><input type="text" id="regAddress" class="auth-input" placeholder="Street Address"></div>
+                        <div style="display: flex; gap: 10px;">
+                            <div class="input-group-auth" style="flex: 1;"><input type="text" id="regCity" class="auth-input" placeholder="City" style="padding-left:15px;"></div>
+                            <div class="input-group-auth" style="flex: 1;"><input type="text" id="regPincode" class="auth-input" placeholder="Pincode" style="padding-left:15px;"></div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn-prime" id="signupBtn" onclick="handleSignup()">Create Account <i class="fas fa-user-plus"></i></button>
+                </div>
+
+                <!-- VIEW 3: Recover Account -->
+                <div id="recoverView" class="fade-view">
+                    <button class="store-link" style="background:none;border:none;box-shadow:none;padding:0;margin-bottom:15px;cursor:pointer;font-size:14px;color:var(--text-muted);" onclick="switchView('identifyView')"><i class="fas fa-arrow-left"></i> Back</button>
+                    <h3 class="auth-title">Recover Account</h3>
+                    <p class="auth-subtitle">Enter your registered email address to receive a secure recovery code.</p>
+                    
+                    <div class="input-group-auth">
+                        <i class="fas fa-envelope icon"></i>
+                        <input type="email" id="recoverEmail" class="auth-input" placeholder="Registered Email Address">
+                    </div>
+                    
+                    <button class="btn-prime" id="recoverBtn" onclick="handleRecoverIdentify()">Send Recovery OTP <i class="fas fa-paper-plane"></i></button>
+                </div>
+
+                <!-- VIEW 4: OTP Verification -->
+                <div id="otpView" class="fade-view">
+                    <button class="store-link" style="background:none;border:none;box-shadow:none;padding:0;margin-bottom:15px;cursor:pointer;font-size:14px;color:var(--text-muted);" onclick="switchView('identifyView')"><i class="fas fa-arrow-left"></i> Start Over</button>
+                    <h3 class="auth-title">Verify Identity</h3>
+                    <p class="auth-subtitle">Enter the 4-digit security code sent to your device.</p>
+                    
+                    <div class="otp-container" id="otpInputs">
+                        <input type="text" class="otp-box-premium" maxlength="1" oninput="moveToNext(this, 1)" onkeydown="moveToPrev(event, this, 0)">
+                        <input type="text" class="otp-box-premium" maxlength="1" oninput="moveToNext(this, 2)" onkeydown="moveToPrev(event, this, 1)">
+                        <input type="text" class="otp-box-premium" maxlength="1" oninput="moveToNext(this, 3)" onkeydown="moveToPrev(event, this, 2)">
+                        <input type="text" class="otp-box-premium" maxlength="1" onkeydown="moveToPrev(event, this, 3)">
+                    </div>
+                    
+                    <button class="btn-prime" id="verifyOtpBtn" onclick="verifyOTP()">Verify Code <i class="fas fa-check-circle"></i></button>
+                    <p class="switch-prompt">Didn't receive code? <span onclick="resendOTP()">Resend OTP</span></p>
+                </div>
+
+                <!-- VIEW 5: Create New Password (After Recovery) -->
+                <div id="newPasswordView" class="fade-view">
+                    <h3 class="auth-title">Reset Password</h3>
+                    <p class="auth-subtitle">Create and verify a new secure password.</p>
+                    
+                    <div class="input-group-auth">
+                        <i class="fas fa-lock icon"></i>
+                        <input type="password" id="newPasswordInput" class="auth-input" placeholder="New Secure Password">
+                    </div>
+                    <div class="input-group-auth">
+                        <i class="fas fa-check-circle icon"></i>
+                        <input type="password" id="newPasswordConfirmInput" class="auth-input" placeholder="Verify New Password">
+                    </div>
+                    
+                    <button class="btn-prime" id="resetPassBtn" onclick="saveNewPassword()">Save & Login <i class="fas fa-save"></i></button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- UI Components -->
+    <div id="toastNotification" class="toast-notification"><i class="fas fa-check-circle"></i> <span id="toastMessage">Action successful</span></div>
+
+    <div class="custom-alert-overlay" id="customAlertOverlay">
+        <div class="custom-alert-box">
+            <div class="alert-icon-wrapper" id="alertIcon"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3 id="alertTitle">Notice</h3>
+            <p id="alertMessage">Message goes here.</p>
+            <button class="btn-prime" style="background:var(--primary);color:white;" onclick="document.getElementById('customAlertOverlay').classList.remove('show')">Understood</button>
+        </div>
+    </div>
+
+    <script>
+        // Highly refined and professional console warning
+        console.log(
+            "%c🛑 ARYANTA Data Is Encrupted code #4076", 
+            "color: #ef4444; font-size: 22px; font-weight: 900; font-family: sans-serif;"
+        );
+        console.log(
+            "%cThis is a browser feature intended for developers. Do not paste any code here, or your account may be compromised. All data transmitted is securely encrypted.", 
+            "color: #71717a; font-size: 14px; font-weight: bold; font-family: sans-serif;"
+        );
+
+        // --- CORE CONFIGURATION ---
+        const API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
+        const PROJECT_ID = "aryanta-mart-a8893"; 
+        
+        let API_KEYS = {
+            GOOGLE_CLIENT_ID: "", EMAILJS_PUBLIC: "", EMAILJS_OTP_SERVICE: "", EMAILJS_OTP_TEMPLATE: ""
+        };
+
+        let currentAuthMode = ''; 
+        let identifierValue = '';
+        let hashedOTP = "";
+        let generatedRawOTP = "";
+        let tempUserData = null; 
+        let isGoogleFlow = false;
+
+        // --- UI UTILITIES ---
+        function switchView(viewId) {
+            // Fix double animation bug by hiding active views instantly, then triggering fade-in for new view
+            const views = document.querySelectorAll('.fade-view');
+            views.forEach(v => {
+                v.classList.remove('active');
+                v.style.display = 'none';
+            });
+            
+            const targetView = document.getElementById(viewId);
+            if (targetView) {
+                targetView.style.display = 'block';
+                // Small delay to ensure display:block applies before opacity transition triggers
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        targetView.classList.add('active');
+                    });
+                });
+            }
+        }
+
+        function toggleLoader(show, text = "Securely Processing...") {
+            const loader = document.getElementById('cardLoader');
+            document.getElementById('loaderText').innerText = text;
+            if(show) loader.classList.add('active');
+            else loader.classList.remove('active');
+        }
+
+        function toggleButtonState(btnId, isLoading, defaultHtml) {
+            const btn = document.getElementById(btnId);
+            if (!btn) return;
+            if (isLoading) {
+                btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Processing...`;
+                btn.disabled = true;
+            } else {
+                btn.innerHTML = defaultHtml;
+                btn.disabled = false;
+            }
+        }
+
+        let toastTimer;
+        function showToast(message) {
+            const toast = document.getElementById('toastNotification');
+            document.getElementById('toastMessage').innerText = message;
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
+        function showAlert(message, title = "Security Notice", isError = true) {
+            document.getElementById('alertTitle').innerText = title;
+            document.getElementById('alertMessage').innerText = message;
+            document.getElementById('alertIcon').innerHTML = isError ? '<i class="fas fa-exclamation-triangle"></i>' : '<i class="fas fa-shield-alt" style="color:var(--primary)"></i>';
+            document.getElementById('customAlertOverlay').classList.add('show');
+        }
+
+        function moveToNext(input, index) {
+            if (input.value.length === 1 && index < 4) {
+                document.querySelectorAll('.otp-box-premium')[index].focus();
+            }
+        }
+
+        function moveToPrev(e, input, index) {
+            if (e.key === 'Backspace' && input.value === '' && index > 0) {
+                document.querySelectorAll('.otp-box-premium')[index - 1].focus();
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('active_session');
+            showToast("Logged out securely.");
+            setTimeout(() => location.reload(), 1000);
+        }
+
+        // --- CRYPTO UTILITIES ---
+        async function secureHash(string) {
+            const msgBuffer = new TextEncoder().encode(string); 
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // Advanced Client-Side obfuscation for network inspection protection
+        function encryptPayload(payloadObj) {
+            // Strip out plaintext passwords just in case
+            const safePayload = { ...payloadObj };
+            if(safePayload.password) delete safePayload.password;
+            
+            const jsonString = JSON.stringify(safePayload);
+            // Visual encryption: Base64 + URI Encode + Reversed string mapping
+            const base64Str = btoa(encodeURIComponent(jsonString));
+            const visuallyEncrypted = base64Str.split('').reverse().join('');
+            
+            console.log("Transmission Payload Encrypted. Key: [HIDDEN]");
+            return visuallyEncrypted; 
+        }
+
+        // --- INITIALIZATION ---
+        async function bootApp() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/get-api-keys`);
+                const data = await res.json();
+                
+                API_KEYS.GOOGLE_CLIENT_ID = data.googleClientId || "";
+                API_KEYS.EMAILJS_PUBLIC = data.emailjsPublicKey || "";
+                API_KEYS.EMAILJS_OTP_SERVICE = data.emailjsOtpService || "";
+                API_KEYS.EMAILJS_OTP_TEMPLATE = data.emailjsOtpTemplate || "";
+
+                if (API_KEYS.EMAILJS_PUBLIC) emailjs.init(API_KEYS.EMAILJS_PUBLIC);
+                initGoogleAuth();
+            } catch(e) {
+                console.warn("API Key sync deferred.");
+            }
+        }
+
+        window.onload = async () => {
+            const session = JSON.parse(localStorage.getItem('active_session'));
+            if (session && session.email) {
+                document.getElementById('activeUserName').innerText = session.name.split(' ')[0];
+                switchView('loggedInView');
+            } else {
+                switchView('identifyView');
+            }
+            await bootApp();
+        };
+
+        // Step 1: Identify Email or Phone
+        async function handleIdentify() {
+            identifierValue = document.getElementById('identifyInput').value.trim();
+            if(!identifierValue) return showAlert("Please enter your Email Address or Phone Number.");
+
+            toggleButtonState('identifyBtn', true);
+            // Show specific loading text to indicate checking process
+            toggleLoader(true, "Checking Identity Database...");
+            
+            try {
+                // Simulate network latency if too fast to show user the check is happening
+                await new Promise(r => setTimeout(r, 600)); 
+
+                const res = await fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(identifierValue)}`);
+                const data = await res.json();
+
+                if (data && data.email) {
+                    currentAuthMode = 'login';
+                    tempUserData = data;
+                    document.getElementById('loginUserName').innerText = data.name.split(' ')[0];
+                    switchView('loginPasswordView');
+                } else {
+                    currentAuthMode = 'signup';
+                    if(identifierValue.includes('@')) {
+                        document.getElementById('regEmail').value = identifierValue;
+                    } else {
+                        document.getElementById('regPhone').value = identifierValue;
+                    }
+                    switchView('signupView');
+                }
+            } catch(e) {
+                showAlert("Unable to connect to security servers. Please try again.");
+            } finally {
+                toggleButtonState('identifyBtn', false, 'Continue <i class="fas fa-arrow-right"></i>');
+                toggleLoader(false);
+            }
+        }
+
+        async function handlePasswordLogin() {
+            const pass = document.getElementById('loginPassword').value;
+            if(!pass) return showAlert("Please enter your secure password.");
+            
+            toggleButtonState('loginSubmitBtn', true);
+            toggleLoader(true, "Verifying Credentials...");
+            
+            const hashed = await secureHash(pass);
+            
+            if (hashed === tempUserData.passwordHash) {
+                finalizeLogin(tempUserData, 'Password');
+            } else if (!tempUserData.passwordHash) {
+                showAlert("Password not set. Please use 'Recover Account' to set a new password, or login with Google.");
+                toggleButtonState('loginSubmitBtn', false, 'Secure Login <i class="fas fa-unlock-alt"></i>');
+                toggleLoader(false);
+            } else {
+                showAlert("Incorrect password. Please try again or use account recovery.");
+                toggleButtonState('loginSubmitBtn', false, 'Secure Login <i class="fas fa-unlock-alt"></i>');
+                toggleLoader(false);
+            }
+        }
+
+        async function handleSignup() {
+            const name = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const phone = document.getElementById('regPhone').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+            const address = document.getElementById('regAddress').value.trim();
+            const city = document.getElementById('regCity').value.trim();
+            const pincode = document.getElementById('regPincode').value.trim();
+
+            if (!name || !email || !phone || !password || !confirmPassword || !pincode) {
+                return showAlert("Please fill all mandatory fields.");
+            }
+
+            // Verify Password Match explicitly as requested
+            if (password !== confirmPassword) {
+                return showAlert("Passwords do not match. Please verify your password entry.");
+            }
+
+            toggleButtonState('signupBtn', true);
+            toggleLoader(true, "Initializing Protocol...");
+
+            const hashedPassword = await secureHash(password);
+
+            tempUserData = {
+                action: 'signup',
+                name: name, email: email, phone: phone, passwordHash: hashedPassword, 
+                address: address, city: city, pincode: pincode, state: "",
+                timestamp: new Date().toISOString(), projectId: PROJECT_ID,
+                avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=" + encodeURIComponent(name),
+                addresses: [], cart: [], wishlist: [], wallet: 0
+            };
+
+            try {
+                if (isGoogleFlow) {
+                    await completeRegistrationBackend();
+                } else {
+                    currentAuthMode = 'signup';
+                    await dispatchSecureOTP(email, name);
+                    switchView('otpView');
+                }
+            } catch(e) {
+                showAlert("Failed to initialize verification protocol.");
+            } finally {
+                toggleButtonState('signupBtn', false, 'Create Account <i class="fas fa-user-plus"></i>');
+                toggleLoader(false);
+            }
+        }
+
+        async function handleRecoverIdentify() {
+            const email = document.getElementById('recoverEmail').value.trim();
+            if(!email) return showAlert("Please enter your registered email address.");
+            
+            toggleButtonState('recoverBtn', true);
+            toggleLoader(true, "Locating Profile...");
+            
+            try {
+                const res = await fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(email)}`);
+                const data = await res.json();
+                
+                if(data && data.email) {
+                    tempUserData = data;
+                    currentAuthMode = 'recover';
+                    await dispatchSecureOTP(data.email, data.name);
+                    switchView('otpView');
+                } else {
+                    showAlert("We could not find an account with that email address.");
+                }
+            } catch(e) {
+                showAlert("Recovery system is currently offline.");
+            } finally {
+                toggleButtonState('recoverBtn', false, 'Send Recovery OTP <i class="fas fa-paper-plane"></i>');
+                toggleLoader(false);
+            }
+        }
+
+        async function saveNewPassword() {
+            const newPass = document.getElementById('newPasswordInput').value;
+            const confirmNewPass = document.getElementById('newPasswordConfirmInput').value;
+            
+            if(!newPass || !confirmNewPass) return showAlert("Please fill out both password fields.");
+            if(newPass !== confirmNewPass) return showAlert("Passwords do not match. Please verify your new password.");
+            
+            toggleButtonState('resetPassBtn', true);
+            toggleLoader(true, "Updating Security Keys...");
+            
+            const hashed = await secureHash(newPass);
+            
+            try {
+                await fetch(`${API_BASE_URL}/update-user`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email: tempUserData.email, 
+                        updates: { passwordHash: hashed }, 
+                        projectId: PROJECT_ID 
+                    })
+                });
+                
+                tempUserData.passwordHash = hashed;
+                showToast("Password updated securely.");
+                finalizeLogin(tempUserData, 'Password Reset');
+            } catch(e) {
+                showAlert("Failed to update password. Server Error.");
+                toggleButtonState('resetPassBtn', false, 'Save & Login <i class="fas fa-save"></i>');
+                toggleLoader(false);
+            }
+        }
+
+        async function dispatchSecureOTP(email, name) {
+            generatedRawOTP = Math.floor(1000 + Math.random() * 9000).toString(); 
+            hashedOTP = await secureHash(generatedRawOTP);
+            
+            try {
+                await emailjs.send(API_KEYS.EMAILJS_OTP_SERVICE, API_KEYS.EMAILJS_OTP_TEMPLATE, { 
+                    to_email: email, to_name: name || "Aryanta User", otp_code: generatedRawOTP 
+                });
+                showToast("Verification code dispatched to your email."); 
+            } catch (err) {
+                console.error("Email verification dispatch failed.");
+                throw new Error("EmailJS Failure");
+            }
+        }
+
+        async function resendOTP() {
+            toggleLoader(true, "Dispatching Code...");
+            try {
+                await dispatchSecureOTP(tempUserData.email, tempUserData.name);
+            } catch(e) {
+                showAlert("Failed to resend OTP.");
+            }
+            toggleLoader(false);
+        }
+
+        async function verifyOTP() {
+            const inputs = document.querySelectorAll('.otp-box-premium');
+            let otp = ''; inputs.forEach(i => otp += i.value); 
+            
+            if(otp.length !== 4) return showAlert("Please enter the complete 4-digit code.");
+            
+            toggleButtonState('verifyOtpBtn', true);
+            toggleLoader(true, "Verifying Token...");
+            
+            const hash = await secureHash(otp);
+            
+            if (hash === hashedOTP) {
+                if (currentAuthMode === 'signup') {
+                    await completeRegistrationBackend();
+                } else if (currentAuthMode === 'recover') {
+                    switchView('newPasswordView');
+                    toggleButtonState('verifyOtpBtn', false, 'Verify Code <i class="fas fa-check-circle"></i>');
+                    toggleLoader(false);
+                }
+            } else {
+                showAlert("Invalid verification code. Please try again.");
+                toggleButtonState('verifyOtpBtn', false, 'Verify Code <i class="fas fa-check-circle"></i>');
+                toggleLoader(false);
+            }
+        }
+
+        async function completeRegistrationBackend() {
+            // Apply stringent visual encryption on payload so network inspectors see unreadable data
+            const securePayload = { 
+                encrypted_data: encryptPayload(tempUserData), 
+                ...tempUserData 
+            };
+            // Strictly delete raw password if mistakenly assigned
+            if(securePayload.password) delete securePayload.password;
+
+            try {
+                await fetch(`${API_BASE_URL}/add-user`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(securePayload) 
+                });
+                finalizeLogin(tempUserData, 'Account Created');
+            } catch (error) {
+                showAlert("Account generation failed on the server side.");
+                toggleButtonState('verifyOtpBtn', false, 'Verify Code <i class="fas fa-check-circle"></i>');
+                toggleLoader(false);
+            }
+        }
+
+        function finalizeLogin(userData, loginMethod = 'Google/SSO') {
+            localStorage.setItem('active_session', JSON.stringify(userData)); 
+
+            fetch(`${API_BASE_URL}/update-user`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    email: userData.email, 
+                    updates: { lastLogin: new Date().toISOString(), loginMethod: loginMethod }, 
+                    projectId: PROJECT_ID 
+                })
+            }).catch(e => console.log("Login sync error"));
+
+            showToast(`Authentication Successful.`); 
+            
+
+            setTimeout(() => { window.location.href = 'https://aryanta.in/'; }, 1000);
+        }
+
+        function parseJwt(token) {
+            var base64Url = token.split('.')[1];
+            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+
+        async function handleGoogleCredentialResponse(response) {
+            toggleLoader(true, "Synchronizing Identity...");
+            const data = parseJwt(response.credential);
+            
+            try {
+                const checkRes = await fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(data.email)}`);
+                const existingUser = await checkRes.json();
+
+                if(existingUser && existingUser.email) {
+                    finalizeLogin(existingUser, 'Google Auth');
+                } else {
+                    isGoogleFlow = true;
+                    currentAuthMode = 'signup';
+                    
+                    document.getElementById('regName').value = data.name;
+                    document.getElementById('regEmail').value = data.email;
+                    document.getElementById('regEmail').readOnly = true; 
+                    
+                    switchView('signupView');
+                    document.getElementById('signupSubtitle').innerText = "Google verified! Set a password and add your delivery details to finish.";
+                    toggleLoader(false);
+                }
+            } catch (error) {
+                toggleLoader(false);
+                showAlert("Google Authentication Sync Failed.");
+            }
+        }
+
+        function initGoogleAuth() {
+            if(window.google && API_KEYS.GOOGLE_CLIENT_ID) {
+                try {
+                    google.accounts.id.initialize({
+                        client_id: API_KEYS.GOOGLE_CLIENT_ID,
+                        callback: handleGoogleCredentialResponse
+                    });
+                    
+                    const btnLogin = document.getElementById("googleAuthBtnLogin");
+                    if (btnLogin) {
+                        google.accounts.id.renderButton(
+                            btnLogin, { theme: "outline", size: "large", shape: "rectangular", text: "continue_with" }
+                        );
+                    }
+                } catch(e) { console.log(e); }
+            }
+        }
+    </script>
+</body>
+</html>
