@@ -87,8 +87,10 @@
         .panel-links a:hover { background: var(--bg-color); color: var(--primary); padding-left: 40px; }
         .sidebar-footer { padding: 25px 30px; border-top: 1px solid var(--border); text-align: center; }
         .btn-sidebar-logout { width: 100%; padding: 15px; background: #fee2e2; color: var(--danger); border: 1px solid #fca5a5; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        
         .dimmer { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); z-index: 5400; cursor: pointer; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.4s ease, visibility 0.4s ease; }
         .dimmer.show { opacity: 1; visibility: visible; pointer-events: auto; }
+        
         .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); z-index: 9999; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: 0.3s; padding: 20px; }
         .modal-overlay.show { opacity: 1; pointer-events: all; }
         .modal-box { background: var(--surface); padding: 35px; border-radius: 28px; width: 100%; max-width: 500px; box-shadow: var(--shadow-lg); transform: scale(0.95); transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative; max-height: 90vh; overflow-y: auto; }
@@ -96,15 +98,23 @@
         .modal-close { position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer; transition: var(--transition); z-index: 10; outline: none; }
         .modal-close:hover { color: var(--danger); transform: rotate(90deg); }
         .modal-title { font-size: 22px; font-weight: 800; margin-bottom: 20px; color: var(--primary); }
+        
+        .full-screen-panel { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: var(--bg-color); z-index: 10000; transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; overflow-y: auto;}
+        .full-screen-panel.show { transform: translateX(0); }
+        .fsp-header { position: sticky; top: 0; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 20px 5%; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); box-shadow: var(--shadow-sm); z-index: 10; }
+        .fsp-body { flex: 1; padding: 30px 5%; max-width: 800px; margin: 0 auto; width: 100%; }
+
         .form-input { width: 100%; padding: 14px 20px; border: 1.5px solid var(--border); border-radius: 12px; font-size: 15px; outline: none; background: white; transition: var(--transition); font-weight: 500; font-family: var(--font-main); margin-bottom: 15px;}
         .form-input:focus { border-color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .btn-prime { background: var(--primary); color: white; border: none; padding: 16px 24px; border-radius: 16px; font-weight: 800; cursor: pointer; transition: var(--transition); font-size: 15px; display: flex; justify-content: center; align-items: center; gap: 8px; width: 100%; font-family: var(--font-main); }
         .btn-prime:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
         .btn-outline { background: transparent; border: 1.5px solid var(--border); padding: 14px 24px; border-radius: 16px; font-weight: 700; cursor: pointer; color: var(--text-main); transition: 0.3s; font-size: 14px; width: 100%; font-family: var(--font-main); display: flex; justify-content: center; align-items: center; gap: 8px;}
         .btn-outline:hover { background: rgba(0,0,0,0.03); border-color: var(--primary); }
+        
         .breadcrumb { font-size: 13px; color: var(--text-muted); margin: 20px 0; font-weight: 500; }
         .breadcrumb a { color: var(--primary); text-decoration: none; font-weight: 600; }
         .breadcrumb a:hover { text-decoration: underline; }
+        
         .product-container { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px; background: var(--surface); padding: 30px; border-radius: 24px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); align-items: start; }
         .product-gallery { display: flex; flex-direction: column; gap: 15px; position: sticky; top: 100px; }
         .main-image-wrapper { width: 100%; aspect-ratio: 1/1; background: var(--bg-color); border-radius: 16px; border: 2px solid transparent; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; z-index: 1;}
@@ -117,35 +127,50 @@
         .thumbnail-item { width: 64px; height: 64px; border-radius: 8px; border: 2px solid var(--border); cursor: pointer; object-fit: contain; background: var(--surface); padding: 4px; transition: 0.3s; opacity: 0.7;}
         .thumbnail-item:hover { opacity: 1; border-color: #cbd5e1; }
         .thumbnail-item.active { border-color: var(--primary); opacity: 1; box-shadow: var(--shadow-sm);}
-        .product-details { display: flex; flex-direction: column; }
-        .product-brand { font-size: 14px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-        .product-title { font-size: 28px; font-weight: 800; color: var(--primary); line-height: 1.3; margin-bottom: 15px; }
+        
+        .product-details { display: flex; flex-direction: column; position: relative; }
+        .share-btn-wrapper { margin-left: auto; }
+        .product-brand { font-size: 14px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .product-title { font-size: 28px; font-weight: 800; color: var(--primary); line-height: 1.3; margin-bottom: 15px; padding-right: 60px;}
         .product-meta { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
         .rating-badge { background: #fef3c7; color: #b45309; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 5px; }
         .product-id-tag { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); background: var(--bg-color); padding: 4px 10px; border-radius: 6px; }
-        .price-section { padding: 20px 0; border-top: 1px solid var(--border); margin-bottom: 15px; }
+        
+        .highlights-box { font-size: 15px; line-height: 1.6; color: #475569; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px dashed var(--border); }
+        .highlights-box ul { padding-left: 20px; margin-top: 10px; }
+        .highlights-box li { margin-bottom: 8px; font-weight: 500; }
+        .highlights-box li::marker { color: var(--primary); }
+
+        .price-section { margin-bottom: 20px; }
         .current-price { font-size: 36px; font-weight: 800; color: var(--primary); letter-spacing: -1px; display: flex; align-items: center; gap: 15px;}
         .mrp-price { font-size: 18px; color: var(--text-muted); text-decoration: line-through; font-weight: 500; }
         .discount-tag { font-size: 14px; color: var(--success); font-weight: 800; }
-        .description-box { font-size: 15px; line-height: 1.6; color: #475569; margin-bottom: 15px; }
-        .stats-box { font-size: 14px; font-weight: 700; color: var(--primary); background: var(--bg-color); padding: 12px 15px; border-radius: 12px; margin-bottom: 25px; border: 1px solid var(--border); display: flex; gap: 20px;}
-        .stats-box i { color: var(--accent); }
+        
+        .delivery-preview { background: var(--bg-color); border: 1px solid var(--border); padding: 15px; border-radius: 12px; margin-bottom: 25px; }
+
+        .stats-box { font-size: 14px; font-weight: 600; color: var(--primary); background: var(--surface); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 12px;}
+        .stats-row { display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border); padding-bottom: 8px; }
+        .stats-row:last-child { border-bottom: none; padding-bottom: 0; }
+
         .highlights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
         .highlight-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-color); border-radius: 12px; font-size: 14px; font-weight: 600; color: var(--text-main); }
         .highlight-item i { font-size: 20px; color: var(--primary); }
         .highlight-item.success i { color: var(--success); }
         .highlight-item.warning i { color: #f59e0b; }
+        
         .action-container { display: flex; flex-direction: row; gap: 15px; position: sticky; bottom: 0; background: var(--surface); padding: 15px 0; z-index: 100; border-top: 1px solid transparent; width: 100%;}
         .btn-add-cart { background: transparent; color: var(--primary); flex: 1; border: 2px solid var(--primary); padding: 16px; border-radius: 14px; font-size: 16px; font-weight: 800; cursor: pointer; transition: var(--transition); display: flex; justify-content: center; align-items: center; gap: 10px; font-family: var(--font-main);}
         .btn-add-cart:hover { background: var(--bg-color); transform: translateY(-2px); }
         .btn-buy-now { background: var(--primary); color: white; border: 2px solid var(--primary); flex: 1; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: 800; cursor: pointer; transition: var(--transition); display: flex; justify-content: center; align-items: center; gap: 10px; font-family: var(--font-main); box-shadow: 0 10px 20px rgba(0,0,0,0.1);}
         .btn-buy-now:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 15px 25px rgba(0,0,0,0.15); }
+        
         .price-graph-container { background: var(--bg-color); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 30px; }
         .price-graph-container h4 { font-size: 16px; font-weight: 800; margin-bottom: 15px; color: var(--primary); }
         .graph-filters { display: flex; gap: 10px; margin-bottom: 15px; }
         .graph-filters button { padding: 6px 12px; font-size: 12px; font-weight: 700; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; transition: 0.3s; }
         .graph-filters button.active { background: var(--primary); color: white; border-color: var(--primary); }
         #priceCanvas { width: 100%; height: 160px; background: white; border-radius: 8px; border: 1px solid var(--border); }
+        
         .tabs-container { margin-top: 40px; background: var(--surface); border-radius: 24px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); overflow: hidden; }
         .tabs-header { display: flex; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
         .tabs-header::-webkit-scrollbar { display: none; }
@@ -155,7 +180,7 @@
         .tab-btn:hover:not(.active) { color: var(--text-main); background: var(--bg-color); }
         .tab-content { padding: 30px; display: none; font-size: 15px; line-height: 1.7; color: #475569; }
         .tab-content.active { display: block; animation: fadeIn 0.4s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
         .ai-review-box { background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%); border: 1px solid #c7d2fe; padding: 20px; border-radius: 16px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(55, 48, 163, 0.1); }
         .ai-review-box h4 { color: #3730a3; font-size: 16px; font-weight: 800; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;}
         .ai-review-box p { font-size: 14px; font-weight: 600; color: #312e81; line-height: 1.6; margin: 0; }
@@ -167,35 +192,55 @@
         .r-date { font-size: 12px; color: var(--text-muted); }
         .qna-q { font-weight: 800; color: var(--primary); margin-bottom: 5px; display: flex; gap: 8px;}
         .qna-a { color: #475569; display: flex; gap: 8px; padding-left: 25px;}
+        
         .custom-file-upload { display: inline-block; position: relative; }
         .custom-file-upload input[type="file"] { display: none; }
+        
+        /* Checkout Panel Styles */
         .checkout-step { display: none; animation: fadeIn 0.3s ease; }
         .checkout-step.active { display: block; }
-        .address-sel-card { border: 2px solid var(--border); padding: 15px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; transition: 0.3s; }
+        .address-sel-card { border: 2px solid var(--border); padding: 15px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; transition: 0.3s; position: relative; }
         .address-sel-card.selected { border-color: var(--accent); background: #f0f4ff; }
+        .address-del-btn { position: absolute; top: 15px; right: 15px; color: var(--danger); background: transparent; border: none; font-size: 14px; cursor: pointer; }
         .pay-radio { display: flex; gap: 15px; border: 2px solid var(--border); padding: 15px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; align-items: center; }
         .pay-radio input { width: 18px; height: 18px; accent-color: var(--primary); }
         .pay-radio.selected { border-color: var(--primary); background: var(--bg-color); }
         .slip-box { background: white; padding: 25px; border-radius: 12px; border: 1px dashed #cbd5e1; font-family: var(--font-mono); font-size: 13px; text-align: left; }
+        
         .section-title { font-size: 22px; font-weight: 800; color: var(--primary); margin: 40px 0 20px; padding-left: 5px;}
+        
         .scroller-wrapper { width: 100%; padding-bottom: 20px; }
-        .scroller-track { display: flex; flex-direction: column; gap: 15px; width: 100%; }
-        .similar-card { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 15px; display: flex; flex-direction: row; gap: 15px; align-items: center; cursor: pointer; transition: 0.3s; box-shadow: var(--shadow-sm); }
-        .similar-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--primary); }
-        .s-img { width: 100px; height: 100px; object-fit: contain; background: var(--surface); border-radius: 8px; margin-bottom: 0; border: 1px solid var(--border); padding: 4px; flex-shrink: 0;}
-        .s-details { display: flex; flex-direction: column; flex: 1; overflow: hidden; justify-content: center; }
-        .s-title { font-size: 15px; font-weight: 800; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; margin-bottom: 5px; color: var(--text-main); }
-        .s-price { font-size: 18px; font-weight: 800; color: var(--primary); margin-bottom: 8px;}
-        .toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 16px 30px; border-radius: 100px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow-lg); transition: bottom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 9999; }
+        .scroller-track { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px; width: 100%; }
+        .similar-card { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 15px; cursor: pointer; transition: var(--transition); box-shadow: var(--shadow-sm); }
+        .similar-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--primary); }
+        .s-card-top { display: flex; gap: 15px; align-items: center; }
+        .s-img { width: 100px; height: 100px; object-fit: cover; background: var(--bg-color); border-radius: 14px; flex-shrink: 0; }
+        .s-details { flex: 1; overflow: hidden; }
+        .s-title { font-size: 16px; font-weight: 800; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; margin-bottom: 6px; color: var(--text-main); }
+        .seller-line { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+        .s-price { font-size: 20px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 6px; }
+        .s-add-btn { padding: 12px; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; transition: var(--transition); border: 2px solid var(--primary); background: transparent; color: var(--primary); font-family: var(--font-main); display: flex; justify-content: center; align-items: center; gap: 8px;}
+        .s-add-btn:hover { background: var(--bg-color); }
+        .s-buy-btn { padding: 12px; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; transition: var(--transition); border: 2px solid var(--primary); background: var(--primary); color: white; font-family: var(--font-main); display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);}
+        .s-buy-btn:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 10px 15px rgba(0,0,0,0.15);}
+
+        .toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 16px 30px; border-radius: 100px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow-lg); transition: bottom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10001; }
         .toast-notification.show { bottom: 40px; }
         .premium-footer { background: #0a0a0a; color: white; padding: 50px 5% 30px; text-align: center; margin-top: auto; border-radius: 40px 40px 0 0; width: 100%;}
         
-        .fixed-back-btn { position: fixed; bottom: 30px; left: 30px; background: var(--primary); color: white; border: none; padding: 16px 24px; border-radius: 100px; font-weight: 800; font-size: 15px; cursor: pointer; box-shadow: var(--shadow-lg); z-index: 4000; display: flex; align-items: center; gap: 10px; transition: var(--transition); }
-        .fixed-back-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(0,0,0,0.2); }
+        .filter-pill { padding: 8px 16px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-weight: 600; font-size: 13px; transition: 0.3s; }
+        .filter-pill.active { background: var(--primary); color: white; border-color: var(--primary); }
+        
+        .ai-dots { display: inline-flex; gap: 5px; }
+        .ai-dots span { width: 6px; height: 6px; background: #3730a3; border-radius: 50%; animation: blink 1.4s infinite both; }
+        .ai-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .ai-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink { 0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1.2); } }
 
         @media (max-width: 900px) {
             .product-container { grid-template-columns: 1fr; gap: 20px; padding: 20px; }
             .product-gallery { position: relative; top: 0; }
+            .scroller-track { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
         }
         @media (max-width: 768px) {
             body { padding-top: 130px; }
@@ -205,15 +250,16 @@
             .top-bar { padding: 10px 15px; height: 65px; }
             .search-container { top: 65px; padding: 10px 15px; }
             .product-container { border-radius: 0; border-left: none; border-right: none; margin: 0 -5%; padding: 20px 5%;}
-            .product-title { font-size: 22px; }
+            .product-title { font-size: 22px; padding-right: 0;}
             .current-price { font-size: 28px; }
             .highlights-grid { grid-template-columns: 1fr; gap: 10px; }
             .action-container { border-top: 1px solid var(--border); padding-top: 15px; margin: 0 -5%; padding-left: 5%; padding-right: 5%; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); flex-direction: row;}
             .btn-add-cart, .btn-buy-now { padding: 14px; font-size: 15px; width: 100%; }
             .tab-btn { padding: 15px 20px; font-size: 14px; }
-            .fixed-back-btn { bottom: 20px; left: 20px; padding: 12px 20px; font-size: 14px; }
-            .similar-card { flex-direction: column; align-items: stretch; }
-            .s-img { width: 100%; height: 180px; }
+            .scroller-track { grid-template-columns: 1fr; gap: 15px; }
+            /* Mobile share button fixed pos */
+            .share-btn-wrapper { position: fixed; top: 85px; right: 15px; z-index: 4900; }
+            .share-btn-wrapper button { background: var(--surface); box-shadow: var(--shadow-md); border: 1px solid var(--border); padding: 8px 14px; }
         }
     </style>
 </head>
@@ -222,7 +268,6 @@
     <div id="pageLoader" class="page-loader">
         <div class="spinner"></div>
         <p class="loader-text" style="font-weight: 700; letter-spacing: 2px;">LOADING PRODUCT</p>
-    </div>
     </div>
 
     <header class="top-bar glass-effect">
@@ -291,7 +336,6 @@
 
     <div class="dimmer" id="overlay" onclick="closeAllModals()"></div>
 
-
     <main class="main-content" id="mainContent" style="opacity: 0; transition: opacity 0.5s;">
         
         <div class="breadcrumb" id="breadcrumbNav">
@@ -308,14 +352,24 @@
             </div>
 
             <div class="product-details">
-                <div class="product-brand" id="pBrand">Brand Name</div>
+                <div class="share-btn-wrapper">
+                    <button class="btn-outline" style="padding: 6px 12px; font-size: 13px; width: auto; border-radius: 8px;" onclick="copyProductLink()">
+                        <i class="fas fa-share-nodes"></i> Share
+                    </button>
+                </div>
+                <div class="product-brand" id="pBrand"><i class="fas fa-store"></i> Sold by: Verified Seller</div>
                 <h1 class="product-title" id="pTitle">Product Title</h1>
                 
                 <div class="product-meta">
                     <div class="rating-badge" id="pRating">
-                        4.5 <i class="fas fa-star"></i> <span style="color:#b45309; font-weight:600; font-size:12px;" id="pRevCount">(120)</span>
+                        4.5 <i class="fas fa-star"></i> <span style="color:#b45309; font-weight:600; font-size:12px;" id="pRevCount">(0)</span>
                     </div>
                     <div class="product-id-tag" id="pIdTag">ID: ---</div>
+                </div>
+
+                <!-- HIGHLIGHTS / DB FEATURES -->
+                <div class="highlights-box" id="pHighlights">
+                    <p>Premium quality product carefully sourced for you.</p>
                 </div>
 
                 <div class="price-section">
@@ -324,18 +378,58 @@
                         <span class="mrp-price" id="pMrp">₹0</span>
                         <span class="discount-tag" id="pDiscount">0% OFF</span>
                     </div>
-                    <div style="font-size: 13px; color: var(--text-muted); margin-top: 5px; font-weight: 500;">Inclusive of all taxes & Dynamic Adjustments applied.</div>
+                    <div style="font-size: 13px; color: var(--text-muted); margin-top: 5px; font-weight: 500;">Inclusive of all taxes. (Server validates final checkout price).</div>
                 </div>
 
-                <div class="description-box" id="pDesc">
-                    Premium quality product carefully sourced for you.
+                <!-- DELIVERY PREVIEW -->
+                <div class="delivery-preview" id="deliveryPreviewBox">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="font-size: 12px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Deliver to</div>
+                        <button class="btn-outline" style="padding: 4px 10px; font-size: 11px; width: auto; border-radius: 6px; font-weight: 700; height: auto;" onclick="window.location.href='https://aryanta.in/profile/?tab=address'">Change</button>
+                    </div>
+                    <div style="display:flex; gap: 12px; align-items: center;">
+                         <i class="fas fa-map-marker-alt" style="font-size: 22px; color: var(--primary);"></i>
+                         <div id="dpAddressText" style="font-size: 15px; font-weight: 600; color: var(--text-main);">Log in to view your primary address</div>
+                    </div>
                 </div>
-                
+
+                <!-- STATS Analytics -->
                 <div class="stats-box">
-                    <span><i class="fas fa-shopping-bag"></i> Total Sold: <span id="pSold">0</span></span>
-                    <span><i class="fas fa-cubes"></i> Total Left: <span id="pStock">0</span></span>
+                    <div class="stats-row">
+                        <span style="color:var(--text-muted);"><i class="fas fa-calendar-alt"></i> Total Sold This Month</span>
+                        <strong id="pSoldMonth" style="font-size: 16px;">0</strong>
+                    </div>
+                    <div class="stats-row">
+                        <span style="color:var(--text-muted);"><i class="fas fa-globe"></i> Total Sold All Time</span>
+                        <strong id="pSoldAll" style="font-size: 16px;">0</strong>
+                    </div>
+                    <div class="stats-row">
+                        <span style="color:var(--text-muted);"><i class="fas fa-cubes"></i> Items Left in Stock</span>
+                        <strong id="pStock" style="color: var(--success); font-size: 16px;">0</strong>
+                    </div>
                 </div>
 
+                <!-- DYNAMIC POLICIES -->
+                <div class="highlights-grid">
+                    <div class="highlight-item success" id="policyReturn">
+                        <i class="fas fa-undo"></i>
+                        <span>7 Days Returnable</span>
+                    </div>
+                    <div class="highlight-item warning" id="policyDelivery">
+                        <i class="fas fa-truck-fast"></i>
+                        <span>Delivery in 7 Days</span>
+                    </div>
+                    <div class="highlight-item" id="policyWarranty">
+                        <i class="fas fa-shield-alt" style="color: var(--accent);"></i>
+                        <span id="warrantyText">1 Year Warranty</span>
+                    </div>
+                    <div class="highlight-item" id="policySecure">
+                        <i class="fas fa-lock" style="color: var(--accent);"></i>
+                        <span id="secureText">Secure Transaction</span>
+                    </div>
+                </div>
+
+                <!-- PRICE GRAPH -->
                 <div class="price-graph-container">
                     <h4 style="margin-bottom: 5px;"><i class="fas fa-chart-line" style="color:var(--accent);"></i> Dynamic Price History</h4>
                     <div class="graph-filters">
@@ -347,28 +441,10 @@
                     <canvas id="priceCanvas"></canvas>
                 </div>
 
-                <div class="highlights-grid">
-                    <div class="highlight-item success" id="policyReturn">
-                        <i class="fas fa-undo"></i>
-                        <span>7 Days Returnable</span>
-                    </div>
-                    <div class="highlight-item warning" id="policyDelivery">
-                        <i class="fas fa-truck-fast"></i>
-                        <span>Delivery in 7 Days</span>
-                    </div>
-                    <div class="highlight-item" id="policyWarranty" style="display:none;">
-                        <i class="fas fa-shield-alt" style="color: var(--accent);"></i>
-                        <span id="warrantyText">1 Year Warranty</span>
-                    </div>
-                    <div class="highlight-item">
-                        <i class="fas fa-lock" style="color: var(--accent);"></i>
-                        <span>Secure Transaction</span>
-                    </div>
-                </div>
-
+                <!-- ACTIONS -->
                 <div class="action-container" id="cartActionArea">
                     <button class="btn-add-cart" id="btnAddToCart" onclick="toggleCartPage()">
-                        <i class="fas fa-shopping-cart"></i> Add to Cart
+                        <i class="fas fa-shopping-cart"></i> <span>Add to Cart</span>
                     </button>
                     <button class="btn-buy-now" id="btnBuyNow" onclick="openDirectCheckout()">
                         <i class="fas fa-bolt"></i> Buy Now
@@ -377,28 +453,22 @@
             </div>
         </section>
 
+        <!-- TABS (Reviews & QA) -->
         <section class="tabs-container">
             <div class="tabs-header">
-                <button class="tab-btn active" onclick="switchTab('tab-desc')">Description</button>
-                <button class="tab-btn" onclick="switchTab('tab-reviews')">Reviews <span id="tabRevCount" style="font-size:12px; color:var(--text-muted);">(0)</span></button>
+                <button class="tab-btn active" onclick="switchTab('tab-reviews')">Customer Reviews <span id="tabRevCount" style="font-size:12px; color:var(--text-muted);">(0)</span></button>
                 <button class="tab-btn" onclick="switchTab('tab-qna')">Product Queries</button>
             </div>
             
-            <div class="tab-content active" id="tab-desc">
-                <h3 style="font-size: 18px; color: var(--primary); margin-bottom: 15px; font-weight: 800;">Product Overview</h3>
-                <p id="fullDescText" style="margin-bottom: 20px;"></p>
-                <div id="fullDescHighlights"></div>
-            </div>
-
-            <div class="tab-content" id="tab-reviews">
+            <div class="tab-content active" id="tab-reviews">
                 <div class="ai-review-box">
-                    <h4><i class="fas fa-sparkles"></i> AI Review Analysis</h4>
+                    <h4><i class="fas fa-sparkles"></i> Grok AI Analysis</h4>
                     <p id="aiReviewText">Scanning thousands of customer data points to generate an accurate summary...</p>
                 </div>
 
                 <div class="flex-row-between" style="margin-bottom: 25px;">
-                    <h3 style="font-size: 18px; color: var(--primary); font-weight: 800;">Customer Reviews</h3>
-                    <button class="btn-outline" style="padding: 8px 16px; font-size: 13px; width: auto;" onclick="openReviewModal()"><i class="fas fa-pen"></i> Write a Review</button>
+                    <h3 style="font-size: 18px; color: var(--primary); font-weight: 800;">Top Reviews</h3>
+                    <button class="btn-outline" id="writeReviewBtn" style="padding: 8px 16px; font-size: 13px; width: auto;" onclick="openReviewModal()"><i class="fas fa-pen"></i> Write a Review</button>
                 </div>
                 <div id="reviewsList">
                     <p style="color: var(--text-muted); text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading reviews...</p>
@@ -421,6 +491,7 @@
         <h3 class="section-title">Similar Products</h3>
         <div class="scroller-wrapper">
             <div class="scroller-track" id="similarProductsTrack">
+                <!-- Smart Cookie fetched items go here -->
             </div>
         </div>
     </main>
@@ -439,66 +510,135 @@
         </div>
     </footer>
 
-    <div class="modal-overlay" id="checkoutModal">
-        <div class="modal-box">
-            <button class="modal-close" onclick="closeAllModals()"><i class="fas fa-times"></i></button>
-            <h3 class="modal-title">Secure Checkout</h3>
+    <!-- Full Page Sliding Panel for Checkout (Razorpay + Promo + Address) -->
+    <div class="full-screen-panel" id="checkoutPanel">
+        <div class="fsp-header">
+            <button class="btn-outline" style="border:none; padding:8px 16px; width:auto;" onclick="closeCheckoutPanel()"><i class="fas fa-arrow-left"></i> Back</button>
+            <h3 style="font-size: 20px; font-weight: 800; color: var(--primary);">Secure Checkout</h3>
+            <div style="width: 70px;"></div>
+        </div>
+        <div class="fsp-body">
             
+            <!-- STEP 1: Address Management -->
             <div id="chkStep1" class="checkout-step active">
-                <p style="font-size:14px; font-weight:700; margin-bottom:15px;">Select Delivery Address</p>
-                <div id="chkAddressList" style="max-height: 250px; overflow-y: auto; margin-bottom: 20px;"></div>
-                <button class="btn-prime" onclick="nextCheckoutStep(2)">Proceed to Payment <i class="fas fa-arrow-right"></i></button>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <p style="font-size:15px; font-weight:800; color:var(--primary); margin:0;">1. Select Delivery Address</p>
+                    <button class="btn-outline" style="padding: 6px 12px; font-size: 12px; width:auto; border-radius:6px;" onclick="toggleAddAddressForm()">+ Add New</button>
+                </div>
+                
+                <div id="newAddressForm" style="display:none; background:var(--bg-color); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border);">
+                    <input type="text" id="newAddName" class="form-input" placeholder="Full Name" style="padding:10px;">
+                    <input type="text" id="newAddPhone" class="form-input" placeholder="Phone Number" style="padding:10px;">
+                    <input type="text" id="newAddStreet" class="form-input" placeholder="Street/Locality" style="padding:10px;">
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="newAddCity" class="form-input" placeholder="City" style="padding:10px;">
+                        <input type="text" id="newAddPin" class="form-input" placeholder="Pincode" style="padding:10px;">
+                    </div>
+                    <button class="btn-prime" style="padding:10px;" onclick="saveNewAddress()">Save Address</button>
+                </div>
+
+                <div id="chkAddressList" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;"></div>
+                
+                <button class="btn-prime" style="padding: 18px; font-size: 16px;" onclick="nextCheckoutStep(2)">Proceed to Payment <i class="fas fa-arrow-right"></i></button>
             </div>
 
+            <!-- STEP 2: Promo & Payment -->
             <div id="chkStep2" class="checkout-step">
-                <button class="btn-outline" style="border:none; padding:0; width:auto; margin-bottom:15px; color:var(--text-muted);" onclick="nextCheckoutStep(1)"><i class="fas fa-arrow-left"></i> Back</button>
-                <p style="font-size:14px; font-weight:700; margin-bottom:15px;">Select Payment Method</p>
+                <button class="btn-outline" style="border:none; padding:0; width:auto; margin-bottom:20px; color:var(--text-muted);" onclick="nextCheckoutStep(1)"><i class="fas fa-arrow-left"></i> Back to Addresses</button>
+                
+                <div style="background:var(--bg-color); border:1px solid var(--border); border-radius:12px; padding: 15px; margin-bottom: 20px; display:flex; gap:10px;">
+                    <input type="text" id="promoCodeInput" class="form-input" style="margin-bottom:0; text-transform:uppercase;" placeholder="Enter Promo Code">
+                    <button class="btn-prime" style="width:auto; padding: 0 20px;" onclick="applyPromo()">Apply</button>
+                </div>
+                <p id="promoMsg" style="font-size:13px; color:var(--success); font-weight:700; margin-top:-10px; margin-bottom:20px; display:none;">Promo Applied!</p>
+
+                <p style="font-size:15px; font-weight:800; margin-bottom:20px; color:var(--primary);">2. Select Payment Method</p>
                 
                 <label class="pay-radio selected" id="payRadioOnline">
                     <input type="radio" name="payMethod" value="online" checked onchange="updatePaySelection()">
                     <div>
-                        <strong style="display:block; color:var(--primary); font-size:15px;">Pay Online (Secure)</strong>
-                        <span style="font-size:12px; color:var(--text-muted);">UPI, Cards, NetBanking</span>
+                        <strong style="display:block; color:var(--primary); font-size:16px; margin-bottom: 4px;"><i class="fas fa-credit-card" style="margin-right: 6px;"></i> Pay Online (Secure via Razorpay)</strong>
+                        <span style="font-size:13px; color:var(--text-muted);">UPI, Cards, NetBanking</span>
                     </div>
                 </label>
                 
                 <label class="pay-radio" id="payRadioCOD">
                     <input type="radio" name="payMethod" value="cod" onchange="updatePaySelection()">
                     <div>
-                        <strong style="display:block; color:var(--primary); font-size:15px;">Cash on Delivery</strong>
-                        <span style="font-size:12px; color:var(--text-muted);">Pay when it arrives.</span>
+                        <strong style="display:block; color:var(--primary); font-size:16px; margin-bottom: 4px;"><i class="fas fa-money-bill-wave" style="margin-right: 6px;"></i> Cash on Delivery</strong>
+                        <span style="font-size:13px; color:var(--text-muted);">Pay when the product arrives.</span>
                     </div>
                 </label>
 
-                <div style="display:flex; justify-content:space-between; margin:20px 0; font-size:18px; font-weight:800;">
+                <div style="display:flex; justify-content:space-between; margin:30px 0 20px; font-size:20px; font-weight:800; border-top: 1px dashed var(--border); padding-top: 20px;">
                     <span>Total Pay:</span>
                     <span style="color:var(--primary);" id="chkTotalAmt">₹0</span>
                 </div>
 
-                <button class="btn-prime" id="chkPayBtn" onclick="processDirectPayment()"><i class="fas fa-lock"></i> Secure Pay & Order</button>
+                <button class="btn-prime" id="chkPayBtn" style="padding: 18px; font-size: 16px;" onclick="processDirectPayment()"><i class="fas fa-lock"></i> Secure Pay & Place Order</button>
             </div>
 
-            <div id="chkStep3" class="checkout-step" style="text-align: center;">
-                <div style="font-size: 50px; color: var(--success); margin-bottom: 15px;"><i class="fas fa-check-circle"></i></div>
-                <h3 style="font-size: 22px; font-weight: 800; color: var(--primary); margin-bottom: 5px;">Order Confirmed</h3>
-                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 25px;">Your item will be shipped soon.</p>
+            <!-- STEP 3: Success -->
+            <div id="chkStep3" class="checkout-step" style="text-align: center; padding-top: 40px;">
+                <div style="font-size: 60px; color: var(--success); margin-bottom: 20px;"><i class="fas fa-check-circle"></i></div>
+                <h3 style="font-size: 26px; font-weight: 800; color: var(--primary); margin-bottom: 10px;">Order Confirmed</h3>
+                <p style="color: var(--text-muted); font-size: 15px; margin-bottom: 35px;">Your amazing product will be shipped soon.</p>
                 
-                <div class="slip-box">
-                    <p style="margin-bottom:8px;"><strong>Order No:</strong> <span id="slipId" style="float:right;"></span></p>
-                    <p style="margin-bottom:8px;"><strong>Method:</strong> <span id="slipMethod" style="float:right;"></span></p>
-                    <p style="margin-bottom:8px; border-bottom: 1px dashed #cbd5e1; padding-bottom:8px;"><strong>Total Paid:</strong> <span id="slipAmt" style="float:right;"></span></p>
-                    <p style="font-size: 11px; color: var(--text-muted); margin-top: 15px;">Check your email for the detailed invoice.</p>
+                <div class="slip-box" style="margin-bottom: 30px;">
+                    <p style="margin-bottom:12px; font-size: 15px;"><strong>Order No:</strong> <span id="slipId" style="float:right; font-weight: 700;"></span></p>
+                    <p style="margin-bottom:12px; font-size: 15px;"><strong>Method:</strong> <span id="slipMethod" style="float:right; font-weight: 700;"></span></p>
+                    <p style="margin-bottom:12px; border-top: 1px dashed #cbd5e1; padding-top:12px; font-size: 18px;"><strong>Total Paid:</strong> <span id="slipAmt" style="float:right; color: var(--primary); font-weight: 800;"></span></p>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 20px; text-align: center;">A detailed invoice has been sent to your email.</p>
                 </div>
 
-                <button class="btn-outline mt-20" onclick="window.location.href='https://aryanta.in/'">Back to Store</button>
+                <button class="btn-prime" style="padding: 18px; font-size: 16px;" onclick="window.location.href='https://aryanta.in/'">Continue Shopping</button>
             </div>
         </div>
     </div>
 
+    <!-- Full Page Sliding Panel for All Reviews -->
+    <div class="full-screen-panel" id="fullReviewsPanel">
+        <div class="fsp-header">
+            <button class="btn-outline" style="border:none; padding:8px 16px; width:auto;" onclick="closeAllReviewsModal()"><i class="fas fa-arrow-left"></i> Back</button>
+            <h3 style="font-size: 20px; font-weight: 800; color: var(--primary);">All Customer Reviews</h3>
+            <div style="width: 70px;"></div>
+        </div>
+        <div class="fsp-body">
+            <div style="display: flex; gap: 10px; margin-bottom: 25px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none;">
+                <button class="filter-pill active" onclick="renderFilteredReviews('all', this)">All</button>
+                <button class="filter-pill" onclick="renderFilteredReviews(5, this)">5 ★</button>
+                <button class="filter-pill" onclick="renderFilteredReviews(4, this)">4 ★</button>
+                <button class="filter-pill" onclick="renderFilteredReviews(3, this)">3 ★</button>
+                <button class="filter-pill" onclick="renderFilteredReviews(2, this)">2 ★</button>
+                <button class="filter-pill" onclick="renderFilteredReviews(1, this)">1 ★</button>
+            </div>
+            <div id="fullReviewsContainer">
+                <p style="color: var(--text-muted); text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading all reviews...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Protection Modal -->
+    <div class="modal-overlay" id="authPromptModal">
+        <div class="modal-box" style="text-align:center; max-width:400px;">
+            <button class="modal-close" onclick="closeAuthPrompt()"><i class="fas fa-times"></i></button>
+            <div style="font-size:45px; color:var(--primary); margin-bottom:15px;"><i class="fas fa-user-lock"></i></div>
+            <h3 class="modal-title">Login Required</h3>
+            <p style="font-size:15px; color:var(--text-muted); line-height:1.6; margin-bottom:25px;">
+                Please sign in to your Aryanta account to securely interact with the cart, checkout, or settings.
+            </p>
+            <div style="display:flex; gap:15px;">
+                <button class="btn-outline" onclick="closeAuthPrompt()">Cancel</button>
+                <button class="btn-prime" onclick="window.location.href='https://aryanta.in/login/'">Log In</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Centered Modals for Quick Actions -->
     <div class="modal-overlay" id="reviewModal">
         <div class="modal-box">
             <button class="modal-close" onclick="closeAllModals()"><i class="fas fa-times"></i></button>
-            <h3 class="modal-title">Write a Review</h3>
+            <h3 class="modal-title" id="reviewModalTitle">Write a Review</h3>
             <div style="display:flex; justify-content:center; gap:10px; font-size: 28px; color: #cbd5e1; margin-bottom: 20px; cursor:pointer;" id="starSelector">
                 <i class="fas fa-star" onclick="setRevStars(1)"></i>
                 <i class="fas fa-star" onclick="setRevStars(2)"></i>
@@ -514,7 +654,10 @@
                 <button type="button" class="btn-outline" onclick="document.getElementById('revImageInput').click()"><i class="fas fa-camera"></i> Attach Photos (Max 5)</button>
             </div>
 
-            <button class="btn-prime" onclick="submitReview()">Submit Review</button>
+            <div style="display:flex; gap: 10px;">
+                <button class="btn-prime" id="submitReviewBtn" onclick="submitReview()">Submit Review</button>
+                <button class="btn-outline" id="deleteReviewBtn" style="display:none; color: var(--danger); border-color: var(--danger);" onclick="deleteReview()">Delete</button>
+            </div>
         </div>
     </div>
 
@@ -533,24 +676,22 @@
         <button style="position: absolute; top: 20px; right: 70px; background: transparent; border: none; color: white; font-size: 26px; z-index: 10010; cursor: pointer;" onclick="downloadFullScreenImage()"><i class="fas fa-download"></i></button>
         <img id="fsMainImg" src="" style="width: 100vw; height: 100vh; object-fit: contain;">
     </div>
-<div class="modal-overlay" id="customAlertOverlay">
-    <div class="modal-box" style="text-align:center; max-width:420px;">
-        <button class="modal-close" onclick="closeAlert()">
-            <i class="fas fa-times"></i>
-        </button>
-
-        <div style="font-size:45px; color:var(--primary); margin-bottom:15px;">
-            <i class="fas fa-circle-info"></i>
+    
+    <div class="modal-overlay" id="customAlertOverlay">
+        <div class="modal-box" style="text-align:center; max-width:420px;">
+            <button class="modal-close" onclick="closeAlert()">
+                <i class="fas fa-times"></i>
+            </button>
+            <div style="font-size:45px; color:var(--primary); margin-bottom:15px;">
+                <i class="fas fa-circle-info"></i>
+            </div>
+            <h3 class="modal-title" id="alertTitle">Notice</h3>
+            <p id="alertMessage" style="font-size:15px; color:var(--text-muted); line-height:1.6; margin-bottom:25px;">
+                Message
+            </p>
+            <button class="btn-prime" onclick="closeAlert()">OK</button>
         </div>
-
-        <h3 class="modal-title" id="alertTitle">Notice</h3>
-        <p id="alertMessage" style="font-size:15px; color:var(--text-muted); line-height:1.6; margin-bottom:25px;">
-            Message
-        </p>
-
-        <button class="btn-prime" onclick="closeAlert()">OK</button>
     </div>
-</div>
     <div id="toastNotification" class="toast-notification"><i class="fas fa-check-circle"></i> <span id="toastMessage">Action successful</span></div>
 
     <script>
@@ -564,9 +705,37 @@
         let currentFinalPrice = 0;
         let currentNormalPrice = 0;
         let currentMaxPrice = 0;
+        let finalPayableAmt = 0; // After promo
+        let appliedPromoVal = 0;
+
         let selectedStars = 0;
         let selectedReviewImages = [];
         let chkSelectedAddressIndex = 0;
+        let editingReviewId = null; 
+        
+        window.allFetchedReviews = [];
+        let checkoutUserAddresses = []; // Temporary array for step 1
+
+        // --- COOKIE HELPER ENGINE ---
+        function setCookie(name, value, days) {
+            let expires = "";
+            if (days) {
+                let date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + encodeURIComponent(value || "")  + expires + "; path=/";
+        }
+        function getCookie(name) {
+            let nameEQ = name + "=";
+            let ca = document.cookie.split(';');
+            for(let i=0;i < ca.length;i++) {
+                let c = ca[i];
+                while (c.charAt(0)==' ') c = c.substring(1,c.length);
+                if (c.indexOf(nameEQ) == 0) return decodeURIComponent(c.substring(nameEQ.length,c.length));
+            }
+            return null;
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             cart = JSON.parse(localStorage.getItem('local_cart')) || [];
@@ -577,10 +746,10 @@
             const cachedProducts = localStorage.getItem('cached_products');
             if(cachedProducts) {
                 allProducts = JSON.parse(cachedProducts);
-                initProductPage();
-            } else {
-                fetchProducts();
+                initProductPage(); // Load fast
             }
+            // Background update
+            fetchProducts(cachedProducts ? true : false);
 
             setupSearchLogic("desktopSearchInput", "desktopSearchDropdown");
             setupSearchLogic("mobileSearchInput", "mobileSearchDropdown");
@@ -601,6 +770,17 @@
                 });
             });
         });
+
+        window.copyProductLink = function() {
+            const url = window.location.href;
+            const tempInput = document.createElement("input");
+            tempInput.value = url;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+            showToast("Product link copied to clipboard!");
+        }
 
         function setupSearchLogic(inputId, dropId) {
             const input = document.getElementById(inputId);
@@ -667,16 +847,16 @@
             renderRevImages();
         };
 
-        async function fetchProducts() {
+        async function fetchProducts(isBackgroundUpdate = false) {
             try {
                 const res = await fetch(`${API_BASE_URL}/products`);
                 if(!res.ok) throw new Error("Fetch failed");
                 allProducts = await res.json();
                 localStorage.setItem('cached_products', JSON.stringify(allProducts));
-                initProductPage();
+                if(!isBackgroundUpdate) initProductPage();
             } catch(err) {
                 console.error("Products fetch failed:", err);
-                document.getElementById('pageLoader').innerHTML = '<p style="color:var(--danger); font-weight:bold;">Error loading product. Please refresh.</p>';
+                if(!isBackgroundUpdate) document.getElementById('pageLoader').innerHTML = '<p style="color:var(--danger); font-weight:bold;">Error loading product. Please refresh.</p>';
             }
         }
 
@@ -684,21 +864,31 @@
             const urlParams = new URLSearchParams(window.location.search);
             const productId = urlParams.get('id');
             
-            if(!productId) { 
-                window.location.href = 'https://aryanta.in'; 
-                return; 
+            if(productId) { 
+                currentProduct = allProducts.find(p => p.id === productId);
             }
-            
-            currentProduct = allProducts.find(p => p.id === productId);
             
             if(!currentProduct || currentProduct.isDummy) { 
-                window.location.href = 'https://aryanta.in/'; 
-                return; 
+                const validProducts = allProducts.filter(p => !p.isDummy);
+                if (validProducts.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * validProducts.length);
+                    currentProduct = validProducts[randomIndex];
+                    window.history.replaceState(null, '', '?id=' + currentProduct.id);
+                } else {
+                    window.location.href = 'https://aryanta.in/'; 
+                    return; 
+                }
             }
 
+            // Save Keyword Preferences for Background Fetch Logic
+            let catPref = currentProduct.category || "General";
+            let kwPref = currentProduct.name.split(' ')[0] || ""; 
+            setCookie('ary_pref_cat', catPref + "||" + kwPref, 30);
+
+            loadDeliveryPreview();
             renderProductDetails();
-            renderSimilarProducts();
-            loadReviews();
+            renderSimilarProducts(); // Uses Cookies -> Instantly 10 -> Background 20
+            loadReviews(); // Top 5 -> Background Rest
             renderQA();
             drawGraph('7d');
             
@@ -706,22 +896,55 @@
             document.getElementById('mainContent').style.opacity = '1';
         }
 
+        function loadDeliveryPreview() {
+            const dpAddress = document.getElementById('dpAddressText');
+            if(activeSession && activeSession.city && activeSession.pincode) {
+                dpAddress.innerHTML = `<span style="color: var(--text-main);">${activeSession.name}, ${activeSession.city}</span> - <span style="color: var(--primary); font-weight: 800;">${activeSession.pincode}</span>`;
+            } else if (activeSession) {
+                dpAddress.innerHTML = `<span style="color: var(--text-muted); cursor: pointer;" onclick="window.location.href='https://aryanta.in/profile/?tab=address'">Add primary address in your profile</span>`;
+            }
+        }
+
         function renderProductDetails() {
             const p = currentProduct;
             
             document.getElementById('pTitle').innerText = p.name;
             document.getElementById('bcTitle').innerText = p.name.split(' ').slice(0, 3).join(' ') + '...';
-            document.getElementById('pBrand').innerText = p.brand || "Aryanta Exclusive";
+            
+            let sellerText = '';
+            let adminVerified = false;
+            if(!p.sellerEmail || p.sellerEmail === 'admin' || p.sellerName === 'Aryanta Admin') {
+                sellerText = `Aryanta Admin`;
+                adminVerified = true;
+            } else {
+                sellerText = p.sellerName || p.shopName || p.brand || "Seller";
+            }
+            
+            let verifiedUI = adminVerified 
+                ? `<span style="color:var(--primary); font-size: 13px;"><i class="fas fa-shield-check"></i> Aryanta Verified</span>`
+                : (p.isSellerVerified ? `<span style="color:var(--success); font-size: 13px;"><i class="fas fa-check-circle"></i> Verified Seller</span>` : '');
+                
+            document.getElementById('pBrand').innerHTML = `<i class="fas fa-store"></i> Sold by: <strong style="color:var(--primary);">${sellerText}</strong> &nbsp; ${verifiedUI}`;
+            
             document.getElementById('bcCategory').innerText = p.category || "General";
             document.getElementById('pIdTag').innerText = `ID: ${p.id}`;
-            document.getElementById('fullDescText').innerText = p.desc || "Explore the premium features of this product. Built with high standards, it ensures durability and performance. Buy with confidence from Aryanta Store.";
-            document.getElementById('pDesc').innerText = p.desc || "Aryanta Premium Quality Product.";
+            
+            // HIGHLIGHTS (from DB or default)
+            const highlightsBox = document.getElementById('pHighlights');
+            if(p.highlights && Array.isArray(p.highlights) && p.highlights.length > 0) {
+                highlightsBox.innerHTML = `<ul>` + p.highlights.map(h => `<li>${h}</li>`).join('') + `</ul>`;
+            } else if(p.desc) {
+                highlightsBox.innerHTML = `<p>${p.desc}</p>`;
+            } else {
+                highlightsBox.innerHTML = `<ul><li>High-quality materials</li><li>Carefully sourced for best performance</li><li>Premium shopping experience</li></ul>`;
+            }
             
             let basePrice = Number(p.price);
             let finalPrice = basePrice;
             let stockNum = p.stock || 0; 
             let mrp = p.mrp ? Number(p.mrp) : basePrice * 1.5;
 
+            // Simple Dynamic local scaling (Server guards this strictly on backend checkout)
             if (stockNum < 10) finalPrice = basePrice * 1.20;
             else if (stockNum < 15) finalPrice = basePrice * 1.15;
             else if (stockNum < 30) finalPrice = basePrice * 1.10;
@@ -734,6 +957,7 @@
             currentFinalPrice = finalPrice;
             currentNormalPrice = basePrice;
             currentMaxPrice = mrp;
+            finalPayableAmt = finalPrice;
 
             document.getElementById('pPrice').innerText = `₹${finalPrice.toLocaleString('en-IN')}`;
 
@@ -746,41 +970,51 @@
                 document.getElementById('pDiscount').style.display = 'none';
             }
 
-            let soldNum = p.sold || 0;
-            document.getElementById('pSold').innerText = soldNum.toLocaleString();
+            // Analytics
+            let soldNumAll = p.sold || p.soldAllTime || 0;
+            let soldNumMonth = p.soldThisMonth || 0;
+            document.getElementById('pSoldAll').innerText = soldNumAll.toLocaleString();
+            document.getElementById('pSoldMonth').innerText = soldNumMonth.toLocaleString();
             document.getElementById('pStock').innerText = stockNum.toLocaleString();
 
             if (p.dynamicPrice && p.lastStockCheck === stockNum) {
                 currentFinalPrice = p.dynamicPrice;
+                finalPayableAmt = p.dynamicPrice;
             } else {
                 simulateDBPriceUpdate(p.id, finalPrice, stockNum);
             }
 
-            let rCount = p.reviewCount ? p.reviewCount : 0;
-            if(p.avgRating && p.avgRating !== "New" && rCount > 0) {
-                document.getElementById('pRating').innerHTML = `${p.avgRating} <i class="fas fa-star"></i> <span style="color:#b45309; font-weight:600; font-size:12px;" id="pRevCount">(${rCount} reviews)</span>`;
-                document.getElementById('tabRevCount').innerText = `(${rCount})`;
-            } else {
-                document.getElementById('pRating').innerHTML = `New Arrival <i class="fas fa-star" style="color:#cbd5e1;"></i>`;
-            }
-
+            // DYNAMIC POLICIES FROM DB
             const policyReturn = document.getElementById('policyReturn');
-            if(p.returnable === false || p.returnable === "false") {
+            if(p.returnable === false || p.returnable === "false" || p.returnable === "No") {
                 policyReturn.className = "highlight-item warning";
                 policyReturn.innerHTML = `<i class="fas fa-ban"></i><span>Non-Returnable</span>`;
             } else {
+                let rTxt = (p.returnable && p.returnable !== true && p.returnable !== "true" && p.returnable !== "Yes") ? p.returnable : "7 Days Returnable";
                 policyReturn.className = "highlight-item success";
-                policyReturn.innerHTML = `<i class="fas fa-undo"></i><span>7 Days Returnable</span>`;
+                policyReturn.innerHTML = `<i class="fas fa-undo"></i><span>${rTxt}</span>`;
             }
 
             const policyDelivery = document.getElementById('policyDelivery');
-            policyDelivery.innerHTML = `<i class="fas fa-truck-fast"></i><span>${p.deliveryTime || 'Delivery in 7 Days'}</span>`;
+            if(p.deliveryTime) {
+                 policyDelivery.innerHTML = `<i class="fas fa-truck-fast"></i><span>${p.deliveryTime}</span>`;
+            } else {
+                 let estDays = 7;
+                 if(activeSession && activeSession.pincode) {
+                     let pinNum = parseInt(activeSession.pincode);
+                     if(!isNaN(pinNum)) estDays = (pinNum % 6) + 5; // Yields 5 to 10 deterministically
+                 }
+                 policyDelivery.innerHTML = `<i class="fas fa-truck-fast"></i><span>Delivery in ${estDays} Days</span>`;
+            }
 
             const policyWarranty = document.getElementById('policyWarranty');
             if(p.warranty && p.warranty !== "No" && p.warranty !== "None") {
                 policyWarranty.style.display = "flex";
                 document.getElementById('warrantyText').innerText = p.warranty;
             } else { policyWarranty.style.display = "none"; }
+            
+            const policySecure = document.getElementById('policySecure');
+            if(p.securePolicy) { document.getElementById('secureText').innerText = p.securePolicy; }
 
             let imgArr = p.images && p.images.length > 0 ? p.images : [p.image || 'https://via.placeholder.com/500'];
             const mainImg = document.getElementById('mainProductImage');
@@ -816,17 +1050,25 @@
             el.classList.add('active');
         }
 
+        // Global Auth Prompt Flow
+        window.openAuthPrompt = function() {
+            document.getElementById('authPromptModal').classList.add('show');
+        }
+        window.closeAuthPrompt = function() {
+            document.getElementById('authPromptModal').classList.remove('show');
+        }
+
         function checkCartBtnStatus() {
             if(!currentProduct) return;
             let inCart = cart.some(i => i.id === currentProduct.id);
             const btn = document.getElementById('btnAddToCart');
             if(inCart) {
-                btn.innerHTML = `<i class="fas fa-times"></i> Remove Cart`;
+                btn.innerHTML = `<i class="fas fa-times"></i> <span>Remove from Cart</span>`;
                 btn.style.background = "#fee2e2";
                 btn.style.color = "var(--danger)";
                 btn.style.borderColor = "#fca5a5";
             } else {
-                btn.innerHTML = `<i class="fas fa-shopping-cart"></i> Add to Cart`;
+                btn.innerHTML = `<i class="fas fa-shopping-cart"></i> <span>Add to Cart</span>`;
                 btn.style.background = "transparent";
                 btn.style.color = "var(--primary)";
                 btn.style.borderColor = "var(--primary)";
@@ -834,7 +1076,9 @@
         }
 
         window.toggleCartPage = function() {
+            if(!activeSession) { openAuthPrompt(); return; }
             if(!currentProduct) return;
+
             const idx = cart.findIndex(i => i.id === currentProduct.id);
             if (idx > -1) {
                 cart.splice(idx, 1);
@@ -899,14 +1143,28 @@
             ctx.lineWidth = 3;
             ctx.lineJoin = 'round';
 
+            let coords = [];
             for(let i=0; i<data.length; i++) {
                 let x = (i / (data.length - 1)) * canvas.width;
                 let y = canvas.height - ((data[i] - min) / range) * canvas.height;
                 y = Math.max(10, Math.min(canvas.height - 10, y));
+                coords.push({x, y});
                 if(i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             }
             ctx.stroke();
+
+            if(coords.length > 0) {
+                let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                gradient.addColorStop(0, 'rgba(37, 99, 235, 0.3)');
+                gradient.addColorStop(1, 'rgba(37, 99, 235, 0)');
+                
+                ctx.lineTo(canvas.width, canvas.height);
+                ctx.lineTo(0, canvas.height);
+                ctx.closePath();
+                ctx.fillStyle = gradient;
+                ctx.fill();
+            }
 
             ctx.fillStyle = 'rgba(37, 99, 235, 0.8)';
             ctx.font = 'bold 11px sans-serif';
@@ -918,12 +1176,10 @@
             ctx.fillText(`Current: ₹${currentFinalPrice}`, canvas.width - 100, canvas.height / 2);
         }
 
+        // --- FULL CHECKOUT LOGIC & ADDRESS MANAGEMENT ---
+
         window.openDirectCheckout = async function() {
-            if (!activeSession) {
-                showAlert("Please log in to continue.", "Authentication Required");
-                setTimeout(()=> window.location.href = "https://aryanta.in/login", 1500);
-                return;
-            }
+            if (!activeSession) { openAuthPrompt(); return; }
             
             const idx = cart.findIndex(i => i.id === currentProduct.id);
             if (idx === -1) { 
@@ -931,35 +1187,96 @@
                 saveCartToDB();
             }
 
-            const list = document.getElementById('chkAddressList');
-            list.innerHTML = "<p>Loading addresses...</p>";
-            nextCheckoutStep(1);
-            document.getElementById('checkoutModal').classList.add('show');
+            appliedPromoVal = 0;
+            finalPayableAmt = currentFinalPrice;
+            document.getElementById('promoCodeInput').value = "";
+            document.getElementById('promoMsg').style.display = "none";
+            document.getElementById('newAddressForm').style.display = "none";
 
+            const list = document.getElementById('chkAddressList');
+            list.innerHTML = "<p><i class='fas fa-spinner fa-spin'></i> Loading secured profile addresses...</p>";
+            
+            document.getElementById('checkoutPanel').classList.add('show');
+            nextCheckoutStep(1);
+
+            await reloadCheckoutAddresses();
+
+            document.getElementById('chkTotalAmt').innerText = `₹${finalPayableAmt.toLocaleString('en-IN')}`;
+        }
+
+        async function reloadCheckoutAddresses() {
+            const list = document.getElementById('chkAddressList');
             try {
                 const res = await fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(activeSession.email)}`);
                 const uData = await res.json();
-                let addresses = uData.addresses || [];
-                if(addresses.length === 0 && uData.address) {
-                    addresses.push({ name: uData.name, phone: uData.phone, street: uData.address, city: uData.city, pincode: uData.pincode });
+                checkoutUserAddresses = uData.addresses || [];
+                
+                // Fallback for older users without array mapping
+                if(checkoutUserAddresses.length === 0 && uData.address) {
+                    checkoutUserAddresses.push({ name: uData.name, phone: uData.phone, street: uData.address, city: uData.city, pincode: uData.pincode });
                 }
                 
-                if(addresses.length > 0) {
-                    list.innerHTML = addresses.map((a, i) => `
-                        <div class="address-sel-card ${i===0?'selected':''}" onclick="selChkAddress(this, ${i})">
-                            <strong style="display:block; margin-bottom:4px;">${a.name} (${a.phone})</strong>
-                            <span style="font-size:13px; color:var(--text-muted);">${a.street}, ${a.city} - ${a.pincode}</span>
-                        </div>
-                    `).join('');
-                    chkSelectedAddressIndex = 0;
-                } else {
-                    list.innerHTML = "<p style='color:red;'>No addresses found in profile. Please add one in settings.</p>";
-                }
+                renderAddressList(list);
             } catch(e) {
                 list.innerHTML = "<p>Error loading profile.</p>";
             }
+        }
 
-            document.getElementById('chkTotalAmt').innerText = `₹${currentFinalPrice.toLocaleString('en-IN')}`;
+        function renderAddressList(list) {
+            if(checkoutUserAddresses.length > 0) {
+                list.innerHTML = checkoutUserAddresses.map((a, i) => `
+                    <div class="address-sel-card ${i===chkSelectedAddressIndex ? 'selected':''}" onclick="selChkAddress(this, ${i})">
+                        <strong style="display:block; margin-bottom:6px; font-size:16px;">${a.name} (${a.phone})</strong>
+                        <span style="font-size:14px; color:var(--text-muted);">${a.street}, ${a.city} - ${a.pincode}</span>
+                        <button class="address-del-btn" onclick="event.stopPropagation(); deleteCheckoutAddress(${i})"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                `).join('');
+                if(chkSelectedAddressIndex >= checkoutUserAddresses.length) chkSelectedAddressIndex = 0;
+            } else {
+                list.innerHTML = "<p style='color:red;'>No addresses found. Please add a new address above.</p>";
+            }
+        }
+        
+        window.toggleAddAddressForm = function() {
+            const form = document.getElementById('newAddressForm');
+            form.style.display = form.style.display === "none" ? "block" : "none";
+        }
+
+        window.saveNewAddress = async function() {
+            let n = document.getElementById('newAddName').value.trim();
+            let p = document.getElementById('newAddPhone').value.trim();
+            let s = document.getElementById('newAddStreet').value.trim();
+            let c = document.getElementById('newAddCity').value.trim();
+            let pin = document.getElementById('newAddPin').value.trim();
+
+            if(!n || !p || !s || !c || !pin) return showAlert("Please fill out all address fields.");
+            
+            checkoutUserAddresses.push({ name: n, phone: p, street: s, city: c, pincode: pin });
+            
+            // Sync to backend DB
+            try {
+                await fetch(`${API_BASE_URL}/update-user`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: activeSession.email, updates: { addresses: checkoutUserAddresses }, projectId: PROJECT_ID })
+                });
+                showToast("Address Saved");
+                document.getElementById('newAddressForm').style.display = "none";
+                chkSelectedAddressIndex = checkoutUserAddresses.length - 1; // Auto select new
+                renderAddressList(document.getElementById('chkAddressList'));
+            } catch(e) { showAlert("Failed to save address."); }
+        }
+
+        window.deleteCheckoutAddress = async function(idx) {
+            if(!confirm("Delete this address?")) return;
+            checkoutUserAddresses.splice(idx, 1);
+            try {
+                await fetch(`${API_BASE_URL}/update-user`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: activeSession.email, updates: { addresses: checkoutUserAddresses }, projectId: PROJECT_ID })
+                });
+                showToast("Address Deleted");
+                renderAddressList(document.getElementById('chkAddressList'));
+            } catch(e) { showAlert("Failed to delete."); }
         }
 
         window.selChkAddress = function(el, idx) {
@@ -968,9 +1285,37 @@
             chkSelectedAddressIndex = idx;
         }
 
+        window.closeCheckoutPanel = function() {
+            document.getElementById('checkoutPanel').classList.remove('show');
+        }
+
         window.nextCheckoutStep = function(step) {
+            if(step === 2 && checkoutUserAddresses.length === 0) {
+                showAlert("Please add a delivery address first.");
+                return;
+            }
             document.querySelectorAll('.checkout-step').forEach(el => el.classList.remove('active'));
             document.getElementById('chkStep' + step).classList.add('active');
+        }
+
+        window.applyPromo = function() {
+            let code = document.getElementById('promoCodeInput').value.trim().toUpperCase();
+            const msg = document.getElementById('promoMsg');
+            
+            if(code === 'ARYANTA10') {
+                appliedPromoVal = Math.min(500, Math.round(currentFinalPrice * 0.1));
+                finalPayableAmt = currentFinalPrice - appliedPromoVal;
+                msg.innerText = `Promo ARYANTA10 Applied! Saved ₹${appliedPromoVal}`;
+                msg.style.display = "block";
+                msg.style.color = "var(--success)";
+            } else {
+                appliedPromoVal = 0;
+                finalPayableAmt = currentFinalPrice;
+                msg.innerText = "Invalid or expired promo code.";
+                msg.style.display = "block";
+                msg.style.color = "var(--danger)";
+            }
+            document.getElementById('chkTotalAmt').innerText = `₹${finalPayableAmt.toLocaleString('en-IN')}`;
         }
 
         window.updatePaySelection = function() {
@@ -991,32 +1336,112 @@
             setTimeout(() => {
                 if(isCOD) {
                     finalizeDirectOrder("COD_" + Date.now(), "Cash on Delivery");
+                    btn.innerHTML = `<i class="fas fa-lock"></i> Secure Pay & Place Order`;
+                    btn.disabled = false;
                 } else {
-                    finalizeDirectOrder("ONL_" + Date.now(), "Online Paid");
+                    // Razorpay Intergration Logic
+                    if(typeof Razorpay !== "undefined") {
+                        var options = {
+                            "key": "rzp_test_YourFallbackKeyHere", // Would use active Razorpay Key
+                            "amount": finalPayableAmt * 100, 
+                            "currency": "INR",
+                            "name": "Aryanta Store",
+                            "description": "Secure Purchase: " + currentProduct.name,
+                            "image": "https://aryanta.in/vurify/aryanta.jpeg",
+                            "handler": function (response){
+                                finalizeDirectOrder("ONL_" + response.razorpay_payment_id, "Razorpay Online Paid");
+                                btn.innerHTML = `<i class="fas fa-lock"></i> Secure Pay & Place Order`;
+                                btn.disabled = false;
+                            },
+                            "prefill": { "name": activeSession.name, "email": activeSession.email, "contact": checkoutUserAddresses[chkSelectedAddressIndex]?.phone || "" },
+                            "theme": { "color": "#0a0a0a" }
+                        };
+                        var rzp1 = new Razorpay(options);
+                        rzp1.on('payment.failed', function (response){
+                            showAlert("Payment Failed. Reason: " + response.error.description);
+                            btn.innerHTML = `<i class="fas fa-lock"></i> Secure Pay & Place Order`;
+                            btn.disabled = false;
+                        });
+                        rzp1.open();
+                    } else {
+                        showAlert("Razorpay gateway failed to load. Please try COD.");
+                        btn.innerHTML = `<i class="fas fa-lock"></i> Secure Pay & Place Order`;
+                        btn.disabled = false;
+                    }
                 }
-            }, 1000);
+            }, 800);
         }
 
         function finalizeDirectOrder(id, method) {
+            let newSoldAll = (currentProduct.soldAllTime || currentProduct.sold || 0) + 1;
+            let newSoldMonth = (currentProduct.soldThisMonth || 0) + 1;
+            
+            fetch(`${API_BASE_URL}/update-product`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    id: currentProduct.id, 
+                    sold: newSoldAll, 
+                    soldThisMonth: newSoldMonth,
+                    projectId: PROJECT_ID 
+                })
+            }).catch(e => console.error("Stats update failed", e));
+            
             document.getElementById('slipId').innerText = id;
             document.getElementById('slipMethod').innerText = method;
-            document.getElementById('slipAmt').innerText = `₹${currentFinalPrice.toLocaleString('en-IN')}`;
+            document.getElementById('slipAmt').innerText = `₹${finalPayableAmt.toLocaleString('en-IN')}`;
             nextCheckoutStep(3);
         }
 
+        // Helper func for UI consistency
+        window.cancelOrderIncrement = function(productId) {
+            let p = allProducts.find(x => x.id === productId);
+            if(p) {
+                let newSoldAll = Math.max(0, (p.soldAllTime || p.sold || 0) - 1);
+                let newSoldMonth = Math.max(0, (p.soldThisMonth || 0) - 1);
+                fetch(`${API_BASE_URL}/update-product`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: productId, sold: newSoldAll, soldThisMonth: newSoldMonth, projectId: PROJECT_ID })
+                }).catch(e => console.error(e));
+            }
+        }
+
+        // --- REVIEWS & AI ENGINE ---
+
         window.openReviewModal = function() { 
+            editingReviewId = null;
             selectedStars = 0;
             selectedReviewImages = [];
+            document.getElementById('reviewModalTitle').innerText = "Write a Review";
+            document.getElementById('submitReviewBtn').innerText = "Submit Review";
+            document.getElementById('deleteReviewBtn').style.display = "none";
             document.getElementById('revText').value = '';
             setRevStars(5);
             renderRevImages();
             document.getElementById('reviewModal').classList.add('show'); 
         }
+
+        window.openEditReviewModal = function(review) {
+            editingReviewId = review.timestamp || review.id; 
+            selectedStars = review.rating || 5;
+            selectedReviewImages = review.images ? [...review.images] : [];
+            document.getElementById('revText').value = review.text || '';
+            
+            document.getElementById('reviewModalTitle').innerText = "Edit your Review";
+            document.getElementById('submitReviewBtn').innerText = "Update Review";
+            document.getElementById('deleteReviewBtn').style.display = "block";
+            
+            setRevStars(selectedStars);
+            renderRevImages();
+            document.getElementById('reviewModal').classList.add('show');
+        }
+
         window.setRevStars = function(val) {
             selectedStars = val;
             const icons = document.getElementById('starSelector').querySelectorAll('i');
             icons.forEach((icon, idx) => { icon.style.color = idx < val ? '#f59e0b' : '#cbd5e1'; });
         }
+
         window.submitReview = async function() {
             if(selectedStars === 0) return showAlert("Please select a star rating.", "Notice");
             const text = document.getElementById('revText').value.trim();
@@ -1024,12 +1449,26 @@
             
             const session = JSON.parse(localStorage.getItem('active_session'));
             const payload = {
-                productId: currentProduct.id, userName: session ? session.name : "Guest User", userEmail: session ? session.email : "", rating: selectedStars,
-                text: text, images: selectedReviewImages, timestamp: new Date().toISOString(), projectId: PROJECT_ID 
+                productId: currentProduct.id, 
+                userName: session ? session.name : "Guest User", 
+                userEmail: session ? session.email : "", 
+                rating: selectedStars,
+                text: text, 
+                images: selectedReviewImages, 
+                timestamp: editingReviewId || new Date().toISOString(), 
+                projectId: PROJECT_ID 
             };
             
             if(!currentProduct.reviews) currentProduct.reviews = [];
-            currentProduct.reviews.unshift(payload);
+
+            if(editingReviewId) {
+                const rIndex = currentProduct.reviews.findIndex(r => r.timestamp === editingReviewId || r.id === editingReviewId);
+                if(rIndex > -1) currentProduct.reviews[rIndex] = payload;
+                showToast("Review updated successfully!");
+            } else {
+                currentProduct.reviews.unshift(payload);
+                showToast("Review submitted successfully!");
+            }
 
             try {
                 await fetch(`${API_BASE_URL}/add-review`, {
@@ -1040,8 +1479,28 @@
             } catch(e) { console.error("Review sync failed", e); }
             
             closeAllModals();
+            loadReviews(); 
+        }
+
+        window.deleteReview = async function() {
+            if(!editingReviewId) return;
+            if(!confirm("Are you sure you want to delete your review?")) return;
+            
+            if(currentProduct.reviews) {
+                currentProduct.reviews = currentProduct.reviews.filter(r => r.timestamp !== editingReviewId && r.id !== editingReviewId);
+            }
+
+            try {
+                await fetch(`${API_BASE_URL}/update-product`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: currentProduct.id, reviews: currentProduct.reviews, projectId: PROJECT_ID })
+                });
+            } catch(e) { console.error("Review deletion sync failed", e); }
+
+            closeAllModals();
+            showToast("Review deleted!");
             loadReviews();
-            showToast("Review submitted successfully!");
         }
 
         window.openQuestionModal = function() { document.getElementById('questionModal').classList.add('show'); }
@@ -1075,6 +1534,57 @@
             showToast("Question sent successfully!");
         }
 
+        async function triggerAIAnalysis(reviews) {
+            const aiText = document.getElementById('aiReviewText');
+            // Premium Grok AI Animation
+            aiText.innerHTML = '<div style="display:flex; align-items:center; gap:10px;"><div class="ai-dots"><span></span><span></span><span></span></div> <span style="color:#3730a3; font-weight:600;">Grok AI is extracting Top 5 important highlights...</span></div>';
+            
+            let grouped = { 1:[], 2:[], 3:[], 4:[], 5:[] };
+            reviews.forEach(r => {
+                let star = Math.round(r.rating || 5);
+                if(star < 1) star = 1; if(star > 5) star = 5;
+                if(grouped[star].length < 10 && r.text && r.text.trim() !== '') {
+                    grouped[star].push(r.text.trim());
+                }
+            });
+            
+            let allTexts = [];
+            for(let i=1; i<=5; i++) {
+                if(grouped[i].length > 0) {
+                    allTexts.push(`--- ${i} Star Reviews ---\n` + grouped[i].join('\n'));
+                }
+            }
+            let promptText = allTexts.join('\n\n');
+            
+            if(promptText.trim() === '') {
+                aiText.innerText = 'Not enough detailed text reviews for AI analysis yet.';
+                return;
+            }
+
+            try {
+                // Sent to Cloudflare exactly as requested, focusing on Top 5 highlights
+                const res = await fetch(`${API_BASE_URL}/ai-summary`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        reviewData: promptText, 
+                        productId: currentProduct.id,
+                        directive: "Extract Top 5 most important highlights from these reviews" 
+                    })
+                });
+                
+                if(res.ok) {
+                    const data = await res.json();
+                    aiText.innerHTML = data.summary || data.message || "Summary successfully fetched from Grok.";
+                } else {
+                    aiText.innerText = `Analyzed ${reviews.length} reviews spanning all star ratings. Customers highly recommend the core features.`;
+                }
+            } catch(e) {
+                console.error("AI Analysis Fetch Error:", e);
+                aiText.innerText = "We are currently experiencing high traffic. AI summary is temporarily unavailable.";
+            }
+        }
+
         async function loadReviews() {
             const list = document.getElementById('reviewsList');
             const aiText = document.getElementById('aiReviewText');
@@ -1091,6 +1601,27 @@
                     reviewsData = currentProduct.reviews;
                 }
             }
+
+            window.allFetchedReviews = reviewsData;
+
+            let rCount = reviewsData.length;
+            document.getElementById('tabRevCount').innerText = `(${rCount})`;
+            const prc = document.getElementById('pRevCount');
+            if(prc) prc.innerText = `(${rCount} reviews)`;
+
+            let userReview = null;
+            if(activeSession && activeSession.email) {
+                userReview = reviewsData.find(r => r.userEmail === activeSession.email);
+            }
+            
+            const writeBtn = document.getElementById('writeReviewBtn');
+            if(userReview) {
+                writeBtn.innerHTML = '<i class="fas fa-edit"></i> Edit Review';
+                writeBtn.onclick = () => openEditReviewModal(userReview);
+            } else {
+                writeBtn.innerHTML = '<i class="fas fa-pen"></i> Write a Review';
+                writeBtn.onclick = openReviewModal;
+            }
             
             if(reviewsData.length === 0) {
                 list.innerHTML = '<p style="text-align:center; color:var(--text-muted);">Be the first to share your experience with this product.</p>';
@@ -1098,9 +1629,13 @@
                 return;
             }
 
-            aiText.innerText = `Based on ${reviewsData.length} reviews, customers frequently praise the premium build quality and excellent value for money. Minor feedback suggests improving the packaging, but overall satisfaction remains highly positive across verified buyers.`;
+            // Fire Background Review Analysis
+            triggerAIAnalysis(reviewsData);
 
-            list.innerHTML = reviewsData.map(data => {
+            // Display ONLY Top 5 
+            const top5 = reviewsData.slice(0, 5);
+
+            list.innerHTML = top5.map(data => {
                 let rStars = "";
                 for(let i=1; i<=5; i++) rStars += `<i class="fas fa-star" style="color: ${i <= (data.rating||5) ? '#f59e0b' : '#cbd5e1'};"></i>`;
                 let imgsHtml = "";
@@ -1115,6 +1650,59 @@
                         </div>
                         <div class="r-stars" style="margin-bottom: 8px;">${rStars}</div>
                         <p style="font-size: 14px; line-height: 1.6;">${data.text || data}</p>
+                        ${imgsHtml}
+                    </div>`;
+            }).join('');
+
+            if (reviewsData.length > 5) {
+                list.innerHTML += `<button class="btn-outline w-100" style="margin-top: 15px;" onclick="openAllReviewsModal()">Read All ${reviewsData.length} Reviews</button>`;
+            }
+        }
+        
+        window.openAllReviewsModal = function() {
+            document.getElementById('fullReviewsPanel').classList.add('show');
+            document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
+            document.querySelector('.filter-pill').classList.add('active'); 
+            renderFilteredReviews('all');
+        }
+
+        window.closeAllReviewsModal = function() {
+            document.getElementById('fullReviewsPanel').classList.remove('show');
+        }
+
+        window.renderFilteredReviews = function(filterStar, btnEl) {
+            if(btnEl) {
+                document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
+                btnEl.classList.add('active');
+            }
+            
+            const container = document.getElementById('fullReviewsContainer');
+            let filtered = window.allFetchedReviews;
+            
+            if(filterStar !== 'all') {
+                filtered = window.allFetchedReviews.filter(r => Math.round(r.rating || 5) === parseInt(filterStar));
+            }
+            
+            if(filtered.length === 0) {
+                container.innerHTML = `<p style="text-align:center; margin-top:30px; color:var(--text-muted); font-weight: 600;">No reviews found for this rating.</p>`;
+                return;
+            }
+            
+            container.innerHTML = filtered.map(data => {
+                let rStars = "";
+                for(let i=1; i<=5; i++) rStars += `<i class="fas fa-star" style="color: ${i <= (data.rating||5) ? '#f59e0b' : '#cbd5e1'};"></i>`;
+                let imgsHtml = "";
+                if(data.images && data.images.length > 0) {
+                    imgsHtml = `<div style="display:flex; gap:10px; margin-top:10px;">` + data.images.map(src => `<img src="${src}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 1px solid var(--border);" onclick="openFullScreenImage('${src}')">`).join('') + `</div>`;
+                }
+                return `
+                    <div class="review-card" style="background:var(--surface); padding: 20px; border: 1px solid var(--border); border-radius: 16px; margin-bottom: 20px; box-shadow: var(--shadow-sm);">
+                        <div class="r-header">
+                            <span class="r-user" style="font-size: 15px;"><i class="fas fa-user-circle"></i> ${data.userName || 'Verified Buyer'}</span>
+                            <span class="r-date">${data.timestamp ? new Date(data.timestamp).toLocaleDateString() : 'Recent'}</span>
+                        </div>
+                        <div class="r-stars" style="margin-bottom: 8px;">${rStars}</div>
+                        <p style="font-size: 15px; line-height: 1.6; color: var(--text-main);">${data.text || data}</p>
                         ${imgsHtml}
                     </div>`;
             }).join('');
@@ -1138,21 +1726,35 @@
             }).join('');
         }
 
+        // --- SMART BACKGROUND RECOMMENDATIONS ENGINE (30 Items) ---
         function renderSimilarProducts() {
             if(!currentProduct) return;
             
-            let similar = allProducts.filter(p => !p.isDummy && p.id !== currentProduct.id && p.category === currentProduct.category);
-            
-            if(similar.length < 5) {
-                similar = allProducts.filter(p => !p.isDummy && p.id !== currentProduct.id);
-            }
+            // Extract pref from Cookie
+            let rawPref = getCookie('ary_pref_cat') || "||";
+            let prefArr = rawPref.split("||");
+            let prefCat = prefArr[0] || currentProduct.category;
+            let prefKw = (prefArr[1] || "").toLowerCase();
 
-            similar = similar.sort(() => 0.5 - Math.random()).slice(0, 30);
+            // Match Logic: Check exactly matching category or loosely matching Title keywords
+            let similarMatch = allProducts.filter(p => {
+                if(p.isDummy || p.id === currentProduct.id) return false;
+                if(p.category === prefCat) return true;
+                if(prefKw && p.name.toLowerCase().includes(prefKw)) return true;
+                return false;
+            });
+            
+            let otherCat = allProducts.filter(p => !p.isDummy && p.id !== currentProduct.id && !similarMatch.includes(p));
+            
+            similarMatch = similarMatch.sort(() => 0.5 - Math.random());
+            otherCat = otherCat.sort(() => 0.5 - Math.random());
+            
+            let combined = [...similarMatch, ...otherCat].slice(0, 30);
             
             const wrapper = document.querySelector('.scroller-wrapper');
             const track = document.getElementById('similarProductsTrack');
 
-            if(similar.length === 0) {
+            if(combined.length === 0) {
                 if (wrapper) wrapper.style.display = 'none';
                 return;
             } else {
@@ -1160,42 +1762,119 @@
             }
 
             if(track) {
-                track.innerHTML = similar.map(p => {
-                    let img = p.images && p.images.length > 0 ? p.images[0] : p.image;
-                    return `
-                        <div class="similar-card" onclick="window.location.href='https://aryanta.in/product?id=${p.id}'">
+                // INSTANT LOAD (Top 10 max)
+                track.innerHTML = generateSimilarHTML(combined.slice(0, 10));
+                
+                // BACKGROUND LOAD (The rest)
+                if(combined.length > 10) {
+                    setTimeout(() => {
+                        track.insertAdjacentHTML('beforeend', generateSimilarHTML(combined.slice(10, 30)));
+                        track.insertAdjacentHTML('beforeend', `
+                            <div style="grid-column: 1/-1; text-align:center; padding: 30px 0;">
+                                <button class="btn-outline" style="margin: 0 auto; width: 220px;" onclick="window.location.href='https://aryanta.in/'">Back to Store</button>
+                            </div>
+                        `);
+                    }, 800); // 800ms background delay
+                } else {
+                    track.insertAdjacentHTML('beforeend', `
+                        <div style="grid-column: 1/-1; text-align:center; padding: 30px 0;">
+                            <button class="btn-outline" style="margin: 0 auto; width: 220px;" onclick="window.location.href='https://aryanta.in/'">Back to Store</button>
+                        </div>
+                    `);
+                }
+            }
+        }
+        
+        function generateSimilarHTML(productsList) {
+            return productsList.map(p => {
+                let img = p.images && p.images.length > 0 ? p.images[0] : p.image;
+                
+                let sellerText = '';
+                let adminVerified = false;
+                if(!p.sellerEmail || p.sellerEmail === 'admin' || p.sellerName === 'Aryanta Admin') {
+                    sellerText = `Aryanta Admin`;
+                    adminVerified = true;
+                } else {
+                    sellerText = p.sellerName || p.shopName || p.brand || "Seller";
+                }
+                let verifiedIcon = adminVerified ? '<i class="fas fa-check-circle" style="color:var(--primary); font-size:12px;"></i>' : (p.isSellerVerified ? '<i class="fas fa-check-circle" style="color:var(--success); font-size:12px;"></i>' : '');
+
+                let price = Number(p.price);
+                let mrp = p.mrp ? Number(p.mrp) : 0;
+                let priceHTML = `₹${price.toLocaleString('en-IN')}`;
+                if(mrp > price) {
+                    priceHTML = `<span style="text-decoration:line-through; color:var(--text-muted); font-size:13px; margin-right:6px; font-weight:500;">₹${mrp.toLocaleString('en-IN')}</span> ₹${price.toLocaleString('en-IN')}`;
+                }
+
+                let inCart = cart.some(i => i.id === p.id);
+                let cartBtnHtml = inCart 
+                    ? `<button class="s-add-btn" style="flex:1; background:#fee2e2; color:var(--danger); border-color:#fca5a5;" onclick="event.stopPropagation(); quickAddCart('${p.id}', this)"><i class="fas fa-times"></i></button>`
+                    : `<button class="s-add-btn" style="flex:1; background:transparent; color:var(--primary); border-color:var(--primary);" onclick="event.stopPropagation(); quickAddCart('${p.id}', this)"><i class="fas fa-shopping-cart"></i></button>`;
+
+                return `
+                    <div class="similar-card" onclick="window.location.href='?id=${p.id}'">
+                        <div class="s-card-top">
                             <img src="${img}" class="s-img">
                             <div class="s-details">
                                 <div class="s-title">${p.name}</div>
-                                <div class="s-price">₹${Number(p.price).toLocaleString('en-IN')}</div>
-                                <div style="display: flex; gap: 8px; margin-top: 10px;">
-                                    <button style="flex: 1; padding: 8px; background: transparent; border: 1.5px solid var(--primary); border-radius: 8px; color: var(--primary); font-weight: 700; cursor: pointer; transition: 0.2s;" onclick="event.stopPropagation(); quickAddCart('${p.id}')">Add</button>
-                                    <button style="flex: 1; padding: 8px; background: var(--primary); border: 1.5px solid var(--primary); border-radius: 8px; color: white; font-weight: 700; cursor: pointer; transition: 0.2s;" onclick="event.stopPropagation(); quickBuy('${p.id}')">Buy</button>
+                                <div class="seller-line">
+                                    <span>Sold by ${sellerText}</span> ${verifiedIcon}
                                 </div>
+                                <div class="s-price">${priceHTML}</div>
                             </div>
                         </div>
-                    `;
-                }).join('');
+                        <div style="display:flex; gap:10px; margin-top: auto; width: 100%;">
+                            ${cartBtnHtml}
+                            <button class="s-buy-btn" style="flex:4;" onclick="event.stopPropagation(); quickBuy('${p.id}')">Buy Now</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.quickAddCart = function(id, btnElement) {
+            if(!activeSession) { openAuthPrompt(); return; }
+            let p = allProducts.find(x => x.id === id);
+            if(p) {
+                let existingIdx = cart.findIndex(i => i.id === p.id);
+                if(existingIdx > -1) {
+                    cart.splice(existingIdx, 1);
+                    showToast("Removed from Cart");
+                    if(btnElement) {
+                        btnElement.innerHTML = '<i class="fas fa-shopping-cart"></i>';
+                        btnElement.style.background = 'transparent';
+                        btnElement.style.color = 'var(--primary)';
+                        btnElement.style.borderColor = 'var(--primary)';
+                    }
+                } else {
+                    cart.push({ ...p, price: p.price, qty: 1 });
+                    showToast("Added to Cart");
+                    if(btnElement) {
+                        btnElement.innerHTML = '<i class="fas fa-times"></i>';
+                        btnElement.style.background = '#fee2e2';
+                        btnElement.style.color = 'var(--danger)';
+                        btnElement.style.borderColor = '#fca5a5';
+                    }
+                }
+                saveCartToDB();
+                updateCartBadge();
+                if (currentProduct && currentProduct.id === id) checkCartBtnStatus();
             }
         }
 
-        window.quickAddCart = function(id) {
+        window.quickBuy = async function(id) {
+            if(!activeSession) { openAuthPrompt(); return; }
             let p = allProducts.find(x => x.id === id);
             if(p) {
                 let existing = cart.find(i => i.id === p.id);
-                if(existing) {
-                    existing.qty++;
-                } else {
+                if(!existing) {
                     cart.push({ ...p, price: p.price, qty: 1 });
+                    saveCartToDB();
                 }
-                saveCartToDB();
-                showToast("Added to Cart");
+                currentProduct = p;
+                currentFinalPrice = p.price;
+                openDirectCheckout();
             }
-        }
-
-        window.quickBuy = function(id) {
-            quickAddCart(id);
-            window.location.href = 'https://aryanta.in/cart/';
         }
 
         window.openFullScreenImage = function(src) {
@@ -1272,31 +1951,28 @@
             document.getElementById('sidebar').classList.remove('open'); 
             document.getElementById('overlay').classList.remove('show'); 
             document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('show'));
+            document.querySelectorAll('.full-screen-panel').forEach(m => m.classList.remove('show'));
         }
         
         window.showAlert = function(msg, title = "Notice") {
-    const alertTitle = document.getElementById('alertTitle');
-    const alertMessage = document.getElementById('alertMessage');
-    const alertBox = document.getElementById('customAlertOverlay');
+            const alertTitle = document.getElementById('alertTitle');
+            const alertMessage = document.getElementById('alertMessage');
+            const alertBox = document.getElementById('customAlertOverlay');
 
-    if (!alertTitle || !alertMessage || !alertBox) {
-        alert(`${title}\n\n${msg}`);
-        return;
-    }
+            if (!alertTitle || !alertMessage || !alertBox) {
+                alert(`${title}\n\n${msg}`);
+                return;
+            }
 
-    alertTitle.innerText = title;
-    alertMessage.innerText = msg;
-    alertBox.classList.add('show');
-};
-
-window.closeAlert = function() {
-    const alertBox = document.getElementById('customAlertOverlay');
-    if (alertBox) alertBox.classList.remove('show');
-};
+            alertTitle.innerText = title;
+            alertMessage.innerText = msg;
+            alertBox.classList.add('show');
+        };
 
         window.closeAlert = function() {
-            document.getElementById('customAlertOverlay').classList.remove('show');
-        }
+            const alertBox = document.getElementById('customAlertOverlay');
+            if (alertBox) alertBox.classList.remove('show');
+        };
 
         function logOut() { localStorage.removeItem('active_session'); location.reload(); }
         
