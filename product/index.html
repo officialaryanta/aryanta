@@ -374,7 +374,7 @@
             </div>
 
             <div class="product-details">
-                <!-- Premium Sold By Box Container -->
+                <!-- Premium Sold By Box Container (Updated with store.html redirection) -->
                 <div id="pBrandContainer"></div>
                 
                 <h1 class="product-title" id="pTitle">Product Title</h1>
@@ -389,7 +389,7 @@
                 <!-- Core Description Display -->
                 <div id="pDesc" style="margin-bottom: 25px; font-size: 15px; color: var(--text-muted); line-height: 1.6;"></div>
 
-                <!-- ADDED: Amazon/Flipkart Style Connected Variant Items -->
+                <!-- Amazon/Flipkart Style Connected Variant Items -->
                 <div id="linkedItemsContainer"></div>
 
                 <div class="price-section">
@@ -927,17 +927,18 @@
             document.getElementById('pTitle').innerText = p.name;
             document.getElementById('bcTitle').innerText = p.name.split(' ').slice(0, 3).join(' ') + '...';
             
-            // --- Premium Seller Box Configuration ---
-            let sellerText = (!p.sellerEmail || p.sellerEmail === 'admin' || p.sellerName === 'Aryanta Admin') ? `Aryanta Admin` : (p.sellerName || p.shopName || p.brand || "Aryanta Verified Seller");
+            // --- Premium Seller Box Configuration (UPDATED FOR REDIRECT) ---
+            let sellerLinkID = p.sellerId || p.sellerEmail || 'admin';
+            let sellerDisplayName = (!p.sellerEmail || p.sellerEmail === 'admin' || p.sellerName === 'Aryanta Admin') ? `Aryanta Admin` : (p.sellerName || p.shopName || p.brand || "Aryanta Verified Seller");
             let verifiedUI = `<span style="background:var(--primary); color:white; padding: 4px 8px; border-radius:6px; font-size:10px; font-weight:800; display:flex; align-items:center; gap:4px;"><i class="fas fa-check-circle"></i> Verified</span>`;
             
             document.getElementById('pBrandContainer').innerHTML = `
-                <div class="seller-premium-box" onclick="window.location.href='https://aryanta.in/store/?id=${p.sellerId || 'admin'}'" style="cursor:pointer;">
+                <div class="seller-premium-box" onclick="window.location.href='store.html?id=${encodeURIComponent(sellerLinkID)}'" style="cursor:pointer;">
                     <div style="display:flex; align-items:center; gap: 12px;">
                         <div class="s-icon"><i class="fas fa-store"></i></div>
                         <div>
                             <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Sold by</div>
-                            <div style="font-weight: 800; color: var(--primary); font-size: 15px;">${sellerText}</div>
+                            <div style="font-weight: 800; color: var(--primary); font-size: 15px;">${sellerDisplayName}</div>
                         </div>
                     </div>
                     ${verifiedUI}
