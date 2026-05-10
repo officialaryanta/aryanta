@@ -353,7 +353,7 @@
                     </div>
 
                     <div id="codWarningBox" style="display: none; background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 12px; margin-top: 15px; font-size: 13px; font-weight: 700; border: 1px solid #fecaca;">
-                        <i class="fas fa-exclamation-triangle"></i> Notice: Due to past cancellations, standard COD is restricted. You must pay the shipping fee upfront to proceed.
+                        <i class="fas fa-exclamation-triangle"></i> Notice: Due to frequent past cancellations, you must pay the ₹60 delivery charge upfront to place a Cash on Delivery order.
                     </div>
                 </div>
 
@@ -459,11 +459,6 @@
             "color: #71717a; font-size: 14px; font-weight: bold; font-family: sans-serif;"
         );
 
-        // Firebase Initialization
-        const firebaseConfig = { projectId: "aryanta-mart-a8893" };
-        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-        const db = firebase.firestore();
-
         // Core Globals Bound Explicitly to Window
         window.API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
         window.PROJECT_ID = "aryanta-mart-a8893";
@@ -475,7 +470,11 @@
         window.activeSession = null;
         window.userData = null;
         window.selectedAddressIndex = 0;
-        window.userCancelledCount = 0;
+        
+        // --- NEW SECURE BACKEND VARIABLES ---
+        window.requireAdvance = false;
+        window.backendDeliveryCharge = 60; // Default fallback amount
+        
         window.state = { itemsTotal: 0, shippingCost: 0, walletBalance: 0, walletApplied: 0, promoDiscount: 0, finalPayable: 0, promoCode: "" };
 
         // Centralized DOM Methods attached to window to prevent ReferenceErrors
@@ -516,7 +515,7 @@
             return btoa(encodeURIComponent(jsonString)).split('').reverse().join('');
         };
 
-        // JS Navigation Handlers (No URLs Exposed)
+        // JS Navigation Handlers
         document.addEventListener('DOMContentLoaded', () => {
             const bindClick = (id, url) => {
                 const el = document.getElementById(id);
@@ -531,12 +530,10 @@
             bindClick('btnSuccessShop', 'https://aryanta.in/');
         });
 
-        // Fast Product Link without URL exposure
         window.openProduct = function(id) {
             window.location.href = 'https://aryanta.in/?product=' + id;
         };
 
-        // --- HARDWARE BACK BUTTON INTERCEPTION ---
         window.addEventListener('popstate', function(event) {
             if (window.currentStep > 1) {
                 window.goStepBack();
@@ -554,17 +551,14 @@
             window.activeSession = JSON.parse(sessionStr);
             if (!window.activeSession || !window.activeSession.email) return window.location.href = 'login.html';
 
-            // Top Profile Avatar Sync
             const topAv = document.getElementById('topAvatarImg');
             if (topAv && window.activeSession.avatar) topAv.src = window.activeSession.avatar;
 
             document.body.style.visibility = 'visible';
             history.pushState(null, null, window.location.href);
 
-            // Turn on loader unconditionally to fix address fetching bug on load
             window.toggleLoader(true, "Synchronizing Secure Profile...");
 
-            // Sync with backend before rendering steps to ensure Address loaded
             await window.fetchKeysAndDB();
 
             const localCart = localStorage.getItem('local_cart');
@@ -576,7 +570,6 @@
                 window.renderStep1();
             }
             
-            // Safe loader turn-off
             window.toggleLoader(false);
         };
 
@@ -588,32 +581,27 @@
                 window.API_KEYS.RAZORPAY = kData.razorpayKey || "";
                 window.API_KEYS.EMAILJS_PUBLIC = kData.emailjsPublicKey || "";
                 window.API_KEYS.EMAILJS_ORDER_SERVICE = kData.emailjsOrderService || "";
-                // User explicit override for Template ID
                 window.API_KEYS.EMAILJS_ORDER_TEMPLATE = "template_qiyhfbm"; 
                 
                 if(window.API_KEYS.EMAILJS_PUBLIC) emailjs.init(window.API_KEYS.EMAILJS_PUBLIC);
-            } catch(e) { /* Ignore key fetch silently */ }
+            } catch(e) { }
 
             // 2. Fetch User DB
             try {
                 const res = await fetch(`${window.API_BASE_URL}/get-user?email=${encodeURIComponent(window.activeSession.email)}`);
                 window.userData = await res.json();
                 
-                // CRITICAL FIX: Only overwrite local cart with DB cart if local cart is completely empty.
-                // Otherwise, push local cart to DB to ensure deleted items STAY deleted.
                 if (window.userData.cart && window.cart.length === 0) {
                     window.cart = window.userData.cart;
                     window.cart.forEach(i => { if(typeof i.selected === 'undefined') i.selected = true; });
                     localStorage.setItem('local_cart', JSON.stringify(window.cart));
                     window.renderStep1();
                 } else if (window.cart.length > 0) {
-                    // Sync local cart truth to cloud just in case a previous delete request failed
                     window.saveCartData();
                 }
 
                 window.state.walletBalance = window.userData.wallet || 0;
 
-                // BUG FIX: Graceful parsing of Address data to ensure they show up in Step 2 perfectly
                 if (typeof window.userData.addresses === 'string') {
                     try { window.userData.addresses = JSON.parse(window.userData.addresses); } catch(e) { window.userData.addresses = []; }
                 }
@@ -625,30 +613,17 @@
                     }
                 }
 
+                // 3. SECURE CANCELLATION CHECK via Centralized API (Replaces Local Loop)
                 try {
-                    // Fetch Orders from Firebase using the exact same logic as tracking page
-                    const snapshot = await db.collection("orders").where("user_email", "==", window.activeSession.email).get();
-                    let orders = [];
-                    snapshot.forEach((doc) => {
-                        orders.push(doc.data());
-                    });
-                    
-                    if(orders.length > 0) {
-                        // Check for *Consecutive* Cancellations. If we find a Confirmed order, reset penalty!
-                        orders.sort((a, b) => new Date(b.timestamp || b.date || 0) - new Date(a.timestamp || a.date || 0));
-                        
-                        let consecutiveCancels = 0;
-                        for (let o of orders) {
-                            const st = (o.status || '').toLowerCase();
-                            if (st.includes('cancel') || st.includes('return')) {
-                                consecutiveCancels++;
-                            } else if (st.includes('confirm') || st.includes('deliver') || st.includes('success') || st.includes('process') || st.includes('ship')) {
-                                break; // Found a good order, streak is broken!
-                            }
-                        }
-                        window.userCancelledCount = consecutiveCancels;
+                    const delRes = await fetch(`${window.API_BASE_URL}/delivery-check?email=${encodeURIComponent(window.activeSession.email)}`);
+                    if (delRes.ok) {
+                        const delData = await delRes.json();
+                        window.requireAdvance = delData.requireAdvance; 
+                        window.backendDeliveryCharge = delData.deliveryCharge;
                     }
-                } catch(e) { /* Completely suppress console pollution if Firebase fails */ }
+                } catch (e) {
+                    console.warn("Could not fetch advanced delivery config.");
+                }
 
             } catch(e) {
                 window.userData = window.activeSession;
@@ -671,7 +646,7 @@
             document.getElementById('summaryPanel').style.display = 'block';
         };
 
-        // --- STEP 1: CART LOGIC WITH SELECTION ---
+        // --- STEP 1: CART LOGIC ---
         window.renderStep1 = function() {
             window.currentStep = 1;
             window.updateStepNodes();
@@ -703,7 +678,6 @@
                 let price = Number(item.price);
                 if (isPrime) price = Math.floor(price * 0.95);
                 
-                // Only add to totals if selected
                 if (item.selected) {
                     window.state.itemsTotal += price * item.qty;
                     qtyTotal += item.qty;
@@ -775,18 +749,16 @@
             window.renderStep1();
         };
 
-        // Strictly saves to LocalStorage first, then Cloud
         window.saveCartData = function() {
             localStorage.setItem('local_cart', JSON.stringify(window.cart));
             if(window.activeSession) {
                 fetch(`${window.API_BASE_URL}/update-user`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: window.activeSession.email, updates: { cart: window.cart }, projectId: window.PROJECT_ID, _enc_packet: window.encryptPayload({a:'cart'}) })
-                }).catch(e => { /* Ignore background sync failure */ });
+                }).catch(e => {});
             }
         };
 
-        // --- STEP NAVIGATION ---
         window.updateStepNodes = function() {
             [1,2,3].forEach(i => {
                 const n = document.getElementById(`node${i}`);
@@ -847,9 +819,15 @@
             document.getElementById('btnNextStep').innerHTML = 'Proceed to Payment <i class="fas fa-lock"></i>';
             document.getElementById('btnNextStep').onclick = window.goStepForward;
 
-            // Shipping Calculation
-            window.state.shippingCost = (window.activeSession.isPrime) ? 0 : 60;
-            document.getElementById('sumShipping').innerText = `₹${window.state.shippingCost}`;
+            // DYNAMIC SHIPPING CALCULATION FROM BACKEND API
+            window.state.shippingCost = window.requireAdvance ? window.backendDeliveryCharge : 0;
+            
+            if(window.state.shippingCost > 0) {
+                document.getElementById('sumShipping').innerText = `₹${window.state.shippingCost}`;
+            } else {
+                document.getElementById('sumShipping').innerText = `Free Delivery`;
+            }
+            
             window.updateTotals();
         };
 
@@ -898,14 +876,13 @@
 
             document.getElementById('btnBackStep').style.display = 'block';
             
-            // Wallet UI
             const wBtn = document.getElementById('walletUseBtn');
             if (window.state.walletBalance > 0) {
                 wBtn.style.display = 'block';
                 wBtn.innerHTML = `<i class="fas fa-wallet"></i> Use Wallet Balance (₹${window.state.walletBalance})`;
             }
 
-            window.updatePaymentUI(); // Also updates button text
+            window.updatePaymentUI();
         };
 
         window.updateTotals = function() {
@@ -929,14 +906,11 @@
             const isCOD = document.querySelector('input[name="payMethod"][value="cod"]').checked;
 
             if (window.currentStep === 3) {
-                if (isCOD && window.userCancelledCount < 3) {
-                    // Normal COD (pay 0 now)
+                if (isCOD && !window.requireAdvance) {
                     btn.innerHTML = 'Place Order <i class="fas fa-check"></i>';
                 } else if (window.state.finalPayable === 0) {
-                    // Fully covered by wallet/promo
                     btn.innerHTML = 'Complete Order <i class="fas fa-check"></i>';
                 } else {
-                    // Standard online payment or penalized COD shipping upfront
                     let amt = isCOD ? Math.max(0, window.state.shippingCost - deductions) : window.state.finalPayable;
                     btn.innerHTML = `Pay ₹${amt.toLocaleString('en-IN')} <i class="fas fa-lock"></i>`;
                 }
@@ -977,7 +951,6 @@
                 });
 
                 let result;
-                // BUG FIX: Provide hardcoded local promos if API validation isn't configured or down
                 if(!res.ok) {
                     if (code === 'WELCOME10' || code === 'ARYANTA10') {
                         result = { valid: true, discountAmount: Math.floor(window.state.itemsTotal * 0.10) };
@@ -1017,8 +990,7 @@
             const sub = document.getElementById('codSubtext');
 
             if (isCOD) {
-                // Evaluated consecutive cancellations check
-                if (window.userCancelledCount >= 3) {
+                if (window.requireAdvance) {
                     wBox.style.display = 'block';
                     sub.style.color = 'var(--danger)';
                     sub.innerText = "Advance Shipping Fee Required.";
@@ -1033,23 +1005,22 @@
                 sub.innerText = "Pay when your order arrives.";
             }
             
-            // Recalculate totals to update button dynamically
             window.updateTotals();
         };
 
-        // --- FINAL CHECKOUT PROCESS (Securely Bound to Window) ---
+        // --- FINAL CHECKOUT PROCESS ---
         window.processCheckout = async function() {
             const isCOD = document.querySelector('input[name="payMethod"]:checked').value === 'cod';
             let amountToPay = 0;
 
             if (isCOD) {
-                if (window.userCancelledCount >= 3) {
+                if (window.requireAdvance) {
                     amountToPay = Math.max(0, window.state.shippingCost - window.state.promoDiscount - window.state.walletApplied);
                 } else {
-                    amountToPay = 0; // Honest COD
+                    amountToPay = 0; 
                 }
             } else {
-                amountToPay = window.state.finalPayable; // Online Full
+                amountToPay = window.state.finalPayable;
             }
 
             if (amountToPay === 0) {
@@ -1057,7 +1028,6 @@
                 return;
             }
 
-            // Fallback: Fetch key directly before checkout if missing
             if (!window.API_KEYS.RAZORPAY) {
                 window.toggleButtonState('btnNextStep', true, 'Synchronizing Keys...');
                 try {
@@ -1077,8 +1047,6 @@
             window.toggleButtonState('btnNextStep', true, 'Initializing Secure Gateway...');
             
             const selAddr = window.userData.addresses[window.selectedAddressIndex];
-            
-            // Ensure amount is integer for Razorpay
             const preciseAmount = Math.round(amountToPay * 100);
 
             const options = {
@@ -1142,13 +1110,11 @@
                     await fetch(`${window.API_BASE_URL}/update-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: window.activeSession.email, updates: { wallet: newBal }, projectId: window.PROJECT_ID }) });
                 }
 
-                // BUG FIX: Exact Customized Email JS Payload Text Included with EXPLICIT Template ID override
+                // EmailJS Logic
                 try {
                     let emailItemsStr = orderedItems.map(i => `${i.name} (x${i.qty}) - Rs.${i.price*i.qty}`).join('\n');
-                    
                     let customMessageText = `Dear Customer,\nThank you for ordering with Aryanta.\nYour order has been successfully placed and is now being processed by our team.\nOrder Number: ${orderNo}\nThe items in your order have been confirmed successfully. You will receive further updates regarding shipping and delivery soon.\nThank you for choosing Aryanta. We truly appreciate your trust and support.\nBest regards,\nAryanta Team`;
 
-                    // Using EXACT Template ID as requested explicitly instead of a variable that might fail
                     emailjs.send(
                         window.API_KEYS.EMAILJS_ORDER_SERVICE, 
                         "template_qiyhfbm", 
@@ -1162,10 +1128,9 @@
                             grand_total: window.state.finalPayable,
                             message: customMessageText 
                         }
-                    ); 
+                    ).catch(err => console.warn("Email warning bypassed smoothly."));
                 } catch(e) {}
 
-                // CRITICAL CLEANUP: Replace cart with remaining (unselected) items and sync securely
                 window.cart = remainingItems;
                 localStorage.setItem('local_cart', JSON.stringify(window.cart));
                 await fetch(`${window.API_BASE_URL}/update-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: window.activeSession.email, updates: { cart: window.cart }, projectId: window.PROJECT_ID }) });
@@ -1174,7 +1139,6 @@
                 document.getElementById('recOrderNo').innerText = orderNo;
                 document.getElementById('recMethod').innerText = payMethodStr;
                 
-                // Build receipt items list visually
                 const recItemsList = document.getElementById('recItemsList');
                 recItemsList.innerHTML = orderedItems.map(item => `
                     <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
