@@ -678,6 +678,7 @@
         
         let allProducts = [];
         let currentProduct = null;
+        
         let cart = []; 
         let activeSession = null;
         let currentFinalPrice = 0;
@@ -736,13 +737,38 @@
                     loadDeliveryPreview(); // Refresh delivery UI directly
                 }).catch(e => {});
             }
-            
-            const cachedProducts = localStorage.getItem('cached_products');
-            if(cachedProducts) {
-                allProducts = JSON.parse(cachedProducts);
-                initProductPage(); // Load fast
+            // SAFE PRODUCT CACHE LOAD
+let usedCachedProducts = false;
+
+try {
+    // Remove old heavy cache once, because it caused QuotaExceededError
+    localStorage.removeItem('cached_products');
+
+    const cachedProducts = localStorage.getItem('cached_products_light');
+    const productId = new URLSearchParams(window.location.search).get('id');
+
+    if (cachedProducts) {
+        const parsed = JSON.parse(cachedProducts);
+
+        if (Array.isArray(parsed) && parsed.length > 0) {
+            const foundCurrent = productId
+                ? parsed.some(p => String(p.id) === String(productId))
+                : true;
+
+            if (foundCurrent) {
+                allProducts = parsed;
+                usedCachedProducts = true;
+                initProductPage(); // Fast cached load
             }
-            fetchProducts(cachedProducts ? true : false);
+        }
+    }
+} catch (e) {
+    console.warn("Old product cache cleared:", e);
+    localStorage.removeItem('cached_products');
+    localStorage.removeItem('cached_products_light');
+}
+
+fetchProducts(usedCachedProducts);
 
             setupSearchLogic("desktopSearchInput", "desktopSearchDropdown");
             setupSearchLogic("mobileSearchInput", "mobileSearchDropdown");
@@ -863,18 +889,89 @@
             renderRevImages();
         };
 
-        async function fetchProducts(isBackgroundUpdate = false) {
-            try {
-                const res = await fetch(`${API_BASE_URL}/products`);
-                if(!res.ok) throw new Error("Fetch failed");
-                allProducts = await res.json();
-                localStorage.setItem('cached_products', JSON.stringify(allProducts));
-                if(!isBackgroundUpdate) initProductPage();
-            } catch(err) {
-                console.error("Products fetch failed:", err);
-                if(!isBackgroundUpdate) document.getElementById('pageLoader').innerHTML = '<p style="color:var(--danger); font-weight:bold;">Error loading product. Please refresh.</p>';
+        function makeLightProductCache(products) {
+    if (!Array.isArray(products)) return [];
+
+    return products
+        .filter(p => p && !p.isDummy)
+        .slice(0, 120)
+        .map(p => {
+            const firstImg =
+                Array.isArray(p.images) && p.images.length > 0
+                    ? p.images[0]
+                    : (p.image || "");
+
+            return {
+                id: p.id || "",
+                name: p.name || "",
+                brand: p.brand || "",
+                category: p.category || "",
+                subcategory: p.subcategory || "",
+                price: p.price || 0,
+                mrp: p.mrp || p.maxPrice || p.price || 0,
+                image: firstImg,
+                images: firstImg ? [firstImg] : [],
+                rating: p.rating || 0,
+                reviews: p.reviews || 0,
+                sellerName: p.sellerName || p.seller || p.storeName || "",
+                storeName: p.storeName || "",
+                stock: p.stock || p.quantity || 0,
+                isAd: !!p.isAd
+            };
+        });
+}
+
+function saveProductsCacheSafely(products) {
+    try {
+        // old key was too heavy
+        localStorage.removeItem('cached_products');
+
+        const lightCache = makeLightProductCache(products);
+        localStorage.setItem('cached_products_light', JSON.stringify(lightCache));
+    } catch (e) {
+        console.warn("Product cache skipped because browser storage is full:", e);
+
+        try {
+            localStorage.removeItem('cached_products');
+            localStorage.removeItem('cached_products_light');
+        } catch (_) {}
+    }
+}
+
+async function fetchProducts(isBackgroundUpdate = false) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/products`);
+        if (!res.ok) throw new Error("Fetch failed with status " + res.status);
+
+        const products = await res.json();
+
+        if (!Array.isArray(products)) {
+            throw new Error("Products API did not return an array");
+        }
+
+        allProducts = products;
+
+        // Cache failure will not stop product page now
+        saveProductsCacheSafely(allProducts);
+
+        // Always refresh page after real API data comes
+        initProductPage();
+
+    } catch (err) {
+        console.error("Products fetch failed:", err);
+
+        if (!isBackgroundUpdate) {
+            const loader = document.getElementById('pageLoader');
+            if (loader) {
+                loader.innerHTML = `
+                    <p style="color:var(--danger); font-weight:bold; text-align:center;">
+                        Error loading product. Please refresh.
+                    </p>
+                `;
             }
         }
+    }
+}
 
         function initProductPage() {
             const urlParams = new URLSearchParams(window.location.search);
