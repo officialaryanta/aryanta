@@ -1,0 +1,1684 @@
+
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Aryanta Admin </title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="globalLoader" class="loader-screen">
+    <div class="loader"></div>
+    <p id="loaderText">Opening Aryanta Admin...</p>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <main class="app">
+    <section id="loginView" class="login-view hidden">
+      <div class="login-card glass-card">
+        <div class="login-hero">
+          <div class="login-logo">
+            <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta Logo">
+          </div>
+          <h2> Admin</h2>
+          <p>Private Worker secured command center</p>
+        </div>
+
+        <form id="loginForm" class="login-form">
+          <div class="form-title">
+            <h3>Login</h3>
+            <p>Use admin UID and password. No Firebase key is exposed in this HTML.</p>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label" for="loginUid">Admin UID</label>
+            <div class="input-box">
+              <i class="fa-solid fa-id-badge"></i>
+              <input id="loginUid" class="glass-input" type="text" placeholder="ARY-000001" autocomplete="username" required>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label" for="loginPass">Password</label>
+            <div class="input-box">
+              <i class="fa-solid fa-lock"></i>
+              <input id="loginPass" class="glass-input" type="password" placeholder="Enter password" autocomplete="current-password" required>
+              <button type="button" id="togglePass" class="toggle-pass"><i class="fa-solid fa-eye"></i></button>
+            </div>
+          </div>
+
+          <div class="remember-row">
+            <label for="rememberMe"><input id="rememberMe" type="checkbox"><span>Remember me</span></label>
+          </div>
+
+          <button id="loginBtn" type="submit" class="primary-btn full">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Secure Authentication</span>
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <section id="appContainer" class="app-container hidden">
+      <header class="topbar">
+        <div class="topbar-inner">
+          <div class="brand" onclick="navigateTo('dashboard')">
+            <img id="topLogo" src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta">
+            <div>
+              <h1>Admin</h1>
+              <p>Welcome Aryanta  Admin</p>
+            </div>
+          </div>
+
+          <div class="top-admin-copy">
+            <strong id="topAdminName">Aryanta  Admin</strong>
+            <span>Welcome Aryanta  Admin, manage Aryanta from your command center.</span>
+          </div>
+
+          <div class="top-actions">
+            <button class="icon-btn" onclick="goBack()" title="Back"><i class="fa-solid fa-arrow-left"></i></button>
+            <button class="icon-btn" onclick="toggleTheme()" title="Theme"><i id="themeIcon" class="fa-solid fa-moon"></i></button>
+            <button class="icon-btn danger" onclick="logout()" title="Logout"><i class="fa-solid fa-power-off"></i></button>
+          </div>
+        </div>
+      </header>
+
+      <div class="content-wrap">
+        <div id="view-dashboard" class="page-view active">
+          <div class="dashboard-card glass-card">
+            <div class="profile-image-box" onclick="openProfileImageMenu()">
+              <img id="dashProfileImage" src="https://aryanta.in/vurify/aryanta.jpeg" alt="Admin Profile">
+            </div>
+            <h2 id="adminName" class="user-name">Aryanta  Admin</h2>
+            <p id="welcomeMessage" class="welcome-message">Welcome Admin, manage Aryanta from your command center.</p>
+
+            <div class="stats-grid three-only">
+              <div class="stat-box"><span>Orders Today</span><strong id="dashOrdersToday">0</strong></div>
+              <div class="stat-box"><span>Revenue Today</span><strong id="dashRevenueToday">₹0</strong></div>
+              <div class="stat-box"><span>Company Value</span><strong id="dashCompanyValue">₹0</strong></div>
+            </div>
+
+            <div class="action-grid first-line">
+              <button class="action-btn" data-target="chat" onclick="navigateTo('chat')"><i class="fa-solid fa-comments"></i><span>Admin Chat</span><b id="chatBadge" class="badge">0</b></button>
+              <button class="action-btn" data-target="transactions" onclick="navigateTo('transactions')"><i class="fa-solid fa-money-bill-transfer"></i><span>Transactions</span></button>
+              <button class="action-btn" data-target="company" onclick="navigateTo('company')"><i class="fa-solid fa-building"></i><span>Company</span></button>
+            </div>
+
+            <div class="action-grid second-line">
+              <button class="action-btn" data-target="active-sellers" onclick="navigateTo('active-sellers')"><i class="fa-solid fa-store"></i><span>Active Seller</span></button>
+              <button class="action-btn" data-target="approvals" onclick="navigateTo('approvals')"><i class="fa-solid fa-user-clock"></i><span>Approve</span><b id="approvalBadge" class="badge">0</b></button>
+              <button class="action-btn" data-target="seller-support" onclick="navigateTo('seller-support')"><i class="fa-solid fa-headset"></i><span>Seller Support</span><b id="supportBadge" class="badge">0</b></button>
+            </div>
+
+            <div class="action-grid third-line">
+              <button class="action-btn" data-target="reports" onclick="navigateTo('reports')"><i class="fa-solid fa-chart-line"></i><span>Report</span></button>
+              <button class="action-btn" data-target="links" onclick="navigateTo('links')"><i class="fa-solid fa-link"></i><span>Link</span></button>
+              <button class="action-btn" data-target="inventory" onclick="navigateTo('inventory')"><i class="fa-solid fa-boxes-stacked"></i><span>Inventory</span></button>
+            </div>
+
+            <div class="action-grid fourth-line">
+              <button class="action-btn" data-target="items-approve" onclick="navigateTo('items-approve')"><i class="fa-solid fa-clipboard-check"></i><span>Items Approve</span><b id="itemsApprovalBadge" class="badge">0</b></button>
+              <button class="action-btn" data-target="admins" onclick="navigateTo('admins')"><i class="fa-solid fa-user-shield"></i><span>Admins</span></button>
+              <button class="action-btn" data-target="settings" onclick="navigateTo('settings')"><i class="fa-solid fa-gear"></i><span>Settings</span></button>
+            </div>
+          </div>
+        </div>
+
+        <div id="view-transactions" class="page-view">
+          <div class="page-head">
+            <div class="page-title-row"><button class="icon-btn back" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></button><div><h2>Transactions</h2><p>Money flow, loan request and approved loan status.</p></div></div>
+            <button class="primary-btn" onclick="openLoanModal()"><i class="fa-solid fa-hand-holding-dollar"></i> Get Loan</button>
+          </div>
+          <div class="stats-grid two-only">
+            <div class="stat-box"><span>Total Money Added by Admin</span><strong id="totalAdminAdded">₹0</strong></div>
+            <div class="stat-box"><span>Loan Amount To Pay</span><strong id="loanDueAmount">₹0</strong></div>
+          </div>
+          <div id="loanStatusList" class="list"></div>
+          <div class="panel glass-card"><div id="transactionsList" class="panel-body list"></div></div>
+        </div>
+
+        <div id="view-company" class="page-view">
+          <div class="page-head">
+            <div class="page-title-row"><button class="icon-btn back" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></button><div><h2>Company</h2><p>Read-only company profile. Admin can edit in main admin panel.</p></div></div>
+          </div>
+          <div class="panel glass-card"><div id="companyPanel" class="panel-body"></div></div>
+        </div>
+
+        <div id="view-active-sellers" class="page-view">
+          <div class="page-head">
+            <div class="page-title-row"><button class="icon-btn back" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></button><div><h2>Active Sellers</h2><p>All live seller details, docs, inventory and controls.</p></div></div>
+          </div>
+          <div class="search-container page-search"><input id="activeSellerSearch" oninput="renderActiveSellers()" placeholder="Search seller name, email, phone..."></div>
+          <div class="panel glass-card"><div id="activeSellersList" class="panel-body list"></div></div>
+        </div>
+
+        <div id="view-approvals" class="page-view">
+          <div class="page-head">
+            <div class="page-title-row"><button class="icon-btn back" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></button><div><h2>Seller Approvals</h2><p>Full seller verification details with approve and not approve.</p></div></div>
+          </div>
+          <div class="search-container page-search"><input id="approvalSearch" oninput="renderApprovals()" placeholder="Search approval request..."></div>
+          <div class="panel glass-card"><div id="approvalsList" class="panel-body list"></div></div>
+        </div>
+
+        <div id="view-seller-support" class="page-view">
+          <div class="page-head">
+            <div class="page-title-row"><button class="icon-btn back" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></button><div><h2>Seller Support</h2><p>Ticket description, seller details and reply flow.</p></div></div>
+          </div>
+          <div class="panel glass-card"><div id="sellerSupportList" class="panel-body list"></div></div>
+        </div>
+
+        <div id="view-reports" class="page-view">
+          <div class="page-head">
+            <div class="page-title-row"><button class="icon-btn back" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></button><div><h2>Reports</h2><p>All reports and my added reports.</p></div></div>
+            <button class="primary-btn" onclick="openReportModal()"><i class="fa-solid fa-plus"></i> Add</button>
+          </div>
+          <div class="item-actions report-tabs">
+            <button id="reportAllBtn" class="soft-btn active" onclick="setReportMode('all')">All</button>
+            <button id="reportMyBtn" class="soft-btn" onclick="setReportMode('my')">My Add</button>
+          </div>
+          <div class="panel glass-card"><div id="reportsList" class="panel-body list"></div></div>
+        </div>
+
+        <div id="view-links" class="page-view">
+          <div class="page-head">
+            <div class="page-title-row"><button class="icon-btn back" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></button><div><h2>Links</h2><p>Links and images added from admin panel.</p></div></div>
+          </div>
+          <div class="panel glass-card"><div id="linksList" class="panel-body list"></div></div>
+        </div>
+
+        <div id="view-inventory" class="page-view">
+          <div class="page-head">
+            <div class="page-title-row"><button class="icon-btn back" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></button><div><h2>Inventory</h2><p>Seller inventory. View details or delete items from this portal.</p></div></div>
+          </div>
+          <div class="search-container page-search"><input id="inventorySearch" oninput="renderInventory()" placeholder="Search inventory..."></div>
+          <div class="panel glass-card"><div id="inventoryList" class="panel-body list"></div></div>
+        </div>
+
+        <div id="view-items-approve" class="page-view">
+          <div class="page-head">
+            <div class="page-title-row"><button class="icon-btn back" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></button><div><h2>Items Approve</h2><p>Catalog & QC. Accept makes product live only. It will not create or place any order.</p></div></div>
+          </div>
+          <div class="item-actions report-tabs">
+            <button id="itemFilterPending" class="soft-btn active" onclick="setItemApprovalFilter('pending')">Pending QC</button>
+            <button id="itemFilterAll" class="soft-btn" onclick="setItemApprovalFilter('all')">All</button>
+            <button id="itemFilterRejected" class="soft-btn" onclick="setItemApprovalFilter('rejected')">Rejected</button>
+            <button id="itemFilterLive" class="soft-btn" onclick="setItemApprovalFilter('live')">Live</button>
+          </div>
+          <div class="search-container page-search"><input id="itemsApproveSearch" oninput="renderItemsApprove()" placeholder="Search item name, seller, SKU..."></div>
+          <div class="panel glass-card"><div id="itemsApproveList" class="panel-body list"></div></div>
+        </div>
+
+        <div id="view-profile" class="page-view">
+          <div class="page-head">
+            <div class="page-title-row"><button class="icon-btn back" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></button><div><h2>Profile</h2><p>Admin profile, image and local settings.</p></div></div>
+          </div>
+          <div class="panel glass-card">
+            <div class="panel-body">
+              <div class="dashboard-card profile-inner-card">
+                <div class="profile-image-box" onclick="openProfileImageMenu()"><img id="profileImage" src="https://aryanta.in/vurify/aryanta.jpeg" alt="Profile"></div>
+                <h2 id="profileName" class="user-name">Aryanta  Admin</h2>
+                <p id="profileRole" class="welcome-message">Admin</p>
+              </div>
+              <div id="profileInfoGrid" class="info-grid"></div>
+              <div class="list settings-list">
+                <div class="item-card"><div class="item-main"><div><div class="item-title"><i class="fa-solid fa-code-branch"></i> App Version</div><div class="item-sub">Aryanta Admin User Portal v4.3.0 Worker Secure</div></div><span class="pill success">Stable</span></div></div>
+                <div class="item-card"><div class="item-main"><div><div class="item-title"><i class="fa-solid fa-bell"></i> Device Notifications</div><div id="notificationStatus" class="item-sub">Enable notification permission for installed app/device alerts.</div></div><button class="soft-btn" onclick="enableNotifications()">Enable</button></div></div>
+                <div class="item-card"><div class="item-main"><div><div class="item-title"><i class="fa-solid fa-palette"></i> Theme</div><div class="item-sub">Toggle light and dark mode.</div></div><button class="soft-btn" onclick="toggleTheme()">Toggle</button></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="view-settings" class="page-view">
+          <div class="page-head">
+            <div class="page-title-row"><button class="icon-btn back" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></button><div><h2>Settings</h2><p>App version, notifications, theme, profile image and background sync.</p></div></div>
+          </div>
+          <div class="panel glass-card">
+            <div class="panel-body list settings-list">
+              <div class="item-card"><div class="item-main"><div><div class="item-title"><i class="fa-solid fa-code-branch"></i> App Version</div><div class="item-sub">Aryanta Admin User Portal v4.4.0 Worker Secure</div></div><span class="pill success">Stable</span></div></div>
+              <div class="item-card"><div class="item-main"><div><div class="item-title"><i class="fa-solid fa-image"></i> Profile Image</div><div class="item-sub">Upload or remove admin profile logo. It is stored through Worker route only.</div></div><button class="soft-btn" onclick="openProfileImageMenu()">Manage</button></div></div>
+              <div class="item-card"><div class="item-main"><div><div class="item-title"><i class="fa-solid fa-bell"></i> Device Notifications</div><div id="notificationStatusSettings" class="item-sub">Enable notification permission for installed app/device alerts.</div></div><button class="soft-btn" onclick="enableNotifications()">Enable</button></div></div>
+              <div class="item-card"><div class="item-main"><div><div class="item-title"><i class="fa-solid fa-palette"></i> Theme</div><div class="item-sub">Toggle light and dark mode.</div></div><button class="soft-btn" onclick="toggleTheme()">Toggle</button></div></div>
+              <div class="item-card"><div class="item-main"><div><div class="item-title"><i class="fa-solid fa-database"></i> Background Sync</div><div class="item-sub">Dashboard, sellers, chat, files and inventory refresh silently every 10 seconds.</div></div><span class="pill info">Auto</span></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="view-admins" class="page-view">
+          <div class="page-head">
+            <div class="page-title-row"><button class="icon-btn back" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></button><div><h2>Admins</h2><p>Admin members visible from Worker-secured admin collection.</p></div></div>
+          </div>
+          <div class="panel glass-card"><div id="adminsList" class="panel-body list"></div></div>
+        </div>
+
+        <div id="view-chat" class="page-view">
+          <div class="chat-shell glass-card">
+            <div class="page-head chat-page-head">
+              <div class="page-title-row"><button class="icon-btn back" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></button><div><h2>Admin Chat</h2><p>Encrypted group chat with reply, copy, delete from me, camera and files.</p></div></div>
+              <button class="soft-btn" onclick="loadAdminChat(true)"><i class="fa-solid fa-lock"></i> Sync</button>
+            </div>
+            <div id="chatMessages" class="chat-messages"></div>
+            <div id="replyPreview" class="chat-reply-preview hidden"><span id="replyPreviewText"></span><button class="icon-btn danger" onclick="clearReply()"><i class="fa-solid fa-xmark"></i></button></div>
+            <div id="selectedFilesPreview" class="selected-files-preview hidden">
+              <div id="selectedFilesGrid" class="preview-grid"></div>
+              <div class="item-actions"><button class="primary-btn" onclick="sendAdminChat(true)"><i class="fa-solid fa-paper-plane"></i> Send HD</button><button class="soft-btn" onclick="sendAdminChat(false)"><i class="fa-solid fa-compress"></i> Send 720p</button><button class="danger-btn" onclick="clearSelectedFiles()">Clear</button></div>
+            </div>
+            <div class="chat-input-bar">
+              <div id="chatPlusMenu" class="chat-plus-menu hidden">
+                <button class="soft-btn" onclick="openCamera()"><i class="fa-solid fa-camera"></i> Open Camera</button>
+                <button class="soft-btn" onclick="pickImages()"><i class="fa-solid fa-images"></i> Upload Images</button>
+                <button class="soft-btn" onclick="pickDocs()"><i class="fa-solid fa-file-arrow-up"></i> Upload Doc</button>
+              </div>
+              <button class="icon-btn" onclick="toggleChatPlus()"><i class="fa-solid fa-plus"></i></button>
+              <input id="adminChatInput" class="glass-input" type="text" placeholder="Type encrypted message..." onkeypress="if(event.key==='Enter')sendAdminChat(true)">
+              <button class="send-btn" onclick="sendAdminChat(true)"><i class="fa-solid fa-paper-plane"></i></button>
+              <input id="chatImageInput" type="file" accept="image/*" multiple class="hidden" onchange="handleSelectedFiles(event,'image')">
+              <input id="chatDocInput" type="file" multiple class="hidden" onchange="handleSelectedFiles(event,'doc')">
+            </div>
+          </div>
+        </div>
+
+        <div id="view-files" class="page-view">
+          <div class="page-head">
+            <div class="page-title-row"><button class="icon-btn back" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></button><div><h2>Files</h2><p>Files are added by admin panel. This portal is view-only.</p></div></div>
+          </div>
+          <div class="panel glass-card"><div id="filesList" class="panel-body list"></div></div>
+        </div>
+      </div>
+
+      <nav id="footerTabs" class="footer-tabs">
+        <button class="footer-tab" data-target="dashboard" onclick="navigateTo('dashboard')"><i class="fa-solid fa-house"></i><span>Home</span></button>
+        <button class="footer-tab" data-target="profile" onclick="navigateTo('profile')"><i class="fa-solid fa-user"></i><span>Profile</span></button>
+        <button class="footer-tab" data-target="chat" onclick="navigateTo('chat')"><i class="fa-solid fa-comments"></i><span>Chat</span></button>
+        <button class="footer-tab" data-target="files" onclick="navigateTo('files')"><i class="fa-solid fa-folder"></i><span>File</span></button>
+      </nav>
+    </section>
+  </main>
+
+  <div id="detailsModal" class="modal-overlay" onclick="if(event.target===this)closeModal('detailsModal')">
+    <div class="modal-content glass-card wide-modal">
+      <div class="modal-head"><div><h3 id="detailsTitle">Details</h3><p id="detailsSub">Full information</p></div><button class="icon-btn danger" onclick="closeModal('detailsModal')"><i class="fa-solid fa-times"></i></button></div>
+      <div id="detailsBody"></div>
+    </div>
+  </div>
+
+  <div id="formModal" class="modal-overlay" onclick="if(event.target===this)closeModal('formModal')">
+    <div class="modal-content glass-card">
+      <div class="modal-head"><div><h3 id="formTitle">Form</h3><p id="formSub">Enter details</p></div><button class="icon-btn danger" onclick="closeModal('formModal')"><i class="fa-solid fa-times"></i></button></div>
+      <div id="formBody"></div>
+    </div>
+  </div>
+
+  <div id="imageZoom" class="modal-overlay image-zoom-modal" onclick="closeImageZoom()">
+    <button class="icon-btn danger zoom-close" onclick="closeImageZoom()"><i class="fa-solid fa-times"></i></button>
+    <img id="zoomedImage" alt="Full image">
+  </div>
+
+  <div id="cameraModal" class="modal-overlay" onclick="if(event.target===this)closeCamera()">
+    <div class="modal-content glass-card">
+      <div class="modal-head"><div><h3>Camera</h3><p>Take photo and attach to admin chat.</p></div><button class="icon-btn danger" onclick="closeCamera()"><i class="fa-solid fa-times"></i></button></div>
+      <div class="camera-box">
+        <video id="cameraVideo" autoplay playsinline></video>
+        <canvas id="cameraCanvas" class="hidden"></canvas>
+        <button class="primary-btn full" onclick="captureCamera()"><i class="fa-solid fa-camera"></i> Capture Photo</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "https://rough-field-c679.official-aryanta.workers.dev";
+    const DEFAULT_IMAGE = "https://aryanta.in/vurify/aryanta.jpeg";
+    const TOKEN_KEY = "aryanta_admin_worker_token";
+    const SESSION_TOKEN_KEY = "aryanta_admin_worker_session";
+    const DELETED_CHAT_KEY = "aryanta_deleted_admin_chat_messages";
+    const CHAT_PREFIX = "ARYANTA_ENC_V1:";
+    const CHAT_SECRET = "Aryanta-Admin-Encrypted-Shared-Key-2026";
+
+    const state = {
+      admin: null,
+      activeView: "dashboard",
+      navStack: ["dashboard"],
+      dashboard: {},
+      admins: [],
+      company: {},
+      transactions: [],
+      transactionSummary: {},
+      activeSellers: [],
+      approvals: [],
+      supportTickets: [],
+      adminChat: [],
+      files: [],
+      reports: [],
+      links: [],
+      inventory: [],
+      itemApprovalFilter: "pending",
+      reply: null,
+      selectedFiles: [],
+      reportMode: "all",
+      cameraStream: null,
+      autoTimer: null,
+      lastSync: 0,
+      deletedMessages: new Set(JSON.parse(localStorage.getItem(DELETED_CHAT_KEY) || "[]"))
+    };
+
+    const $ = id => document.getElementById(id);
+    const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[ch]));
+    const clean = value => String(value ?? "").trim();
+    const money = value => "₹" + Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 });
+    const toMs = value => {
+      if (!value) return 0;
+      if (typeof value === "number") return value < 10000000000 ? value * 1000 : value;
+      if (typeof value === "string") {
+        const n = Number(value.trim());
+        if (Number.isFinite(n)) return n < 10000000000 ? n * 1000 : n;
+        const p = Date.parse(value);
+        return Number.isFinite(p) ? p : 0;
+      }
+      if (typeof value === "object") {
+        if ("seconds" in value) return Number(value.seconds || 0) * 1000;
+        if ("_seconds" in value) return Number(value._seconds || 0) * 1000;
+      }
+      return 0;
+    };
+    const formatDate = value => {
+      const ms = toMs(value);
+      return ms ? new Date(ms).toLocaleString("en-IN") : "--";
+    };
+    const bestTime = item => Math.max(toMs(item?.createdAt), toMs(item?.timestamp), toMs(item?.updatedAt), toMs(item?.date), toMs(item?.time), 0);
+    const imageUrlLike = value => /^data:image\//i.test(clean(value)) || (/^https?:\/\//i.test(clean(value)) && /\.(png|jpe?g|webp|gif|svg)(\?|#|$)/i.test(clean(value)));
+    const urlLike = value => /^https?:\/\//i.test(clean(value));
+
+    function showLoader(text = "Loading...") {
+      $("loaderText").textContent = text;
+      $("globalLoader").classList.remove("hidden");
+    }
+
+    function hideLoader() {
+      $("globalLoader").classList.add("hidden");
+    }
+
+    function showToast(message, type = "info") {
+      const toast = document.createElement("div");
+      toast.className = "toast " + type;
+      const icon = type === "success" ? "fa-circle-check" : type === "error" ? "fa-triangle-exclamation" : type === "warning" ? "fa-circle-exclamation" : "fa-circle-info";
+      toast.innerHTML = `<i class="fa-solid ${icon}"></i><span>${escapeHtml(message)}</span>`;
+      $("toastContainer").appendChild(toast);
+      requestAnimationFrame(() => toast.classList.add("show"));
+      setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+
+    function getToken() {
+      return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(SESSION_TOKEN_KEY) || "";
+    }
+
+    function setToken(token, remember) {
+      if (remember) {
+        localStorage.setItem(TOKEN_KEY, token);
+        sessionStorage.removeItem(SESSION_TOKEN_KEY);
+      } else {
+        sessionStorage.setItem(SESSION_TOKEN_KEY, token);
+        localStorage.removeItem(TOKEN_KEY);
+      }
+    }
+
+    function clearToken() {
+      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(SESSION_TOKEN_KEY);
+    }
+
+    async function api(path, options = {}) {
+      const headers = new Headers(options.headers || {});
+      if (!(options.body instanceof FormData)) headers.set("Content-Type", "application/json");
+      if (getToken()) headers.set("Authorization", "Bearer " + getToken());
+      const res = await fetch(API_BASE + path, { ...options, headers });
+      const data = await res.json().catch(() => ({ success: false, error: "Invalid Worker response" }));
+      if (!res.ok || data.success === false) {
+        const err = new Error(data.error || "Request failed");
+        err.status = res.status;
+        err.data = data;
+        throw err;
+      }
+      return data;
+    }
+
+    async function optionalApi(path, fallback) {
+      try { return await api(path); } catch { return fallback; }
+    }
+
+    function showLogin() {
+      $("appContainer").classList.add("hidden");
+      $("loginView").classList.remove("hidden");
+      hideLoader();
+    }
+
+    function showApp() {
+      $("loginView").classList.add("hidden");
+      $("appContainer").classList.remove("hidden");
+      hideLoader();
+    }
+
+    async function init() {
+      applyTheme(localStorage.getItem("aryanta_user_portal_theme") || "light");
+      if (!getToken()) return showLogin();
+      try {
+        showLoader("Checking secure session...");
+        const me = await api("/admin/me");
+        state.admin = me.admin;
+        await bootApp();
+      } catch (err) {
+        clearToken();
+        showLogin();
+        showToast(err.message || "Session expired.", "warning");
+      }
+    }
+
+    async function bootApp() {
+      fillAdmin();
+      showApp();
+      navigateTo("dashboard", true);
+      await syncAll(true);
+      startAutoRefresh();
+    }
+
+    $("togglePass").addEventListener("click", () => {
+      const input = $("loginPass");
+      input.type = input.type === "password" ? "text" : "password";
+      $("togglePass").innerHTML = input.type === "password" ? `<i class="fa-solid fa-eye"></i>` : `<i class="fa-solid fa-eye-slash"></i>`;
+    });
+
+    $("loginForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      const uid = $("loginUid").value.trim().toUpperCase();
+      const password = $("loginPass").value.trim();
+      if (!uid || !password) return showToast("Enter UID and password.", "error");
+      const btn = $("loginBtn");
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>Authenticating...</span>`;
+      try {
+        const result = await api("/admin/login", { method: "POST", body: JSON.stringify({ uid, password }) });
+        setToken(result.token, $("rememberMe").checked);
+        state.admin = result.admin;
+        await bootApp();
+        showToast("Access granted.", "success");
+      } catch (err) {
+        showToast(err.message || "Login failed.", "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-shield-halved"></i><span>Secure Authentication</span>`;
+      }
+    });
+
+    function logout() {
+      clearToken();
+      state.admin = null;
+      if (state.autoTimer) clearInterval(state.autoTimer);
+      showToast("Logged out.", "success");
+      showLogin();
+    }
+
+    function fillAdmin() {
+      const admin = state.admin || {};
+      const image = admin.profileImage || DEFAULT_IMAGE;
+      $("dashProfileImage").src = image;
+      $("profileImage").src = image;
+      $("topLogo").src = image;
+      $("adminName").textContent = admin.name || "Aryanta Admin";
+      $("topAdminName").textContent = admin.name || "Aryanta  Admin";
+      $("welcomeMessage").textContent = `Welcome ${admin.name || "Aryanta Admin"}, manage Aryanta from your command center.`;
+      $("profileName").textContent = admin.name || "Aryanta Admin";
+      $("profileRole").textContent = admin.role || "Admin";
+      $("profileInfoGrid").innerHTML = infoGrid([
+        ["UID", admin.uid || admin.id],
+        ["Name", admin.name],
+        ["Email", admin.email],
+        ["Mobile", admin.mobile || admin.phone],
+        ["Role", admin.role],
+        ["Status", admin.status],
+        ["Created At", formatDate(admin.createdAt)],
+        ["Last Login", formatDate(admin.lastLoginAt)]
+      ]);
+    }
+
+    function startAutoRefresh() {
+      if (state.autoTimer) clearInterval(state.autoTimer);
+      state.autoTimer = setInterval(() => syncAll(false), 10000);
+    }
+
+    async function syncAll(force = false) {
+      if (!getToken()) return;
+      if (!force && Date.now() - state.lastSync < 6000) return;
+      state.lastSync = Date.now();
+      try {
+        const [me, dashboard, admins, company, transactions, active, pending, support, chat, files, reports, links, inventory, itemApprovals] = await Promise.all([
+          optionalApi("/admin/me", null),
+          optionalApi("/admin/dashboard", { dashboard: {} }),
+          optionalApi("/admin/admins", { admins: [] }),
+          optionalApi("/admin/company", { company: {} }),
+          optionalApi("/admin/transactions", { transactions: [], summary: {} }),
+          optionalApi("/admin/sellers/active", { sellers: [] }),
+          optionalApi("/admin/sellers/pending", { sellers: [] }),
+          optionalApi("/admin/support/tickets", { tickets: [] }),
+          optionalApi("/admin/chat", { messages: [] }),
+          optionalApi("/admin/files", { files: [] }),
+          optionalApi("/admin/reports", { reports: readLocalReports() }),
+          optionalApi("/admin/links", { links: [] }),
+          loadInventoryFallback(),
+          optionalApi("/admin/items/pending", null)
+        ]);
+
+        if (me && me.admin) {
+          state.admin = me.admin;
+          fillAdmin();
+        }
+        state.dashboard = dashboard.dashboard || dashboard || {};
+        state.admins = admins.admins || [];
+        state.company = company.company || company || {};
+        state.transactions = transactions.transactions || [];
+        state.transactionSummary = transactions.summary || {};
+        state.activeSellers = active.sellers || [];
+        state.approvals = pending.sellers || [];
+        state.supportTickets = support.tickets || [];
+        state.adminChat = chat.messages || [];
+        state.files = files.files || [];
+        state.reports = reports.reports || readLocalReports();
+        state.links = links.links || [];
+        state.inventory = mergeInventoryAndApprovals(inventory || [], itemApprovals);
+        renderAll();
+      } catch (err) {
+        if (force) showToast(err.message || "Sync failed.", "error");
+      }
+    }
+
+    async function loadInventoryFallback() {
+      const routes = ["/admin/inventory", "/admin/items", "/admin/products"];
+      for (const route of routes) {
+        const data = await optionalApi(route, null);
+        if (data) {
+          if (Array.isArray(data.inventory)) return data.inventory;
+          if (Array.isArray(data.items)) return data.items;
+          if (Array.isArray(data.products)) return data.products;
+          if (Array.isArray(data)) return data;
+        }
+      }
+      try {
+        const res = await fetch(API_BASE + "/products?limit=1000", { headers: getToken() ? { Authorization: "Bearer " + getToken() } : {} });
+        const data = await res.json();
+        if (Array.isArray(data)) return data;
+        return data.products || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function mergeInventoryAndApprovals(inventory, itemApprovals) {
+      const map = new Map();
+      (inventory || []).forEach(item => map.set(item.id || item.productId || item.uid || item.sku || JSON.stringify(item), item));
+      const approvalItems = itemApprovals?.items || itemApprovals?.products || itemApprovals?.inventory || [];
+      (approvalItems || []).forEach(item => map.set(item.id || item.productId || item.uid || item.sku || JSON.stringify(item), item));
+      return [...map.values()];
+    }
+
+    function renderAll() {
+      renderDashboard();
+      renderTransactions();
+      renderCompany();
+      renderActiveSellers();
+      renderApprovals();
+      renderSupportTickets();
+      renderAdmins();
+      renderFiles();
+      renderReports();
+      renderLinks();
+      renderInventory();
+      renderItemsApprove();
+      renderAdminChat();
+    }
+
+    function renderDashboard() {
+      const d = state.dashboard || {};
+      const todayOrders = d.ordersToday ?? calculateOrdersToday();
+      const todayRevenue = d.revenueToday ?? calculateRevenueToday();
+      const calculatedCompanyValue = calculateCompanyValue(d);
+      $("dashOrdersToday").textContent = todayOrders;
+      $("dashRevenueToday").textContent = money(todayRevenue);
+      $("dashCompanyValue").textContent = money(calculatedCompanyValue);
+      setBadge("approvalBadge", state.approvals.length);
+      setBadge("supportBadge", d.openSupport ?? state.supportTickets.filter(t => !isClosedStatus(t.status)).length);
+      setBadge("chatBadge", d.unseenChats || 0);
+      setBadge("itemsApprovalBadge", getPendingItems().length);
+    }
+
+    function calculateOrdersToday() {
+      const today = new Date().toISOString().slice(0, 10);
+      return state.transactions.filter(t => isOrderTransaction(t) && dateOnly(t.createdAt || t.timestamp || t.date) === today).length;
+    }
+
+    function calculateRevenueToday() {
+      const today = new Date().toISOString().slice(0, 10);
+      return state.transactions.filter(t => isOrderTransaction(t) && dateOnly(t.createdAt || t.timestamp || t.date) === today).reduce((sum, t) => sum + amountOf(t), 0);
+    }
+
+    function calculateCompanyValue(d = {}) {
+      if (Number(d.companyValue)) return Number(d.companyValue);
+      const totalProfit = state.transactions.reduce((sum, t) => sum + (isPositiveFlow(t) ? amountOf(t) : -amountOf(t)), 0);
+      const userCount = Number(d.totalUsers || state.company.totalUsers || state.company.totalCustomers || 0);
+      const sellerCount = Number(d.totalSellers || state.company.totalSellers || state.activeSellers.length || 0);
+      return Math.max(0, Math.round((userCount + sellerCount + totalProfit) * 3));
+    }
+
+    function dateOnly(value) {
+      const ms = toMs(value);
+      return ms ? new Date(ms).toISOString().slice(0, 10) : "";
+    }
+
+    function setBadge(id, value) {
+      const el = $(id);
+      if (!el) return;
+      el.textContent = value;
+      el.classList.toggle("show", Number(value) > 0);
+    }
+
+    function navigateTo(view, replace = false) {
+      if (!replace && state.activeView !== view) {
+        state.navStack.push(view);
+        history.pushState({ view }, "", "#" + view);
+      }
+      state.activeView = view;
+      document.querySelectorAll(".page-view").forEach(page => page.classList.remove("active"));
+      const target = $("view-" + view);
+      if (target) target.classList.add("active");
+      document.querySelectorAll(".action-btn, .footer-tab").forEach(btn => btn.classList.toggle("active", btn.dataset.target === view));
+      document.body.classList.toggle("chat-open", view === "chat");
+      if (view === "chat") {
+        $("footerTabs").classList.add("hidden");
+        setTimeout(scrollChatBottom, 80);
+      } else {
+        $("footerTabs").classList.remove("hidden");
+      }
+    }
+
+    function goBack() {
+      if (state.activeView === "dashboard") return;
+      if (state.navStack.length > 1) state.navStack.pop();
+      const previous = state.navStack[state.navStack.length - 1] || "dashboard";
+      navigateTo(previous, true);
+      history.replaceState({ view: previous }, "", "#" + previous);
+    }
+
+    window.onpopstate = event => {
+      const view = (event.state && event.state.view) || location.hash.replace("#", "") || "dashboard";
+      navigateTo(view, true);
+    };
+
+    function renderTransactions() {
+      const txs = [...state.transactions].sort((a, b) => bestTime(b) - bestTime(a));
+      const totalAdminAdded = state.transactionSummary.totalAdminAdded ?? txs.filter(isAdminAddedFlow).reduce((sum, tx) => sum + amountOf(tx), 0);
+      const loans = txs.filter(isLoanTransaction);
+      const loanDue = loans.filter(tx => isApprovedStatus(tx.status)).reduce((sum, tx) => sum + amountOf(tx), 0);
+      $("totalAdminAdded").textContent = money(totalAdminAdded);
+      $("loanDueAmount").textContent = money(loanDue);
+      $("loanStatusList").innerHTML = loans.length ? loans.slice(0, 4).map(tx => `<div class="item-card loan-card"><div class="item-main"><div><div class="item-title">Loan amount you have to pay: ${money(amountOf(tx))}</div><div class="item-sub">Taken loan on ${formatDate(tx.createdAt || tx.timestamp || tx.date)}${tx.dueDate ? " · Pay by " + formatDate(tx.dueDate) : ""}</div></div><span class="pill ${isApprovedStatus(tx.status) ? "warning" : "info"}">${escapeHtml(tx.status || "Requested")}</span></div></div>`).join("") : "";
+      $("transactionsList").innerHTML = txs.length ? txs.map((tx, index) => `<div class="item-card clickable-card" onclick="openTransaction(${index})"><div class="item-main"><div><div class="item-title">${escapeHtml(tx.title || tx.name || tx.type || tx.transactionType || "Transaction")}</div><div class="item-sub">${formatDate(tx.createdAt || tx.timestamp || tx.date)}${tx.description ? " · " + escapeHtml(tx.description) : ""}</div></div><span class="pill ${isPositiveFlow(tx) ? "success" : "danger"}">${isPositiveFlow(tx) ? "+" : "-"} ${money(amountOf(tx))}</span></div></div>`).join("") : emptyHtml("No transactions found.", "fa-wallet");
+    }
+
+    function amountOf(tx) {
+      const n = Number(String(tx.amount ?? tx.total ?? tx.value ?? tx.finalAmount ?? tx.payoutAmount ?? 0).replace(/[₹,\s]/g, ""));
+      return Number.isFinite(n) ? Math.abs(n) : 0;
+    }
+
+    function isPositiveFlow(tx) {
+      const s = clean(tx.type || tx.flow || tx.direction || tx.transactionType || tx.title).toLowerCase();
+      return !["minus", "debit", "out", "withdraw", "payout", "refund", "expense"].some(x => s.includes(x)) && Number(tx.amount || 0) >= 0;
+    }
+
+    function isAdminAddedFlow(tx) {
+      const s = clean(tx.type || tx.flow || tx.source || tx.title || tx.transactionType).toLowerCase();
+      return tx.addedByAdmin === true || s.includes("admin") || s.includes("add") || s.includes("deposit");
+    }
+
+    function isLoanTransaction(tx) {
+      const s = clean(tx.type || tx.title || tx.category || tx.transactionType).toLowerCase();
+      return s.includes("loan");
+    }
+
+    function isOrderTransaction(tx) {
+      const s = clean(tx.type || tx.title || tx.category || tx.transactionType).toLowerCase();
+      return s.includes("order") || tx.orderId || tx.order_no;
+    }
+
+    function isApprovedStatus(status) {
+      const s = clean(status).toLowerCase();
+      return s.includes("approved") || s.includes("active") || s.includes("accepted");
+    }
+
+    function openTransaction(index) {
+      openDetails("Transaction Details", "Money flow description and full data", state.transactions[index]);
+    }
+
+    function openLoanModal() {
+      openForm("Get Loan", "Send loan request to admin panel.", `
+        <div class="form-grid">
+          <div class="input-group full"><label class="input-label">Loan Amount</label><input id="loanAmount" class="glass-input input-height" type="number" placeholder="Enter amount"></div>
+          <div class="input-group full"><label class="input-label">Payment / Loan Reason</label><textarea id="loanDesc" class="glass-input textarea-input" placeholder="Describe why loan/payment is required"></textarea></div>
+          <button class="primary-btn full" onclick="submitLoanRequest()"><i class="fa-solid fa-paper-plane"></i> Send Loan Request</button>
+        </div>`);
+    }
+
+    async function submitLoanRequest() {
+      const amount = Number($("loanAmount").value || 0);
+      const description = clean($("loanDesc").value);
+      if (!amount || !description) return showToast("Enter loan amount and description.", "error");
+      const payload = { amount, description, status: "Pending", type: "Loan Request", requestedBy: state.admin?.uid || "", createdAt: new Date().toISOString() };
+      try {
+        await api("/admin/loan/request", { method: "POST", body: JSON.stringify(payload) });
+      } catch {
+        await sendSystemAdminChat(`Loan Request: ${money(amount)}\n${description}`);
+      }
+      closeModal("formModal");
+      showToast("Loan request sent.", "success");
+      syncAll(true);
+    }
+
+    function renderCompany() {
+      const c = state.company || {};
+      const html = `
+        <div class="company-head">
+          <img class="company-logo" src="${escapeHtml(c.image || c.logo || c.imageUrl || DEFAULT_IMAGE)}" alt="Company Logo" onclick="zoomImage(this.src)" onerror="this.src='${DEFAULT_IMAGE}'">
+          <h2>${escapeHtml(c.name || c.companyName || "Aryanta")}</h2>
+          <p>${escapeHtml(c.email || c.supportEmail || c.companyEmail || "support@aryanta.in")}</p>
+        </div>
+        ${infoGrid([
+          ["Company Email", c.email || c.supportEmail || c.companyEmail],
+          ["Company Address", c.address || c.headOffice || c.office],
+          ["Company Established Date", formatDate(c.establishedAt || c.establishedDate || c.createdAt)],
+          ["Company Revenue", money(c.revenue || state.dashboard.revenueToday || 0)],
+          ["Company Value", money(c.companyValue || state.dashboard.companyValue || calculateCompanyValue(state.dashboard))],
+          ["Phone Number", c.phone || c.mobile || c.phoneNumber],
+          ["Total Seller", c.totalSellers ?? state.activeSellers.length],
+          ["Total Customer", c.totalUsers ?? c.totalCustomers ?? state.dashboard.totalUsers ?? "--"],
+          ["Total Staff", c.totalStaff ?? state.admins.length]
+        ])}`;
+      $("companyPanel").innerHTML = html;
+    }
+
+    function renderActiveSellers() {
+      const q = clean($("activeSellerSearch")?.value).toLowerCase();
+      const list = state.activeSellers.filter(s => !q || JSON.stringify(s).toLowerCase().includes(q));
+      $("activeSellersList").innerHTML = list.length ? list.map((seller, index) => sellerCard(seller, index, false)).join("") : emptyHtml("No active sellers found.", "fa-store");
+    }
+
+    function renderApprovals() {
+      const q = clean($("approvalSearch")?.value).toLowerCase();
+      const list = state.approvals.filter(s => !q || JSON.stringify(s).toLowerCase().includes(q));
+      $("approvalsList").innerHTML = list.length ? list.map((seller, index) => sellerCard(seller, index, true)).join("") : emptyHtml("No pending seller approvals.", "fa-user-check");
+    }
+
+    function sellerCard(seller, index, approval) {
+      const name = seller.companyName || seller.storeName || seller.shop?.name || seller.personal?.name || seller.name || "Seller";
+      const email = seller.email || seller.sellerEmail || seller.personal?.email || "--";
+      const phone = seller.phone || seller.mobile || seller.personal?.phone || "--";
+      const image = firstImage(seller) || seller.profileImage || seller.logo || avatar(name);
+      const arrayName = approval ? "approval" : "active";
+      return `<div class="item-card">
+        <div class="item-main">
+          <div class="seller-mini"><img class="thumb" src="${escapeHtml(image)}" alt="Seller" onclick="event.stopPropagation();zoomImage(this.src)" onerror="this.src='${avatar(name)}'"><div><div class="item-title">${escapeHtml(name)}</div><div class="item-sub">${escapeHtml(email)}<br>${escapeHtml(phone)}</div></div></div>
+          <span class="pill ${approval ? "warning" : statusClass(seller.status)}">${escapeHtml(seller.status || (approval ? "Pending" : "Active"))}</span>
+        </div>
+        <div class="item-actions">
+          <button class="soft-btn" onclick="openSeller('${arrayName}', ${index})"><i class="fa-solid fa-eye"></i> View All Details</button>
+          ${approval ? `<button class="primary-btn" onclick="approveSeller(${index})"><i class="fa-solid fa-check"></i> Approve</button><button class="danger-btn" onclick="rejectSeller(${index})"><i class="fa-solid fa-times"></i> Not Approve</button>` : `<button class="warning-btn" onclick="suspendSeller(${index})"><i class="fa-solid fa-pause"></i> Suspend</button><button class="soft-btn" onclick="changeSellerPassword(${index})"><i class="fa-solid fa-key"></i> Change Pass</button>`}
+        </div>
+      </div>`;
+    }
+
+    function statusClass(status) {
+      const s = clean(status).toLowerCase();
+      if (s === "active") return "success";
+      if (s.includes("pending")) return "warning";
+      if (s.includes("block") || s.includes("reject") || s.includes("suspend")) return "danger";
+      return "info";
+    }
+
+    function avatar(name) {
+      return "https://ui-avatars.com/api/?name=" + encodeURIComponent(name || "A") + "&background=008080&color=fff&bold=true";
+    }
+
+    function openSeller(type, index) {
+      const seller = type === "approval" ? state.approvals[index] : state.activeSellers[index];
+      if (!seller) return;
+      const images = collectImages(seller);
+      const docs = collectUrls(seller).filter(url => !imageUrlLike(url));
+      const sellerProducts = state.inventory.filter(item => matchesSeller(item, seller));
+      const extra = `
+        ${images.length ? `<div class="details-section"><h4>Images / Documents</h4><div class="doc-grid">${images.map((img, i) => `<div class="doc-item"><img src="${escapeHtml(img)}" alt="Image ${i + 1}" onclick="zoomImage(this.src)"><span>Image ${i + 1}</span></div>`).join("")}</div></div>` : ""}
+        ${docs.length ? `<div class="details-section"><h4>Document Links</h4><div class="list">${docs.map(url => `<a class="file-link" href="${escapeHtml(url)}" target="_blank" rel="noopener"><i class="fa-solid fa-file"></i><span>Open document</span></a>`).join("")}</div></div>` : ""}
+        ${sellerProducts.length ? `<div class="details-section"><h4>Seller Inventory</h4><div class="list">${sellerProducts.map(product => inventoryCard(product, true)).join("")}</div></div>` : ""}`;
+      openDetails(seller.companyName || seller.storeName || seller.name || "Seller Details", type === "approval" ? "Pending approval full details" : "Active seller full details", seller, extra);
+    }
+
+    function matchesSeller(item, seller) {
+      const sellerKeys = [seller.email, seller.sellerEmail, seller.id, seller.uid, seller.sellerId].map(x => clean(x).toLowerCase()).filter(Boolean);
+      const itemKeys = [item.sellerEmail, item.email, item.sellerId, item.uid, item.ownerEmail, item.sellerUid].map(x => clean(x).toLowerCase()).filter(Boolean);
+      return sellerKeys.some(key => itemKeys.includes(key));
+    }
+
+    async function approveSeller(index) {
+      const seller = state.approvals[index];
+      if (!seller || !confirm("Approve this seller?")) return;
+      try {
+        await api("/admin/sellers/" + encodeURIComponent(seller.id || seller.uid || seller.email || seller.sellerEmail) + "/approve", { method: "POST", body: JSON.stringify({}) });
+        showToast("Seller approved.", "success");
+        syncAll(true);
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    }
+
+    async function rejectSeller(index) {
+      const seller = state.approvals[index];
+      if (!seller) return;
+      const reason = prompt("Reason for not approve:", "Not approved by admin");
+      if (reason === null) return;
+      try {
+        await api("/admin/sellers/" + encodeURIComponent(seller.id || seller.uid || seller.email || seller.sellerEmail) + "/reject", { method: "POST", body: JSON.stringify({ reason }) });
+        showToast("Seller not approved.", "success");
+        syncAll(true);
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    }
+
+    async function suspendSeller(index) {
+      const seller = state.activeSellers[index];
+      if (!seller || !confirm("Suspend this seller?")) return;
+      try {
+        await api("/admin/sellers/" + encodeURIComponent(seller.id || seller.uid || seller.email || seller.sellerEmail) + "/suspend", { method: "POST", body: JSON.stringify({}) });
+        showToast("Seller suspended.", "success");
+        syncAll(true);
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    }
+
+    function changeSellerPassword(index) {
+      const seller = state.activeSellers[index];
+      if (!seller) return;
+      openForm("Change Seller Password", "Set a new seller login password.", `<div class="form-grid"><div class="input-group full"><label class="input-label">New Password</label><input id="sellerNewPassword" class="glass-input input-height" placeholder="Minimum 6 characters"></div><button class="primary-btn full" onclick="submitSellerPassword(${index})"><i class="fa-solid fa-key"></i> Update Password</button></div>`);
+    }
+
+    async function submitSellerPassword(index) {
+      const seller = state.activeSellers[index];
+      const password = clean($("sellerNewPassword").value);
+      if (!seller || password.length < 6) return showToast("Minimum 6 characters required.", "error");
+      try {
+        await api("/admin/sellers/" + encodeURIComponent(seller.id || seller.uid || seller.email || seller.sellerEmail) + "/change-password", { method: "POST", body: JSON.stringify({ password }) });
+        closeModal("formModal");
+        showToast("Password updated.", "success");
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    }
+
+    function renderSupportTickets() {
+      const tickets = [...state.supportTickets].sort((a, b) => bestTime(b) - bestTime(a));
+      $("sellerSupportList").innerHTML = tickets.length ? tickets.map((ticket, index) => `<div class="item-card">
+        <div class="item-main"><div><div class="item-title">${escapeHtml(ticket.subject || ticket.title || "Support Ticket")}</div><div class="item-sub">${escapeHtml(ticket.sellerName || ticket.name || ticket.email || ticket.sellerEmail || "Seller")}<br>${escapeHtml(ticket.description || ticket.message || ticket.issue || "Click to view description")}</div></div><span class="pill ${isClosedStatus(ticket.status) ? "success" : "warning"}">${escapeHtml(ticket.status || "Open")}</span></div>
+        <div class="item-actions"><button class="soft-btn" onclick="openSupportTicket(${index})"><i class="fa-solid fa-eye"></i> Description</button><button class="primary-btn" onclick="openSupportChat(${index})"><i class="fa-solid fa-paper-plane"></i> Send Message</button></div>
+      </div>`).join("") : emptyHtml("No seller support tickets.", "fa-headset");
+    }
+
+    function isClosedStatus(status) {
+      return ["closed", "resolved", "done", "complete"].includes(clean(status).toLowerCase());
+    }
+
+    function openSupportTicket(index) {
+      const ticket = state.supportTickets[index];
+      openDetails(ticket.subject || ticket.title || "Support Ticket", "Seller support description and details", ticket);
+    }
+
+    async function openSupportChat(index) {
+      const ticket = state.supportTickets[index];
+      if (!ticket) return;
+      const id = ticket.id || ticket.ticketId;
+      let messages = [];
+      try {
+        const result = await api("/admin/support/tickets/" + encodeURIComponent(id) + "/messages");
+        messages = result.messages || [];
+      } catch {
+        messages = Array.isArray(ticket.messages) ? ticket.messages : [];
+      }
+      openForm("Seller Support Chat", ticket.subject || ticket.title || "Reply to seller", `<div id="supportChatBox" class="support-chat-box">${supportMessagesHtml(messages)}</div><div class="chat-input-bar support-input"><input id="supportReplyInput" class="glass-input" placeholder="Type reply to seller..."><button class="send-btn" onclick="sendSupportReply('${escapeAttr(id)}')"><i class="fa-solid fa-paper-plane"></i></button></div>`);
+    }
+
+    function supportMessagesHtml(messages) {
+      if (!messages.length) return emptyHtml("No messages yet.", "fa-comments");
+      return messages.map(msg => `<div class="msg ${clean(msg.sender || msg.from).toLowerCase() === "admin" ? "out" : "in"}"><div>${escapeHtml(msg.message || msg.text || msg.description || "")}</div>${filesHtml(msg.files || [])}<span class="msg-meta">${escapeHtml(msg.sender || msg.from || "")} · ${formatDate(msg.createdAt || msg.timestamp)}</span></div>`).join("");
+    }
+
+    async function sendSupportReply(ticketId) {
+      const message = clean($("supportReplyInput").value);
+      if (!message) return;
+      try {
+        await api("/admin/support/tickets/" + encodeURIComponent(ticketId) + "/messages", { method: "POST", body: JSON.stringify({ message }) });
+        closeModal("formModal");
+        showToast("Message sent to seller.", "success");
+        syncAll(true);
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    }
+
+    function renderAdmins() {
+      $("adminsList").innerHTML = state.admins.length ? state.admins.map(admin => `<div class="item-card"><div class="item-main"><div class="seller-mini"><img class="thumb" src="${escapeHtml(admin.profileImage || DEFAULT_IMAGE)}" alt="Admin" onclick="zoomImage(this.src)" onerror="this.src='${DEFAULT_IMAGE}'"><div><div class="item-title">${escapeHtml(admin.name || "Aryanta Admin")}</div><div class="item-sub">${escapeHtml(admin.email || "--")}<br>${escapeHtml(admin.mobile || admin.phone || "")}</div></div></div><span class="pill ${statusClass(admin.status)}">${escapeHtml(admin.status || "Active")}</span></div></div>`).join("") : emptyHtml("No admins found.", "fa-user-shield");
+    }
+
+    function renderFiles() {
+      $("filesList").innerHTML = state.files.length ? state.files.map(file => `<div class="item-card"><div class="item-main"><div><div class="item-title">${escapeHtml(file.title || file.name || file.fileName || "File")}</div><div class="item-sub">${escapeHtml(file.description || file.type || "Admin uploaded file")}<br>${formatDate(file.createdAt || file.uploadedAt)}</div></div><span class="pill info">View Only</span></div><div class="item-actions">${file.url ? `<a class="soft-btn" href="${escapeHtml(file.url)}" target="_blank" rel="noopener"><i class="fa-solid fa-eye"></i> Open</a>` : ""}<button class="soft-btn" onclick='openDetails("File Details","Admin uploaded file", ${safeJsonForAttr(file)})'><i class="fa-solid fa-circle-info"></i> Details</button></div></div>`).join("") : emptyHtml("No admin files found.", "fa-folder");
+    }
+
+    function renderReports() {
+      const adminId = state.admin?.uid || state.admin?.id || "";
+      const reports = state.reportMode === "my" ? state.reports.filter(r => clean(r.createdBy || r.adminUid || r.addedBy) === clean(adminId)) : state.reports;
+      $("reportAllBtn").classList.toggle("active", state.reportMode === "all");
+      $("reportMyBtn").classList.toggle("active", state.reportMode === "my");
+      $("reportsList").innerHTML = reports.length ? reports.map((report, index) => `<div class="item-card"><div class="item-main"><div><div class="item-title">${escapeHtml(report.sellerName || report.name || "Seller Report")}</div><div class="item-sub">${escapeHtml(report.sellerMobile || report.mobile || "--")}<br>${escapeHtml(report.description || report.desc || "")}</div></div><span class="pill ${statusClass(report.status)}">${escapeHtml(report.status || "Pending")}</span></div><div class="item-actions"><button class="soft-btn" onclick="openReport(${index})"><i class="fa-solid fa-eye"></i> View</button></div></div>`).join("") : emptyHtml("No reports found.", "fa-chart-line");
+    }
+
+    function setReportMode(mode) {
+      state.reportMode = mode;
+      renderReports();
+    }
+
+    function openReport(index) {
+      const reports = state.reportMode === "my" ? state.reports.filter(r => clean(r.createdBy || r.adminUid || r.addedBy) === clean(state.admin?.uid || state.admin?.id || "")) : state.reports;
+      openDetails("Report Details", "Seller report information", reports[index]);
+    }
+
+    function openReportModal() {
+      openForm("Add Report", "Create report request visible to admin panel.", `
+        <div class="form-grid">
+          <div class="input-group full"><label class="input-label">Seller Name</label><input id="reportSellerName" class="glass-input input-height" placeholder="Seller name"></div>
+          <div class="input-group full"><label class="input-label">Seller Mobile Number</label><input id="reportSellerMobile" class="glass-input input-height" placeholder="Mobile number"></div>
+          <div class="input-group full"><label class="input-label">Description</label><textarea id="reportDesc" class="glass-input textarea-input" placeholder="Report description"></textarea></div>
+          <div class="input-group full"><label class="input-label">Status</label><select id="reportStatus" class="glass-input input-height"><option value="Pending">Pending</option><option value="Active">Active</option><option value="Not Want">Not Want</option></select></div>
+          <button class="primary-btn full" onclick="submitReport()"><i class="fa-solid fa-plus"></i> Add Report</button>
+        </div>`);
+    }
+
+    async function submitReport() {
+      const report = {
+        sellerName: clean($("reportSellerName").value),
+        sellerMobile: clean($("reportSellerMobile").value),
+        description: clean($("reportDesc").value),
+        status: $("reportStatus").value,
+        createdBy: state.admin?.uid || state.admin?.id || "",
+        createdByName: state.admin?.name || "Aryanta Admin",
+        createdAt: new Date().toISOString()
+      };
+      if (!report.sellerName || !report.sellerMobile || !report.description) return showToast("Fill seller name, mobile and description.", "error");
+      try {
+        await api("/admin/reports", { method: "POST", body: JSON.stringify(report) });
+      } catch {
+        const saved = readLocalReports();
+        saved.unshift({ ...report, id: "LOCAL-REPORT-" + Date.now() });
+        localStorage.setItem("aryanta_local_reports", JSON.stringify(saved));
+        state.reports = saved;
+      }
+      closeModal("formModal");
+      showToast("Report added.", "success");
+      renderReports();
+    }
+
+    function readLocalReports() {
+      try { return JSON.parse(localStorage.getItem("aryanta_local_reports") || "[]"); } catch { return []; }
+    }
+
+    function renderLinks() {
+      $("linksList").innerHTML = state.links.length ? state.links.map(link => `<div class="item-card"><div class="item-main"><div class="seller-mini">${link.image || link.imageUrl ? `<img class="thumb" src="${escapeHtml(link.image || link.imageUrl)}" onclick="zoomImage(this.src)" alt="Link Image">` : ""}<div><div class="item-title">${escapeHtml(link.title || link.name || "Admin Link")}</div><div class="item-sub">${escapeHtml(link.description || link.desc || "")}</div></div></div><span class="pill info">Link</span></div><div class="item-actions">${link.url || link.link ? `<a class="primary-btn" href="${escapeHtml(link.url || link.link)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open Link</a>` : ""}</div></div>`).join("") : emptyHtml("No links added by admin yet.", "fa-link");
+    }
+
+    function renderInventory() {
+      const q = clean($("inventorySearch")?.value).toLowerCase();
+      const list = state.inventory.filter(item => !q || JSON.stringify(item).toLowerCase().includes(q));
+      $("inventoryList").innerHTML = list.length ? list.map((item, index) => inventoryCard(item, false, index)).join("") : emptyHtml("No inventory items found.", "fa-boxes-stacked");
+    }
+
+    function inventoryCard(item, insideSeller = false, index = 0) {
+      const title = item.title || item.name || item.productName || "Inventory Item";
+      const price = item.price || item.mrp || item.salePrice || item.finalPrice || 0;
+      const image = firstImage(item) || item.image || item.imageUrl || DEFAULT_IMAGE;
+      const status = item.status || item.productStatus || item.qcStatus || "--";
+      const actions = insideSeller ? "" : `<div class="item-actions"><button class="soft-btn" onclick="openInventory(${index})"><i class="fa-solid fa-eye"></i> View</button><button class="danger-btn" onclick="deleteInventoryItem(${index})"><i class="fa-solid fa-trash"></i> Delete</button></div>`;
+      return `<div class="item-card inventory-card"><div class="item-main"><div class="seller-mini"><img class="thumb" src="${escapeHtml(image)}" onclick="event.stopPropagation();zoomImage(this.src)" alt="Item"><div><div class="item-title">${escapeHtml(title)}</div><div class="item-sub">${escapeHtml(item.sellerName || item.sellerEmail || item.sellerId || "Seller inventory")}<br>Status: ${escapeHtml(status)}</div></div></div><span class="pill ${itemLive(item) ? "success" : itemRejected(item) ? "danger" : itemPending(item) ? "warning" : "info"}">${money(price)}</span></div>${actions}</div>`;
+    }
+
+    function openInventory(index) {
+      const item = state.inventory[index];
+      if (!item) return;
+      const images = collectImages(item);
+      const urls = collectUrls(item).filter(url => !imageUrlLike(url));
+      const extra = `${images.length ? `<div class="details-section"><h4>Images</h4><div class="doc-grid">${images.map((img, i) => `<div class="doc-item"><img src="${escapeHtml(img)}" onclick="zoomImage(this.src)"><span>Image ${i + 1}</span></div>`).join("")}</div></div>` : ""}${urls.length ? `<div class="details-section"><h4>Links / Documents</h4><div class="list">${urls.map(url => `<a class="file-link" href="${escapeHtml(url)}" target="_blank" rel="noopener"><i class="fa-solid fa-link"></i><span>Open Link</span></a>`).join("")}</div></div>` : ""}`;
+      openDetails(item.title || item.name || item.productName || "Inventory Item", "Full inventory item details", item, extra);
+    }
+
+    async function deleteInventoryItem(index) {
+      const item = state.inventory[index];
+      if (!item || !confirm("Delete this inventory item?")) return;
+      const id = getItemId(item);
+      try {
+        await callItemRoute(id, { status: "Deleted", productStatus: "Deleted", qcStatus: "Deleted", deleted: true, isVisible: false, visible: false, hidden: true, deletedAt: new Date().toISOString(), deletedBy: state.admin?.uid || state.admin?.id || "" }, "delete");
+        state.inventory.splice(index, 1);
+        renderInventory();
+        renderItemsApprove();
+        renderDashboard();
+        showToast("Item deleted.", "success");
+      } catch (err) {
+        showToast(err.message || "Delete failed.", "error");
+      }
+    }
+
+    function setItemApprovalFilter(filter) {
+      state.itemApprovalFilter = filter;
+      if ($("itemFilterPending")) $("itemFilterPending").classList.toggle("active", filter === "pending");
+      if ($("itemFilterAll")) $("itemFilterAll").classList.toggle("active", filter === "all");
+      if ($("itemFilterRejected")) $("itemFilterRejected").classList.toggle("active", filter === "rejected");
+      if ($("itemFilterLive")) $("itemFilterLive").classList.toggle("active", filter === "live");
+      renderItemsApprove();
+    }
+
+    function itemPending(item) {
+      const s = clean(item.status || item.productStatus || item.qcStatus || "Pending").toLowerCase();
+      return ["pending", "pending qc", "review", "in review", "submitted", "draft"].some(x => s.includes(x));
+    }
+
+    function itemRejected(item) {
+      const s = clean(item.status || item.productStatus || item.qcStatus).toLowerCase();
+      return s.includes("reject") || s.includes("cancel") || s.includes("not approve");
+    }
+
+    function itemLive(item) {
+      const s = clean(item.status || item.productStatus || item.qcStatus).toLowerCase();
+      return s === "active" || s === "live" || s === "approved" || item.isVisible === true || item.visible === true;
+    }
+
+    function itemSuspended(item) {
+      const s = clean(item.status || item.productStatus || item.qcStatus).toLowerCase();
+      return s.includes("suspend") || s.includes("block") || item.hidden === true;
+    }
+
+    function getPendingItems() {
+      return state.inventory.filter(item => itemPending(item) && !itemRejected(item) && !itemLive(item) && !itemSuspended(item));
+    }
+
+    function renderItemsApprove() {
+      if (!$('itemsApproveList')) return;
+      const q = clean($("itemsApproveSearch")?.value).toLowerCase();
+      let list = [...state.inventory];
+      if (state.itemApprovalFilter === "pending") list = list.filter(item => itemPending(item) && !itemLive(item) && !itemRejected(item));
+      if (state.itemApprovalFilter === "rejected") list = list.filter(itemRejected);
+      if (state.itemApprovalFilter === "live") list = list.filter(itemLive);
+      list = list.filter(item => !q || JSON.stringify(item).toLowerCase().includes(q));
+      $("itemsApproveList").innerHTML = list.length ? list.map(item => itemApprovalCard(item)).join("") : emptyHtml("No items found for approval.", "fa-clipboard-check");
+      setBadge("itemsApprovalBadge", getPendingItems().length);
+    }
+
+    function itemApprovalCard(item) {
+      const realIndex = state.inventory.indexOf(item);
+      const title = item.title || item.name || item.productName || "Seller Item";
+      const price = item.price || item.mrp || item.salePrice || item.finalPrice || 0;
+      const image = firstImage(item) || item.image || item.imageUrl || DEFAULT_IMAGE;
+      const cls = itemLive(item) ? "success" : itemRejected(item) ? "danger" : itemSuspended(item) ? "danger" : "warning";
+      return `<div class="item-card"><div class="item-main"><div class="seller-mini"><img class="thumb" src="${escapeHtml(image)}" onclick="event.stopPropagation();zoomImage(this.src)" alt="Item"><div><div class="item-title">${escapeHtml(title)}</div><div class="item-sub">Seller: ${escapeHtml(item.sellerName || item.sellerEmail || item.sellerId || "--")}<br>SKU: ${escapeHtml(item.sku || item.productId || item.id || "--")} · Price: ${money(price)}</div></div></div><span class="pill ${cls}">${escapeHtml(item.status || item.productStatus || item.qcStatus || "Pending")}</span></div><div class="item-actions"><button class="soft-btn" onclick="openInventory(${realIndex})"><i class="fa-solid fa-eye"></i> Full Details</button><button class="primary-btn" onclick="approveItem(${realIndex})"><i class="fa-solid fa-check"></i> Accept & Make Live</button><button class="danger-btn" onclick="rejectItem(${realIndex})"><i class="fa-solid fa-xmark"></i> Not Approve</button><button class="warning-btn" onclick="suspendItem(${realIndex})"><i class="fa-solid fa-pause"></i> Suspend</button></div></div>`;
+    }
+
+    async function approveItem(index) {
+      const item = state.inventory[index];
+      if (!item || !confirm("Accept this item and make it live? This will NOT place or create any order.")) return;
+      try {
+        await callItemRoute(getItemId(item), { status: "Active", productStatus: "Active", qcStatus: "Approved", isVisible: true, visible: true, hidden: false, deleted: false, approvedAt: new Date().toISOString(), approvedBy: state.admin?.uid || state.admin?.id || "" }, "approve");
+        Object.assign(item, { status: "Active", productStatus: "Active", qcStatus: "Approved", isVisible: true, visible: true, hidden: false, deleted: false });
+        renderInventory();
+        renderItemsApprove();
+        renderDashboard();
+        showToast("Item is live now. No order was created.", "success");
+      } catch (err) {
+        showToast(err.message || "Approve failed.", "error");
+      }
+    }
+
+    async function rejectItem(index) {
+      const item = state.inventory[index];
+      if (!item) return;
+      const reason = prompt("Reason for not approve:", "QC not approved");
+      if (reason === null) return;
+      try {
+        await callItemRoute(getItemId(item), { status: "Rejected", productStatus: "Rejected", qcStatus: "Rejected", rejectionReason: reason, isVisible: false, visible: false, hidden: true, rejectedAt: new Date().toISOString(), rejectedBy: state.admin?.uid || state.admin?.id || "" }, "reject");
+        Object.assign(item, { status: "Rejected", productStatus: "Rejected", qcStatus: "Rejected", rejectionReason: reason, isVisible: false, visible: false, hidden: true });
+        renderInventory();
+        renderItemsApprove();
+        renderDashboard();
+        showToast("Item not approved.", "success");
+      } catch (err) {
+        showToast(err.message || "Reject failed.", "error");
+      }
+    }
+
+    async function suspendItem(index) {
+      const item = state.inventory[index];
+      if (!item || !confirm("Suspend/block this item?")) return;
+      try {
+        await callItemRoute(getItemId(item), { status: "Suspended", productStatus: "Suspended", qcStatus: "Suspended", isVisible: false, visible: false, hidden: true, suspendedAt: new Date().toISOString(), suspendedBy: state.admin?.uid || state.admin?.id || "" }, "suspend");
+        Object.assign(item, { status: "Suspended", productStatus: "Suspended", qcStatus: "Suspended", isVisible: false, visible: false, hidden: true });
+        renderInventory();
+        renderItemsApprove();
+        renderDashboard();
+        showToast("Item suspended.", "success");
+      } catch (err) {
+        showToast(err.message || "Suspend failed.", "error");
+      }
+    }
+
+    function getItemId(item) {
+      return clean(item.id || item.productId || item.uid || item.sku || item.slug);
+    }
+
+    async function callItemRoute(id, update, action) {
+      if (!id) throw new Error("Item ID missing.");
+      const routes = [
+        { path: `/admin/items/${encodeURIComponent(id)}/${action}`, method: action === "delete" ? "DELETE" : "POST", body: update },
+        { path: `/admin/products/${encodeURIComponent(id)}/${action}`, method: action === "delete" ? "DELETE" : "POST", body: update },
+        { path: `/admin/items/${encodeURIComponent(id)}`, method: action === "delete" ? "DELETE" : "PATCH", body: update },
+        { path: `/admin/products/${encodeURIComponent(id)}`, method: action === "delete" ? "DELETE" : "PATCH", body: update },
+        { path: `/update-product`, method: "PATCH", body: { id, productId: id, ...update } }
+      ];
+      let lastErr;
+      for (const route of routes) {
+        try {
+          return await api(route.path, { method: route.method, body: JSON.stringify(route.body) });
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      try {
+        await sendSystemAdminChat(`Item ${action.toUpperCase()} request\nID: ${id}\n${JSON.stringify(update, null, 2)}`);
+      } catch {}
+      throw lastErr || new Error("Worker item route missing.");
+    }
+
+    async function renderAdminChat() {
+      const messages = [...state.adminChat].sort((a, b) => bestTime(a) - bestTime(b)).filter(msg => !state.deletedMessages.has(msg.id));
+      if (!messages.length) {
+        $("chatMessages").innerHTML = emptyHtml("No admin chat messages yet.", "fa-comments");
+        return;
+      }
+      const html = [];
+      for (let i = 0; i < messages.length; i++) {
+        const msg = messages[i];
+        const decoded = await decodeChatMessage(msg.message || msg.text || "");
+        const mine = clean(msg.adminUid || msg.senderUid || msg.uid) === clean(state.admin?.uid || state.admin?.id) || clean(msg.sender).toLowerCase() === "admin";
+        html.push(`<div class="msg ${mine ? "out" : "in"}">
+          ${decoded.reply ? `<div class="chat-quote">${escapeHtml(decoded.reply.text || decoded.reply.message || "Reply")}</div>` : ""}
+          <div>${escapeHtml(decoded.text || decoded.message || msg.message || "")}</div>
+          ${filesHtml(msg.files || msg.attachments || [])}
+          <span class="msg-meta">${escapeHtml(msg.adminName || msg.senderName || msg.sender || "Admin")} · ${formatDate(msg.createdAt || msg.timestamp)}</span>
+          <div class="msg-actions"><button onclick="replyChat('${escapeAttr(msg.id)}')">Reply</button><button onclick="copyChat('${escapeAttr(decoded.text || msg.message || "")}')">Copy</button><button onclick="deleteChatForMe('${escapeAttr(msg.id)}')">Delete from me</button></div>
+        </div>`);
+      }
+      $("chatMessages").innerHTML = html.join("");
+      scrollChatBottom();
+    }
+
+    function filesHtml(files) {
+      if (!Array.isArray(files) || !files.length) return "";
+      return `<div class="msg-files">${files.map(file => {
+        const url = file.url || file.src || file.path || file;
+        const name = file.name || file.fileName || "Attachment";
+        if (imageUrlLike(url)) return `<img src="${escapeHtml(url)}" alt="${escapeHtml(name)}" onclick="zoomImage(this.src)">`;
+        return `<a class="file-link" href="${escapeHtml(url)}" target="_blank" rel="noopener"><i class="fa-solid fa-file"></i><span>${escapeHtml(name)}</span></a>`;
+      }).join("")}</div>`;
+    }
+
+    async function loadAdminChat(force = false) {
+      const chat = await optionalApi("/admin/chat", { messages: state.adminChat });
+      state.adminChat = chat.messages || [];
+      renderAdminChat();
+      if (force) showToast("Chat synced.", "success");
+    }
+
+    async function sendSystemAdminChat(text) {
+      const encrypted = await encodeChatMessage({ text, system: true, createdAt: new Date().toISOString() });
+      const form = new FormData();
+      form.append("message", encrypted);
+      await api("/admin/chat/messages", { method: "POST", body: form });
+    }
+
+    async function sendAdminChat(hd = true) {
+      const input = $("adminChatInput");
+      const message = clean(input.value);
+      if (!message && !state.selectedFiles.length) return;
+      const encrypted = await encodeChatMessage({ text: message, reply: state.reply, createdAt: new Date().toISOString() });
+      const form = new FormData();
+      form.append("message", encrypted);
+      form.append("hd", hd ? "true" : "false");
+      const files = hd ? state.selectedFiles : await Promise.all(state.selectedFiles.map(file => file.type.startsWith("image/") ? compressImage720(file) : file));
+      files.slice(0, 15).forEach(file => form.append("files", file, file.name));
+      try {
+        await api("/admin/chat/messages", { method: "POST", body: form });
+        input.value = "";
+        clearSelectedFiles();
+        clearReply();
+        await loadAdminChat();
+      } catch (err) {
+        showToast(err.message || "Message failed.", "error");
+      }
+    }
+
+    async function encodeChatMessage(payload) {
+      const key = await getChatKey();
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const data = new TextEncoder().encode(JSON.stringify(payload));
+      const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, data);
+      return CHAT_PREFIX + JSON.stringify({ iv: bytesToBase64(iv), data: bytesToBase64(new Uint8Array(encrypted)) });
+    }
+
+    async function decodeChatMessage(raw) {
+      const str = clean(raw);
+      if (!str.startsWith(CHAT_PREFIX)) return { text: str };
+      try {
+        const payload = JSON.parse(str.slice(CHAT_PREFIX.length));
+        const key = await getChatKey();
+        const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv: base64ToBytes(payload.iv) }, key, base64ToBytes(payload.data));
+        return JSON.parse(new TextDecoder().decode(decrypted));
+      } catch {
+        return { text: "Encrypted message" };
+      }
+    }
+
+    async function getChatKey() {
+      const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(CHAT_SECRET));
+      return crypto.subtle.importKey("raw", hash, "AES-GCM", false, ["encrypt", "decrypt"]);
+    }
+
+    function bytesToBase64(bytes) {
+      let binary = "";
+      bytes.forEach(byte => binary += String.fromCharCode(byte));
+      return btoa(binary);
+    }
+
+    function base64ToBytes(base64) {
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return bytes;
+    }
+
+    function replyChat(id) {
+      const msg = state.adminChat.find(item => clean(item.id) === clean(id));
+      if (!msg) return;
+      decodeChatMessage(msg.message || msg.text || "").then(decoded => {
+        state.reply = { id, text: decoded.text || decoded.message || "Message" };
+        $("replyPreviewText").textContent = "Replying to: " + state.reply.text.slice(0, 80);
+        $("replyPreview").classList.remove("hidden");
+      });
+    }
+
+    function clearReply() {
+      state.reply = null;
+      $("replyPreview").classList.add("hidden");
+      $("replyPreviewText").textContent = "";
+    }
+
+    function copyChat(text) {
+      navigator.clipboard.writeText(text).then(() => showToast("Copied.", "success")).catch(() => showToast("Copy failed.", "error"));
+    }
+
+    function deleteChatForMe(id) {
+      state.deletedMessages.add(id);
+      localStorage.setItem(DELETED_CHAT_KEY, JSON.stringify([...state.deletedMessages]));
+      renderAdminChat();
+      showToast("Deleted from me.", "success");
+    }
+
+    function toggleChatPlus() {
+      $("chatPlusMenu").classList.toggle("hidden");
+    }
+
+    function pickImages() {
+      $("chatPlusMenu").classList.add("hidden");
+      $("chatImageInput").click();
+    }
+
+    function pickDocs() {
+      $("chatPlusMenu").classList.add("hidden");
+      $("chatDocInput").click();
+    }
+
+    function handleSelectedFiles(event) {
+      const files = [...event.target.files];
+      const images = files.filter(file => file.type.startsWith("image/"));
+      const docs = files.filter(file => !file.type.startsWith("image/"));
+      const currentImages = state.selectedFiles.filter(file => file.type.startsWith("image/")).length;
+      const allowedImages = images.slice(0, Math.max(0, 15 - currentImages));
+      if (images.length > allowedImages.length) showToast("Maximum 15 images can be shared.", "warning");
+      state.selectedFiles.push(...allowedImages, ...docs);
+      event.target.value = "";
+      renderSelectedFiles();
+    }
+
+    function renderSelectedFiles() {
+      if (!state.selectedFiles.length) {
+        $("selectedFilesPreview").classList.add("hidden");
+        $("selectedFilesGrid").innerHTML = "";
+        return;
+      }
+      $("selectedFilesPreview").classList.remove("hidden");
+      $("selectedFilesGrid").innerHTML = state.selectedFiles.map((file, index) => {
+        if (file.type.startsWith("image/")) return `<div class="preview-item"><img src="${URL.createObjectURL(file)}" alt="Selected"><button onclick="removeSelectedFile(${index})"><i class="fa-solid fa-times"></i></button></div>`;
+        return `<div class="preview-item file-preview"><i class="fa-solid fa-file"></i><span>${escapeHtml(file.name)}</span><button onclick="removeSelectedFile(${index})"><i class="fa-solid fa-times"></i></button></div>`;
+      }).join("");
+    }
+
+    function removeSelectedFile(index) {
+      state.selectedFiles.splice(index, 1);
+      renderSelectedFiles();
+    }
+
+    function clearSelectedFiles() {
+      state.selectedFiles = [];
+      renderSelectedFiles();
+    }
+
+    async function compressImage720(file) {
+      const img = await loadImageFile(file);
+      const max = 720;
+      const ratio = Math.min(1, max / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * ratio);
+      canvas.height = Math.round(img.height * ratio);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      return new Promise(resolve => canvas.toBlob(blob => resolve(new File([blob], file.name.replace(/\.[^.]+$/, "") + "-720.jpg", { type: "image/jpeg" })), "image/jpeg", 0.82));
+    }
+
+    function loadImageFile(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+      });
+    }
+
+    async function openCamera() {
+      $("chatPlusMenu").classList.add("hidden");
+      try {
+        state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        $("cameraVideo").srcObject = state.cameraStream;
+        openModal("cameraModal");
+      } catch (err) {
+        showToast("Camera permission denied or not available.", "error");
+      }
+    }
+
+    function captureCamera() {
+      const video = $("cameraVideo");
+      const canvas = $("cameraCanvas");
+      canvas.width = video.videoWidth || 1280;
+      canvas.height = video.videoHeight || 720;
+      canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(blob => {
+        const file = new File([blob], "camera-" + Date.now() + ".jpg", { type: "image/jpeg" });
+        const currentImages = state.selectedFiles.filter(f => f.type.startsWith("image/")).length;
+        if (currentImages >= 15) return showToast("Maximum 15 images can be shared.", "warning");
+        state.selectedFiles.push(file);
+        renderSelectedFiles();
+        closeCamera();
+      }, "image/jpeg", 0.95);
+    }
+
+    function closeCamera() {
+      if (state.cameraStream) state.cameraStream.getTracks().forEach(track => track.stop());
+      state.cameraStream = null;
+      closeModal("cameraModal");
+    }
+
+    function scrollChatBottom() {
+      const box = $("chatMessages");
+      if (box) box.scrollTop = box.scrollHeight;
+    }
+
+    function openProfileImageMenu() {
+      openForm("Profile Image", "Upload or remove admin profile image. All admins will see this profile logo.", `
+        <div class="item-actions"><button class="primary-btn full" onclick="document.getElementById('profileUploadInput').click()"><i class="fa-solid fa-upload"></i> Upload Image</button><button class="danger-btn full" onclick="removeProfileImage()"><i class="fa-solid fa-trash"></i> Remove Image</button></div>
+        <input id="profileUploadInput" type="file" class="hidden" accept="image/*" onchange="uploadProfileImage(event)">`);
+    }
+
+    async function uploadProfileImage(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const form = new FormData();
+      form.append("file", file, file.name);
+      try {
+        const result = await api("/admin/profile-image", { method: "POST", body: form });
+        if (result.profileImage) {
+          state.admin.profileImage = result.profileImage;
+          fillAdmin();
+        }
+        closeModal("formModal");
+        showToast("Profile image updated.", "success");
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    }
+
+    async function removeProfileImage() {
+      try {
+        const result = await api("/admin/profile-image", { method: "DELETE" });
+        state.admin.profileImage = result.profileImage || DEFAULT_IMAGE;
+        fillAdmin();
+        closeModal("formModal");
+        showToast("Profile image removed.", "success");
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    }
+
+    async function enableNotifications() {
+      if (!("Notification" in window)) return showToast("Notifications not supported on this device.", "warning");
+      const permission = await Notification.requestPermission();
+      if ($("notificationStatus")) $("notificationStatus").textContent = permission === "granted" ? "Notifications enabled on this device." : "Notification permission not granted.";
+      if ($("notificationStatusSettings")) $("notificationStatusSettings").textContent = permission === "granted" ? "Notifications enabled on this device." : "Notification permission not granted.";
+      if (permission === "granted") {
+        new Notification("Aryanta Admin", { body: "Notifications enabled successfully.", icon: DEFAULT_IMAGE });
+        showToast("Notifications enabled.", "success");
+      }
+    }
+
+    function toggleTheme() {
+      const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      applyTheme(next);
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      localStorage.setItem("aryanta_user_portal_theme", theme);
+      if ($("themeIcon")) $("themeIcon").className = theme === "dark" ? "fa-solid fa-sun" : "fa-solid fa-moon";
+    }
+
+    function openDetails(title, sub, data, extraHtml = "") {
+      $("detailsTitle").textContent = title;
+      $("detailsSub").textContent = sub;
+      const images = collectImages(data);
+      const urls = collectUrls(data).filter(url => !imageUrlLike(url));
+      $("detailsBody").innerHTML = `${objectDetailsHtml(data)}${images.length ? `<div class="details-section"><h4>Images</h4><div class="doc-grid">${images.map((img, i) => `<div class="doc-item"><img src="${escapeHtml(img)}" alt="Image ${i + 1}" onclick="zoomImage(this.src)"><span>Image ${i + 1}</span></div>`).join("")}</div></div>` : ""}${urls.length ? `<div class="details-section"><h4>Links / Documents</h4><div class="list">${urls.map(url => `<a class="file-link" href="${escapeHtml(url)}" target="_blank" rel="noopener"><i class="fa-solid fa-link"></i><span>Open Link</span></a>`).join("")}</div></div>` : ""}${extraHtml}`;
+      openModal("detailsModal");
+    }
+
+    function objectDetailsHtml(data) {
+      const rows = flattenObject(data).filter(([key, value]) => value !== undefined && value !== null && value !== "" && typeof value !== "object" && !imageUrlLike(value) && !urlLike(value));
+      return rows.length ? `<div class="info-grid">${rows.map(([key, value]) => `<div class="info-box"><span>${escapeHtml(key)}</span><strong>${escapeHtml(formatValue(value))}</strong></div>`).join("")}</div>` : `<div class="empty-state"><i class="fa-solid fa-circle-info"></i><strong>No text details found.</strong></div>`;
+    }
+
+    function flattenObject(obj, prefix = "") {
+      const out = [];
+      if (!obj || typeof obj !== "object") return out;
+      Object.entries(obj).forEach(([key, value]) => {
+        const label = prefix ? prefix + " / " + prettyKey(key) : prettyKey(key);
+        if (Array.isArray(value)) {
+          value.forEach((item, i) => {
+            if (item && typeof item === "object") out.push(...flattenObject(item, label + " " + (i + 1)));
+            else out.push([label + " " + (i + 1), item]);
+          });
+        } else if (value && typeof value === "object") {
+          out.push(...flattenObject(value, label));
+        } else {
+          out.push([label, value]);
+        }
+      });
+      return out;
+    }
+
+    function prettyKey(key) {
+      return String(key).replace(/[_-]/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2").replace(/\b\w/g, m => m.toUpperCase());
+    }
+
+    function formatValue(value) {
+      if (typeof value === "boolean") return value ? "Yes" : "No";
+      if (String(value).length > 13 && toMs(value)) return formatDate(value);
+      return value;
+    }
+
+    function infoGrid(rows) {
+      return `<div class="info-grid">${rows.map(([key, value]) => `<div class="info-box"><span>${escapeHtml(key)}</span><strong>${escapeHtml(value ?? "--")}</strong></div>`).join("")}</div>`;
+    }
+
+    function collectImages(value, out = []) {
+      if (!value || out.length > 60) return [...new Set(out)];
+      if (typeof value === "string") {
+        if (imageUrlLike(value)) out.push(value);
+        return [...new Set(out)];
+      }
+      if (Array.isArray(value)) value.forEach(item => collectImages(item, out));
+      else if (typeof value === "object") Object.values(value).forEach(item => collectImages(item, out));
+      return [...new Set(out)];
+    }
+
+    function collectUrls(value, out = []) {
+      if (!value || out.length > 80) return [...new Set(out)];
+      if (typeof value === "string") {
+        if (urlLike(value)) out.push(value);
+        return [...new Set(out)];
+      }
+      if (Array.isArray(value)) value.forEach(item => collectUrls(item, out));
+      else if (typeof value === "object") Object.values(value).forEach(item => collectUrls(item, out));
+      return [...new Set(out)];
+    }
+
+    function firstImage(value) {
+      return collectImages(value)[0] || "";
+    }
+
+    function openForm(title, sub, html) {
+      $("formTitle").textContent = title;
+      $("formSub").textContent = sub;
+      $("formBody").innerHTML = html;
+      openModal("formModal");
+    }
+
+    function openModal(id) {
+      $(id).classList.add("active");
+    }
+
+    function closeModal(id) {
+      $(id).classList.remove("active");
+    }
+
+    function zoomImage(src) {
+      if (!src) return;
+      $("zoomedImage").src = src;
+      $("imageZoom").classList.add("active");
+    }
+
+    function closeImageZoom() {
+      $("imageZoom").classList.remove("active");
+      $("zoomedImage").src = "";
+    }
+
+    function emptyHtml(text, icon = "fa-box-open") {
+      return `<div class="empty-state"><i class="fa-solid ${icon}"></i><strong>${escapeHtml(text)}</strong><p>Data will appear here automatically after sync.</p></div>`;
+    }
+
+    function safeJsonForAttr(obj) {
+      return JSON.stringify(obj).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026").replace(/'/g, "\\u0027");
+    }
+
+    function escapeAttr(value) {
+      return String(value ?? "").replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, " ").replace(/\r/g, " ");
+    }
+
+    window.navigateTo = navigateTo;
+    window.goBack = goBack;
+    window.logout = logout;
+    window.toggleTheme = toggleTheme;
+    window.openProfileImageMenu = openProfileImageMenu;
+    window.uploadProfileImage = uploadProfileImage;
+    window.removeProfileImage = removeProfileImage;
+    window.enableNotifications = enableNotifications;
+    window.openLoanModal = openLoanModal;
+    window.submitLoanRequest = submitLoanRequest;
+    window.openTransaction = openTransaction;
+    window.openSeller = openSeller;
+    window.approveSeller = approveSeller;
+    window.rejectSeller = rejectSeller;
+    window.suspendSeller = suspendSeller;
+    window.changeSellerPassword = changeSellerPassword;
+    window.submitSellerPassword = submitSellerPassword;
+    window.openSupportTicket = openSupportTicket;
+    window.openSupportChat = openSupportChat;
+    window.sendSupportReply = sendSupportReply;
+    window.setReportMode = setReportMode;
+    window.openReport = openReport;
+    window.openReportModal = openReportModal;
+    window.submitReport = submitReport;
+    window.openInventory = openInventory;
+    window.deleteInventoryItem = deleteInventoryItem;
+    window.setItemApprovalFilter = setItemApprovalFilter;
+    window.renderItemsApprove = renderItemsApprove;
+    window.approveItem = approveItem;
+    window.rejectItem = rejectItem;
+    window.suspendItem = suspendItem;
+    window.loadAdminChat = loadAdminChat;
+    window.sendAdminChat = sendAdminChat;
+    window.replyChat = replyChat;
+    window.copyChat = copyChat;
+    window.deleteChatForMe = deleteChatForMe;
+    window.clearReply = clearReply;
+    window.toggleChatPlus = toggleChatPlus;
+    window.pickImages = pickImages;
+    window.pickDocs = pickDocs;
+    window.handleSelectedFiles = handleSelectedFiles;
+    window.removeSelectedFile = removeSelectedFile;
+    window.clearSelectedFiles = clearSelectedFiles;
+    window.openCamera = openCamera;
+    window.captureCamera = captureCamera;
+    window.closeCamera = closeCamera;
+    window.closeModal = closeModal;
+    window.zoomImage = zoomImage;
+    window.closeImageZoom = closeImageZoom;
+    window.renderActiveSellers = renderActiveSellers;
+    window.renderApprovals = renderApprovals;
+    window.renderInventory = renderInventory;
+    window.renderItemsApprove = renderItemsApprove;
+
+    init();
+  </script>
+</body>
+</html>
