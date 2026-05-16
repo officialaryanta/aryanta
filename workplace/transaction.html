@@ -77,6 +77,7 @@
     .wrap { width: 100%; max-width: 430px; margin: 0 auto; display: grid; gap: 12px; }
 
     .topbar { min-height: 56px; display: grid; grid-template-columns: 45px minmax(0, 1fr) auto; align-items: center; gap: 9px; }
+    .topbar.banner-hidden { display: none !important; }
     .icon-btn { width: 45px; height: 45px; border-radius: 16px; background: var(--card); border: 1px solid var(--border); color: var(--primary); box-shadow: var(--shadow-soft); display: inline-flex; align-items: center; justify-content: center; font-size: 16px; }
 
     .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -140,6 +141,8 @@
     .field input, .field select { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-weight: 700; font-size: 14px;}
     .field input:focus { border-color: var(--primary); }
     .field input[readonly] { background: rgba(0, 128, 128, 0.05); color: var(--primary); font-weight: 900; }
+    .amount-preview { margin-top: 7px; padding: 10px 12px; border-radius: 12px; background: var(--soft); color: var(--primary); font-size: 12px; font-weight: 900; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .amount-preview span:last-child { color: var(--text); }
     .btn-submit { width: 100%; padding: 14px; border-radius: 12px; background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: white; font-weight: 900; font-size: 15px; margin-top: 8px;}
 
     /* Loader Overlay */
@@ -246,7 +249,8 @@
         </div>
         <div class="field">
           <label>Amount (₹)</label>
-          <input type="number" id="addMoneyAmount" placeholder="Enter amount to add" />
+          <input type="number" id="addMoneyAmount" min="1" step="1" inputmode="decimal" placeholder="Enter amount to add" oninput="updateAmountPreview('addMoneyAmount', 'addMoneyPreview')" />
+          <div id="addMoneyPreview" class="amount-preview"><span>Payable in Razorpay</span><span>₹0</span></div>
         </div>
         <button class="btn-submit" onclick="submitAddMoney()"><i class="fas fa-shield-halved"></i> Pay via Razorpay</button>
       </div>
@@ -292,7 +296,8 @@
         <input type="hidden" id="payLoanId" />
         <div class="field">
           <label>Payment Amount (₹)</label>
-          <input type="number" id="payAmount" placeholder="0" />
+          <input type="number" id="payAmount" min="1" step="1" inputmode="decimal" placeholder="0" oninput="updateAmountPreview('payAmount', 'payAmountPreview')" />
+          <div id="payAmountPreview" class="amount-preview"><span>Payable in Razorpay</span><span>₹0</span></div>
         </div>
         <button class="btn-submit" onclick="submitPayment()"><i class="fas fa-shield-halved"></i> Pay securely</button>
       </div>
@@ -329,49 +334,131 @@
     let currentToast = null;
     let activeTab = 'all';
 
-    const currentUser = JSON.parse(sessionStorage.getItem(PROFILE_KEY) || "{}");
-    const userUid = currentUser.uid || "";
-    const userName = currentUser.name || "User";
-    const isAdmin = currentUser.role === "Admin";
+    const DEFAULT_SETTINGS = {
+      appLock: false,
+      pin: "",
+      biometric: false,
+      notify: false,
+      banner: true,
+      camera: false,
+      files: false,
+      mic: false,
+      music: false,
+      audio: true,
+      messageDeleteDays: "0",
+      locationEnabled: false,
+      locationData: { city: "<na>", state: "<na>", country: "<na>" },
+      theme: "light"
+    };
+
+    let appSettings = { ...DEFAULT_SETTINGS };
+    const currentUser = safeJson(sessionStorage.getItem(PROFILE_KEY), {});
+    const userUid = currentUser.uid || currentUser.id || "";
+    const userName = currentUser.name || currentUser.fullName || "User";
+    const isAdmin = String(currentUser.role || "").toLowerCase() === "admin";
 
     const $ = id => document.getElementById(id);
 
-    // --- SECURE BOOT ---
+    // --- SECURE BOOT + ADMIN SETTINGS SYNC ---
+    function safeJson(value, fallback) {
+      try { return JSON.parse(value || "") || fallback; } catch (e) { return fallback; }
+    }
+
     function getToken() { return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(SESSION_TOKEN_KEY) || ""; }
     function goPage(url) { window.location.href = url; }
-    function escapeHtml(val) { return String(val ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-    function formatMoney(num) { return "₹" + Number(num || 0).toLocaleString("en-IN"); }
-    function formatDate(iso) { 
+    function escapeHtml(val) { return String(val ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+    function formatMoney(num) { return "₹" + Number(num || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 }); }
+    function formatDate(iso) {
       if(!iso) return "N/A";
-      const d = new Date(iso); 
-      return d.toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric' }); 
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return "N/A";
+      return d.toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function normalizeAmount(value) {
+      const raw = String(value ?? "").replace(/,/g, "").trim();
+      const amount = Number(raw);
+      if (!Number.isFinite(amount)) return 0;
+      return Math.round(amount * 100) / 100;
+    }
+
+    function amountToPaise(value) {
+      return Math.round(normalizeAmount(value) * 100);
+    }
+
+    function loadAdminSettings() {
+      const savedSettings = safeJson(localStorage.getItem(SETTINGS_KEY), {});
+      appSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
+      applyTheme(appSettings.theme || "light");
+      applyBanner();
+    }
+
+    function applyTheme(theme) {
+      const useDark = theme === "dark" || (theme === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+      document.documentElement.setAttribute("data-theme", useDark ? "dark" : "light");
+    }
+
+    function applyBanner() {
+      const topbar = document.querySelector(".topbar");
+      if (!topbar) return;
+      topbar.classList.toggle("banner-hidden", appSettings.banner === false);
     }
 
     function initApp() {
       if(!getToken()) { window.location.replace(LOGIN_PAGE); return; }
-      
-      try {
-        const savedSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {};
-        const theme = savedSettings.theme || "light";
-        const useDark = theme === "dark" || (theme === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
-        document.documentElement.setAttribute("data-theme", useDark ? "dark" : "light");
-      } catch(e) {}
+      loadAdminSettings();
+      window.addEventListener("storage", event => {
+        if (event.key === SETTINGS_KEY) loadAdminSettings();
+      });
+      if (window.matchMedia) {
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => {
+          if ((appSettings.theme || "light") === "system") applyTheme("system");
+        });
+      }
     }
 
-    function showToast(message, type = "info") {
+    function showToast(message, type = "info", options = {}) {
+      if (!options.force && !appSettings.notify) return;
       if (currentToast) { currentToast.remove(); }
+      const holder = $("toastHolder");
+      if (!holder) return;
+
       const toast = document.createElement("div");
-      toast.className = "toast show";
-      
+      toast.className = "toast";
+
       let icon = "fa-bell";
       let color = "var(--primary)";
       if(type === "error") { icon = "fa-circle-exclamation"; color = "var(--danger)"; }
       if(type === "success") { icon = "fa-circle-check"; color = "var(--success)"; }
 
       toast.innerHTML = `<i class="fas ${icon}" style="color: ${color}"></i><span>${escapeHtml(message)}</span>`;
-      $("toastHolder").appendChild(toast);
+      holder.querySelectorAll(".toast").forEach(item => item.remove());
+      holder.appendChild(toast);
       currentToast = toast;
-      setTimeout(() => { toast.classList.remove("show"); setTimeout(()=>toast.remove(), 220); }, 2600);
+      requestAnimationFrame(() => toast.classList.add("show"));
+
+      let startY = 0;
+      toast.addEventListener("pointerdown", e => { startY = e.clientY; });
+      toast.addEventListener("pointerup", e => {
+        if ((e.clientY - startY) < -22) {
+          toast.classList.remove("show");
+          setTimeout(() => toast.remove(), 220);
+        }
+      });
+      toast.addEventListener("click", () => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 220);
+      });
+
+      setTimeout(() => { toast.classList.remove("show"); setTimeout(()=>toast.remove(), 220); }, Number(options.duration || 2600));
+    }
+
+    function updateAmountPreview(inputId, previewId) {
+      const preview = $(previewId);
+      if (!preview) return;
+      const amount = normalizeAmount($(inputId)?.value);
+      const valueNode = preview.querySelector("span:last-child");
+      if (valueNode) valueNode.textContent = formatMoney(amount);
     }
 
     function openModal(id) { 
@@ -410,70 +497,163 @@
     }
 
     // --- SECURE RAZORPAY HANDLER ---
-    async function processRazorpayPayment(amount, description, onSuccessCallback) {
-      setLoad(true, "Initiating secure payment...");
-      try {
-        // Fetch keys securely from worker
-        if (!window.API_KEYS.RAZORPAY) {
-            const kRes = await fetch(`${WORKER_API}/get-api-keys`);
-            const kData = await kRes.json();
-            window.API_KEYS.RAZORPAY = kData.razorpayKey || "";
-        }
+    function getOrderAmountPaise(orderData) {
+      return Number(orderData.amount || orderData.order_amount || orderData.order?.amount || 0);
+    }
 
-        const orderReq = await fetch(`${WORKER_API}/create-razorpay-order`, {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount: amount, receipt: "ARY-" + Date.now(), name: userName, email: currentUser.email || "" })
-        });
-        
-        const orderData = await orderReq.json();
-        if (!orderData.success) throw new Error(orderData.error || "Order creation failed");
+    function getOrderId(orderData) {
+      return orderData.order_id || orderData.id || orderData.order?.id || "";
+    }
+
+    function getOrderCurrency(orderData) {
+      return orderData.currency || orderData.order?.currency || "INR";
+    }
+
+    async function loadRazorpayKey() {
+      if (window.API_KEYS.RAZORPAY) return window.API_KEYS.RAZORPAY;
+      const kRes = await fetch(`${WORKER_API}/get-api-keys`, { cache: "no-store" });
+      const kData = await kRes.json().catch(() => ({}));
+      const key = kData.razorpayKey || kData.key_id || kData.key || "";
+      if (!key) throw new Error("Razorpay key missing from worker");
+      window.API_KEYS.RAZORPAY = key;
+      return key;
+    }
+
+    async function createRazorpayOrder(amountRupees, description) {
+      const amountPaise = amountToPaise(amountRupees);
+      const receipt = "ARY-" + Date.now();
+      const payload = {
+        amount: amountPaise,
+        amountPaise,
+        amount_paise: amountPaise,
+        amountRupees,
+        amount_rupees: amountRupees,
+        currency: "INR",
+        receipt,
+        name: userName,
+        email: currentUser.email || "",
+        phone: currentUser.phone || currentUser.mobile || "",
+        description
+      };
+
+      const orderReq = await fetch(`${WORKER_API}/create-razorpay-order`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const orderData = await orderReq.json().catch(() => ({}));
+      if (!orderReq.ok || !orderData.success) throw new Error(orderData.error || orderData.message || "Order creation failed");
+
+      const returnedAmountPaise = getOrderAmountPaise(orderData);
+      if (returnedAmountPaise !== amountPaise) {
+        throw new Error(`Razorpay amount mismatch. Entered ${formatMoney(amountRupees)}, worker returned ${formatMoney(returnedAmountPaise / 100)}. Update worker order amount to use amountPaise.`);
+      }
+
+      const orderId = getOrderId(orderData);
+      if (!orderId) throw new Error("Razorpay order_id missing from worker");
+
+      return { orderData, orderId, amountPaise, receipt: orderData.receipt || receipt, currency: getOrderCurrency(orderData) };
+    }
+
+    async function processRazorpayPayment(amount, description, onSuccessCallback) {
+      const amountRupees = normalizeAmount(amount);
+      const amountPaise = amountToPaise(amountRupees);
+      if (!amountRupees || amountPaise < 100) {
+        showToast("Minimum payment amount is ₹1", "error", { force: true });
+        return;
+      }
+
+      setLoad(true, "Creating Razorpay order...");
+      try {
+        const key = await loadRazorpayKey();
+        const { orderData, orderId, receipt, currency } = await createRazorpayOrder(amountRupees, description);
 
         setLoad(false);
 
         const options = {
-          key: window.API_KEYS.RAZORPAY,
-          amount: orderData.amount,
-          currency: orderData.currency,
+          key,
+          amount: amountPaise,
+          currency,
           name: "Aryanta",
-          description: description,
-          order_id: orderData.order_id,
+          description: `${description} • ${formatMoney(amountRupees)}`,
+          order_id: orderId,
+          webview_intent: true,
+          method: {
+            upi: true,
+            card: true,
+            netbanking: true,
+            wallet: true,
+            paylater: true
+          },
+          config: {
+            display: {
+              blocks: {
+                upi_block: {
+                  name: "Pay using UPI",
+                  instruments: [
+                    { method: "upi" }
+                  ]
+                }
+              },
+              sequence: ["block.upi_block"],
+              preferences: { show_default_blocks: true }
+            }
+          },
           handler: async function (response) {
             setLoad(true, "Verifying payment...");
             try {
-              const verifyReq = await fetch(`${WORKER_API}/verify-razorpay-payment`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                  order_no: orderData.receipt
-                })
-              });
-              
-              const verifyData = await verifyReq.json();
-              if (!verifyData.success) throw new Error("Payment Verification Failed");
+             const orderReq = await fetch(`${WORKER_API}/create-razorpay-order`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    amount: Number(amount),
+    receipt: "ARY-" + Date.now(),
+    name: userName,
+    email: currentUser.email || ""
+  })
+});
 
-              showToast("Payment Successful!", "success");
-              await onSuccessCallback(response.razorpay_payment_id);
+              const verifyData = await verifyReq.json().catch(() => ({}));
+              if (!verifyReq.ok || !verifyData.success) throw new Error(verifyData.error || verifyData.message || "Payment verification failed");
+
+              showToast("Payment successful", "success", { force: true });
+              await onSuccessCallback(response.razorpay_payment_id, { orderData, amountRupees, amountPaise, orderId });
             } catch (e) {
-              showToast(e.message, "error");
+              showToast(e.message || "Payment verification failed", "error", { force: true });
               setLoad(false);
             }
           },
-          prefill: { name: userName, email: currentUser.email || "", contact: currentUser.phone || "" },
+          prefill: {
+            name: userName,
+            email: currentUser.email || "",
+            contact: currentUser.phone || currentUser.mobile || ""
+          },
+          notes: {
+            source: "transaction.html",
+            userUid,
+            userName,
+            amountRupees: String(amountRupees)
+          },
           theme: { color: "#008080" },
-          modal: { ondismiss: function() { setLoad(false); } }
+          modal: {
+            ondismiss: function() {
+              setLoad(false);
+              showToast("Payment cancelled", "error");
+            }
+          }
         };
 
         const rzp = new Razorpay(options);
-        rzp.on('payment.failed', function (response){
-          showToast("Payment Failed or Cancelled", "error");
+        rzp.on("payment.failed", function (response){
+          const msg = response?.error?.description || "Payment failed or cancelled";
+          showToast(msg, "error", { force: true });
           setLoad(false);
         });
         rzp.open();
 
       } catch(e) {
-        showToast(e.message, "error");
+        showToast(e.message || "Payment failed", "error", { force: true, duration: 4200 });
         setLoad(false);
       }
     }
@@ -536,15 +716,27 @@
 
     // --- TRANSACTIONS ---
     function submitAddMoney() {
-      const amount = Number($("addMoneyAmount").value);
-      if(!amount || amount <= 0) return showToast("Enter a valid amount", "error");
+      const amount = normalizeAmount($("addMoneyAmount").value);
+      if(!amount || amount <= 0) return showToast("Enter a valid amount", "error", { force: true });
 
       closeModal("addMoneyModal");
-      
-      processRazorpayPayment(amount, "Wallet Top-Up", async (paymentId) => {
-        const tx = { type: 'in', amount, title: 'Wallet Top-Up', userUid, userName, date: new Date().toISOString(), method: 'Razorpay', paymentId };
+
+      processRazorpayPayment(amount, "Wallet Top-Up", async (paymentId, meta) => {
+        const tx = {
+          type: 'in',
+          amount,
+          amountPaise: meta?.amountPaise || amountToPaise(amount),
+          title: 'Wallet Top-Up',
+          userUid,
+          userName,
+          date: new Date().toISOString(),
+          method: 'Razorpay UPI/Checkout',
+          paymentId,
+          razorpayOrderId: meta?.orderId || ""
+        };
         await db.ref('transactions').push(tx);
         $("addMoneyAmount").value = "";
+        updateAmountPreview('addMoneyAmount', 'addMoneyPreview');
         setLoad(false);
         fetchData();
       });
@@ -582,7 +774,7 @@
     function requestLoanCheck() {
       const hasRunningLoan = loans.some(l => l.status === 'pending' || l.status === 'approved');
       if (hasRunningLoan) {
-        showToast("First clear the running loan!", "error");
+        showToast("First clear the running loan!", "error", { force: true });
         return;
       }
       openModal('loanModal');
@@ -593,7 +785,7 @@
       const reason = $("loanReason").value.trim();
       const payBy = $("loanDate").value;
 
-      if(!amount || amount <= 0 || !reason || !payBy) return showToast("Fill all loan details", "error");
+      if(!amount || amount <= 0 || !reason || !payBy) return showToast("Fill all loan details", "error", { force: true });
 
       const loan = { 
         uid: userUid, userName: userName, amount, reason, payBy, status: "pending", createdAt: new Date().toISOString() 
@@ -603,32 +795,35 @@
         await db.ref('loans').push(loan);
         $("loanAmount").value = ""; $("loanReason").value = ""; $("loanDate").value = "";
         closeModal("loanModal");
-        showToast("Loan request submitted", "success");
+        showToast("Loan request submitted", "success", { force: true });
         fetchData();
-      } catch(e) { showToast("Request failed", "error"); }
+      } catch(e) { showToast("Request failed", "error", { force: true }); }
     }
 
     function openPayModal(id) {
       $("payLoanId").value = id;
       $("payAmount").value = "";
+      updateAmountPreview('payAmount', 'payAmountPreview');
       openModal("payModal");
     }
 
     function submitPayment() {
       const id = $("payLoanId").value;
-      const amount = Number($("payAmount").value);
-      if(!amount || amount <= 0) return showToast("Invalid payment amount", "error");
+      const amount = normalizeAmount($("payAmount").value);
+      if(!amount || amount <= 0) return showToast("Invalid payment amount", "error", { force: true });
 
       closeModal("payModal");
 
-      processRazorpayPayment(amount, "Loan Repayment", async (paymentId) => {
-          recordLoanPayment(id, amount, paymentId);
+      processRazorpayPayment(amount, "Loan Repayment", async (paymentId, meta) => {
+          $("payAmount").value = "";
+          updateAmountPreview('payAmount', 'payAmountPreview');
+          recordLoanPayment(id, amount, paymentId, meta);
       });
     }
 
-    async function recordLoanPayment(id, amount, paymentId) {
+    async function recordLoanPayment(id, amount, paymentId, meta = {}) {
        try {
-          const payment = { amount, date: new Date().toISOString(), paidBy: userUid, paymentId };
+          const payment = { amount, amountPaise: meta.amountPaise || amountToPaise(amount), date: new Date().toISOString(), paidBy: userUid, paymentId, razorpayOrderId: meta.orderId || "" };
           await db.ref(`loans/${id}/payments`).push(payment);
           
           const loan = loans.find(l => l.id === id);
@@ -640,11 +835,11 @@
           }
           
           setLoad(false);
-          showToast("Payment recorded successfully", "success");
+          showToast("Payment recorded successfully", "success", { force: true });
           fetchData();
-        } catch(e) { 
+        } catch(e) {
           setLoad(false);
-          showToast("Payment failed", "error"); 
+          showToast("Payment failed", "error", { force: true });
         }
     }
 
