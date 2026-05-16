@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Aryanta Admin</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div id="lockScreen" class="lock-screen" hidden>
+    <div class="user-avatar">
+      <img id="lockAvatar" src="https://aryanta.in/vurify/aryanta.jpeg" alt="Admin" />
+    </div>
+    <h2>App Locked</h2>
+    <input id="lockPinInput" class="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="••••" />
+    <div class="lock-actions">
+      <button class="small-btn confirm-btn" type="button" onclick="unlockApp()">
+        <i class="fa-solid fa-unlock"></i> <span>Unlock</span>
+      </button>
+      <button id="lockBiometricBtn" class="small-btn" type="button" hidden onclick="unlockWithBiometrics()">
+        <i class="fa-solid fa-fingerprint"></i> <span>Biometrics</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="toastHolder" class="toast-holder"></div>
+  <input id="profileFile" class="hidden-input" type="file" accept="image/*" />
+
+  <div id="imageModal" class="image-modal" hidden onclick="if(event.target.id === 'imageModal') closeImageViewer()">
+    <div class="image-modal-card">
+      <button class="image-close small-btn danger" type="button" onclick="closeImageViewer()" title="Close" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i> <span>Close</span>
+      </button>
+      <img id="imageModalPreview" src="https://aryanta.in/vurify/aryanta.jpeg" alt="Preview" />
+      <div id="imageConfirmBar" class="image-confirm-bar" hidden>
+        <button class="small-btn confirm-btn" type="button" onclick="confirmProfileImage()" title="Update profile image" aria-label="Update profile image">
+          <i class="fa-solid fa-check"></i> <span>Confirm</span>
+        </button>
+        <button class="small-btn danger" type="button" onclick="cancelProfileImage()" title="Cancel" aria-label="Cancel">
+          <i class="fa-solid fa-ban"></i> <span>Cancel</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pinModal" class="image-modal" hidden>
+    <div class="image-modal-card" style="max-width: 320px;">
+      <h3 style="text-align:center; font-size: 18px; font-weight: 900;">Set Security PIN</h3>
+      <div class="pin-setup-form">
+        <p>Enter a 4-digit PIN to secure your admin panel.</p>
+        <input id="setupPin1" class="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="PIN" />
+        <input id="setupPin2" class="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="Confirm" />
+      </div>
+      <div class="image-confirm-bar" style="margin-top: 10px;">
+        <button class="small-btn confirm-btn" type="button" onclick="savePinSetup()">
+          <i class="fa-solid fa-check"></i> <span>Save PIN</span>
+        </button>
+        <button class="small-btn danger" type="button" onclick="cancelPinSetup()">
+          <i class="fa-solid fa-ban"></i> <span>Cancel</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <main class="app" id="mainApp">
+    <section class="screen">
+      <div class="safe-top"></div>
+
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-logo" onclick="openImageViewer(ARYANTA_LOGO, false)" title="View Aryanta logo">
+            <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta" />
+          </div>
+          <div>
+            <h1>Aryanta</h1>
+            <p>Admin Panel</p>
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <button class="round-btn" type="button" onclick="manualRefreshDashboard()" title="Refresh dashboard" aria-label="Refresh dashboard">
+            <i class="fa-solid fa-rotate"></i> <span class="btn-text">Refresh</span>
+          </button>
+          <button class="round-btn" type="button" onclick="showPage('settings')" title="Settings" aria-label="Open settings">
+            <i class="fa-solid fa-gear"></i> <span class="btn-text">Settings</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="content">
+        <section id="page-home" class="page active">
+          <div class="hero-card card">
+            <div class="user-avatar" onclick="openImageViewer(getCurrentProfileImage(), false)" title="View admin image">
+              <img id="homeAvatar" src="https://aryanta.in/vurify/aryanta.jpeg" alt="Admin" />
+            </div>
+            <div class="hero-text">
+              <h2 id="homeAdminName">&lt;na&gt;</h2>
+              <p id="homeWelcome">No admin account found. Login first to view secure data.</p>
+              <div class="location-pill"><span class="mini-mark"><i class="fa-solid fa-location-dot"></i></span><span id="homeLocation">Location not enabled</span></div>
+            </div>
+          </div>
+
+          <div class="section-head">
+            <h3>Dashboard</h3>
+            <span>Encrypted View</span>
+          </div>
+
+          <div class="dashboard-grid">
+            <div class="stat-card big">
+              <div class="stat-top">
+                <div class="stat-mark"><i class="fa-solid fa-building-columns"></i></div>
+                <span class="stat-status">Company Value</span>
+              </div>
+              <div>
+                <span class="label">Today's company value</span>
+                <strong id="statCompany">&lt;na&gt;</strong>
+                <p>Visible only after valid admin login token.</p>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-top">
+                <div class="stat-mark"><i class="fa-solid fa-bag-shopping"></i></div>
+                <span class="stat-status">Today</span>
+              </div>
+              <div>
+                <span class="label">Total orders</span>
+                <strong id="statOrders">&lt;na&gt;</strong>
+                <p>Total platform orders today.</p>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-top">
+                <div class="stat-mark"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+                <span class="stat-status">Today</span>
+              </div>
+              <div>
+                <span class="label">Total revenue</span>
+                <strong id="statRevenue">&lt;na&gt;</strong>
+                <p>Total revenue generated today.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="quick-panel card">
+            <div class="quick-title">
+              <h3>Quick Access</h3>
+              <span>Admin Menu</span>
+            </div>
+            <div class="quick-actions">
+              <button class="quick-btn" type="button" onclick="openExternal('file.html')" title="File">
+                <span class="mini-mark"><i class="fa-solid fa-folder-open"></i></span><span class="btn-text">File</span>
+              </button>
+              <button class="quick-btn" type="button" onclick="openExternal('links.html')" title="Links">
+                <span class="mini-mark"><i class="fa-solid fa-link"></i></span><span class="btn-text">Links</span>
+              </button>
+              <button class="quick-btn" type="button" onclick="openExternal('transaction.html')" title="Transaction">
+                <span class="mini-mark"><i class="fa-solid fa-money-bill-transfer"></i></span><span class="btn-text">Transact</span>
+              </button>
+              <button class="quick-btn" type="button" onclick="openExternal('admmis.html')" title="Admins">
+                <span class="mini-mark"><i class="fa-solid fa-user-shield"></i></span><span class="btn-text">Admins</span>
+              </button>
+
+              <button class="quick-btn" type="button" onclick="openExternal('report.html')" title="Report">
+                <span class="mini-mark"><i class="fa-solid fa-flag"></i></span><span class="btn-text">Report</span>
+              </button>
+              <button class="quick-btn" type="button" onclick="openExternal('about-company.html')" title="About Company">
+                <span class="mini-mark"><i class="fa-solid fa-circle-info"></i></span><span class="btn-text">About</span>
+              </button>
+              <button class="quick-btn" type="button" onclick="openExternal('seller-verification.html')" title="Seller Verification">
+                <span class="mini-mark"><i class="fa-solid fa-id-card-clip"></i></span><span class="btn-text">Verify</span>
+              </button>
+              <button class="quick-btn" type="button" onclick="openExternal('all-seller.html')" title="All Seller">
+                <span class="mini-mark"><i class="fa-solid fa-store"></i></span><span class="btn-text">Sellers</span>
+              </button>
+
+              <button class="quick-btn" type="button" onclick="openExternal('inventory.html')" title="Inventory">
+                <span class="mini-mark"><i class="fa-solid fa-boxes-stacked"></i></span><span class="btn-text">Stock</span>
+              </button>
+              <button class="quick-btn" type="button" onclick="openExternal('seller-support.html')" title="Seller Support">
+                <span class="mini-mark"><i class="fa-solid fa-headset"></i></span><span class="btn-text">Support</span>
+              </button>
+              <button class="quick-btn" type="button" onclick="openExternal('orders.html')" title="Orders">
+                <span class="mini-mark"><i class="fa-solid fa-cart-shopping"></i></span><span class="btn-text">Orders</span>
+              </button>
+              <button class="quick-btn" type="button" onclick="openExternal('customer.html')" title="Customer">
+                <span class="mini-mark"><i class="fa-solid fa-users"></i></span><span class="btn-text">Clients</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section id="page-profile" class="page">
+          <div class="profile-box">
+            <div class="profile-head-card card">
+              <div class="profile-image-wrap" onclick="openImageViewer(getCurrentProfileImage(), false)" title="View profile image">
+                <img id="profileAvatar" src="https://aryanta.in/vurify/aryanta.jpeg" alt="Profile" />
+              </div>
+              <div class="profile-actions">
+                <div>
+                  <h3 id="profileName">&lt;na&gt;</h3>
+                  <p>Tap image to view. Use edit icon to change.</p>
+                </div>
+                <div class="action-row">
+                  <button class="small-btn" type="button" onclick="selectProfileImage()" title="Change profile image">
+                    <i class="fa-solid fa-pen"></i> <span class="btn-text">Edit Pic</span>
+                  </button>
+                  <button class="small-btn danger" type="button" onclick="removeProfileImage()" title="Remove profile image">
+                    <i class="fa-solid fa-trash"></i> <span class="btn-text">Remove</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="info-grid">
+              <div class="info-item"><span>UID</span><strong id="infoUid">&lt;na&gt;</strong></div>
+              <div class="info-item"><span>Name</span><strong id="infoName">&lt;na&gt;</strong></div>
+              <div class="info-item"><span>Email</span><strong id="infoEmail">&lt;na&gt;</strong></div>
+              <div class="info-item"><span>Role</span><strong id="infoRole">&lt;na&gt;</strong></div>
+              <div class="info-item"><span>Account Created</span><strong id="infoCreated">&lt;na&gt;</strong></div>
+              <div class="info-item"><span>Login Status</span><strong id="infoStatus">No Account</strong></div>
+            </div>
+
+            <div class="history-card card">
+              <div class="history-title">
+                <h3>Login History</h3>
+                <button class="small-btn" type="button" onclick="toggleHistory()" title="Show latest login history">
+                  <i class="fa-solid fa-clock-rotate-left"></i> <span class="btn-text">Latest</span>
+                </button>
+              </div>
+              <div id="historyList" class="history-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="page-settings" class="page">
+          <div class="settings-card card">
+            <div class="settings-title settings-title-bar">
+              <button class="small-btn" type="button" onclick="goBack()" title="Back">
+                <i class="fa-solid fa-arrow-left"></i> <span class="btn-text">Back</span>
+              </button>
+              <h3>Settings</h3>
+              <button class="small-btn" type="button" onclick="manualRefreshDashboard()" title="Refresh dashboard">
+                <i class="fa-solid fa-rotate"></i> <span class="btn-text">Reload</span>
+              </button>
+            </div>
+
+            <div class="settings-list">
+              
+              <div class="setting-item">
+                <div class="setting-left">
+                  <span class="setting-icon"><i class="fa-solid fa-lock"></i></span>
+                  <div class="setting-copy"><strong>App Lock (PIN)</strong><span>Require PIN to open app</span></div>
+                </div>
+                <button id="toggleAppLock" class="toggle" type="button" onclick="triggerAppLockSetup()"></button>
+              </div>
+
+              <div class="setting-item" id="biometricSettingRow" style="display: none;">
+                <div class="setting-left">
+                  <span class="setting-icon"><i class="fa-solid fa-fingerprint"></i></span>
+                  <div class="setting-copy"><strong>Biometric Unlock</strong><span>Use device fingerprint/face</span></div>
+                </div>
+                <button id="toggleBiometric" class="toggle" type="button" onclick="toggleSetting('biometric')"></button>
+              </div>
+              <div class="setting-item">
+                <div class="setting-left">
+                  <span class="setting-icon"><i class="fa-solid fa-bell"></i></span>
+                  <div class="setting-copy"><strong>Push Notification</strong><span>Top popup only when enabled</span></div>
+                </div>
+                <button id="toggleNotify" class="toggle" type="button" onclick="toggleSetting('notify')" title="Push notification"></button>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-left">
+                  <span class="setting-icon"><i class="fa-solid fa-layer-group"></i></span>
+                  <div class="setting-copy"><strong>Show Banner</strong><span>Show Aryanta Admin Panel header</span></div>
+                </div>
+                <button id="toggleBanner" class="toggle" type="button" onclick="toggleSetting('banner')" title="Show banner"></button>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-left">
+                  <span class="setting-icon"><i class="fa-solid fa-moon"></i></span>
+                  <div class="setting-copy"><strong>Theme</strong><span>Light, dark or system</span></div>
+                </div>
+                <select id="themeSelect" onchange="changeTheme(this.value)" title="Theme">
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                  <option value="system">System</option>
+                </select>
+              </div>
+
+              <div class="location-card">
+                <div class="location-card-head">
+                  <div class="setting-left">
+                    <span class="setting-icon"><i class="fa-solid fa-location-dot"></i></span>
+                    <div class="setting-copy"><strong>Location</strong><span>Enable location to fill details</span></div>
+                  </div>
+                  <div class="location-actions">
+                    <button id="enableLocationBtn" class="small-btn" type="button" onclick="enableLocation()" title="Enable location">
+                      <i class="fa-solid fa-location-crosshairs"></i> <span class="btn-text">Enable</span>
+                    </button>
+                    <button id="disableLocationBtn" class="small-btn danger" type="button" onclick="disableLocation()" title="Disable location">
+                      <i class="fa-solid fa-location-xmark"></i> <span class="btn-text">Disable</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="location-grid">
+                  <div><span>City</span><strong id="locCity">&lt;na&gt;</strong></div>
+                  <div><span>State</span><strong id="locState">&lt;na&gt;</strong></div>
+                  <div><span>Country</span><strong id="locCountry">&lt;na&gt;</strong></div>
+                </div>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-left">
+                  <span class="setting-icon"><i class="fa-solid fa-camera"></i></span>
+                  <div class="setting-copy"><strong>Camera</strong><span>Camera permission control</span></div>
+                </div>
+                <button id="toggleCamera" class="toggle" type="button" onclick="toggleSetting('camera')"></button>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-left">
+                  <span class="setting-icon"><i class="fa-solid fa-file-arrow-up"></i></span>
+                  <div class="setting-copy"><strong>File Sharing</strong><span>Allow file access</span></div>
+                </div>
+                <button id="toggleFiles" class="toggle" type="button" onclick="toggleSetting('files')"></button>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-left">
+                  <span class="setting-icon"><i class="fa-solid fa-microphone"></i></span>
+                  <div class="setting-copy"><strong>Microphone</strong><span>Mic permission control</span></div>
+                </div>
+                <button id="toggleMic" class="toggle" type="button" onclick="toggleSetting('mic')"></button>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-left">
+                  <span class="setting-icon"><i class="fa-solid fa-music"></i></span>
+                  <div class="setting-copy"><strong>Music</strong><span>Music permission control</span></div>
+                </div>
+                <button id="toggleMusic" class="toggle" type="button" onclick="toggleSetting('music')"></button>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-left">
+                  <span class="setting-icon"><i class="fa-solid fa-volume-high"></i></span>
+                  <div class="setting-copy"><strong>Audio</strong><span>App sound control</span></div>
+                </div>
+                <button id="toggleAudio" class="toggle" type="button" onclick="toggleSetting('audio')"></button>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-left">
+                  <span class="setting-icon"><i class="fa-solid fa-broom"></i></span>
+                  <div class="setting-copy"><strong>Delete My Messages</strong><span>Auto delete old chats</span></div>
+                </div>
+                <select id="deleteMessageDays" onchange="changeMessageDeleteDays(this.value)">
+                  <option value="0">Off</option>
+                  <option value="15">15 Days</option>
+                  <option value="30">30 Days</option>
+                </select>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-left">
+                  <span class="setting-icon"><i class="fa-solid fa-code-branch"></i></span>
+                  <div class="setting-copy"><strong>App Version</strong><span>Web version build</span></div>
+                </div>
+                <span class="version-pill">1.4.0</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </section>
+
+    <nav class="bottom-nav">
+      <button id="navHome" class="nav-btn active" type="button" onclick="showPage('home')" title="Home">
+        <span class="mini-mark"><i class="fa-solid fa-house"></i></span>
+        <span class="btn-text">Home</span>
+      </button>
+      <button id="navProfile" class="nav-btn" type="button" onclick="showPage('profile')" title="Profile">
+        <span class="mini-mark"><i class="fa-solid fa-user"></i></span>
+        <span class="btn-text">Profile</span>
+      </button>
+      <button id="navChat" class="nav-btn" type="button" onclick="openExternal('x.html')" title="Chat">
+        <span class="mini-mark"><i class="fa-solid fa-comments"></i></span>
+        <span class="btn-text">Chat</span>
+      </button>
+    </nav>
+  </main>
+
+  <script>
+    const API_BASE = "https://rough-field-c679.official-aryanta.workers.dev";
+    const ARYANTA_LOGO = "https://aryanta.in/vurify/aryanta.jpeg";
+    const LOGIN_PAGE = "index.html";
+    const TOKEN_KEY = "aryanta_admin_worker_token";
+    const SESSION_TOKEN_KEY = "aryanta_admin_worker_session";
+    const UID_KEY = "aryanta_admin_saved_uid";
+    const PROFILE_KEY = "aryanta_admin_profile";
+    const PROFILE_IMAGE_KEY = "aryanta_admin_profile_image";
+    const LOGIN_HISTORY_KEY = "aryanta_admin_login_history";
+    const SETTINGS_KEY = "aryanta_admin_settings";
+
+    const NA = "<na>";
+    const $ = id => document.getElementById(id);
+
+    let settings = {
+      appLock: false,
+      pin: "",
+      biometric: false,
+      notify: false,
+      banner: true,
+      camera: false,
+      files: false,
+      mic: false,
+      music: false,
+      audio: true,
+      messageDeleteDays: "0",
+      locationEnabled: false,
+      locationData: { city: NA, state: NA, country: NA },
+      theme: "light"
+    };
+
+    let accountFound = false;
+    let dashboardLoading = false;
+    let pendingProfileImage = null;
+    let isAppLocked = false;
+
+    function getToken() {
+      return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(SESSION_TOKEN_KEY) || "";
+    }
+
+    function clearToken() {
+      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(SESSION_TOKEN_KEY);
+      sessionStorage.removeItem(PROFILE_KEY);
+    }
+
+    function safeJson(value, fallback) {
+      try { return JSON.parse(value) || fallback; } catch (e) { return fallback; }
+    }
+
+    async function api(path, options = {}) {
+      const headers = new Headers(options.headers || {});
+      if (!(options.body instanceof FormData)) headers.set("Content-Type", "application/json");
+      const token = getToken();
+      if (token) headers.set("Authorization", "Bearer " + token);
+
+      const res = await fetch(API_BASE + path, { ...options, headers });
+      const data = await res.json().catch(() => ({ success: false, error: "Invalid Worker response" }));
+
+      if (!res.ok || data.success === false) {
+        const err = new Error(data.error || "Request failed");
+        err.status = res.status;
+        err.data = data;
+        throw err;
+      }
+      return data;
+    }
+
+    function noAccountProfile() {
+      return {
+        uid: NA, name: NA, email: NA, role: NA, createdAt: NA,
+        welcome: "No admin account found. Login first to view secure data."
+      };
+    }
+
+    function normalizeProfile(admin) {
+      const saved = admin || safeJson(sessionStorage.getItem(PROFILE_KEY) || localStorage.getItem(PROFILE_KEY), {});
+      if (!saved || !Object.keys(saved).length) return noAccountProfile();
+      return {
+        uid: saved.uid || saved.adminUid || saved.id || localStorage.getItem(UID_KEY) || NA,
+        name: saved.name || saved.fullName || saved.username || NA,
+        email: saved.email || NA,
+        role: saved.role || saved.adminRole || NA,
+        createdAt: saved.createdAt || saved.accountCreated || NA,
+        welcome: saved.name ? "Welcome back. Secure admin account verified." : "Secure admin account verified."
+      };
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function dismissToast(toast) {
+      if (!toast) return;
+      toast.classList.add("hiding");
+      toast.classList.remove("show");
+      setTimeout(() => toast.remove(), 220);
+    }
+
+    function showToast(message, options = {}) {
+      if (!options.force && !settings.notify && !options.override) return;
+      const holder = $("toastHolder");
+      if (!holder) return;
+      holder.querySelectorAll(".toast").forEach(item => item.remove());
+
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.innerHTML = `<span class="mini-mark"><i class="fa-solid fa-bell"></i></span><span>${escapeHtml(message)}</span>`;
+
+      let startY = 0, moved = false, closed = false;
+      const closeOnce = () => { if (closed) return; closed = true; dismissToast(toast); };
+
+      toast.addEventListener("pointerdown", e => { startY = e.clientY; moved = false; });
+      toast.addEventListener("pointermove", e => {
+        const diff = e.clientY - startY;
+        if (diff < -8) { moved = true; toast.style.transform = `translateY(${Math.max(diff, -58)}px)`; }
+      });
+      toast.addEventListener("pointerup", e => {
+        const diff = e.clientY - startY;
+        toast.style.transform = "";
+        if (moved && diff < -24) closeOnce();
+      });
+      toast.addEventListener("click", closeOnce);
+
+      holder.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.add("show"));
+      setTimeout(closeOnce, Number(options.duration || 2200));
+    }
+
+    function setText(id, value) {
+      const el = $(id);
+      if (el) el.textContent = value || NA;
+    }
+
+    let currentPage = "home";
+    let pageBackStack = [];
+
+    function goBack() {
+      const previous = pageBackStack.pop() || "home";
+      showPage(previous, false);
+    }
+
+    function showPage(page, pushHistory = true) {
+      if (pushHistory && currentPage !== page) pageBackStack.push(currentPage);
+      currentPage = page;
+
+      document.querySelectorAll(".page").forEach(el => el.classList.remove("active"));
+      document.querySelectorAll(".nav-btn").forEach(el => el.classList.remove("active"));
+
+      const target = $("page-" + page);
+      if (target) target.classList.add("active");
+
+      if (page === "home") $("navHome").classList.add("active");
+      if (page === "profile") $("navProfile").classList.add("active");
+      lockScroll();
+    }
+
+    function openExternal(file) { window.location.href = file; }
+
+    function renderProfile(profile) {
+      const image = localStorage.getItem(PROFILE_IMAGE_KEY) || ARYANTA_LOGO;
+      $("homeAvatar").src = image;
+      $("profileAvatar").src = image;
+      if($("lockAvatar")) $("lockAvatar").src = image;
+      setText("homeAdminName", profile.name);
+      setText("homeWelcome", profile.welcome);
+      setText("profileName", profile.name);
+      setText("infoUid", profile.uid);
+      setText("infoName", profile.name);
+      setText("infoEmail", profile.email);
+      setText("infoRole", profile.role);
+      setText("infoCreated", profile.createdAt);
+      setText("infoStatus", accountFound ? "Verified" : "No Account");
+    }
+
+    function renderNoAccount() {
+      accountFound = false;
+      renderProfile(noAccountProfile());
+      setDashboardNA();
+      renderHistory();
+    }
+
+    function getCurrentProfileImage() { return localStorage.getItem(PROFILE_IMAGE_KEY) || ARYANTA_LOGO; }
+    function selectProfileImage() { $("profileFile").click(); }
+
+    function openImageViewer(src, confirmMode) {
+      const modal = $("imageModal");
+      const preview = $("imageModalPreview");
+      const bar = $("imageConfirmBar");
+      if (!modal || !preview || !bar) return;
+      preview.src = src || getCurrentProfileImage();
+      bar.hidden = !confirmMode;
+      modal.hidden = false;
+    }
+
+    function closeImageViewer() { if ($("imageModal")) $("imageModal").hidden = true; }
+
+    function cancelProfileImage() {
+      pendingProfileImage = null;
+      closeImageViewer();
+      showToast("Profile image update cancelled", { override: true });
+    }
+
+    function confirmProfileImage() {
+      if (!pendingProfileImage) { closeImageViewer(); return; }
+      localStorage.setItem(PROFILE_IMAGE_KEY, pendingProfileImage);
+      $("homeAvatar").src = pendingProfileImage;
+      $("profileAvatar").src = pendingProfileImage;
+      if($("lockAvatar")) $("lockAvatar").src = pendingProfileImage;
+      pendingProfileImage = null;
+      closeImageViewer();
+      showToast("Profile image updated", { override: true });
+    }
+
+    function removeProfileImage() {
+      localStorage.removeItem(PROFILE_IMAGE_KEY);
+      pendingProfileImage = null;
+      $("homeAvatar").src = ARYANTA_LOGO;
+      $("profileAvatar").src = ARYANTA_LOGO;
+      if($("lockAvatar")) $("lockAvatar").src = ARYANTA_LOGO;
+      showToast("Profile image removed", { override: true });
+    }
+
+    $("profileFile").addEventListener("change", event => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        pendingProfileImage = reader.result;
+        openImageViewer(pendingProfileImage, true);
+      };
+      reader.readAsDataURL(file);
+      event.target.value = "";
+    });
+
+    function addLoginHistory(profile) {
+      if (!accountFound) return;
+      const history = safeJson(localStorage.getItem(LOGIN_HISTORY_KEY), []);
+      const now = new Date();
+      history.unshift({
+        uid: profile.uid, time: now.toLocaleString(),
+        device: navigator.userAgent.includes("Android") ? "Android App" : "Web App"
+      });
+      localStorage.setItem(LOGIN_HISTORY_KEY, JSON.stringify(history.slice(0, 3)));
+    }
+
+    function renderHistory() {
+      if (!accountFound) {
+        $("historyList").innerHTML = `<div class="history-item"><div><strong>${NA}</strong><span>No verified account session found.</span></div><span class="mini-mark"><i class="fa-solid fa-ban"></i></span></div>`;
+        return;
+      }
+      const history = safeJson(localStorage.getItem(LOGIN_HISTORY_KEY), []).slice(0, 3);
+      localStorage.setItem(LOGIN_HISTORY_KEY, JSON.stringify(history));
+
+      if (!history.length) {
+        $("historyList").innerHTML = `<div class="history-item"><div><strong>No login history</strong><span>New login records will appear here.</span></div><span class="mini-mark"><i class="fa-solid fa-clock"></i></span></div>`;
+        return;
+      }
+      $("historyList").innerHTML = history.map((item, index) => `
+        <div class="history-item">
+          <div><strong>${escapeHtml(item.device || "Admin Login")}</strong><span>${escapeHtml(item.time || "--")}</span></div>
+          <span class="mini-mark">${index + 1}</span>
+        </div>
+      `).join("");
+    }
+
+    function toggleHistory() {
+      renderHistory();
+      showToast(accountFound ? "Only latest 3 login records are kept" : "No account found", { override: true });
+    }
+
+    function setDashboardNA() {
+      setText("statOrders", NA);
+      setText("statRevenue", NA);
+      setText("statCompany", NA);
+    }
+
+    function formatMoney(value) {
+      const n = Number(value || 0);
+      if (!Number.isFinite(n)) return NA;
+      return "₹" + n.toLocaleString("en-IN");
+    }
+
+    async function loadDashboard() {
+      if (!accountFound || !getToken() || dashboardLoading) {
+        if (!accountFound) setDashboardNA();
+        return;
+      }
+      dashboardLoading = true;
+      try {
+        const result = await api("/admin/dashboard");
+        const d = result.dashboard || result.data || {};
+        setText("statOrders", String(d.ordersToday ?? d.totalOrdersToday ?? d.totalOrders ?? NA));
+        setText("statRevenue", formatMoney(d.revenueToday ?? d.todayRevenue ?? d.totalRevenue));
+        setText("statCompany", formatMoney(d.companyValue ?? d.totalCompanyValue ?? d.value));
+      } catch (err) {
+        setDashboardNA();
+      } finally {
+        dashboardLoading = false;
+      }
+    }
+
+    async function manualRefreshDashboard() {
+      if (!accountFound) {
+        showToast("No account found. Login first.", { override: true });
+        setDashboardNA();
+        return;
+      }
+      showToast("Refreshing dashboard...", { override: true });
+      await loadDashboard();
+    }
+
+    /* --- SECURITY & LOCK SCREEN LOGIC --- */
+    function initSecurity() {
+      const isLocked = sessionStorage.getItem("aryanta_unlocked") !== "true";
+      if (settings.appLock && isLocked) {
+        isAppLocked = true;
+        $("lockScreen").hidden = false;
+        if(settings.biometric && window.PublicKeyCredential) {
+          $("lockBiometricBtn").hidden = false;
+        }
+      } else {
+        isAppLocked = false;
+        $("lockScreen").hidden = true;
+      }
+    }
+
+    function triggerAppLockSetup() {
+      if (settings.appLock) {
+        // Disabling lock
+        const confirmDisable = prompt("Enter your current PIN to disable App Lock:");
+        if (confirmDisable === settings.pin) {
+          settings.appLock = false;
+          settings.pin = "";
+          settings.biometric = false; // Turn off biometric too
+          saveSettings();
+          showToast("App Lock disabled", { override: true });
+        } else if (confirmDisable !== null) {
+          showToast("Incorrect PIN", { override: true });
+        }
+      } else {
+        // Enabling lock - open modal
+        $("setupPin1").value = "";
+        $("setupPin2").value = "";
+        $("pinModal").hidden = false;
+      }
+    }
+
+    function cancelPinSetup() {
+      $("pinModal").hidden = true;
+    }
+
+    function savePinSetup() {
+      const p1 = $("setupPin1").value;
+      const p2 = $("setupPin2").value;
+      if (p1.length !== 4) { showToast("PIN must be 4 digits", { override: true }); return; }
+      if (p1 !== p2) { showToast("PINs do not match", { override: true }); return; }
+      
+      settings.appLock = true;
+      settings.pin = p1;
+      saveSettings();
+      $("pinModal").hidden = true;
+      showToast("App Lock enabled", { override: true });
+    }
+
+    function unlockApp() {
+      const entered = $("lockPinInput").value;
+      if (entered === settings.pin) {
+        isAppLocked = false;
+        $("lockScreen").hidden = true;
+        $("lockPinInput").value = "";
+        sessionStorage.setItem("aryanta_unlocked", "true");
+        showToast("App unlocked", { override: true });
+      } else {
+        showToast("Incorrect PIN", { override: true });
+        $("lockPinInput").value = "";
+      }
+    }
+
+    async function unlockWithBiometrics() {
+      if (!window.PublicKeyCredential) {
+        showToast("Biometrics not supported on this device", { override: true });
+        return;
+      }
+      try {
+        // Simple WebAuthn prompt to verify user presence
+        const challenge = new Uint8Array(32);
+        window.crypto.getRandomValues(challenge);
+        await navigator.credentials.get({
+          publicKey: {
+            challenge: challenge,
+            userVerification: "required"
+          }
+        });
+        // If promise resolves, biometric succeeded
+        isAppLocked = false;
+        $("lockScreen").hidden = true;
+        sessionStorage.setItem("aryanta_unlocked", "true");
+        showToast("App unlocked", { override: true });
+      } catch (err) {
+        showToast("Biometric verification failed", { override: true });
+      }
+    }
+
+    /* --- STANDARD SETTINGS LOGIC --- */
+    function loadSettings() {
+      const saved = safeJson(localStorage.getItem(SETTINGS_KEY), {});
+      settings = { ...settings, ...saved };
+      $("themeSelect").value = settings.theme || "light";
+      if ($("deleteMessageDays")) $("deleteMessageDays").value = String(settings.messageDeleteDays || "0");
+      applyTheme(settings.theme || "light");
+      applyBanner();
+      renderLocation(settings.locationData);
+      renderSettings();
+      initSecurity(); // Run security check on load
+    }
+
+    function saveSettings() {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      applyBanner();
+      renderSettings();
+    }
+
+    function renderSettings() {
+      const map = {
+        appLock: "toggleAppLock",
+        biometric: "toggleBiometric",
+        notify: "toggleNotify",
+        banner: "toggleBanner",
+        camera: "toggleCamera",
+        files: "toggleFiles",
+        mic: "toggleMic",
+        music: "toggleMusic",
+        audio: "toggleAudio"
+      };
+      Object.keys(map).forEach(key => {
+        const el = $(map[key]);
+        if (!el) return;
+        if (settings[key]) el.classList.add("active");
+        else el.classList.remove("active");
+      });
+      
+      // Show biometric row only if App Lock is enabled
+      $("biometricSettingRow").style.display = settings.appLock ? "flex" : "none";
+
+      if ($("deleteMessageDays")) $("deleteMessageDays").value = String(settings.messageDeleteDays || "0");
+      if ($("enableLocationBtn")) $("enableLocationBtn").classList.toggle("active", !!settings.locationEnabled);
+      if ($("disableLocationBtn")) $("disableLocationBtn").classList.toggle("active", !settings.locationEnabled);
+      renderLocation(settings.locationEnabled ? settings.locationData : { city: NA, state: NA, country: NA });
+    }
+
+    async function toggleSetting(key) {
+      if (key === 'biometric' && !settings.biometric) {
+        if (!window.PublicKeyCredential) {
+          showToast("Biometrics not supported on this browser/device", { override: true });
+          return;
+        }
+        // Attempt to register a local credential for biometrics
+        try {
+          const challenge = new Uint8Array(32);
+          const userId = new Uint8Array(16);
+          window.crypto.getRandomValues(challenge);
+          window.crypto.getRandomValues(userId);
+          
+          await navigator.credentials.create({
+            publicKey: {
+              challenge: challenge,
+              rp: { name: "Aryanta Admin", id: window.location.hostname || "localhost" },
+              user: { id: userId, name: "admin", displayName: "Aryanta Admin" },
+              pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+              authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+              timeout: 60000
+            }
+          });
+          settings[key] = true;
+          showToast("Biometrics enabled", { override: true });
+        } catch(err) {
+          showToast("Biometric setup cancelled or failed", { override: true });
+          return;
+        }
+      } else {
+        settings[key] = !settings[key];
+      }
+      
+      saveSettings();
+
+      if (key === "notify") {
+        if (settings.notify) {
+          requestNotification();
+          showToast("Push notification enabled", { override: true });
+        }
+        return;
+      }
+      if (key === "banner") {
+        showToast(settings.banner ? "Banner enabled" : "Banner hidden", { override: true });
+        return;
+      }
+    }
+
+    async function changeMessageDeleteDays(value) {
+      const days = String(value || "0");
+      settings.messageDeleteDays = days;
+      saveSettings();
+      await saveMessageDeletePolicy(Number(days));
+    }
+
+    async function saveMessageDeletePolicy(days) {
+      const payload = { deleteMyMessagesAfterDays: days, updatedAt: new Date().toISOString() };
+      localStorage.setItem("aryanta_message_delete_policy", JSON.stringify(payload));
+      if (!getToken()) return;
+      try {
+        await api("/admin/settings/message-retention", { method: "POST", body: JSON.stringify(payload) });
+        showToast(days ? "Message delete policy saved to DB" : "Message auto delete disabled", { override: true });
+      } catch (err) {}
+    }
+
+    function changeTheme(value) {
+      settings.theme = value;
+      saveSettings();
+      applyTheme(value);
+      showToast("Theme updated", { override: true });
+    }
+
+    function applyTheme(value) {
+      const useDark = value === "dark" || (value === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+      document.documentElement.setAttribute("data-theme", useDark ? "dark" : "light");
+    }
+
+    function applyBanner() {
+      const topbar = document.querySelector(".topbar");
+      if (!topbar) return;
+      if (settings.banner === false) topbar.classList.add("banner-hidden");
+      else topbar.classList.remove("banner-hidden");
+    }
+
+    function requestNotification() {
+      if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission().catch(() => {});
+      }
+    }
+
+    function renderLocation(data) {
+      const location = data || {};
+      const city = location.city || NA, state = location.state || NA, country = location.country || NA;
+      setText("locCity", city); setText("locState", state); setText("locCountry", country);
+
+      if (settings.locationEnabled && (city !== NA || state !== NA || country !== NA)) {
+        setText("homeLocation", [city, state, country].filter(v => v && v !== NA).join(", ") || "Location enabled");
+      } else if (settings.locationEnabled) {
+        setText("homeLocation", "Location enabled. Tap update.");
+      } else {
+        setText("homeLocation", "Location disabled");
+      }
+    }
+
+    function enableLocation() { settings.locationEnabled = true; saveSettings(); requestLocation(true); }
+    function disableLocation() { settings.locationEnabled = false; settings.locationData = { city: NA, state: NA, country: NA }; saveSettings(); renderLocation(settings.locationData); showToast("Location disabled", { override: true }); }
+
+    async function reverseGeocode(lat, lon) {
+      const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lon)}&localityLanguage=en`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Location lookup failed");
+      const data = await res.json();
+      return { city: data.city || data.locality || data.principalSubdivision || NA, state: data.principalSubdivision || NA, country: data.countryName || data.countryCode || NA, lat, lon, updatedAt: new Date().toISOString() };
+    }
+
+    function requestLocation(forceToast) {
+      if (!navigator.geolocation) {
+        setText("homeLocation", "Location unavailable");
+        settings.locationEnabled = false;
+        renderLocation({ city: NA, state: NA, country: NA });
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        async position => {
+          const lat = Number(position.coords.latitude).toFixed(5);
+          const lon = Number(position.coords.longitude).toFixed(5);
+          try {
+            const location = await reverseGeocode(lat, lon);
+            settings.locationEnabled = true; settings.locationData = location; saveSettings(); renderLocation(location);
+            if (forceToast) showToast("Location updated", { override: true });
+          } catch (err) {
+            const fallback = { city: lat, state: lon, country: "Coordinates", lat, lon, updatedAt: new Date().toISOString() };
+            settings.locationEnabled = true; settings.locationData = fallback; saveSettings(); renderLocation(fallback);
+            if (forceToast) showToast("City lookup failed. Coordinates saved.", { override: true });
+          }
+        },
+        () => { setText("homeLocation", "Location permission needed"); if (forceToast) showToast("Location permission needed", { override: true }); },
+        { enableHighAccuracy: false, timeout: 7000, maximumAge: 60000 }
+      );
+    }
+
+    function lockScroll() {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
+
+    async function bootAdmin() {
+      lockScroll();
+      loadSettings();
+      renderNoAccount();
+
+      const token = getToken();
+      if (!token) { showToast("No account found. Showing <na> data.", { override: true }); return; }
+
+      try {
+        const me = await api("/admin/me");
+        if (!me || !me.admin) throw new Error("No account found");
+        accountFound = true;
+        const profile = normalizeProfile(me.admin);
+        sessionStorage.setItem(PROFILE_KEY, JSON.stringify(me.admin));
+        renderProfile(profile);
+        addLoginHistory(profile);
+        renderHistory();
+        await loadDashboard();
+        renderLocation(settings.locationEnabled ? settings.locationData : { city: NA, state: NA, country: NA });
+      } catch (err) {
+        clearToken();
+        renderNoAccount();
+        showToast("No account found. Showing <na> data.", { override: true });
+      }
+    }
+
+    document.addEventListener("touchmove", event => {
+      if (!event.target.closest("select")) event.preventDefault();
+    }, { passive: false });
+
+    window.addEventListener("resize", lockScroll);
+    window.addEventListener("orientationchange", lockScroll);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) lockScroll(); });
+
+    bootAdmin();
+  </script>
+</body>
+</html>
