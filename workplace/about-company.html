@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Aryanta About</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <style>
+    :root {
+      --primary: #008080;
+      --primary-dark: #006b6b;
+      --primary-light: #00b8b8;
+      --bg: #f3fbfb;
+      --card: rgba(255, 255, 255, 0.92);
+      --card-solid: #ffffff;
+      --text: #101828;
+      --muted: #667085;
+      --border: rgba(0, 128, 128, 0.16);
+      --danger: #ef4444;
+      --success: #16a34a;
+      --soft: rgba(0, 128, 128, 0.10);
+      --glass: rgba(255, 255, 255, 0.64);
+      --shadow: 0 20px 50px rgba(16, 24, 40, 0.14);
+      --shadow-soft: 0 10px 26px rgba(16, 24, 40, 0.08);
+      --top-safe: max(14px, env(safe-area-inset-top));
+      --bottom-safe: max(12px, env(safe-area-inset-bottom));
+    }
+
+    html[data-theme="dark"] {
+      --bg: #071112;
+      --card: rgba(17, 29, 31, 0.90);
+      --card-solid: #111d1f;
+      --text: #f8fafc;
+      --muted: #98a2b3;
+      --border: rgba(255, 255, 255, 0.12);
+      --soft: rgba(0, 184, 184, 0.14);
+      --glass: rgba(17, 29, 31, 0.68);
+      --shadow: 0 20px 50px rgba(0, 0, 0, 0.44);
+      --shadow-soft: 0 10px 26px rgba(0, 0, 0, 0.30);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(0,128,128,0.22), transparent 34%),
+        radial-gradient(circle at bottom left, rgba(0,184,184,0.16), transparent 34%),
+        linear-gradient(160deg, rgba(255,255,255,0.45), transparent 38%),
+        var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    button, input {
+      font: inherit;
+      border: none;
+      outline: none;
+      background: none;
+      color: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: 0.18s ease;
+    }
+
+    button:active {
+      transform: scale(0.96);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .app {
+      min-height: 100dvh;
+      padding: var(--top-safe) 12px calc(92px + var(--bottom-safe));
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 470px;
+      margin: 0 auto;
+      display: grid;
+      gap: 14px;
+    }
+
+    .topbar {
+      min-height: 58px;
+      display: grid;
+      grid-template-columns: 45px minmax(0, 1fr) 45px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .icon-btn {
+      width: 45px;
+      height: 45px;
+      border-radius: 17px;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(14px);
+      color: var(--primary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+    }
+
+    .top-title {
+      min-width: 0;
+      text-align: center;
+    }
+
+    .top-title h1 {
+      font-size: 18px;
+      font-weight: 1000;
+      color: var(--primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .top-title p {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+    }
+
+    .hero {
+      padding: 24px 18px 18px;
+      text-align: center;
+      position: relative;
+      isolation: isolate;
+      background:
+        linear-gradient(145deg, rgba(0, 107, 107, 0.98), rgba(0, 128, 128, 0.96), rgba(0, 184, 184, 0.92));
+      color: white;
+      min-height: 320px;
+      display: grid;
+      align-content: center;
+    }
+
+    .hero::before,
+    .hero::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .hero::before {
+      width: 210px;
+      height: 210px;
+      background: rgba(255,255,255,0.12);
+      right: -92px;
+      top: -98px;
+    }
+
+    .hero::after {
+      width: 130px;
+      height: 130px;
+      background: rgba(255,255,255,0.08);
+      left: -56px;
+      bottom: 42px;
+    }
+
+    .logo-box {
+      width: 132px;
+      height: 132px;
+      margin: 0 auto 14px;
+      border-radius: 38px;
+      background: rgba(255,255,255,0.96);
+      padding: 8px;
+      border: 1px solid rgba(255,255,255,0.58);
+      box-shadow: 0 22px 50px rgba(0,0,0,0.26);
+      position: relative;
+      cursor: pointer;
+    }
+
+    .logo-box img {
+      width: 100%;
+      height: 100%;
+      border-radius: 30px;
+      object-fit: cover;
+      background: white;
+    }
+
+    .logo-badge {
+      position: absolute;
+      left: 50%;
+      bottom: -10px;
+      transform: translateX(-50%);
+      background: rgba(16,24,40,0.92);
+      color: white;
+      border-radius: 999px;
+      padding: 6px 11px;
+      font-size: 10px;
+      font-weight: 950;
+      white-space: nowrap;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.22);
+    }
+
+    .hero h2 {
+      font-size: 34px;
+      line-height: 1.04;
+      font-weight: 1000;
+      letter-spacing: -1px;
+    }
+
+    .hero p {
+      width: min(100%, 360px);
+      margin: 9px auto 0;
+      font-size: 13.5px;
+      font-weight: 760;
+      opacity: 0.92;
+      line-height: 1.55;
+    }
+
+    .hero-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .hero-btn {
+      min-height: 46px;
+      border-radius: 17px;
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.24);
+      color: white;
+      font-weight: 950;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      backdrop-filter: blur(8px);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 17px 16px 0;
+    }
+
+    .section-title h3 {
+      font-size: 16px;
+      font-weight: 1000;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title h3 i {
+      color: var(--primary);
+    }
+
+    .section-title span {
+      color: var(--muted);
+      font-size: 10.5px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.65px;
+    }
+
+    .info-list {
+      padding: 14px 16px 16px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .info-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px;
+      background: var(--soft);
+      border: 1px solid var(--border);
+      border-radius: 19px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 44px;
+      height: 44px;
+      flex: 0 0 auto;
+      border-radius: 16px;
+      background: var(--card-solid);
+      color: var(--primary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-soft);
+      font-size: 17px;
+    }
+
+    .info-copy {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .info-copy span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.35px;
+      margin-bottom: 3px;
+    }
+
+    .info-copy strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 950;
+      color: var(--text);
+      word-break: break-word;
+    }
+
+    .team-grid {
+      padding: 14px 16px 16px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .member {
+      min-height: 132px;
+      border-radius: 22px;
+      background: var(--soft);
+      border: 1px solid var(--border);
+      padding: 14px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      gap: 7px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .member::after {
+      content: "";
+      width: 42px;
+      height: 42px;
+      position: absolute;
+      right: -18px;
+      top: -18px;
+      border-radius: 999px;
+      background: rgba(0,128,128,0.11);
+    }
+
+    .member-avatar {
+      width: 58px;
+      height: 58px;
+      border-radius: 22px;
+      background: linear-gradient(145deg, var(--primary), var(--primary-light));
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 1000;
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+      border: 2px solid rgba(255,255,255,0.55);
+    }
+
+    .member strong {
+      font-size: 13.5px;
+      font-weight: 1000;
+      position: relative;
+      z-index: 1;
+    }
+
+    .member span {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      position: relative;
+      z-index: 1;
+    }
+
+    .about-note {
+      padding: 15px 16px 17px;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 730;
+      line-height: 1.62;
+      white-space: pre-wrap;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: calc(10px + env(safe-area-inset-bottom));
+      height: 66px;
+      z-index: 30;
+      border-radius: 25px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      padding: 7px;
+      gap: 6px;
+      backdrop-filter: blur(16px);
+    }
+
+    .nav-btn {
+      border-radius: 18px;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-weight: 900;
+    }
+
+    .nav-btn i {
+      font-size: 17px;
+    }
+
+    .nav-btn span {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-btn.active {
+      background: var(--soft);
+      color: var(--primary);
+    }
+
+    .toast-holder {
+      position: fixed;
+      top: calc(10px + env(safe-area-inset-top));
+      left: 12px;
+      right: 12px;
+      z-index: 9999;
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .toast {
+      width: min(470px, 100%);
+      background: var(--card-solid);
+      color: var(--text);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      border-radius: 18px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 900;
+      transform: translateY(-20px);
+      opacity: 0;
+      transition: 0.22s;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(0,0,0,0.72);
+      backdrop-filter: blur(8px);
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-card {
+      width: min(470px, 100%);
+      max-height: 88dvh;
+      border-radius: 30px;
+      background: var(--card-solid);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-head {
+      min-height: 58px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex: 0 0 auto;
+    }
+
+    .modal-head strong {
+      font-size: 15px;
+      font-weight: 1000;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-body {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+      text-align: center;
+      overflow: auto;
+    }
+
+    .logo-preview {
+      width: min(330px, 86vw);
+      height: min(330px, 86vw);
+      object-fit: cover;
+      border-radius: 30px;
+      margin: 0 auto;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+      background: #fff;
+    }
+
+    .upload-zone {
+      display: none;
+      padding: 13px;
+      border-radius: 20px;
+      border: 1px dashed var(--primary);
+      background: var(--soft);
+      text-align: left;
+      gap: 10px;
+      align-items: center;
+      grid-template-columns: 44px 1fr;
+    }
+
+    .upload-zone.active {
+      display: grid;
+    }
+
+    .upload-zone p {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+      line-height: 1.45;
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .solid-btn, .outline-btn, .danger-btn {
+      min-height: 46px;
+      border-radius: 17px;
+      font-weight: 950;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .solid-btn {
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: white;
+    }
+
+    .outline-btn {
+      border: 1px solid var(--border);
+      background: var(--soft);
+      color: var(--primary);
+    }
+
+    .danger-btn {
+      border: 1px solid rgba(239,68,68,0.25);
+      background: rgba(239,68,68,0.11);
+      color: var(--danger);
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .loader {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.38);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (min-width: 520px) {
+      .bottom-nav {
+        width: 470px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+      }
+    }
+
+    @media (max-width: 360px) {
+      .hero-actions, .team-grid, .modal-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .hero h2 {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <input class="file-input" type="file" id="logoUpload" accept="image/*" />
+  <div id="toastHolder" class="toast-holder"></div>
+
+  <main class="app">
+    <div class="wrap">
+      <header class="topbar" id="topBanner">
+        <button class="icon-btn" type="button" onclick="goPage('admin.html')" aria-label="Back">
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <div class="top-title">
+          <h1 id="topCompanyName">Aryanta</h1>
+          <p>About Company</p>
+        </div>
+        <button class="icon-btn" type="button" onclick="refreshCompany()" aria-label="Refresh">
+          <i class="fa-solid fa-rotate"></i>
+        </button>
+      </header>
+
+      <section class="hero card">
+        <button class="logo-box" type="button" onclick="openLogoModal()" aria-label="Open logo">
+          <img id="mainLogo" src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta Logo" />
+          <span class="logo-badge">Tap to view</span>
+        </button>
+
+        <h2 id="heroCompanyName">Aryanta</h2>
+        <p id="heroTagline">India-based e-commerce platform building trust, sellers, and smarter shopping.</p>
+
+        <div class="hero-actions">
+          <button class="hero-btn" type="button" onclick="sendEmail()">
+            <i class="fa-solid fa-envelope"></i> Email
+          </button>
+          <button class="hero-btn" type="button" onclick="callCompany()">
+            <i class="fa-solid fa-phone"></i> Call
+          </button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h3><i class="fa-solid fa-building"></i> Company Details</h3>
+          <span>Official</span>
+        </div>
+        <div class="info-list">
+          <div class="info-item">
+            <span class="mark"><i class="fa-solid fa-signature"></i></span>
+            <div class="info-copy">
+              <span>Company Name</span>
+              <strong id="infoCompanyName">Aryanta</strong>
+            </div>
+          </div>
+
+          <a id="emailLink" class="info-item" href="mailto:support@arynata.in">
+            <span class="mark"><i class="fa-solid fa-envelope"></i></span>
+            <div class="info-copy">
+              <span>Email</span>
+              <strong id="infoEmail">support@arynata.in</strong>
+            </div>
+          </a>
+
+          <a id="phoneLink" class="info-item" href="tel:+916414054676">
+            <span class="mark"><i class="fa-solid fa-phone"></i></span>
+            <div class="info-copy">
+              <span>Phone Number</span>
+              <strong id="infoPhone">India +91 641 405 4676</strong>
+            </div>
+          </a>
+
+          <div class="info-item">
+            <span class="mark"><i class="fa-solid fa-calendar-check"></i></span>
+            <div class="info-copy">
+              <span>Established On</span>
+              <strong id="infoEstablished">2025</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h3><i class="fa-solid fa-users"></i> Team Members</h3>
+          <span>Core Team</span>
+        </div>
+        <div class="team-grid" id="teamGrid"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h3><i class="fa-solid fa-circle-info"></i> About</h3>
+          <span id="aboutTitleLabel">Aryanta</span>
+        </div>
+        <p class="about-note" id="aboutNote">Aryanta is focused on building a clean, secure, and seller-friendly e-commerce experience.</p>
+      </section>
+    </div>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn" type="button" onclick="goPage('admin.html')">
+      <i class="fa-solid fa-house"></i>
+      <span>Home</span>
+    </button>
+    <button class="nav-btn active" type="button" onclick="goPage('about.html')">
+      <i class="fa-solid fa-circle-info"></i>
+      <span>About</span>
+    </button>
+    <button class="nav-btn" type="button" onclick="goPage('x.html')">
+      <i class="fa-solid fa-comments"></i>
+      <span>Chat</span>
+    </button>
+  </nav>
+
+  <div class="modal" id="logoModal" onclick="closeLogoOnBackdrop(event)">
+    <div class="modal-card">
+      <div class="modal-head">
+        <strong><i class="fa-solid fa-image" style="color:var(--primary)"></i> Company Picture</strong>
+        <button class="icon-btn" type="button" onclick="closeLogoModal()" style="color:var(--danger)">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <img class="logo-preview" id="logoPreview" src="https://aryanta.in/vurify/aryanta.jpeg" alt="Company Picture Preview" />
+
+        <div id="uploadZone" class="upload-zone">
+          <span class="mark"><i class="fa-solid fa-cloud-arrow-up"></i></span>
+          <div>
+            <strong style="font-size:13px;">Admin upload</strong>
+            <p>Only the company picture can be changed here. Details are locked. Saved picture is loaded for everyone from server.</p>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="outline-btn" type="button" onclick="downloadLogo()">
+            <i class="fa-solid fa-download"></i> Download
+          </button>
+          <button id="changePicBtn" class="solid-btn hidden" type="button" onclick="chooseLogoImage()">
+            <i class="fa-solid fa-upload"></i> Change Pic
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const WORKER_API = "https://rough-field-c679.official-aryanta.workers.dev";
+    const FIRESTORE_PROJECT_IDS = ["aryanta-mart-a8893", "aryanta"];
+    const SETTINGS_KEY = "aryanta_admin_settings";
+    const COMPANY_CACHE_KEY = "aryanta_about_company_cache_v3";
+    const TOKEN_KEY = "aryanta_admin_worker_token";
+    const SESSION_TOKEN_KEY = "aryanta_admin_worker_session";
+    const DEFAULT_LOGO = "https://aryanta.in/vurify/aryanta.jpeg";
+    const $ = id => document.getElementById(id);
+
+    const defaultCompany = {
+      logo: DEFAULT_LOGO,
+      profileImage: DEFAULT_LOGO,
+      companyName: "Aryanta",
+      email: "support@arynata.in",
+      phoneText: "India +91 641 405 4676",
+      phoneLink: "+916414054676",
+      established: "2025",
+      tagline: "India-based e-commerce platform building trust, sellers, and smarter shopping.",
+      aboutText: "Aryanta is focused on building a clean, secure, and seller-friendly e-commerce experience. Our goal is to support customers, sellers, and the internal team with a simple and trusted platform.",
+      team: [
+        { name: "Prame", role: "Team Member" },
+        { name: "Asad", role: "Team Member" },
+        { name: "Faizan", role: "Team Member" },
+        { name: "Siddharth", role: "Team Member" }
+      ]
+    };
+
+    let company = loadCachedCompany();
+    let settings = loadSettings();
+    let uploadBusy = false;
+
+    function safeJson(value, fallback) {
+      try {
+        return JSON.parse(value || "null") || fallback;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, ch => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[ch]));
+    }
+
+    function escapeAttr(value) {
+      return String(value ?? "").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    }
+
+    function getToken() {
+      return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(SESSION_TOKEN_KEY) || "";
+    }
+
+    function isAdminLoggedIn() {
+      return Boolean(getToken());
+    }
+
+    function loadSettings() {
+      return {
+        notify: false,
+        banner: true,
+        theme: "light",
+        ...safeJson(localStorage.getItem(SETTINGS_KEY), {})
+      };
+    }
+
+    function loadCachedCompany() {
+      const cached = safeJson(localStorage.getItem(COMPANY_CACHE_KEY), {});
+      return normalizeCompany({ ...defaultCompany, ...cached });
+    }
+
+    function cacheCompany(data) {
+      company = normalizeCompany({ ...defaultCompany, ...company, ...data });
+      localStorage.setItem(COMPANY_CACHE_KEY, JSON.stringify(company));
+    }
+
+    function normalizeCompany(data) {
+      const next = { ...defaultCompany, ...(data || {}) };
+      next.companyName = next.companyName || next.name || "Aryanta";
+      next.logo = next.logo || next.logoUrl || next.profileImage || next.image || DEFAULT_LOGO;
+      next.profileImage = next.profileImage || next.logo;
+      next.email = next.email || "support@arynata.in";
+      next.phoneText = next.phoneText || next.phone || "India +91 641 405 4676";
+      next.phoneLink = next.phoneLink || next.phoneNumber || "+916414054676";
+      next.established = next.established || next.establishedOn || "2025";
+      next.tagline = next.tagline || "India-based e-commerce platform building trust, sellers, and smarter shopping.";
+      next.aboutText = next.aboutText || next.description || defaultCompany.aboutText;
+      next.team = Array.isArray(next.team) && next.team.length ? next.team : defaultCompany.team;
+      return next;
+    }
+
+    function applyTheme() {
+      settings = loadSettings();
+      const theme = settings.theme || "light";
+      const systemDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const useDark = theme === "dark" || (theme === "system" && systemDark);
+      document.documentElement.setAttribute("data-theme", useDark ? "dark" : "light");
+    }
+
+    function applyBanner() {
+      const topBanner = $("topBanner");
+      if (!topBanner) return;
+      topBanner.classList.toggle("hidden", settings.banner === false);
+    }
+
+    function renderCompany() {
+      applyTheme();
+      applyBanner();
+
+      const logo = company.logo || company.profileImage || DEFAULT_LOGO;
+
+      $("topCompanyName").textContent = company.companyName;
+      $("heroCompanyName").textContent = company.companyName;
+      $("infoCompanyName").textContent = company.companyName;
+      $("aboutTitleLabel").textContent = company.companyName;
+
+      $("heroTagline").textContent = company.tagline;
+      $("infoEmail").textContent = company.email;
+      $("infoPhone").textContent = company.phoneText;
+      $("infoEstablished").textContent = company.established;
+      $("aboutNote").textContent = company.aboutText;
+
+      $("emailLink").href = `mailto:${company.email}`;
+      $("phoneLink").href = `tel:${company.phoneLink}`;
+
+      $("mainLogo").src = logo;
+      $("logoPreview").src = logo;
+
+      renderTeam();
+      renderUploadAccess();
+    }
+
+    function renderTeam() {
+      const team = Array.isArray(company.team) ? company.team : defaultCompany.team;
+      $("teamGrid").innerHTML = team.map(member => {
+        const letter = (member.name || "A").trim().charAt(0).toUpperCase() || "A";
+        return `
+          <div class="member">
+            <span class="member-avatar">${escapeHtml(letter)}</span>
+            <strong>${escapeHtml(member.name || "Team Member")}</strong>
+            <span>${escapeHtml(member.role || "Team Member")}</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderUploadAccess() {
+      const allowed = isAdminLoggedIn();
+      $("changePicBtn").classList.toggle("hidden", !allowed);
+      $("uploadZone").classList.toggle("active", allowed);
+    }
+
+    function showToast(message, force = false) {
+      settings = loadSettings();
+      if (!force && settings.notify === false) return;
+
+      const holder = $("toastHolder");
+      if (!holder) return;
+
+      holder.innerHTML = "";
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.innerHTML = `<i class="fa-solid fa-circle-info" style="color:var(--primary)"></i><span>${escapeHtml(message)}</span>`;
+      holder.appendChild(toast);
+
+      requestAnimationFrame(() => toast.classList.add("show"));
+      setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 230);
+      }, 2400);
+    }
+
+    function goPage(url) {
+      window.location.href = url;
+    }
+
+    function sendEmail() {
+      window.location.href = `mailto:${company.email}?subject=${encodeURIComponent(company.companyName + " Support")}`;
+    }
+
+    function callCompany() {
+      window.location.href = `tel:${company.phoneLink}`;
+    }
+
+    function openLogoModal() {
+      renderUploadAccess();
+      $("logoModal").classList.add("show");
+    }
+
+    function closeLogoModal() {
+      $("logoModal").classList.remove("show");
+    }
+
+    function closeLogoOnBackdrop(event) {
+      if (event.target.id === "logoModal") closeLogoModal();
+    }
+
+    function chooseLogoImage() {
+      if (!isAdminLoggedIn()) {
+        showToast("Admin login required to change picture", true);
+        return;
+      }
+      $("logoUpload").value = "";
+      $("logoUpload").click();
+    }
+
+    async function downloadLogo() {
+      const urlToDownload = company.logo || DEFAULT_LOGO;
+
+      try {
+        if (urlToDownload.startsWith("data:")) {
+          downloadUrl(urlToDownload, "aryanta-company-picture.png");
+          showToast("Download started", true);
+          return;
+        }
+
+        const res = await fetch(urlToDownload, { mode: "cors" });
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        downloadUrl(url, "aryanta-company-picture.jpg");
+        URL.revokeObjectURL(url);
+        showToast("Download started", true);
+      } catch (err) {
+        downloadUrl(urlToDownload, "aryanta-company-picture.jpg");
+        showToast("Picture opened. Save if download is blocked.", true);
+      }
+    }
+
+    function downloadUrl(url, name) {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    async function refreshCompany() {
+      showToast("Refreshing company details...", true);
+      await loadCompanyFromServer();
+      renderCompany();
+    }
+
+    async function loadCompanyFromServer() {
+      const token = getToken();
+
+      if (token) {
+        try {
+          const res = await fetch(`${WORKER_API}/admin/company`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data && data.company) {
+            cacheCompany(data.company);
+            return;
+          }
+        } catch (err) {}
+      }
+
+      for (const projectId of FIRESTORE_PROJECT_IDS) {
+        try {
+          const res = await fetch(`https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/company/main`);
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data && data.fields) {
+            cacheCompany(decodeFirestoreFields(data.fields));
+            return;
+          }
+        } catch (err) {}
+      }
+    }
+
+    function decodeFirestoreFields(fields) {
+      const out = {};
+      Object.entries(fields || {}).forEach(([key, val]) => {
+        out[key] = decodeFsValue(val);
+      });
+      return out;
+    }
+
+    function decodeFsValue(v) {
+      if (!v || typeof v !== "object") return null;
+      if ("stringValue" in v) return v.stringValue;
+      if ("integerValue" in v) return Number(v.integerValue);
+      if ("doubleValue" in v) return Number(v.doubleValue);
+      if ("booleanValue" in v) return Boolean(v.booleanValue);
+      if ("timestampValue" in v) return v.timestampValue;
+      if ("arrayValue" in v) return (v.arrayValue.values || []).map(decodeFsValue);
+      if ("mapValue" in v) return decodeFirestoreFields(v.mapValue.fields || {});
+      return null;
+    }
+
+    async function compressImage(file) {
+      if (!file || !file.type.startsWith("image/")) throw new Error("Please select an image file.");
+
+      const rawUrl = URL.createObjectURL(file);
+      const img = await new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error("Could not read image."));
+        image.src = rawUrl;
+      });
+
+      const max = 900;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const width = Math.max(1, Math.round(img.width * scale));
+      const height = Math.max(1, Math.round(img.height * scale));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+
+      URL.revokeObjectURL(rawUrl);
+
+      let quality = 0.82;
+      let dataUrl = canvas.toDataURL("image/jpeg", quality);
+
+      while (dataUrl.length > 850000 && quality > 0.44) {
+        quality -= 0.08;
+        dataUrl = canvas.toDataURL("image/jpeg", quality);
+      }
+
+      if (dataUrl.length > 950000) {
+        throw new Error("Image is too large. Please use a smaller picture.");
+      }
+
+      return dataUrl;
+    }
+
+    async function uploadCompanyPicture(file) {
+      if (uploadBusy) return;
+      const token = getToken();
+
+      if (!token) {
+        showToast("Admin login required to change picture", true);
+        return;
+      }
+
+      uploadBusy = true;
+      const btn = $("changePicBtn");
+      const oldHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="loader"></span> Saving`;
+
+      try {
+        const dataUrl = await compressImage(file);
+
+        const updated = {
+          ...company,
+          logo: dataUrl,
+          profileImage: dataUrl,
+          updatedAt: new Date().toISOString()
+        };
+
+        const res = await fetch(`${WORKER_API}/admin/company`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(updated)
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.success === false) {
+          throw new Error(data.error || "Could not save picture on server.");
+        }
+
+        cacheCompany(data.company || updated);
+        renderCompany();
+        showToast("Company picture updated for everyone", true);
+      } catch (err) {
+        showToast(err.message || "Picture update failed", true);
+      } finally {
+        uploadBusy = false;
+        btn.disabled = false;
+        btn.innerHTML = oldHtml;
+      }
+    }
+
+    $("logoUpload").addEventListener("change", event => {
+      const file = event.target.files && event.target.files[0];
+      if (file) uploadCompanyPicture(file);
+      event.target.value = "";
+    });
+
+    window.addEventListener("storage", event => {
+      if (event.key === SETTINGS_KEY) {
+        settings = loadSettings();
+        renderCompany();
+      }
+    });
+
+    if (window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => {
+        settings = loadSettings();
+        applyTheme();
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      renderCompany();
+      await loadCompanyFromServer();
+      renderCompany();
+
+      $("mainLogo").onerror = () => $("mainLogo").src = DEFAULT_LOGO;
+      $("logoPreview").onerror = () => $("logoPreview").src = DEFAULT_LOGO;
+    });
+  </script>
+</body>
+</html>
