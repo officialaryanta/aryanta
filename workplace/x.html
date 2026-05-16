@@ -247,6 +247,37 @@
     .file-card p { color:rgba(255,255,255,0.72); font-size:13px; margin-bottom:16px; }
     .file-card button { background:#fff; color:#111; font-weight:900; padding:12px 18px; border-radius:999px; }
 
+
+    .input-wrapper.typing-active .btn-attach,
+    .input-wrapper.typing-active .btn-emoji,
+    .input-wrapper.typing-active .btn-mic { display: none !important; }
+    .input-wrapper.typing-active .btn-send { display: flex !important; }
+    .input-wrapper.typing-active .chat-input { border-radius: 18px; min-height: 48px; padding: 12px 16px; }
+
+    .msg-row.with-avatar { gap: 7px; align-items: flex-end; }
+    .msg-row.in.with-avatar { justify-content: flex-start; }
+    .msg-row.out.with-avatar { justify-content: flex-end; }
+    .msg-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); background: var(--card); flex: 0 0 auto; }
+    .msg-row.out .msg-avatar { order: 3; }
+    .msg-row.out .bubble { order: 2; }
+    .msg-row.out .msg-checkbox { order: 1; }
+    .msg-row.in .msg-avatar { order: 1; }
+    .msg-row.in .bubble { order: 2; }
+    .msg-row.in .msg-checkbox { order: 0; }
+    .msg-row.out .msg-sender { display: block; text-align: right; color: rgba(0,128,128,0.92); }
+    html[data-theme="dark"] .msg-row.out .msg-sender { color: #a7f3d0; }
+    .blocked-attachment { display:flex; align-items:center; gap:10px; padding:10px; border-radius:10px; background:rgba(239,68,68,0.08); color:var(--danger); font-size:12px; font-weight:800; margin:4px 0 6px; }
+    .blocked-attachment i { font-size:18px; }
+
+    .camera-preview-strip { min-height: 0; display:none; gap:8px; overflow-x:auto; padding:8px 12px; background:rgba(0,0,0,0.35); }
+    .camera-preview-strip.active { display:flex; }
+    .camera-thumb { position:relative; width:54px; height:54px; border-radius:12px; flex:0 0 auto; overflow:hidden; border:1px solid rgba(255,255,255,0.25); }
+    .camera-thumb img { width:100%; height:100%; object-fit:cover; }
+    .camera-thumb button { position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; background:rgba(239,68,68,0.95); color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px; }
+    .camera-small-action { width:52px; height:52px; border-radius:50%; background:rgba(255,255,255,0.14); color:#fff; display:flex; align-items:center; justify-content:center; font-size:18px; }
+    .camera-small-action.send { background:#008080; }
+    .permission-disabled { opacity:.45; filter:grayscale(.6); }
+
     /* Hide inputs */
     input[type="file"] { display: none; }
   </style>
@@ -346,9 +377,6 @@
       <button class="menu-item" onclick="openSearchMenu()">
         <i class="fas fa-magnifying-glass"></i> Search Messages
       </button>
-      <button class="menu-item" onclick="toggleThemeMode()">
-        <i class="fas fa-circle-half-stroke"></i> Toggle Dark Mode
-      </button>
       <button class="menu-item" onclick="enterSelectMode()">
         <i class="fas fa-list-check"></i> Select Messages
       </button>
@@ -434,8 +462,11 @@
     <div class="camera-stage">
       <video id="cameraVideo" autoplay playsinline muted></video>
     </div>
+    <div class="camera-preview-strip" id="cameraPreviewStrip"></div>
     <div class="camera-actions">
+      <button class="camera-small-action" onclick="clearCameraCaptures()" aria-label="Clear captured photos"><i class="fas fa-trash"></i></button>
       <button class="capture-btn" onclick="captureCameraPhoto()" aria-label="Capture photo"></button>
+      <button class="camera-small-action send" onclick="sendCameraCaptures()" aria-label="Send captured photos"><i class="fas fa-paper-plane"></i></button>
     </div>
   </div>
 
@@ -469,10 +500,13 @@
 
     const PROFILE_KEY = "aryanta_admin_profile";
     const SETTINGS_KEY = "aryanta_admin_settings";
+    const ARYANTA_LOGO = "https://aryanta.in/vurify/aryanta.jpeg";
     const CHAT_PATH = "admin_chats";
     const TYPING_PATH = "admin_chat_typing";
     const PRESENCE_PATH = "admin_chat_presence";
     const MAX_FILE_SIZE = 4 * 1024 * 1024;
+    const MAX_ATTACHMENTS = 10;
+    const MAX_IMAGES_PER_MINUTE = 10;
     const EMOJIS = ["😀","😁","😂","🤣","😊","😍","😘","😎","🥳","😢","😡","👍","👎","👏","🙏","💪","❤️","🔥","✨","✅","❌","📌","💯","🎉"];
 
     const $ = id => document.getElementById(id);
@@ -494,6 +528,136 @@
     const myKey = safeKey(myUid);
     const myName = currentUser.name || currentUser.displayName || currentUser.email || "Admin";
 
+    const myImage = currentUser.profileImage || currentUser.image || currentUser.photo || localStorage.getItem("aryanta_admin_profile_image") || ARYANTA_LOGO;
+
+    const DEFAULT_SETTINGS = {
+      notify: false,
+      banner: true,
+      camera: false,
+      files: false,
+      mic: false,
+      music: false,
+      audio: true,
+      theme: "light"
+    };
+
+    let appSettings = { ...DEFAULT_SETTINGS, ...safeJson(localStorage.getItem(SETTINGS_KEY), {}) };
+    let notificationPermissionAsked = false;
+    let notificationAudioCtx = null;
+    let firstMessageLoadDone = false;
+    let lastKnownMessageTs = 0;
+    let typingRemoteDisabled = true;
+
+    function loadAdminSettings() {
+      const saved = safeJson(localStorage.getItem(SETTINGS_KEY), {});
+      appSettings = { ...DEFAULT_SETTINGS, ...saved };
+      return appSettings;
+    }
+
+    function settingEnabled(key) {
+      loadAdminSettings();
+      return appSettings[key] === true;
+    }
+
+    function applyAdminSettings() {
+      loadAdminSettings();
+      applySavedTheme();
+      document.body.classList.toggle("notify-enabled", appSettings.notify === true);
+      const cameraOpt = document.querySelector(".attach-opt[onclick='openCameraSheet()']");
+      const galleryOpt = document.querySelector(".attach-opt[onclick=\"triggerInput('galleryInput')\"]");
+      const docOpt = document.querySelector(".attach-opt[onclick=\"triggerInput('docInput')\"]");
+      cameraOpt?.classList.toggle("permission-disabled", appSettings.camera !== true);
+      galleryOpt?.classList.toggle("permission-disabled", appSettings.files !== true);
+      docOpt?.classList.toggle("permission-disabled", appSettings.files !== true);
+      if (appSettings.mic !== true) $("btnMic")?.classList.add("permission-disabled");
+      else $("btnMic")?.classList.remove("permission-disabled");
+      maybeRequestNotificationPermission();
+    }
+
+    function maybeRequestNotificationPermission() {
+      if (!appSettings.notify || notificationPermissionAsked) return;
+      if (!("Notification" in window)) return;
+      notificationPermissionAsked = true;
+      if (Notification.permission === "default") {
+        Notification.requestPermission().catch(() => {});
+      }
+    }
+
+    function featureBlocked(label) {
+      showToast(`Please grant ${label} permission in Admin Home → Settings, then reopen Chat.`, { force: true, duration: 3200 });
+    }
+
+    function playNotifySound() {
+      loadAdminSettings();
+      if (!appSettings.audio) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        notificationAudioCtx = notificationAudioCtx || new AudioContext();
+        const osc = notificationAudioCtx.createOscillator();
+        const gain = notificationAudioCtx.createGain();
+        osc.frequency.value = 880;
+        gain.gain.value = 0.035;
+        osc.connect(gain);
+        gain.connect(notificationAudioCtx.destination);
+        osc.start();
+        setTimeout(() => { try { osc.stop(); } catch {} }, 120);
+      } catch {}
+    }
+
+    function notifyIncomingMessage(msg) {
+      loadAdminSettings();
+      if (!appSettings.notify || !msg || msg.senderUid === myUid) return;
+      const title = msg.senderName || "Aryanta Chat";
+      const body = msg.text || (Array.isArray(msg.attachments) && msg.attachments.length ? describeAttachment(msg.attachments[0]) : "New message");
+      if (document.visibilityState === "hidden" && "Notification" in window && Notification.permission === "granted") {
+        try {
+          new Notification(title, {
+            body,
+            icon: msg.senderImage || ARYANTA_LOGO,
+            tag: "aryanta-admin-chat",
+            silent: appSettings.audio !== true
+          });
+        } catch {}
+      } else {
+        showToast(`${title}: ${body}`);
+      }
+      playNotifySound();
+    }
+
+    function getImageRateKey() {
+      return `aryanta_chat_image_rate_${myKey}`;
+    }
+
+    function canAddAttachment(type, count = 1) {
+      if (attachmentsBase64.length + count > MAX_ATTACHMENTS) {
+        showToast(`Maximum ${MAX_ATTACHMENTS} files can be sent at once`);
+        return false;
+      }
+      if (type === "image") {
+        const currentImages = attachmentsBase64.filter(a => a.type === "image").length;
+        if (currentImages + count > MAX_ATTACHMENTS) {
+          showToast(`Maximum ${MAX_ATTACHMENTS} images can be selected at once`);
+          return false;
+        }
+        const now = Date.now();
+        const old = safeJson(localStorage.getItem(getImageRateKey()), []).filter(ts => now - Number(ts) < 60000);
+        if (old.length + count > MAX_IMAGES_PER_MINUTE) {
+          showToast(`Maximum ${MAX_IMAGES_PER_MINUTE} pictures per minute`);
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function noteImageAdded(count = 1) {
+      const now = Date.now();
+      const old = safeJson(localStorage.getItem(getImageRateKey()), []).filter(ts => now - Number(ts) < 60000);
+      for (let i = 0; i < count; i++) old.push(now);
+      localStorage.setItem(getImageRateKey(), JSON.stringify(old));
+    }
+
+
     let messages = [];
     let replyingToId = null;
     let selectedMsgId = null;
@@ -506,53 +670,66 @@
     let lastTap = { id: null, time: 0 };
 
     function initApp() {
-      applySavedTheme();
+      applyAdminSettings();
       buildEmojiGrid();
       setupListeners();
       listenForMessages();
       setupPresence();
       listenTyping();
+      window.addEventListener("storage", event => {
+        if (event.key === SETTINGS_KEY) {
+          applyAdminSettings();
+          renderMessages();
+          handleInputResize();
+        }
+      });
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          applyAdminSettings();
+          handleInputResize();
+          lastKnownMessageTs = Math.max(lastKnownMessageTs, Date.now() - 1000);
+        }
+      });
       setTimeout(scrollToBottom, 300);
     }
 
     function applySavedTheme() {
-      const savedSettings = safeJson(localStorage.getItem(SETTINGS_KEY), {});
-      const theme = savedSettings.theme || localStorage.getItem("aryanta_chat_theme") || "light";
+      const savedSettings = appSettings || loadAdminSettings();
+      const theme = savedSettings.theme || "light";
       const useDark = theme === "dark" || (theme === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
       document.documentElement.setAttribute("data-theme", useDark ? "dark" : "light");
     }
 
     function toggleThemeMode() {
-      const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-      const next = isDark ? "light" : "dark";
-      document.documentElement.setAttribute("data-theme", next);
-      localStorage.setItem("aryanta_chat_theme", next);
-      const settings = safeJson(localStorage.getItem(SETTINGS_KEY), {});
-      settings.theme = next;
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      applyAdminSettings();
       closeAllMenus();
-      showToast(next === "dark" ? "Dark mode enabled" : "Light mode enabled");
+      showToast("Theme follows Admin Settings");
     }
 
     function goBack() { window.location.href = "admin.html"; }
 
-    function showToast(msg) {
+    function showToast(msg, options = {}) {
+      loadAdminSettings();
+      if (!options.force && appSettings.notify !== true) return;
       const holder = $("toastHolder");
-      if (!holder) return alert(msg);
+      if (!holder) return;
       const toast = document.createElement("div");
       toast.className = "toast show";
       toast.innerHTML = `<i class="fas fa-info-circle"></i><span>${escapeHtml(msg)}</span>`;
       holder.appendChild(toast);
-      setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 300); }, 2200);
+      setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 300); }, Number(options.duration || 2200));
     }
 
     function handleInputResize() {
       const input = $("chatInput");
       input.style.height = "auto";
       input.style.height = Math.min(input.scrollHeight, 120) + "px";
-      const hasContent = input.value.trim().length > 0 || attachmentsBase64.length > 0;
+      const hasText = input.value.trim().length > 0;
+      const hasContent = hasText || attachmentsBase64.length > 0;
+      const wrapper = $("inputRow")?.parentElement;
+      if (wrapper) wrapper.classList.toggle("typing-active", hasContent);
       $("btnSend").style.display = hasContent ? "flex" : "none";
-      $("btnMic").style.display = hasContent ? "none" : "flex";
+      $("btnMic").style.display = (!hasContent && settingEnabled("mic")) ? "flex" : "none";
       sendTypingSignal();
     }
 
@@ -597,6 +774,7 @@
       input.focus();
       const pos = start + emoji.length;
       input.setSelectionRange(pos, pos);
+      closeAllMenus();
       handleInputResize();
     }
 
@@ -604,6 +782,7 @@
     let isRecording = false;
 
     function toggleVoiceRecording() {
+      if (!settingEnabled("mic")) return featureBlocked("Microphone");
       if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) return showToast("Speech recognition not supported here");
       if (isRecording) {
         if (recognition) recognition.stop();
@@ -698,6 +877,9 @@
 
     function triggerInput(id) {
       closeAllMenus();
+      if ((id === "galleryInput" || id === "docInput") && !settingEnabled("files")) {
+        return featureBlocked("File Sharing");
+      }
       const input = $(id);
       if (!input) return;
       input.value = "";
@@ -706,16 +888,18 @@
 
     async function openCameraSheet() {
       closeAllMenus();
+      if (!settingEnabled("camera")) return featureBlocked("Camera");
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         showToast("Opening mobile camera picker");
         return triggerInput("cameraInput");
       }
       $("cameraModal").classList.add("active");
+      renderCameraPreviewStrip();
       try {
         await startCameraStream();
       } catch (err) {
         closeCameraSheet();
-        showToast("Camera permission needed");
+        showToast("Please allow camera permission in your phone/browser settings, then open Camera again.", { force: true, duration: 3200 });
         setTimeout(() => triggerInput("cameraInput"), 100);
       }
     }
@@ -736,22 +920,59 @@
       $("cameraModal").classList.remove("active");
     }
 
+
+    function renderCameraPreviewStrip() {
+      const strip = $("cameraPreviewStrip");
+      if (!strip) return;
+      const cameraItems = attachmentsBase64
+        .map((att, idx) => ({ att, idx }))
+        .filter(x => x.att.type === "image" && x.att.source === "camera");
+      if (!cameraItems.length) {
+        strip.classList.remove("active");
+        strip.innerHTML = "";
+        return;
+      }
+      strip.classList.add("active");
+      strip.innerHTML = cameraItems.map(({ att, idx }) => `
+        <div class="camera-thumb">
+          <img src="${att.dataUrl}" alt="Photo">
+          <button onclick="removeAttachment(${idx}); renderCameraPreviewStrip();" aria-label="Remove photo"><i class="fas fa-xmark"></i></button>
+        </div>
+      `).join("");
+    }
+
+    function clearCameraCaptures() {
+      attachmentsBase64 = attachmentsBase64.filter(att => att.source !== "camera");
+      renderAttachmentPreview();
+      renderCameraPreviewStrip();
+      handleInputResize();
+    }
+
+    function sendCameraCaptures() {
+      if (!attachmentsBase64.some(att => att.source === "camera")) return showToast("Capture a photo first");
+      closeCameraSheet();
+      sendMessage();
+    }
+
     async function flipCamera() {
       cameraFacing = cameraFacing === "environment" ? "user" : "environment";
       try { await startCameraStream(); } catch { showToast("Could not switch camera"); }
     }
 
     function captureCameraPhoto() {
+      if (!settingEnabled("camera")) return featureBlocked("Camera");
       const video = $("cameraVideo");
       if (!video.videoWidth) return showToast("Camera not ready");
+      if (!canAddAttachment("image", 1)) return;
       const canvas = document.createElement("canvas");
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
-      attachmentsBase64.push({ type: "image", mime: "image/jpeg", name: `camera_${Date.now()}.jpg`, dataUrl });
-      closeCameraSheet();
+      attachmentsBase64.push({ type: "image", mime: "image/jpeg", name: `camera_${Date.now()}.jpg`, dataUrl, source: "camera" });
+      noteImageAdded(1);
       renderAttachmentPreview();
+      renderCameraPreviewStrip();
       handleInputResize();
       showToast("Photo added");
     }
@@ -767,18 +988,29 @@
     function addFileAttachment(file, inputId) {
       if (file.size > MAX_FILE_SIZE) return showToast(`${file.name} is too large. Max 4MB`);
       const isImage = file.type.startsWith("image/");
+      const isVideo = file.type.startsWith("video/");
+      const isAudio = file.type.startsWith("audio/");
+
+      if (inputId === "cameraInput" && !settingEnabled("camera")) return featureBlocked("Camera");
+      if ((inputId === "galleryInput" || inputId === "docInput") && !settingEnabled("files")) return featureBlocked("File Sharing");
       if (inputId === "galleryInput" && !isImage) return showToast("Pic button only accepts images");
       if (inputId === "docInput" && isImage) return showToast("Use Pic for images");
+      if ((isVideo || isAudio) && !settingEnabled("music")) return featureBlocked("Music");
+      if (!canAddAttachment(isImage ? "image" : "file", 1)) return;
+
       const reader = new FileReader();
       reader.onload = ev => {
         attachmentsBase64.push({
           name: file.name || `file_${Date.now()}`,
-          type: isImage ? "image" : (file.type.startsWith("video/") ? "video" : "file"),
+          type: isImage ? "image" : (isVideo ? "video" : (isAudio ? "audio" : "file")),
           mime: file.type || "application/octet-stream",
           size: file.size,
-          dataUrl: ev.target.result
+          dataUrl: ev.target.result,
+          source: inputId === "cameraInput" ? "camera-picker" : inputId
         });
+        if (isImage) noteImageAdded(1);
         renderAttachmentPreview();
+        renderCameraPreviewStrip();
         handleInputResize();
       };
       reader.onerror = () => showToast("Could not read file");
@@ -797,13 +1029,15 @@
         let inner = `<i class="fas fa-file-lines file-icon"></i>`;
         if (att.type === "image") inner = `<img src="${att.dataUrl}" alt="pic">`;
         if (att.type === "video") inner = `<i class="fas fa-video file-icon"></i>`;
-        return `<div class="att-item">${inner}<button class="att-remove" onclick="removeAttachment(${idx})"><i class="fas fa-times"></i></button></div>`;
+        if (att.type === "audio") inner = `<i class="fas fa-music file-icon"></i>`;
+        return `<div class="att-item">${inner}<button class="att-remove" onclick="removeAttachment(${idx}); renderCameraPreviewStrip();"><i class="fas fa-times"></i></button></div>`;
       }).join("");
     }
 
     function removeAttachment(idx) {
       attachmentsBase64.splice(idx, 1);
       renderAttachmentPreview();
+      renderCameraPreviewStrip();
       handleInputResize();
     }
 
@@ -811,22 +1045,31 @@
       document.querySelectorAll(".msg-row").forEach(row => {
         let startX = 0;
         let isSwiping = false;
+        let holdTimer = null;
+        const clearHold = () => { if (holdTimer) clearTimeout(holdTimer); holdTimer = null; };
+
         row.addEventListener("touchstart", e => {
           if (document.body.classList.contains("select-mode")) return;
           startX = e.touches[0].clientX;
           isSwiping = true;
           row.style.transition = "none";
+          clearHold();
+          holdTimer = setTimeout(() => openMsgMenu(row.dataset.id), 520);
         }, { passive: true });
+
         row.addEventListener("touchmove", e => {
           if (!isSwiping) return;
           const diff = e.touches[0].clientX - startX;
+          if (Math.abs(diff) > 10) clearHold();
           if (diff > 0 && diff < 80) {
             row.style.transform = `translateX(${diff}px)`;
             const icon = row.querySelector(".swipe-reply-icon");
             if (icon) icon.style.opacity = diff / 80;
           }
         }, { passive: true });
+
         row.addEventListener("touchend", e => {
+          clearHold();
           if (!isSwiping) return;
           isSwiping = false;
           const diff = e.changedTouches[0].clientX - startX;
@@ -836,6 +1079,12 @@
           if (icon) icon.style.opacity = 0;
           if (diff > 50) triggerReply(row.dataset.id);
         }, { passive: true });
+
+        row.addEventListener("touchcancel", clearHold, { passive: true });
+        row.addEventListener("contextmenu", e => {
+          e.preventDefault();
+          openMsgMenu(row.dataset.id);
+        });
       });
     }
 
@@ -855,39 +1104,155 @@
       $("replyPreview").classList.remove("active");
     }
 
+
+    const ENC_VERSION = "ARYANTA-E2EE-V1";
+    let cachedCryptoKey = null;
+
+    function getChatSecret() {
+      const saved = safeJson(localStorage.getItem(SETTINGS_KEY), {});
+      return String(saved.chatEncryptionKey || localStorage.getItem("aryanta_chat_shared_key") || "aryanta-admin-chat-shared-key-v1");
+    }
+
+    function bytesToBase64(bytes) {
+      let binary = "";
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+      }
+      return btoa(binary);
+    }
+
+    function base64ToBytes(base64) {
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return bytes;
+    }
+
+    async function getCryptoKey() {
+      const secret = getChatSecret();
+      const cacheId = await sha256Text(secret);
+      if (cachedCryptoKey && cachedCryptoKey.id === cacheId) return cachedCryptoKey.key;
+      const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), "PBKDF2", false, ["deriveKey"]);
+      const key = await crypto.subtle.deriveKey(
+        { name: "PBKDF2", salt: new TextEncoder().encode("aryanta-admin-chat-salt-v1"), iterations: 120000, hash: "SHA-256" },
+        material,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt", "decrypt"]
+      );
+      cachedCryptoKey = { id: cacheId, key };
+      return key;
+    }
+
+    async function sha256Text(text) {
+      const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+      return bytesToBase64(new Uint8Array(hash));
+    }
+
+    async function encryptChatPayload(payload) {
+      const key = await getCryptoKey();
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const encoded = new TextEncoder().encode(JSON.stringify(payload));
+      const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, encoded);
+      return { v: ENC_VERSION, iv: bytesToBase64(iv), data: bytesToBase64(new Uint8Array(encrypted)) };
+    }
+
+    async function decryptChatPayload(packet) {
+      if (!packet || packet.v !== ENC_VERSION) throw new Error("Unsupported encrypted message");
+      const key = await getCryptoKey();
+      const iv = base64ToBytes(packet.iv);
+      const data = base64ToBytes(packet.data);
+      const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, data);
+      return JSON.parse(new TextDecoder().decode(decrypted));
+    }
+
+    async function normalizeIncomingMessage(raw) {
+      if (!raw) return raw;
+      if (raw.encrypted && raw.payloadEnc) {
+        try {
+          const plain = await decryptChatPayload(raw.payloadEnc);
+          return { ...raw, ...plain, decrypted: true };
+        } catch (err) {
+          return {
+            ...raw,
+            text: "🔒 Encrypted message. Chat key mismatch.",
+            attachments: [],
+            senderName: raw.senderName || "Encrypted User",
+            senderImage: raw.senderImage || ARYANTA_LOGO,
+            decryptFailed: true
+          };
+        }
+      }
+      return { ...raw, senderImage: raw.senderImage || ARYANTA_LOGO };
+    }
+
     async function sendMessage() {
       const text = $("chatInput").value.trim();
       if (!text && attachmentsBase64.length === 0) return;
+      if (attachmentsBase64.length > MAX_ATTACHMENTS) return showToast(`Maximum ${MAX_ATTACHMENTS} files allowed`);
       const msgId = `MSG-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+      const plainPayload = {
+        senderName: myName,
+        senderImage: myImage,
+        text,
+        attachments: attachmentsBase64,
+        replyTo: replyingToId,
+        timestamp: Date.now()
+      };
+      let encryptedPayload;
+      try {
+        encryptedPayload = await encryptChatPayload(plainPayload);
+      } catch (err) {
+        return showToast("Encryption failed. Message not sent");
+      }
+
       const payload = {
         id: msgId,
         senderUid: myUid,
         senderName: myName,
-        text,
-        attachments: attachmentsBase64,
+        senderImage: myImage,
+        timestamp: plainPayload.timestamp,
         replyTo: replyingToId,
-        timestamp: Date.now(),
+        encrypted: true,
+        payloadEnc: encryptedPayload,
         deletedForAll: false,
         reactions: {},
         stars: {}
       };
+
       $("chatInput").value = "";
       $("chatInput").style.height = "auto";
       attachmentsBase64 = [];
       renderAttachmentPreview();
+      renderCameraPreviewStrip();
       cancelReply();
       handleInputResize();
       try {
         await db.ref(`${CHAT_PATH}/${msgId}`).set(payload);
-        await db.ref(`${TYPING_PATH}/${myKey}`).remove().catch(() => {});
+        if (!typingRemoteDisabled) await db.ref(`${TYPING_PATH}/${myKey}`).remove().catch(() => { typingRemoteDisabled = true; });
         scrollToBottom();
-      } catch { showToast("Failed to send message"); }
+      } catch {
+        showToast("Failed to send message");
+      }
     }
 
     function listenForMessages() {
-      db.ref(CHAT_PATH).orderByChild("timestamp").limitToLast(150).on("value", snap => {
+      db.ref(CHAT_PATH).orderByChild("timestamp").limitToLast(150).on("value", async snap => {
         const data = snap.val() || {};
-        messages = Object.values(data).filter(Boolean).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+        const rawMessages = Object.values(data).filter(Boolean).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+        const normalized = await Promise.all(rawMessages.map(normalizeIncomingMessage));
+        messages = normalized.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+        const newestTs = messages.reduce((max, m) => Math.max(max, Number(m.timestamp || 0)), 0);
+        if (firstMessageLoadDone) {
+          messages
+            .filter(m => Number(m.timestamp || 0) > lastKnownMessageTs && m.senderUid !== myUid && !m.deletedForAll)
+            .slice(-3)
+            .forEach(notifyIncomingMessage);
+        }
+        lastKnownMessageTs = Math.max(lastKnownMessageTs, newestTs);
+        firstMessageLoadDone = true;
         renderMessages();
       }, () => showToast("Could not load chat"));
     }
@@ -929,11 +1294,15 @@
         }
         const alignClass = isMe ? "out" : "in";
         const isSelected = selectedMsgIds.has(m.id) ? "checked" : "";
-        html += `<div class="msg-row ${alignClass}" data-id="${escapeHtml(m.id)}" onclick="toggleMsgSelection(event, '${escapeHtml(m.id)}')">`;
+        const avatar = escapeHtml(m.senderImage || ARYANTA_LOGO);
+        html += `<div class="msg-row ${alignClass} with-avatar" data-id="${escapeHtml(m.id)}" onclick="toggleMsgSelection(event, '${escapeHtml(m.id)}')">`;
         html += `<div class="msg-checkbox ${isSelected}"></div><div class="swipe-reply-icon"><i class="fas fa-reply"></i></div>`;
+        if (!isMe) html += `<img class="msg-avatar" src="${avatar}" alt="${escapeHtml(m.senderName || 'User')}">`;
         html += `<div class="bubble" onclick="handleBubbleClick(event, '${escapeHtml(m.id)}')" ondblclick="quickHeart(event, '${escapeHtml(m.id)}')">`;
         html += renderBubbleInner(m, isMe);
-        html += `</div></div>`;
+        html += `</div>`;
+        if (isMe) html += `<img class="msg-avatar" src="${avatar}" alt="You">`;
+        html += `</div>`;
       });
       html += `<div class="typing-pill" id="typingPill"><span id="typingText">Typing</span><span class="typing-dots"><span></span><span></span><span></span></span></div>`;
       box.innerHTML = html;
@@ -946,7 +1315,7 @@
       if (m.deletedForAll) {
         inner += `<div class="msg-deleted"><i class="fas fa-ban"></i> This message was deleted</div>`;
       } else {
-        if (!isMe) inner += `<span class="msg-sender">${escapeHtml(m.senderName || "User")}</span>`;
+        inner += `<span class="msg-sender">${escapeHtml(isMe ? "You" : (m.senderName || "User"))}</span>`;
         if (m.replyTo) inner += renderQuote(m.replyTo);
         if (Array.isArray(m.attachments)) {
           m.attachments.forEach((att, idx) => inner += renderAttachment(m.id, att, idx));
@@ -969,11 +1338,17 @@
 
     function renderAttachment(msgId, att, idx) {
       if (!att) return "";
+      if ((att.type === "video" || att.type === "audio") && !settingEnabled("music")) {
+        return `<div class="blocked-attachment"><i class="fas fa-ban"></i><span>Music/media is disabled in Admin Settings</span></div>`;
+      }
       if (att.type === "image") {
         return `<div class="msg-attachment"><img src="${att.dataUrl}" alt="${escapeHtml(att.name || 'pic')}" onclick="openMessageAttachment(event, '${escapeHtml(msgId)}', ${idx})"></div>`;
       }
       if (att.type === "video") {
         return `<div class="msg-attachment"><video class="msg-video" src="${att.dataUrl}" controls onclick="event.stopPropagation()"></video></div>`;
+      }
+      if (att.type === "audio") {
+        return `<div class="msg-file" onclick="event.stopPropagation()"><i class="fas fa-music"></i><div><audio src="${att.dataUrl}" controls></audio></div></div>`;
       }
       return `<button class="msg-file" onclick="openMessageAttachment(event, '${escapeHtml(msgId)}', ${idx})"><i class="fas fa-file-lines"></i><div>${escapeHtml(att.name || 'File')}</div></button>`;
     }
@@ -1004,7 +1379,6 @@
       const now = Date.now();
       if (lastTap.id === id && now - lastTap.time < 300) return quickHeart(e, id);
       lastTap = { id, time: now };
-      openMsgMenu(id);
     }
 
     function quickHeart(e, id) {
@@ -1092,6 +1466,8 @@
       const msg = messages.find(m => m.id === msgId);
       const att = msg?.attachments?.[idx];
       if (!att) return showToast("Attachment missing");
+      if (att.type === "file" && !settingEnabled("files")) return featureBlocked("File Sharing");
+      if ((att.type === "video" || att.type === "audio") && !settingEnabled("music")) return featureBlocked("Music");
       if (att.type === "image") return openImage(e, att.dataUrl, att.name || "Aryanta_Chat_Image.jpg");
       openFileViewer(att);
     }
@@ -1167,14 +1543,15 @@
     }
 
     function sendTypingSignal() {
+      if (typingRemoteDisabled) return;
       const text = $("chatInput").value.trim();
       clearTimeout(typingTimer);
       if (!text) {
-        db.ref(`${TYPING_PATH}/${myKey}`).remove().catch(() => {});
+        db.ref(`${TYPING_PATH}/${myKey}`).remove().catch(() => { typingRemoteDisabled = true; });
         return;
       }
-      db.ref(`${TYPING_PATH}/${myKey}`).set({ name: myName, ts: Date.now() }).catch(() => {});
-      typingTimer = setTimeout(() => db.ref(`${TYPING_PATH}/${myKey}`).remove().catch(() => {}), 1800);
+      db.ref(`${TYPING_PATH}/${myKey}`).set({ name: myName, ts: Date.now() }).catch(() => { typingRemoteDisabled = true; });
+      typingTimer = setTimeout(() => db.ref(`${TYPING_PATH}/${myKey}`).remove().catch(() => { typingRemoteDisabled = true; }), 1800);
     }
 
     function listenTyping() {
@@ -1200,6 +1577,8 @@
       $("cameraInput").addEventListener("change", handleFileSelection);
       $("galleryInput").addEventListener("change", handleFileSelection);
       $("docInput").addEventListener("change", handleFileSelection);
+      $("chatInput").addEventListener("focus", handleInputResize);
+      $("chatInput").addEventListener("blur", () => setTimeout(handleInputResize, 120));
       $("chatInput").addEventListener("keydown", e => {
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();
@@ -1207,7 +1586,10 @@
         }
       });
       window.addEventListener("beforeunload", () => {
-        try { db.ref(`${TYPING_PATH}/${myKey}`).remove(); db.ref(`${PRESENCE_PATH}/${myKey}`).remove(); } catch {}
+        try {
+          if (!typingRemoteDisabled) db.ref(`${TYPING_PATH}/${myKey}`).remove();
+          db.ref(`${PRESENCE_PATH}/${myKey}`).remove();
+        } catch {}
       });
     }
 
