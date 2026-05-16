@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Aryanta Admin Login</title>
-
   <style>
     :root {
       --primary: #008080;
@@ -669,7 +668,6 @@
     }
   </style>
 </head>
-
 <body>
   <div id="toastHolder" class="toast-holder"></div>
 
@@ -685,11 +683,14 @@
           <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta" />
         </div>
         <h1>Aryanta Admin</h1>
-        <p>Private Worker secured login</p>
+        <p>Realtime Database Security</p>
       </div>
 
       <div class="login-body">
-        <div class="login-pill"><span class="mark">◆</span><span>Authorized admins only</span></div>
+        <div class="login-pill">
+          <span class="mark">◆</span>
+          <span>Authorized admins only</span>
+        </div>
 
         <div class="login-title">
           <h2>Login</h2>
@@ -715,11 +716,17 @@
           </div>
 
           <div class="remember-row">
-            <label for="rememberMe"><input id="rememberMe" type="checkbox" /> Remember me</label>
+            <label for="rememberMe">
+              <input id="rememberMe" type="checkbox" />
+              <span>Remember me</span>
+            </label>
             <button class="need-btn" type="button" onclick="openNoAccountPopup()">Need access?</button>
           </div>
 
-          <button id="loginBtn" class="login-btn" type="submit"><span class="mark">A</span><span>Secure Authentication</span></button>
+          <button id="loginBtn" class="login-btn" type="submit">
+            <span class="mark">A</span>
+            <span>Secure Authentication</span>
+          </button>
         </form>
 
         <div class="support-box">
@@ -751,9 +758,12 @@
   </div>
 
   <script>
-    const API_BASE = "https://rough-field-c679.official-aryanta.workers.dev";
+    // DIRECT REALTIME DATABASE CONNECTION
+    const DB_URL = "https://aryanta-default-rtdb.asia-southeast1.firebasedatabase.app";
     const NEXT_PAGE = "admin.html";
-    const TOKEN_KEY = "aryanta_admin_worker_token";
+    
+    // Storage Keys
+    const TOKEN_KEY = "aryanta_admin_worker_token"; // Keeping naming for compatibility with admin.html
     const SESSION_TOKEN_KEY = "aryanta_admin_worker_session";
     const ADMIN_PROFILE_KEY = "aryanta_admin_profile";
     const UID_KEY = "aryanta_admin_saved_uid";
@@ -781,22 +791,8 @@
       sessionStorage.removeItem(ADMIN_PROFILE_KEY);
     }
 
-    async function api(path, options = {}) {
-      const headers = new Headers(options.headers || {});
-      if (!(options.body instanceof FormData)) headers.set("Content-Type", "application/json");
-      if (getToken()) headers.set("Authorization", "Bearer " + getToken());
-
-      const res = await fetch(API_BASE + path, { ...options, headers });
-      const data = await res.json().catch(() => ({ success: false, error: "Invalid Worker response" }));
-
-      if (!res.ok || data.success === false) {
-        const err = new Error(data.error || "Request failed");
-        err.status = res.status;
-        err.data = data;
-        throw err;
-      }
-
-      return data;
+    function normalizeUid(value) {
+      return String(value || "").trim().toUpperCase();
     }
 
     function showLoader(text = "Checking secure access...") {
@@ -809,38 +805,28 @@
     }
 
     function escapeHtml(value) {
-      return String(value || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+      return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
     function showToast(message, type = "info") {
       const toast = document.createElement("div");
       toast.className = "toast " + type;
+
       const mark = type === "error" ? "!" : type === "success" ? "✓" : "A";
       toast.innerHTML = `<span class="mark">${mark}</span><span>${escapeHtml(message)}</span>`;
+
       $("toastHolder").appendChild(toast);
       requestAnimationFrame(() => toast.classList.add("show"));
+
       setTimeout(() => {
         toast.classList.remove("show");
         setTimeout(() => toast.remove(), 220);
       }, 2800);
     }
 
-    function openNoAccountPopup() {
-      $("noAccountPopup").classList.add("active");
-    }
-
-    function closeNoAccountPopup() {
-      $("noAccountPopup").classList.remove("active");
-    }
-
-    function closePopupByOverlay(event) {
-      if (event.target.id === "noAccountPopup") closeNoAccountPopup();
-    }
+    function openNoAccountPopup() { $("noAccountPopup").classList.add("active"); }
+    function closeNoAccountPopup() { $("noAccountPopup").classList.remove("active"); }
+    function closePopupByOverlay(event) { if (event.target.id === "noAccountPopup") closeNoAccountPopup(); }
 
     async function copyText(text) {
       try {
@@ -864,14 +850,24 @@
     }
 
     async function checkExistingSession() {
-      const token = getToken();
+      const token = getToken(); // This token is now just the UID
       if (!token) return;
+
       showLoader("Checking secure session...");
+
       try {
-        const me = await api("/admin/me");
-        if (me && me.admin) sessionStorage.setItem(ADMIN_PROFILE_KEY, JSON.stringify(me.admin));
-        goNext();
-      } catch (err) {
+        const response = await fetch(`${DB_URL}/admins/${token}.json`);
+        const adminData = await response.json();
+
+        // Check if admin exists and is active
+        if (adminData && adminData.status === "Active") {
+          sessionStorage.setItem(ADMIN_PROFILE_KEY, JSON.stringify(adminData));
+          goNext();
+        } else {
+          clearToken();
+          hideLoader();
+        }
+      } catch {
         clearToken();
         hideLoader();
       }
@@ -885,68 +881,100 @@
       }
     }
 
-    $("togglePass").addEventListener("click", () => {
-      const input = $("loginPass");
-      const hidden = input.type === "password";
-      input.type = hidden ? "text" : "password";
-      $("togglePass").textContent = hidden ? "HIDE" : "SHOW";
-    });
+    function setupPasswordToggle() {
+      $("togglePass").addEventListener("click", () => {
+        const input = $("loginPass");
+        const hidden = input.type === "password";
+        input.type = hidden ? "text" : "password";
+        $("togglePass").textContent = hidden ? "HIDE" : "SHOW";
+      });
+    }
 
-    $("loginForm").addEventListener("submit", async event => {
-      event.preventDefault();
+    function setupLoginForm() {
+      $("loginForm").addEventListener("submit", async event => {
+        event.preventDefault();
 
-      const uid = $("loginUid").value.trim().toUpperCase();
-      const password = $("loginPass").value.trim();
+        const uid = normalizeUid($("loginUid").value);
+        const password = $("loginPass").value.trim();
 
-      if (!uid || !password) {
-        showToast("Enter UID and password.", "error");
-        return;
-      }
+        if (!uid || !password) {
+          showToast("Enter UID and password.", "error");
+          return;
+        }
 
-      setLoginLoading(true);
-      showLoader("Authenticating...");
+        setLoginLoading(true);
+        showLoader("Authenticating...");
 
-      try {
-        const result = await api("/admin/login", {
-          method: "POST",
-          body: JSON.stringify({ uid, password })
-        });
+        try {
+          // Fetch admin directly from Realtime Database
+          const response = await fetch(`${DB_URL}/admins/${uid}.json`);
+          if (!response.ok) throw new Error("Network error during login");
+          
+          const adminData = await response.json();
 
-        if (!result || !result.token) throw new Error("No account found");
+          if (!adminData) {
+            openNoAccountPopup();
+            throw new Error("No account found");
+          }
 
-        const remember = $("rememberMe").checked;
-        setToken(result.token, remember);
-        if (remember) localStorage.setItem(UID_KEY, uid);
-        else localStorage.removeItem(UID_KEY);
-        if (result.admin) sessionStorage.setItem(ADMIN_PROFILE_KEY, JSON.stringify(result.admin));
+          if (adminData.password !== password) {
+            showToast("Invalid password.", "error");
+            throw new Error("Invalid password");
+          }
 
-        showToast("Access granted.", "success");
-        setTimeout(goNext, 300);
-      } catch (err) {
-        clearToken();
-        const msg = String(err.message || "").toLowerCase();
-        const noAccount = err.status === 401 || err.status === 403 || msg.includes("not found") || msg.includes("invalid") || msg.includes("unauthorized");
-        if (noAccount) openNoAccountPopup();
-        else showToast(err.message || "Login failed.", "error");
-      } finally {
-        hideLoader();
-        setLoginLoading(false);
-      }
-    });
+          if (adminData.status !== "Active") {
+            showToast("Account suspended.", "error");
+            throw new Error("Account suspended");
+          }
 
-    document.addEventListener("touchmove", event => {
-      if (!event.target.closest("input")) event.preventDefault();
-    }, { passive: false });
+          // SUCCESS
+          const remember = $("rememberMe").checked;
 
-    document.addEventListener("keydown", event => {
-      if (event.key === "Escape") closeNoAccountPopup();
-    });
+          // Save the UID as the token since we're using direct DB logic
+          setToken(uid, remember);
 
-    window.addEventListener("resize", () => window.scrollTo(0, 0));
-    window.addEventListener("orientationchange", () => window.scrollTo(0, 0));
+          if (remember) {
+            localStorage.setItem(UID_KEY, uid);
+          } else {
+            localStorage.removeItem(UID_KEY);
+          }
 
-    loadSavedUid();
-    checkExistingSession();
+          sessionStorage.setItem(ADMIN_PROFILE_KEY, JSON.stringify(adminData));
+
+          showToast("Access granted.", "success");
+          setTimeout(goNext, 300);
+
+        } catch (err) {
+          clearToken();
+        } finally {
+          hideLoader();
+          setLoginLoading(false);
+        }
+      });
+    }
+
+    function preventPageDrag() {
+      document.addEventListener("touchmove", event => {
+        if (!event.target.closest("input")) event.preventDefault();
+      }, { passive: false });
+
+      document.addEventListener("keydown", event => {
+        if (event.key === "Escape") closeNoAccountPopup();
+      });
+
+      window.addEventListener("resize", () => window.scrollTo(0, 0));
+      window.addEventListener("orientationchange", () => window.scrollTo(0, 0));
+    }
+
+    function init() {
+      loadSavedUid();
+      setupPasswordToggle();
+      setupLoginForm();
+      preventPageDrag();
+      checkExistingSession();
+    }
+
+    init();
   </script>
 </body>
 </html>
