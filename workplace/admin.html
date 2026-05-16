@@ -12,18 +12,20 @@
 <body>
 
   <div id="lockScreen" class="lock-screen" hidden>
-    <div class="user-avatar">
-      <img id="lockAvatar" src="https://aryanta.in/vurify/aryanta.jpeg" alt="Admin" />
-    </div>
-    <h2>App Locked</h2>
-    <input id="lockPinInput" class="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="••••" />
-    <div class="lock-actions">
-      <button class="small-btn confirm-btn" type="button" onclick="unlockApp()">
-        <i class="fa-solid fa-unlock"></i> <span>Unlock</span>
-      </button>
-      <button id="lockBiometricBtn" class="small-btn" type="button" hidden onclick="unlockWithBiometrics()">
-        <i class="fa-solid fa-fingerprint"></i> <span>Biometrics</span>
-      </button>
+    <div class="lock-content-card">
+      <div class="user-avatar">
+        <img id="lockAvatar" src="https://aryanta.in/vurify/aryanta.jpeg" alt="Admin" />
+      </div>
+      <h2>App Locked</h2>
+      <input id="lockPinInput" class="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="••••" />
+      <div class="lock-actions">
+        <button class="small-btn confirm-btn" type="button" onclick="unlockApp()">
+          <i class="fa-solid fa-unlock"></i> <span>Unlock</span>
+        </button>
+        <button id="lockBiometricBtn" class="small-btn" type="button" hidden onclick="unlockWithBiometrics()">
+          <i class="fa-solid fa-fingerprint"></i> <span>Biometrics</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -83,10 +85,10 @@
 
         <div class="top-actions">
           <button class="round-btn" type="button" onclick="manualRefreshDashboard()" title="Refresh dashboard" aria-label="Refresh dashboard">
-            <i class="fa-solid fa-rotate"></i> <span class="btn-text">Refresh</span>
+            <i class="fa-solid fa-rotate"></i> <span class="btn-text"></span>
           </button>
           <button class="round-btn" type="button" onclick="showPage('settings')" title="Settings" aria-label="Open settings">
-            <i class="fa-solid fa-gear"></i> <span class="btn-text">Settings</span>
+            <i class="fa-solid fa-gear"></i> <span class="btn-text"></span>
           </button>
         </div>
       </header>
@@ -98,8 +100,8 @@
               <img id="homeAvatar" src="https://aryanta.in/vurify/aryanta.jpeg" alt="Admin" />
             </div>
             <div class="hero-text">
-              <h2 id="homeAdminName">&lt;na&gt;</h2>
-              <p id="homeWelcome">No admin account found. Login first to view secure data.</p>
+              <h2 id="homeAdminName">Loading...</h2>
+              <p id="homeWelcome">Authenticating secure connection...</p>
               <div class="location-pill"><span class="mini-mark"><i class="fa-solid fa-location-dot"></i></span><span id="homeLocation">Location not enabled</span></div>
             </div>
           </div>
@@ -162,7 +164,7 @@
               <button class="quick-btn" type="button" onclick="openExternal('transaction.html')" title="Transaction">
                 <span class="mini-mark"><i class="fa-solid fa-money-bill-transfer"></i></span><span class="btn-text">Transact</span>
               </button>
-              <button class="quick-btn" type="button" onclick="openExternal('admmis.html')" title="Admins">
+              <button class="quick-btn" type="button" onclick="openExternal('dashboard.html')" title="Admins">
                 <span class="mini-mark"><i class="fa-solid fa-user-shield"></i></span><span class="btn-text">Admins</span>
               </button>
 
@@ -203,15 +205,15 @@
               </div>
               <div class="profile-actions">
                 <div>
-                  <h3 id="profileName">&lt;na&gt;</h3>
+                  <h3 id="profileName">Loading...</h3>
                   <p>Tap image to view. Use edit icon to change.</p>
                 </div>
                 <div class="action-row">
                   <button class="small-btn" type="button" onclick="selectProfileImage()" title="Change profile image">
                     <i class="fa-solid fa-pen"></i> <span class="btn-text">Edit Pic</span>
                   </button>
-                  <button class="small-btn danger" type="button" onclick="removeProfileImage()" title="Remove profile image">
-                    <i class="fa-solid fa-trash"></i> <span class="btn-text">Remove</span>
+                  <button class="small-btn danger" type="button" onclick="logoutAdmin()" title="Logout">
+                    <i class="fa-solid fa-right-from-bracket"></i> <span class="btn-text">Logout</span>
                   </button>
                 </div>
               </div>
@@ -223,7 +225,7 @@
               <div class="info-item"><span>Email</span><strong id="infoEmail">&lt;na&gt;</strong></div>
               <div class="info-item"><span>Role</span><strong id="infoRole">&lt;na&gt;</strong></div>
               <div class="info-item"><span>Account Created</span><strong id="infoCreated">&lt;na&gt;</strong></div>
-              <div class="info-item"><span>Login Status</span><strong id="infoStatus">No Account</strong></div>
+              <div class="info-item"><span>Login Status</span><strong id="infoStatus" style="color: var(--success);">Verified</strong></div>
             </div>
 
             <div class="history-card card">
@@ -399,9 +401,12 @@
   </main>
 
   <script>
-    const API_BASE = "https://rough-field-c679.official-aryanta.workers.dev";
+    // DIRECT FIREBASE RTDB CONNECTION
+    const DB_URL = "https://aryanta-default-rtdb.asia-southeast1.firebasedatabase.app";
     const ARYANTA_LOGO = "https://aryanta.in/vurify/aryanta.jpeg";
     const LOGIN_PAGE = "index.html";
+    
+    // Auth Keys
     const TOKEN_KEY = "aryanta_admin_worker_token";
     const SESSION_TOKEN_KEY = "aryanta_admin_worker_session";
     const UID_KEY = "aryanta_admin_saved_uid";
@@ -414,20 +419,9 @@
     const $ = id => document.getElementById(id);
 
     let settings = {
-      appLock: false,
-      pin: "",
-      biometric: false,
-      notify: false,
-      banner: true,
-      camera: false,
-      files: false,
-      mic: false,
-      music: false,
-      audio: true,
-      messageDeleteDays: "0",
-      locationEnabled: false,
-      locationData: { city: NA, state: NA, country: NA },
-      theme: "light"
+      appLock: false, pin: "", biometric: false, notify: false, banner: true, camera: false,
+      files: false, mic: false, music: false, audio: true, messageDeleteDays: "0",
+      locationEnabled: false, locationData: { city: NA, state: NA, country: NA }, theme: "light"
     };
 
     let accountFound = false;
@@ -435,6 +429,7 @@
     let pendingProfileImage = null;
     let isAppLocked = false;
 
+    // --- AUTH & REDIRECT LOGIC ---
     function getToken() {
       return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(SESSION_TOKEN_KEY) || "";
     }
@@ -445,52 +440,37 @@
       sessionStorage.removeItem(PROFILE_KEY);
     }
 
+    function logoutAdmin() {
+      clearToken();
+      window.location.replace(LOGIN_PAGE);
+    }
+
     function safeJson(value, fallback) {
       try { return JSON.parse(value) || fallback; } catch (e) { return fallback; }
     }
 
-    async function api(path, options = {}) {
-      const headers = new Headers(options.headers || {});
-      if (!(options.body instanceof FormData)) headers.set("Content-Type", "application/json");
-      const token = getToken();
-      if (token) headers.set("Authorization", "Bearer " + token);
-
-      const res = await fetch(API_BASE + path, { ...options, headers });
-      const data = await res.json().catch(() => ({ success: false, error: "Invalid Worker response" }));
-
-      if (!res.ok || data.success === false) {
-        const err = new Error(data.error || "Request failed");
-        err.status = res.status;
-        err.data = data;
-        throw err;
+    function normalizeProfile(saved) {
+      if (!saved) return null;
+      
+      // Parse the timestamp properly if it exists
+      let createdDate = NA;
+      if (saved.createdAt) {
+        const dateObj = new Date(saved.createdAt);
+        createdDate = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
       }
-      return data;
-    }
 
-    function noAccountProfile() {
       return {
-        uid: NA, name: NA, email: NA, role: NA, createdAt: NA,
-        welcome: "No admin account found. Login first to view secure data."
-      };
-    }
-
-    function normalizeProfile(admin) {
-      const saved = admin || safeJson(sessionStorage.getItem(PROFILE_KEY) || localStorage.getItem(PROFILE_KEY), {});
-      if (!saved || !Object.keys(saved).length) return noAccountProfile();
-      return {
-        uid: saved.uid || saved.adminUid || saved.id || localStorage.getItem(UID_KEY) || NA,
-        name: saved.name || saved.fullName || saved.username || NA,
+        uid: saved.uid || saved.id || NA,
+        name: saved.name || saved.fullName || "Admin",
         email: saved.email || NA,
-        role: saved.role || saved.adminRole || NA,
-        createdAt: saved.createdAt || saved.accountCreated || NA,
-        welcome: saved.name ? "Welcome back. Secure admin account verified." : "Secure admin account verified."
+        role: saved.role || "Admin",
+        createdAt: createdDate,
+        welcome: "Secure admin account verified."
       };
     }
 
     function escapeHtml(value) {
-      return String(value || "")
-        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+      return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
     function dismissToast(toast) {
@@ -565,22 +545,17 @@
       $("homeAvatar").src = image;
       $("profileAvatar").src = image;
       if($("lockAvatar")) $("lockAvatar").src = image;
+      
       setText("homeAdminName", profile.name);
       setText("homeWelcome", profile.welcome);
       setText("profileName", profile.name);
+      
+      // Populate full grid
       setText("infoUid", profile.uid);
       setText("infoName", profile.name);
       setText("infoEmail", profile.email);
       setText("infoRole", profile.role);
       setText("infoCreated", profile.createdAt);
-      setText("infoStatus", accountFound ? "Verified" : "No Account");
-    }
-
-    function renderNoAccount() {
-      accountFound = false;
-      renderProfile(noAccountProfile());
-      setDashboardNA();
-      renderHistory();
     }
 
     function getCurrentProfileImage() { return localStorage.getItem(PROFILE_IMAGE_KEY) || ARYANTA_LOGO; }
@@ -684,15 +659,17 @@
       return "₹" + n.toLocaleString("en-IN");
     }
 
+    // --- FETCH DASHBOARD DIRECT FROM DATABASE ---
     async function loadDashboard() {
-      if (!accountFound || !getToken() || dashboardLoading) {
-        if (!accountFound) setDashboardNA();
-        return;
-      }
+      if (!accountFound || !getToken() || dashboardLoading) return;
       dashboardLoading = true;
       try {
-        const result = await api("/admin/dashboard");
-        const d = result.dashboard || result.data || {};
+        const response = await fetch(`${DB_URL}/dashboard.json`);
+        let d = {};
+        if (response.ok) {
+          d = await response.json() || {};
+        }
+
         setText("statOrders", String(d.ordersToday ?? d.totalOrdersToday ?? d.totalOrders ?? NA));
         setText("statRevenue", formatMoney(d.revenueToday ?? d.todayRevenue ?? d.totalRevenue));
         setText("statCompany", formatMoney(d.companyValue ?? d.totalCompanyValue ?? d.value));
@@ -730,19 +707,17 @@
 
     function triggerAppLockSetup() {
       if (settings.appLock) {
-        // Disabling lock
         const confirmDisable = prompt("Enter your current PIN to disable App Lock:");
         if (confirmDisable === settings.pin) {
           settings.appLock = false;
           settings.pin = "";
-          settings.biometric = false; // Turn off biometric too
+          settings.biometric = false;
           saveSettings();
           showToast("App Lock disabled", { override: true });
         } else if (confirmDisable !== null) {
           showToast("Incorrect PIN", { override: true });
         }
       } else {
-        // Enabling lock - open modal
         $("setupPin1").value = "";
         $("setupPin2").value = "";
         $("pinModal").hidden = false;
@@ -782,20 +757,13 @@
 
     async function unlockWithBiometrics() {
       if (!window.PublicKeyCredential) {
-        showToast("Biometrics not supported on this device", { override: true });
+        showToast("Biometrics not supported", { override: true });
         return;
       }
       try {
-        // Simple WebAuthn prompt to verify user presence
         const challenge = new Uint8Array(32);
         window.crypto.getRandomValues(challenge);
-        await navigator.credentials.get({
-          publicKey: {
-            challenge: challenge,
-            userVerification: "required"
-          }
-        });
-        // If promise resolves, biometric succeeded
+        await navigator.credentials.get({ publicKey: { challenge: challenge, userVerification: "required" } });
         isAppLocked = false;
         $("lockScreen").hidden = true;
         sessionStorage.setItem("aryanta_unlocked", "true");
@@ -815,7 +783,7 @@
       applyBanner();
       renderLocation(settings.locationData);
       renderSettings();
-      initSecurity(); // Run security check on load
+      initSecurity();
     }
 
     function saveSettings() {
@@ -826,15 +794,9 @@
 
     function renderSettings() {
       const map = {
-        appLock: "toggleAppLock",
-        biometric: "toggleBiometric",
-        notify: "toggleNotify",
-        banner: "toggleBanner",
-        camera: "toggleCamera",
-        files: "toggleFiles",
-        mic: "toggleMic",
-        music: "toggleMusic",
-        audio: "toggleAudio"
+        appLock: "toggleAppLock", biometric: "toggleBiometric", notify: "toggleNotify",
+        banner: "toggleBanner", camera: "toggleCamera", files: "toggleFiles",
+        mic: "toggleMic", music: "toggleMusic", audio: "toggleAudio"
       };
       Object.keys(map).forEach(key => {
         const el = $(map[key]);
@@ -843,9 +805,7 @@
         else el.classList.remove("active");
       });
       
-      // Show biometric row only if App Lock is enabled
       $("biometricSettingRow").style.display = settings.appLock ? "flex" : "none";
-
       if ($("deleteMessageDays")) $("deleteMessageDays").value = String(settings.messageDeleteDays || "0");
       if ($("enableLocationBtn")) $("enableLocationBtn").classList.toggle("active", !!settings.locationEnabled);
       if ($("disableLocationBtn")) $("disableLocationBtn").classList.toggle("active", !settings.locationEnabled);
@@ -855,10 +815,8 @@
     async function toggleSetting(key) {
       if (key === 'biometric' && !settings.biometric) {
         if (!window.PublicKeyCredential) {
-          showToast("Biometrics not supported on this browser/device", { override: true });
-          return;
+          showToast("Biometrics not supported", { override: true }); return;
         }
-        // Attempt to register a local credential for biometrics
         try {
           const challenge = new Uint8Array(32);
           const userId = new Uint8Array(16);
@@ -867,8 +825,7 @@
           
           await navigator.credentials.create({
             publicKey: {
-              challenge: challenge,
-              rp: { name: "Aryanta Admin", id: window.location.hostname || "localhost" },
+              challenge: challenge, rp: { name: "Aryanta Admin", id: window.location.hostname || "localhost" },
               user: { id: userId, name: "admin", displayName: "Aryanta Admin" },
               pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
               authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
@@ -878,42 +835,29 @@
           settings[key] = true;
           showToast("Biometrics enabled", { override: true });
         } catch(err) {
-          showToast("Biometric setup cancelled or failed", { override: true });
-          return;
+          showToast("Biometric setup failed", { override: true }); return;
         }
       } else {
         settings[key] = !settings[key];
       }
       
       saveSettings();
-
-      if (key === "notify") {
-        if (settings.notify) {
-          requestNotification();
-          showToast("Push notification enabled", { override: true });
-        }
-        return;
-      }
-      if (key === "banner") {
-        showToast(settings.banner ? "Banner enabled" : "Banner hidden", { override: true });
-        return;
-      }
+      if (key === "notify" && settings.notify) { requestNotification(); showToast("Push notification enabled", { override: true }); }
+      if (key === "banner") showToast(settings.banner ? "Banner enabled" : "Banner hidden", { override: true });
     }
 
     async function changeMessageDeleteDays(value) {
       const days = String(value || "0");
       settings.messageDeleteDays = days;
       saveSettings();
-      await saveMessageDeletePolicy(Number(days));
-    }
-
-    async function saveMessageDeletePolicy(days) {
       const payload = { deleteMyMessagesAfterDays: days, updatedAt: new Date().toISOString() };
       localStorage.setItem("aryanta_message_delete_policy", JSON.stringify(payload));
-      if (!getToken()) return;
+      
+      const uid = getToken();
+      if (!uid) return;
       try {
-        await api("/admin/settings/message-retention", { method: "POST", body: JSON.stringify(payload) });
-        showToast(days ? "Message delete policy saved to DB" : "Message auto delete disabled", { override: true });
+        await fetch(`${DB_URL}/admins/${uid}/settings.json`, { method: "PATCH", body: JSON.stringify(payload) });
+        showToast(days ? "Message delete policy saved" : "Message auto delete disabled", { override: true });
       } catch (err) {}
     }
 
@@ -999,29 +943,46 @@
       document.body.scrollTop = 0;
     }
 
+    // --- MAIN BOOT SEQUENCE (FORCE LOGIN CHECK) ---
     async function bootAdmin() {
       lockScroll();
       loadSettings();
-      renderNoAccount();
 
-      const token = getToken();
-      if (!token) { showToast("No account found. Showing <na> data.", { override: true }); return; }
+      const token = getToken(); // This is the admin UID now
+      if (!token) {
+        // NO LOGIN FOUND -> FORCE REDIRECT TO LOGIN
+        window.location.replace(LOGIN_PAGE);
+        return;
+      }
 
       try {
-        const me = await api("/admin/me");
-        if (!me || !me.admin) throw new Error("No account found");
+        // Try getting cached session first to load fast
+        let cachedProfile = safeJson(sessionStorage.getItem(PROFILE_KEY), null);
+        
+        // Fetch Live DB data to verify they are still active
+        const response = await fetch(`${DB_URL}/admins/${token}.json`);
+        if (!response.ok) throw new Error("Database connection failed");
+        const liveAdminData = await response.json();
+
+        if (!liveAdminData || liveAdminData.status !== "Active") {
+          throw new Error("Account is invalid or suspended");
+        }
+
+        // Verification successful
         accountFound = true;
-        const profile = normalizeProfile(me.admin);
-        sessionStorage.setItem(PROFILE_KEY, JSON.stringify(me.admin));
-        renderProfile(profile);
-        addLoginHistory(profile);
+        sessionStorage.setItem(PROFILE_KEY, JSON.stringify(liveAdminData));
+        
+        const normalizedProfile = normalizeProfile(liveAdminData);
+        renderProfile(normalizedProfile);
+        addLoginHistory(normalizedProfile);
         renderHistory();
         await loadDashboard();
         renderLocation(settings.locationEnabled ? settings.locationData : { city: NA, state: NA, country: NA });
+
       } catch (err) {
+        // Verification failed -> Kick out to login
         clearToken();
-        renderNoAccount();
-        showToast("No account found. Showing <na> data.", { override: true });
+        window.location.replace(LOGIN_PAGE);
       }
     }
 
@@ -1033,6 +994,7 @@
     window.addEventListener("orientationchange", lockScroll);
     document.addEventListener("visibilitychange", () => { if (!document.hidden) lockScroll(); });
 
+    // Start App
     bootAdmin();
   </script>
 </body>
