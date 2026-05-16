@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Aryanta Vault & Transactions</title>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  
+  <!-- Firebase Compat SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-database-compat.js"></script>
+
+  <!-- Razorpay SDK -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+  <style>
+    :root {
+      --primary: #008080;
+      --primary-dark: #006b6b;
+      --primary-light: #00b8b8;
+      --bg: #f4fbfb;
+      --card: #ffffff;
+      --card-soft: rgba(255, 255, 255, 0.86);
+      --text: #101828;
+      --muted: #667085;
+      --border: #d9e7e7;
+      --danger: #ef4444;
+      --success: #16a34a;
+      --warning: #f59e0b;
+      --soft: rgba(0, 128, 128, 0.10);
+      --shadow: 0 18px 45px rgba(16, 24, 40, 0.12);
+      --shadow-soft: 0 8px 22px rgba(16, 24, 40, 0.08);
+      --top-safe: max(14px, env(safe-area-inset-top));
+      --bottom-safe: max(12px, env(safe-area-inset-bottom));
+    }
+
+    html[data-theme="dark"] {
+      --bg: #081314; --card: #111d1f; --card-soft: rgba(17, 29, 31, 0.88);
+      --text: #f8fafc; --muted: #98a2b3; --border: rgba(255, 255, 255, 0.12);
+      --soft: rgba(0, 184, 184, 0.14); --shadow: 0 18px 45px rgba(0, 0, 0, 0.40);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { width: 100%; min-height: 100%; font-family: system-ui, -apple-system, sans-serif; color: var(--text); background: linear-gradient(160deg, #effafa 0%, #ffffff 45%, #e9f7f7 100%); overscroll-behavior: none; }
+    html[data-theme="dark"] body { background: linear-gradient(160deg, #071112 0%, #101c1e 48%, #091718 100%); }
+    button, input, select { font: inherit; outline: none; border: none; }
+    button { cursor: pointer; touch-action: manipulation; transition: 0.15s; }
+    button:active { transform: scale(0.96); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* Fix for Calendar Icon Visibility */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      opacity: 0.6;
+      transition: 0.2s;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator:hover {
+      opacity: 1;
+    }
+    html[data-theme="dark"] input[type="date"] {
+      color-scheme: dark;
+    }
+    html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1) brightness(1.5);
+      opacity: 0.8;
+    }
+
+    .fas, .fa-solid { display: inline-block !important; line-height: 1 !important; font-weight: 900 !important; }
+
+    .app { width: 100%; min-height: 100dvh; padding: var(--top-safe) 12px calc(90px + var(--bottom-safe)); overflow-x: hidden; position: relative; isolation: isolate; }
+    .app::before, .app::after { content: ""; position: fixed; border-radius: 999px; pointer-events: none; z-index: -1; }
+    .app::before { width: 180px; height: 180px; top: -62px; right: -72px; background: rgba(0, 128, 128, 0.14); }
+    .app::after { width: 170px; height: 170px; left: -70px; bottom: -60px; background: rgba(0, 184, 184, 0.12); }
+
+    .wrap { width: 100%; max-width: 430px; margin: 0 auto; display: grid; gap: 12px; }
+
+    .topbar { min-height: 56px; display: grid; grid-template-columns: 45px minmax(0, 1fr) auto; align-items: center; gap: 9px; }
+    .icon-btn { width: 45px; height: 45px; border-radius: 16px; background: var(--card); border: 1px solid var(--border); color: var(--primary); box-shadow: var(--shadow-soft); display: inline-flex; align-items: center; justify-content: center; font-size: 16px; }
+
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .brand-logo { width: 44px; height: 44px; border-radius: 16px; padding: 4px; background: #ffffff; border: 1px solid var(--border); box-shadow: var(--shadow-soft); }
+    .brand-logo img { width: 100%; height: 100%; border-radius: 12px; object-fit: cover; }
+    .brand h1 { font-size: 17px; font-weight: 950; color: var(--primary); }
+    .brand p { color: var(--muted); font-size: 10px; font-weight: 900; text-transform: uppercase; }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; box-shadow: var(--shadow-soft); overflow: hidden; padding: 16px;}
+    .hero { background: linear-gradient(145deg, var(--primary-dark), var(--primary), var(--primary-light)); color: #ffffff; text-align: center; padding: 24px 16px; position: relative; }
+    .hero h2 { font-size: 14px; font-weight: 800; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;}
+    .hero .balance { font-size: 38px; font-weight: 900; letter-spacing: -1px; }
+
+    /* Tabs */
+    .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 4px; }
+    .tab { min-height: 38px; border-radius: 14px; background: var(--card-soft); border: 1px solid var(--border); color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 800; transition: 0.2s ease;}
+    .tab.active { background: var(--primary); border-color: var(--primary); color: #ffffff; }
+
+    .panel-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .panel-title h3 { font-size: 16px; font-weight: 900; display: flex; align-items: center; gap: 8px;}
+    .panel-title h3 i { color: var(--primary); }
+    .panel-title button { background: var(--soft); color: var(--primary); padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; display: flex; gap: 6px; align-items: center;}
+    .panel-title button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Transaction List */
+    .list { display: grid; gap: 10px; }
+    .t-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--card-soft); border: 1px solid var(--border); border-radius: 16px; }
+    .t-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex: 0 0 auto; }
+    .t-icon.in { background: rgba(22, 163, 74, 0.12); color: var(--success); }
+    .t-icon.out { background: rgba(239, 68, 68, 0.12); color: var(--danger); }
+    .t-info { flex: 1; min-width: 0; padding: 0 12px; }
+    .t-info strong { display: block; font-size: 14px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+    .t-info span { display: block; font-size: 11px; color: var(--muted); font-weight: 700; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+    .t-amount { font-size: 16px; font-weight: 900; white-space: nowrap; }
+    .t-amount.in { color: var(--success); }
+    .t-amount.out { color: var(--danger); }
+
+    /* Loan Item */
+    .loan-item { padding: 14px; background: var(--card-soft); border: 1px solid var(--border); border-radius: 16px; display: grid; gap: 10px;}
+    .loan-head { display: flex; justify-content: space-between; align-items: center;}
+    .loan-head strong { font-size: 15px; font-weight: 900; }
+    .loan-status { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 900; text-transform: uppercase;}
+    .loan-status.pending { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+    .loan-status.approved { background: rgba(0, 128, 128, 0.15); color: var(--primary); }
+    .loan-status.cleared { background: rgba(22, 163, 74, 0.15); color: var(--success); }
+    .loan-details { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; color: var(--muted); font-weight: 700;}
+    .loan-details strong { color: var(--text); font-weight: 900; font-size: 13px; display: block; margin-top: 2px;}
+    .loan-actions { display: flex; gap: 8px; margin-top: 4px;}
+    .loan-btn { flex: 1; padding: 8px; border-radius: 10px; font-size: 12px; font-weight: 800; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; gap: 6px;}
+    .loan-btn.outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+    .loan-history { font-size: 11px; padding-top: 8px; border-top: 1px dashed var(--border); }
+    .loan-history-item { display: flex; justify-content: space-between; margin-bottom: 4px; color: var(--muted); font-weight: 700;}
+
+    /* Modals */
+    .modal { position: fixed; inset: 0; z-index: 99999; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(0, 0, 0, 0.58); backdrop-filter: blur(5px); }
+    .modal.show { display: flex; }
+    .modal-card { width: min(430px, 100%); max-height: 86dvh; border-radius: 26px; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; }
+    .modal-head { min-height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--border); flex: 0 0 auto;}
+    .modal-body { padding: 16px; overflow: auto; display: grid; gap: 12px;}
+    .field label { display: block; font-size: 11px; font-weight: 800; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; }
+    .field input, .field select { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-weight: 700; font-size: 14px;}
+    .field input:focus { border-color: var(--primary); }
+    .field input[readonly] { background: rgba(0, 128, 128, 0.05); color: var(--primary); font-weight: 900; }
+    .btn-submit { width: 100%; padding: 14px; border-radius: 12px; background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: white; font-weight: 900; font-size: 15px; margin-top: 8px;}
+
+    /* Loader Overlay */
+    .loader-overlay { position: fixed; inset: 0; background: rgba(244, 251, 251, 0.9); z-index: 100000; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 12px; backdrop-filter: blur(3px); }
+    .loader-overlay.active { display: flex; }
+    .spinner { width: 44px; height: 44px; border-radius: 50%; border: 4px solid rgba(0, 128, 128, 0.15); border-top-color: var(--primary); animation: spin 0.8s linear infinite; }
+    .loader-overlay strong { color: var(--text); font-size: 15px; font-weight: 800; letter-spacing: 0.5px;}
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* BOTTOM NAV CSS */
+    .bottom-nav { position: fixed; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 20; height: 66px; border-radius: 24px; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 7px; }
+    .nav-btn { border-radius: 18px; background: transparent; color: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: 0.2s ease; }
+    .nav-btn .mini-mark { width: 26px; height: 26px; border-radius: 10px; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+    .nav-btn .btn-text { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: block !important; }
+    .nav-btn.active { background: var(--soft); color: var(--primary); }
+
+    /* TOAST */
+    .toast-holder { position: fixed; left: 12px; right: 12px; top: calc(10px + env(safe-area-inset-top)); z-index: 9999; pointer-events: none; display: flex; justify-content: center; }
+    .toast { width: min(430px, calc(100vw - 24px)); min-height: 45px; border-radius: 16px; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); padding: 10px 12px; display: flex; align-items: center; gap: 8px; color: var(--text); font-size: 12.5px; font-weight: 850; opacity: 0; transform: translateY(-14px); transition: 0.2s ease; pointer-events: auto; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast i { flex: 0 0 auto; }
+    
+    @media (min-width: 520px) { .bottom-nav { width: 430px; left: 50%; right: auto; transform: translateX(-50%); } }
+  </style>
+</head>
+<body>
+  <div id="toastHolder" class="toast-holder"></div>
+  <div id="loaderOverlay" class="loader-overlay">
+    <div class="spinner"></div>
+    <strong id="loaderText">Processing...</strong>
+  </div>
+
+  <main class="app">
+    <div class="wrap">
+      <header class="topbar">
+        <button class="icon-btn" onclick="goPage('admin.html')"><i class="fas fa-arrow-left"></i></button>
+        <div class="brand">
+          <div class="brand-logo"><img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta" /></div>
+          <div>
+            <h1>Aryanta Vault</h1>
+            <p>Finance & Loans</p>
+          </div>
+        </div>
+        <div class="top-actions">
+          <button class="icon-btn" onclick="fetchData()"><i id="refreshIcon" class="fas fa-rotate"></i></button>
+        </div>
+      </header>
+
+      <!-- HERO -->
+      <section class="card hero">
+        <h2>Total Flow Added</h2>
+        <div class="balance" id="totalFlow">₹0</div>
+      </section>
+
+      <!-- TABS -->
+      <div class="tabs">
+        <button id="tabAll" class="tab active" onclick="setTab('all')"><i class="fas fa-border-all"></i> All</button>
+        <button id="tabTx" class="tab" onclick="setTab('tx')"><i class="fas fa-money-bill-transfer"></i> Transact</button>
+        <button id="tabLoan" class="tab" onclick="setTab('loan')"><i class="fas fa-hand-holding-dollar"></i> Loans</button>
+      </div>
+
+      <!-- TRANSACTIONS SECTION -->
+      <section class="card" id="txSection">
+        <div class="panel-title">
+          <h3><i class="fas fa-money-bill-wave"></i> Transactions</h3>
+          <button id="addMoneyBtn" onclick="openModal('addMoneyModal')"><i class="fas fa-plus"></i> Add Money</button>
+        </div>
+        <div class="list" id="txList">
+          <div style="text-align: center; color: var(--muted); font-size: 12px; padding: 20px;">Loading transactions...</div>
+        </div>
+      </section>
+
+      <!-- LOANS SECTION -->
+      <section class="card" id="loanSection" style="display: none;">
+        <div class="panel-title">
+          <h3><i class="fas fa-building-columns"></i> Loan System</h3>
+          <button id="getLoanHeaderBtn" onclick="requestLoanCheck()"><i class="fas fa-hand-holding-dollar"></i> Get Loan</button>
+        </div>
+        <div class="list" id="loanList">
+           <div style="text-align: center; color: var(--muted); font-size: 12px; padding: 20px;">Loading loans...</div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- BOTTOM NAVIGATION -->
+  <nav class="bottom-nav">
+    <button class="nav-btn" onclick="goPage('admin.html')"><span class="mini-mark"><i class="fa-solid fa-house"></i></span><span class="btn-text">Home</span></button>
+    <button class="nav-btn" onclick="goPage('admin.html#profile')"><span class="mini-mark"><i class="fa-solid fa-user"></i></span><span class="btn-text">Profile</span></button>
+    <button class="nav-btn" onclick="goPage('x.html')"><span class="mini-mark"><i class="fa-solid fa-comments"></i></span><span class="btn-text">Chat</span></button>
+  </nav>
+
+  <!-- ADD MONEY MODAL (USER TOPUP) -->
+  <div id="addMoneyModal" class="modal" onclick="closeModalOnBackdrop(event, 'addMoneyModal')">
+    <div class="modal-card">
+      <div class="modal-head">
+        <strong style="font-size: 16px; font-weight: 900;">Add Money</strong>
+        <button class="icon-btn" style="color: var(--danger); background: var(--bg);" onclick="closeModal('addMoneyModal')"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label>User Name</label>
+          <input type="text" id="addMoneyName" readonly />
+        </div>
+        <div class="field">
+          <label>Amount (₹)</label>
+          <input type="number" id="addMoneyAmount" placeholder="Enter amount to add" />
+        </div>
+        <button class="btn-submit" onclick="submitAddMoney()"><i class="fas fa-shield-halved"></i> Pay via Razorpay</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GET LOAN MODAL -->
+  <div id="loanModal" class="modal" onclick="closeModalOnBackdrop(event, 'loanModal')">
+    <div class="modal-card">
+      <div class="modal-head">
+        <strong style="font-size: 16px; font-weight: 900;">Request Loan</strong>
+        <button class="icon-btn" style="color: var(--danger); background: var(--bg);" onclick="closeModal('loanModal')"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div style="background: rgba(245, 158, 11, 0.1); color: var(--warning); padding: 10px; border-radius: 12px; font-size: 11px; font-weight: 800;">
+          <i class="fas fa-circle-info"></i> Approved loans accrue +3% interest every week until fully cleared.
+        </div>
+        <div class="field">
+          <label>Amount Required (₹)</label>
+          <input type="number" id="loanAmount" placeholder="0" />
+        </div>
+        <div class="field">
+          <label>Reason / Purpose</label>
+          <input type="text" id="loanReason" placeholder="e.g. Inventory Purchase" />
+        </div>
+        <div class="field">
+          <label>Pay By Date</label>
+          <input type="date" id="loanDate" />
+        </div>
+        <button class="btn-submit" onclick="submitLoan()">Submit Request</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAY LOAN MODAL (RAZORPAY) -->
+  <div id="payModal" class="modal" onclick="closeModalOnBackdrop(event, 'payModal')">
+    <div class="modal-card">
+      <div class="modal-head">
+        <strong style="font-size: 16px; font-weight: 900;">Make Loan Payment</strong>
+        <button class="icon-btn" style="color: var(--danger); background: var(--bg);" onclick="closeModal('payModal')"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="payLoanId" />
+        <div class="field">
+          <label>Payment Amount (₹)</label>
+          <input type="number" id="payAmount" placeholder="0" />
+        </div>
+        <button class="btn-submit" onclick="submitPayment()"><i class="fas fa-shield-halved"></i> Pay securely</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- SDK CONFIGURATION ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyBwOOlSdVEgGiUdrr4thPRvILNLcLnfqbc",
+      authDomain: "aryanta.firebaseapp.com",
+      databaseURL: "https://aryanta-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "aryanta",
+      storageBucket: "aryanta.firebasestorage.app",
+      messagingSenderId: "1072021816522",
+      appId: "1:1072021816522:web:8f831cf4d61a7b0f8de033"
+    };
+
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    const db = firebase.database();
+    
+    // Cloudflare Worker Base URL for Razorpay Integration
+    const WORKER_API = "https://rough-field-c679.official-aryanta.workers.dev";
+    window.API_KEYS = { RAZORPAY: "" }; // Will be fetched securely
+
+    const SETTINGS_KEY = "aryanta_admin_settings";
+    const TOKEN_KEY = "aryanta_admin_worker_token";
+    const SESSION_TOKEN_KEY = "aryanta_admin_worker_session";
+    const PROFILE_KEY = "aryanta_admin_profile";
+    const LOGIN_PAGE = "index.html";
+
+    let transactions = [];
+    let loans = [];
+    let currentToast = null;
+    let activeTab = 'all';
+
+    const currentUser = JSON.parse(sessionStorage.getItem(PROFILE_KEY) || "{}");
+    const userUid = currentUser.uid || "";
+    const userName = currentUser.name || "User";
+    const isAdmin = currentUser.role === "Admin";
+
+    const $ = id => document.getElementById(id);
+
+    // --- SECURE BOOT ---
+    function getToken() { return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(SESSION_TOKEN_KEY) || ""; }
+    function goPage(url) { window.location.href = url; }
+    function escapeHtml(val) { return String(val ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+    function formatMoney(num) { return "₹" + Number(num || 0).toLocaleString("en-IN"); }
+    function formatDate(iso) { 
+      if(!iso) return "N/A";
+      const d = new Date(iso); 
+      return d.toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric' }); 
+    }
+
+    function initApp() {
+      if(!getToken()) { window.location.replace(LOGIN_PAGE); return; }
+      
+      try {
+        const savedSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {};
+        const theme = savedSettings.theme || "light";
+        const useDark = theme === "dark" || (theme === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.setAttribute("data-theme", useDark ? "dark" : "light");
+      } catch(e) {}
+    }
+
+    function showToast(message, type = "info") {
+      if (currentToast) { currentToast.remove(); }
+      const toast = document.createElement("div");
+      toast.className = "toast show";
+      
+      let icon = "fa-bell";
+      let color = "var(--primary)";
+      if(type === "error") { icon = "fa-circle-exclamation"; color = "var(--danger)"; }
+      if(type === "success") { icon = "fa-circle-check"; color = "var(--success)"; }
+
+      toast.innerHTML = `<i class="fas ${icon}" style="color: ${color}"></i><span>${escapeHtml(message)}</span>`;
+      $("toastHolder").appendChild(toast);
+      currentToast = toast;
+      setTimeout(() => { toast.classList.remove("show"); setTimeout(()=>toast.remove(), 220); }, 2600);
+    }
+
+    function openModal(id) { 
+      if(id === "addMoneyModal") $("addMoneyName").value = userName;
+      $(id).classList.add("show"); 
+    }
+    function closeModal(id) { $(id).classList.remove("show"); }
+    function closeModalOnBackdrop(event, id) { if (event.target.id === id) closeModal(id); }
+    
+    function setLoad(state, text="Processing...") {
+      if (state) {
+        $("loaderText").textContent = text;
+        $("loaderOverlay").classList.add("active");
+      } else {
+        $("loaderOverlay").classList.remove("active");
+      }
+    }
+
+    // --- TAB LOGIC ---
+    function setTab(tab) {
+      activeTab = tab;
+      $("tabAll").classList.toggle("active", tab === 'all');
+      $("tabTx").classList.toggle("active", tab === 'tx');
+      $("tabLoan").classList.toggle("active", tab === 'loan');
+
+      if(tab === 'all') {
+        $("txSection").style.display = "block";
+        $("loanSection").style.display = "none"; // Never show loans in ALL tab
+      } else if (tab === 'tx') {
+        $("txSection").style.display = "block";
+        $("loanSection").style.display = "none";
+      } else if (tab === 'loan') {
+        $("txSection").style.display = "none";
+        $("loanSection").style.display = "block";
+      }
+    }
+
+    // --- SECURE RAZORPAY HANDLER ---
+    async function processRazorpayPayment(amount, description, onSuccessCallback) {
+      setLoad(true, "Initiating secure payment...");
+      try {
+        // Fetch keys securely from worker
+        if (!window.API_KEYS.RAZORPAY) {
+            const kRes = await fetch(`${WORKER_API}/get-api-keys`);
+            const kData = await kRes.json();
+            window.API_KEYS.RAZORPAY = kData.razorpayKey || "";
+        }
+
+        const orderReq = await fetch(`${WORKER_API}/create-razorpay-order`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: amount, receipt: "ARY-" + Date.now(), name: userName, email: currentUser.email || "" })
+        });
+        
+        const orderData = await orderReq.json();
+        if (!orderData.success) throw new Error(orderData.error || "Order creation failed");
+
+        setLoad(false);
+
+        const options = {
+          key: window.API_KEYS.RAZORPAY,
+          amount: orderData.amount,
+          currency: orderData.currency,
+          name: "Aryanta",
+          description: description,
+          order_id: orderData.order_id,
+          handler: async function (response) {
+            setLoad(true, "Verifying payment...");
+            try {
+              const verifyReq = await fetch(`${WORKER_API}/verify-razorpay-payment`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  order_no: orderData.receipt
+                })
+              });
+              
+              const verifyData = await verifyReq.json();
+              if (!verifyData.success) throw new Error("Payment Verification Failed");
+
+              showToast("Payment Successful!", "success");
+              await onSuccessCallback(response.razorpay_payment_id);
+            } catch (e) {
+              showToast(e.message, "error");
+              setLoad(false);
+            }
+          },
+          prefill: { name: userName, email: currentUser.email || "", contact: currentUser.phone || "" },
+          theme: { color: "#008080" },
+          modal: { ondismiss: function() { setLoad(false); } }
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.on('payment.failed', function (response){
+          showToast("Payment Failed or Cancelled", "error");
+          setLoad(false);
+        });
+        rzp.open();
+
+      } catch(e) {
+        showToast(e.message, "error");
+        setLoad(false);
+      }
+    }
+
+    // --- DATA FETCHING & TOTAL FLOW CALCULATION ---
+    async function fetchData() {
+      const icon = $("refreshIcon");
+      icon.classList.add("fa-spin");
+      try {
+        const [txSnap, lnSnap] = await Promise.all([
+          db.ref('transactions').once('value'),
+          db.ref('loans').once('value')
+        ]);
+
+        const txData = txSnap.val() || {};
+        const lnData = lnSnap.val() || {};
+
+        transactions = Object.keys(txData).map(k => ({ id: k, ...txData[k] })).sort((a,b) => new Date(b.date) - new Date(a.date));
+        
+        const allFetchedLoans = Object.keys(lnData).map(k => ({ id: k, ...lnData[k] })).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+        
+        // Filter loans to only show the logged-in user's loans
+        loans = allFetchedLoans.filter(l => l.uid === userUid);
+
+        // Global Flow calculation considers ALL transactions and ALL loans
+        updateTotalFlow(transactions, allFetchedLoans);
+        
+        renderTransactions();
+        renderLoans();
+      } catch (err) {
+        showToast("Database connection error", "error");
+      } finally {
+        icon.classList.remove("fa-spin");
+      }
+    }
+
+    function updateTotalFlow(allTxs, allLns) {
+      let total = 0;
+      
+      // Calculate Transactions
+      allTxs.forEach(t => {
+        if(t.type === 'in') total += (t.amount || 0);
+        else if(t.type === 'out') total -= (t.amount || 0);
+      });
+
+      // Calculate Loans
+      allLns.forEach(l => {
+        if(l.status === 'approved' || l.status === 'cleared') {
+          total -= (l.amount || 0); // Money given out as loan is negative flow
+          if(l.payments) {
+            Object.values(l.payments).forEach(p => {
+              total += (p.amount || 0); // Money paid back is positive flow
+            });
+          }
+        }
+      });
+
+      $("totalFlow").textContent = formatMoney(total);
+    }
+
+    // --- TRANSACTIONS ---
+    function submitAddMoney() {
+      const amount = Number($("addMoneyAmount").value);
+      if(!amount || amount <= 0) return showToast("Enter a valid amount", "error");
+
+      closeModal("addMoneyModal");
+      
+      processRazorpayPayment(amount, "Wallet Top-Up", async (paymentId) => {
+        const tx = { type: 'in', amount, title: 'Wallet Top-Up', userUid, userName, date: new Date().toISOString(), method: 'Razorpay', paymentId };
+        await db.ref('transactions').push(tx);
+        $("addMoneyAmount").value = "";
+        setLoad(false);
+        fetchData();
+      });
+    }
+
+    function renderTransactions() {
+      let html = "";
+
+      transactions.forEach(t => {
+        const isAdd = t.type === 'in';
+        const icon = isAdd ? 'fa-arrow-down' : 'fa-arrow-up';
+        const sign = isAdd ? '+' : '-';
+        const adder = t.userName || 'Admin';
+        
+        html += `
+          <div class="t-item">
+            <div class="t-icon ${t.type}"><i class="fas ${icon}"></i></div>
+            <div class="t-info">
+              <strong>${escapeHtml(t.title)}</strong>
+              <span>${formatDate(t.date)} • User: ${escapeHtml(adder)}</span>
+            </div>
+            <div class="t-amount ${t.type}">${sign}${formatMoney(t.amount)}</div>
+          </div>
+        `;
+      });
+
+      if(transactions.length === 0) {
+        html = `<div style="text-align:center; padding:15px; color:var(--muted); font-size:12px; font-weight:800;">No transactions yet</div>`;
+      }
+
+      $("txList").innerHTML = html;
+    }
+
+    // --- LOANS (INTELLIGENT LIMITER) ---
+    function requestLoanCheck() {
+      const hasRunningLoan = loans.some(l => l.status === 'pending' || l.status === 'approved');
+      if (hasRunningLoan) {
+        showToast("First clear the running loan!", "error");
+        return;
+      }
+      openModal('loanModal');
+    }
+
+    async function submitLoan() {
+      const amount = Number($("loanAmount").value);
+      const reason = $("loanReason").value.trim();
+      const payBy = $("loanDate").value;
+
+      if(!amount || amount <= 0 || !reason || !payBy) return showToast("Fill all loan details", "error");
+
+      const loan = { 
+        uid: userUid, userName: userName, amount, reason, payBy, status: "pending", createdAt: new Date().toISOString() 
+      };
+
+      try {
+        await db.ref('loans').push(loan);
+        $("loanAmount").value = ""; $("loanReason").value = ""; $("loanDate").value = "";
+        closeModal("loanModal");
+        showToast("Loan request submitted", "success");
+        fetchData();
+      } catch(e) { showToast("Request failed", "error"); }
+    }
+
+    function openPayModal(id) {
+      $("payLoanId").value = id;
+      $("payAmount").value = "";
+      openModal("payModal");
+    }
+
+    function submitPayment() {
+      const id = $("payLoanId").value;
+      const amount = Number($("payAmount").value);
+      if(!amount || amount <= 0) return showToast("Invalid payment amount", "error");
+
+      closeModal("payModal");
+
+      processRazorpayPayment(amount, "Loan Repayment", async (paymentId) => {
+          recordLoanPayment(id, amount, paymentId);
+      });
+    }
+
+    async function recordLoanPayment(id, amount, paymentId) {
+       try {
+          const payment = { amount, date: new Date().toISOString(), paidBy: userUid, paymentId };
+          await db.ref(`loans/${id}/payments`).push(payment);
+          
+          const loan = loans.find(l => l.id === id);
+          if(loan) {
+            const { remaining } = calculateLoanDetails(loan);
+            if(amount >= remaining) {
+              await db.ref(`loans/${id}`).update({ status: "cleared" });
+            }
+          }
+          
+          setLoad(false);
+          showToast("Payment recorded successfully", "success");
+          fetchData();
+        } catch(e) { 
+          setLoad(false);
+          showToast("Payment failed", "error"); 
+        }
+    }
+
+    function calculateLoanDetails(loan) {
+      let principal = loan.amount || 0;
+      let totalPaid = 0;
+      let historyHtml = "";
+      
+      if(loan.payments) {
+        Object.values(loan.payments).forEach(p => {
+          totalPaid += p.amount;
+          historyHtml += `<div class="loan-history-item"><span>${formatDate(p.date)}</span><span>${formatMoney(p.amount)} Paid</span></div>`;
+        });
+      }
+
+      let interest = 0;
+      if(loan.status === 'approved' && loan.approvedAt) {
+        const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+        const weeksElapsed = Math.floor((new Date() - new Date(loan.approvedAt)) / msPerWeek);
+        if(weeksElapsed > 0) {
+          interest = principal * 0.03 * weeksElapsed;
+        }
+      }
+
+      const totalDue = principal + interest;
+      const remaining = totalDue - totalPaid;
+
+      return { principal, interest, totalDue, totalPaid, remaining, historyHtml };
+    }
+
+    function renderLoans() {
+      let html = "";
+      
+      if(loans.length === 0) {
+        html = `
+        <div style="text-align:center; padding:20px;">
+          <div style="color:var(--muted); font-size:13px; font-weight:800; margin-bottom:12px;">No active loans</div>
+          <button style="background:var(--soft); color:var(--primary); padding:10px 20px; border-radius:12px; font-weight:900;" onclick="requestLoanCheck()">Request a Loan</button>
+        </div>`;
+      }
+
+      loans.forEach(l => {
+        const { principal, interest, totalPaid, remaining, historyHtml } = calculateLoanDetails(l);
+        let actionHtml = "";
+        
+        if(l.status === 'pending') {
+           actionHtml = `<div class="loan-actions"><button class="loan-btn outline" disabled>Awaiting Admin Approval...</button></div>`;
+        } else if (l.status === 'approved') {
+          actionHtml = `
+            <div class="loan-actions">
+              <button class="loan-btn" onclick="openPayModal('${l.id}')"><i class="fas fa-shield-halved"></i> Make Payment</button>
+            </div>
+            ${historyHtml ? `<div class="loan-history" style="margin-top:8px;">${historyHtml}</div>` : ''}
+          `;
+        } else if (l.status === 'cleared') {
+            actionHtml = `
+            <div class="loan-actions">
+              <button class="loan-btn outline" style="border-color:var(--success); color:var(--success)" disabled>Loan Successfully Cleared</button>
+            </div>
+            ${historyHtml ? `<div class="loan-history" style="margin-top:8px;">${historyHtml}</div>` : ''}
+          `;
+        }
+
+        html += `
+          <div class="loan-item">
+            <div class="loan-head">
+              <strong>${escapeHtml(l.reason)}</strong>
+              <span class="loan-status ${l.status}">${l.status}</span>
+            </div>
+            <div class="loan-details">
+              <div>Principal: <strong>${formatMoney(principal)}</strong></div>
+              <div>Interest (+3%/wk): <strong style="color:var(--danger)">${formatMoney(interest)}</strong></div>
+              <div>Paid: <strong style="color:var(--success)">${formatMoney(totalPaid)}</strong></div>
+              <div>Remaining: <strong>${formatMoney(Math.max(0, remaining))}</strong></div>
+              <div style="grid-column: 1 / -1;">Pay By: <strong>${formatDate(l.payBy)}</strong></div>
+            </div>
+            ${actionHtml}
+          </div>
+        `;
+      });
+
+      $("loanList").innerHTML = html;
+    }
+
+    // Initialize
+    initApp();
+    fetchData();
+  </script>
+</body>
+</html>

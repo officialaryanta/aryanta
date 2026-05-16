@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Aryanta Files</title>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  
+  <!-- Firebase Compat SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-database-compat.js"></script>
+
+  <style>
+    :root {
+      --primary: #008080;
+      --primary-dark: #006b6b;
+      --primary-light: #00b8b8;
+      --bg: #f4fbfb;
+      --card: #ffffff;
+      --card-soft: rgba(255, 255, 255, 0.86);
+      --text: #101828;
+      --muted: #667085;
+      --border: #d9e7e7;
+      --danger: #ef4444;
+      --success: #16a34a;
+      --warning: #f59e0b;
+      --soft: rgba(0, 128, 128, 0.10);
+      --shadow: 0 18px 45px rgba(16, 24, 40, 0.12);
+      --shadow-soft: 0 8px 22px rgba(16, 24, 40, 0.08);
+      --top-safe: max(14px, env(safe-area-inset-top));
+      --bottom-safe: max(12px, env(safe-area-inset-bottom));
+    }
+
+    html[data-theme="dark"] {
+      --bg: #081314;
+      --card: #111d1f;
+      --card-soft: rgba(17, 29, 31, 0.88);
+      --text: #f8fafc;
+      --muted: #98a2b3;
+      --border: rgba(255, 255, 255, 0.12);
+      --soft: rgba(0, 184, 184, 0.14);
+      --shadow: 0 18px 45px rgba(0, 0, 0, 0.40);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { width: 100%; min-height: 100%; font-family: system-ui, -apple-system, sans-serif; color: var(--text); background: linear-gradient(160deg, #effafa 0%, #ffffff 45%, #e9f7f7 100%); overscroll-behavior: none; }
+    html[data-theme="dark"] body { background: linear-gradient(160deg, #071112 0%, #101c1e 48%, #091718 100%); }
+    button, input { font: inherit; outline: none; border: none; }
+    button { cursor: pointer; touch-action: manipulation; }
+    img { user-select: none; -webkit-user-drag: none; }
+
+    .fas, .fa-solid { display: inline-block !important; line-height: 1 !important; font-weight: 900 !important; }
+
+    .app { width: 100%; min-height: 100dvh; padding: var(--top-safe) 12px calc(90px + var(--bottom-safe)); overflow-x: hidden; position: relative; isolation: isolate; }
+    .app::before, .app::after { content: ""; position: fixed; border-radius: 999px; pointer-events: none; z-index: -1; }
+    .app::before { width: 180px; height: 180px; top: -62px; right: -72px; background: rgba(0, 128, 128, 0.14); }
+    .app::after { width: 170px; height: 170px; left: -70px; bottom: -60px; background: rgba(0, 184, 184, 0.12); }
+
+    .wrap { width: 100%; max-width: 430px; margin: 0 auto; display: grid; gap: 12px; }
+
+    /* TOPBAR */
+    .topbar { min-height: 56px; display: grid; grid-template-columns: 45px minmax(0, 1fr) auto; align-items: center; gap: 9px; }
+    .icon-btn { width: 45px; height: 45px; border-radius: 16px; background: var(--card); border: 1px solid var(--border); color: var(--primary); box-shadow: var(--shadow-soft); display: inline-flex; align-items: center; justify-content: center; font-size: 16px; transition: 0.15s; }
+    .icon-btn:active, .mini-action:active { transform: scale(0.96); }
+
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .brand-logo { width: 44px; height: 44px; border-radius: 16px; padding: 4px; background: #ffffff; border: 1px solid var(--border); box-shadow: var(--shadow-soft); }
+    .brand-logo img { width: 100%; height: 100%; border-radius: 12px; object-fit: cover; }
+    .brand h1 { font-size: 17px; font-weight: 950; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .brand p { margin-top: 2px; color: var(--muted); font-size: 10px; font-weight: 900; text-transform: uppercase; }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; box-shadow: var(--shadow-soft); overflow: hidden; }
+
+    /* HERO */
+    .hero { padding: 14px; display: grid; grid-template-columns: 58px minmax(0, 1fr); align-items: center; gap: 12px; background: linear-gradient(145deg, var(--primary-dark), var(--primary), var(--primary-light)); color: #ffffff; position: relative; }
+    .hero::after { content: ""; position: absolute; right: -45px; top: -58px; width: 142px; height: 142px; border-radius: 999px; background: rgba(255, 255, 255, 0.13); pointer-events: none; }
+    .hero-mark { width: 58px; height: 58px; border-radius: 20px; background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.20); display: flex; align-items: center; justify-content: center; font-size: 24px; position: relative; z-index: 1; }
+    .hero-copy { min-width: 0; position: relative; z-index: 1; }
+    .hero-copy h2 { font-size: 20px; font-weight: 950; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hero-copy p { margin-top: 5px; font-size: 12px; font-weight: 760; opacity: 0.92; }
+
+    .status-pill { width: fit-content; min-height: 27px; margin-top: 9px; padding: 0 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 7px; background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.18); font-size: 10.5px; font-weight: 950; }
+
+    /* PANEL */
+    .panel { padding: 13px; display: grid; gap: 11px; }
+    .panel-title { display: flex; align-items: center; justify-content: space-between; }
+    .panel-title h3 { font-size: 15px; font-weight: 950; display: inline-flex; align-items: center; gap: 8px; }
+    .panel-title h3 i { color: var(--primary); }
+    .panel-title span { padding: 4px 9px; border-radius: 999px; background: var(--soft); color: var(--primary); font-size: 9.5px; font-weight: 950; }
+
+    .search-box { min-height: 45px; border-radius: 17px; border: 1px solid var(--border); background: var(--card-soft); display: grid; grid-template-columns: 38px minmax(0, 1fr); align-items: center; padding: 0 10px; color: var(--muted); }
+    .search-box input { min-width: 0; border: 0; background: transparent; color: var(--text); font-size: 12px; font-weight: 760; }
+
+    /* TABS */
+    .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+    .tab { min-height: 38px; border-radius: 14px; background: var(--card-soft); border: 1px solid var(--border); color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 800; transition: 0.2s ease;}
+    .tab.active { background: var(--primary); border-color: var(--primary); color: #ffffff; }
+
+    /* FILE LIST */
+    .file-list { display: grid; gap: 9px; min-height: 90px; }
+    .file-item { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 11px; padding: 10px; border-radius: 20px; border: 1px solid var(--border); background: var(--card-soft); overflow: hidden; }
+    .thumb { width: 62px; height: 62px; border-radius: 18px; background: var(--soft); border: 1px solid var(--border); color: var(--primary); display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 20px; cursor: pointer; flex: 0 0 auto; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    
+    .file-main { min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 8px;}
+    .file-meta strong { display: block; font-size: 13px; font-weight: 950; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-meta span { display: block; margin-top: 4px; color: var(--muted); font-size: 10.5px; font-weight: 760; }
+    
+    .file-actions { display: flex; gap: 6px; }
+    .mini-action { flex: 1; min-height: 32px; border-radius: 12px; background: var(--soft); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; gap: 5px; }
+    .mini-action.success { background: rgba(22, 163, 74, 0.10); color: var(--success); }
+
+    .empty { min-height: 108px; border-radius: 20px; border: 1px dashed var(--border); background: var(--card-soft); display: grid; place-items: center; text-align: center; padding: 16px; }
+    .empty i { color: var(--primary); font-size: 22px; margin-bottom: 8px; }
+    .empty strong { display: block; font-size: 13px; font-weight: 950; }
+    .empty span { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; }
+
+    /* BOTTOM NAV */
+    .bottom-nav { position: fixed; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 20; height: 66px; border-radius: 24px; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 7px; }
+    .nav-btn { border-radius: 18px; background: transparent; color: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: 0.2s ease; }
+    .nav-btn .mini-mark { width: 26px; height: 26px; border-radius: 10px; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+    .nav-btn .btn-text { font-size: 10px; font-weight: 800; text-transform: uppercase; }
+    .nav-btn.active { background: var(--soft); color: var(--primary); }
+
+    /* TOAST */
+    .toast-holder { position: fixed; left: 12px; right: 12px; top: calc(10px + env(safe-area-inset-top)); z-index: 9999; pointer-events: none; display: flex; justify-content: center; }
+    .toast { width: min(430px, calc(100vw - 24px)); min-height: 45px; border-radius: 16px; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); padding: 10px 12px; display: flex; align-items: center; gap: 8px; color: var(--text); font-size: 12.5px; font-weight: 850; opacity: 0; transform: translateY(-14px); transition: 0.2s ease; pointer-events: auto; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* MODAL */
+    .modal { position: fixed; inset: 0; z-index: 99999; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(0, 0, 0, 0.58); backdrop-filter: blur(5px); }
+    .modal.show { display: flex; }
+    .modal-card { width: min(430px, 100%); max-height: 86dvh; border-radius: 26px; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; }
+    .modal-head { min-height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid var(--border); flex: 0 0 auto;}
+    .modal-head strong { font-size: 14px; font-weight: 950; }
+    .modal-body { padding: 13px; overflow: auto; flex: 1 1 auto; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+    
+    .image-preview { width: 100%; max-height: 62dvh; border-radius: 20px; object-fit: contain; background: transparent; }
+    .icon-btn.danger { color: var(--danger); background: rgba(239, 68, 68, 0.08); }
+    
+    .wide-action { min-height: 42px; border-radius: 14px; border: 1px solid var(--border); background: var(--soft); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; gap: 8px; flex: 1; }
+    .wide-action.success { background: var(--success); color: white; border-color: var(--success);}
+
+    .spinner { width: 16px; height: 16px; border-radius: 999px; border: 2px solid rgba(0, 128, 128, 0.18); border-top-color: var(--primary); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (min-width: 520px) { .bottom-nav { width: 430px; left: 50%; right: auto; transform: translateX(-50%); } }
+  </style>
+</head>
+<body>
+  <div id="toastHolder" class="toast-holder"></div>
+
+  <main class="app">
+    <div class="wrap">
+      
+      <!-- Topbar -->
+      <header id="topbar" class="topbar">
+        <button class="icon-btn" onclick="goPage('admin.html')"><i class="fas fa-arrow-left"></i></button>
+        <div class="brand">
+          <div class="brand-logo"><img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta" /></div>
+          <div>
+            <h1>Aryanta Files</h1>
+            <p>Database Viewer</p>
+          </div>
+        </div>
+        <div class="top-actions">
+          <button class="icon-btn" onclick="loadFiles()"><i id="refreshIcon" class="fas fa-rotate"></i></button>
+        </div>
+      </header>
+
+      <!-- Hero -->
+      <section class="hero card">
+        <div class="hero-mark"><i class="fas fa-folder-open"></i></div>
+        <div class="hero-copy">
+          <h2 id="pageTitle">File Directory</h2>
+          <p id="pageSub">View, open, download and preview files securely fetched from the database.</p>
+          <div class="status-pill"><i class="fas fa-database"></i><span id="dbStatus">Connecting SDK...</span></div>
+        </div>
+      </section>
+
+      <!-- Main File Panel -->
+      <section class="panel card">
+        <div class="panel-title">
+          <h3><i class="fas fa-list-check"></i> DB Files</h3>
+          <span id="listCount">0 ITEMS</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 45px; gap: 8px; margin-bottom: 10px;">
+          <div class="search-box">
+            <i class="fas fa-magnifying-glass"></i>
+            <input id="searchInput" type="search" placeholder="Search files..." oninput="renderFiles()" />
+          </div>
+          <button class="icon-btn" onclick="loadFiles()"><i class="fas fa-arrows-rotate"></i></button>
+        </div>
+
+        <div class="tabs">
+          <button id="tabAll" class="tab active" onclick="setFilter('all')"><i class="fas fa-border-all"></i> All</button>
+          <button id="tabDocs" class="tab" onclick="setFilter('document')"><i class="fas fa-file-lines"></i> Documents</button>
+          <button id="tabImages" class="tab" onclick="setFilter('image')"><i class="fas fa-image"></i> Pictures</button>
+        </div>
+
+        <div id="fileList" class="file-list"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- BOTTOM NAVIGATION -->
+  <nav class="bottom-nav">
+    <button class="nav-btn" onclick="goPage('admin.html')">
+      <span class="mini-mark"><i class="fa-solid fa-house"></i></span><span class="btn-text">Home</span>
+    </button>
+    <button class="nav-btn" onclick="goPage('admin.html#profile')">
+      <span class="mini-mark"><i class="fa-solid fa-user"></i></span><span class="btn-text">Profile</span>
+    </button>
+    <button class="nav-btn" onclick="goPage('x.html')">
+      <span class="mini-mark"><i class="fa-solid fa-comments"></i></span><span class="btn-text">Chat</span>
+    </button>
+  </nav>
+
+  <!-- IMAGE VIEWER MODAL -->
+  <div id="imageModal" class="modal" onclick="closeModalOnBackdrop(event, 'imageModal')">
+    <div class="modal-card">
+      <div class="modal-head">
+        <strong id="imageModalTitle">Image Preview</strong>
+        <button class="icon-btn danger" onclick="closeModal('imageModal')"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" style="padding: 0; background: var(--bg);">
+        <img id="imageModalImg" class="image-preview" src="" alt="Preview" />
+      </div>
+      <div style="padding: 12px; border-top: 1px solid var(--border); display: flex; gap: 8px;">
+        <button class="wide-action success" id="imgBtnDownload"><i class="fas fa-download"></i> Download Image</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOCUMENT VIEWER MODAL -->
+  <div id="docModal" class="modal" onclick="closeModalOnBackdrop(event, 'docModal')">
+    <div class="modal-card" style="height: 85dvh;">
+      <div class="modal-head">
+        <strong id="docModalTitle">Document Preview</strong>
+        <button class="icon-btn danger" onclick="closeModal('docModal')"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" style="padding: 0; display: flex; flex-direction: column;">
+        <iframe id="docIframe" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+        <div id="docUnsupported" class="empty" style="display: none; border: none; height: 100%; align-content: center; width: 100%;">
+          <div>
+            <i class="fas fa-file-word" style="font-size: 38px; margin-bottom: 12px;"></i>
+            <strong>No In-App Preview Available</strong>
+            <span>This format cannot be previewed inside the app. Please click Download below.</span>
+          </div>
+        </div>
+      </div>
+      <div style="padding: 12px; border-top: 1px solid var(--border); display: flex; gap: 8px;">
+        <button class="wide-action success" id="docBtnDownload"><i class="fas fa-download"></i> Download Document</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- FIREBASE SDK CONFIGURATION ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyBwOOlSdVEgGiUdrr4thPRvILNLcLnfqbc",
+      authDomain: "aryanta.firebaseapp.com",
+      databaseURL: "https://aryanta-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "aryanta",
+      storageBucket: "aryanta.firebasestorage.app",
+      messagingSenderId: "1072021816522",
+      appId: "1:1072021816522:web:8f831cf4d61a7b0f8de033",
+      measurementId: "G-XD01NH45VR"
+    };
+
+    // Initialize Firebase SDK
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+
+    const SETTINGS_KEY = "aryanta_admin_settings";
+    const TOKEN_KEY = "aryanta_admin_worker_token";
+    const SESSION_TOKEN_KEY = "aryanta_admin_worker_session";
+    const LOGIN_PAGE = "index.html";
+    const $ = id => document.getElementById(id);
+
+    let allFiles = [];
+    let activeFilter = "all";
+    let currentToast = null;
+    let loading = false;
+
+    // --- SECURE BOOT & SETTINGS ---
+    function getToken() { return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(SESSION_TOKEN_KEY) || ""; }
+    
+    function syncAdminSettings() {
+      if(!getToken()) { window.location.replace(LOGIN_PAGE); return; }
+      try {
+        const savedSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {};
+        const theme = savedSettings.theme || "light";
+        const useDark = theme === "dark" || (theme === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.setAttribute("data-theme", useDark ? "dark" : "light");
+      } catch(e) {}
+    }
+
+    function goPage(url) { window.location.href = url; }
+    function escapeHtml(val) { return String(val ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+    function setText(id, value) { const el = $(id); if (el) el.textContent = value || ""; }
+
+    function showToast(message) {
+      if(currentToast) currentToast.remove();
+      const toast = document.createElement("div");
+      toast.className = "toast show";
+      toast.innerHTML = `<i class="fas fa-bell"></i><span>${escapeHtml(message)}</span>`;
+      $("toastHolder").appendChild(toast);
+      currentToast = toast;
+      setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 220); }, 2600);
+    }
+
+    function setBusy(state) {
+      loading = state;
+      const icon = $("refreshIcon");
+      if (icon) icon.className = state ? "spinner" : "fas fa-rotate";
+    }
+
+    // --- SMART IDENTIFICATION ENGINE ---
+    function fileUrl(item) { return item.url || item.fileUrl || item.link || ""; }
+    function fileTitle(item) { return item.title || item.name || "Untitled File"; }
+
+    function isImage(item) {
+      if (item.type === 'image') return true;
+      const url = fileUrl(item);
+      if (url.startsWith('data:image/')) return true;
+      if (url.length > 500 && !url.startsWith('http')) return false; // Prevent heavy regex on huge base64 docs
+      const urlLower = url.toLowerCase().split("?")[0];
+      return /\.(png|jpe?g|gif|webp|svg|avif)$/i.test(urlLower);
+    }
+
+    function isDocument(item) {
+      if (item.type === 'document') return true;
+      const url = fileUrl(item);
+      if (url.startsWith('data:application/') || url.startsWith('data:text/')) return true;
+      if (url.length > 500 && !url.startsWith('http')) return false; 
+      const urlLower = url.toLowerCase().split("?")[0];
+      return /\.(pdf|docx?|xlsx?|pptx?|txt|csv)$/i.test(urlLower);
+    }
+
+    function fileIcon(item) {
+      if (isImage(item)) return "fa-image";
+      const url = fileUrl(item).toLowerCase();
+      if (url.includes("pdf") || url.includes("application/pdf")) return "fa-file-pdf";
+      if (url.includes("sheet") || url.includes("excel") || /\.(xlsx?|csv)$/.test(url)) return "fa-file-excel";
+      return "fa-file-lines"; 
+    }
+
+    function formatDate(value) {
+      if (!value) return "Recently added";
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return "Recently added";
+      return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    }
+
+    // --- FIREBASE SDK DATA FETCHING ---
+    async function loadFiles() {
+      if (loading) return;
+      setBusy(true);
+      setText("dbStatus", "Fetching securely...");
+      
+      try {
+        const snapshot = await db.ref('files').once('value');
+        const data = snapshot.val() || {};
+        
+        allFiles = [];
+        for (let key in data) { 
+          allFiles.push({ id: key, ...data[key] }); 
+        }
+        
+        allFiles.sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+        setText("dbStatus", "DB Connected");
+        renderFiles();
+      } catch (err) {
+        console.error(err);
+        allFiles = [];
+        setText("dbStatus", "DB Blocked");
+        renderFiles();
+        showToast("Error: Please check Firebase rules");
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function setFilter(filter) {
+      activeFilter = filter;
+      $("tabAll").classList.toggle("active", filter === "all");
+      $("tabImages").classList.toggle("active", filter === "image");
+      $("tabDocs").classList.toggle("active", filter === "document");
+      renderFiles();
+    }
+
+    function filteredFiles() {
+      const q = ($("searchInput").value || "").trim().toLowerCase();
+      return allFiles.filter(item => {
+        const title = fileTitle(item).toLowerCase();
+        if (q && !title.includes(q)) return false;
+        if (activeFilter === "image" && !isImage(item)) return false;
+        if (activeFilter === "document" && !isDocument(item)) return false;
+        return true;
+      });
+    }
+
+    function renderFiles() {
+      const list = $("fileList");
+      const items = filteredFiles();
+      setText("listCount", `${items.length} ITEM${items.length === 1 ? "" : "S"}`);
+
+      if (!items.length) {
+        list.innerHTML = `
+          <div class="empty">
+            <div>
+              <i class="fas fa-folder-open"></i>
+              <strong>No files found</strong>
+              <span>Files added by the admin will appear here.</span>
+            </div>
+          </div>`;
+        return;
+      }
+
+      list.innerHTML = items.map((item, index) => {
+        const url = fileUrl(item);
+        const title = fileTitle(item);
+        const date = formatDate(item.createdAt);
+        const typeLabel = (item.type || (isImage(item) ? "image" : "document")).toUpperCase();
+        
+        // Handle thumbnails safely
+        let thumbHtml = `<i class="fas ${fileIcon(item)}"></i>`;
+        if (isImage(item) && url) {
+           thumbHtml = `<img src="${url}" alt="IMG" loading="lazy" />`;
+        }
+        
+        return `
+          <article class="file-item">
+            <button class="thumb" onclick="previewFile(${index})">${thumbHtml}</button>
+            <div class="file-main">
+              <div class="file-meta">
+                <strong>${escapeHtml(title)}</strong>
+                <span>${escapeHtml(typeLabel)} • ${escapeHtml(date)}</span>
+              </div>
+              <div class="file-actions">
+                <button class="mini-action" onclick="previewFile(${index})"><i class="fas fa-eye"></i> View</button>
+                <button class="mini-action success" onclick="downloadFile(${index})"><i class="fas fa-download"></i> Dowload</button>
+              </div>
+            </div>
+          </article>`;
+      }).join("");
+    }
+
+    function getRenderedItem(index) { return filteredFiles()[index]; }
+
+    function downloadFile(index) {
+      const item = getRenderedItem(index);
+      const url = fileUrl(item);
+      const title = fileTitle(item);
+      if (!url) return showToast("No download link");
+      
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = title;
+      
+      // If base64, click works instantly. If external URL, open in new tab.
+      if (!url.startsWith('data:')) a.target = "_blank"; 
+      
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showToast("Download started");
+    }
+
+    // --- PREVIEW ENGINE ---
+    function previewFile(index) {
+      const item = getRenderedItem(index);
+      const url = fileUrl(item);
+      const title = fileTitle(item);
+      
+      if (!url) return showToast("No file found to preview");
+      
+      if (isImage(item)) {
+        return openImageViewer(url, title, index);
+      }
+      openDocumentViewer(item, index);
+    }
+
+    function openDocumentViewer(item, index) {
+      const url = fileUrl(item);
+      const title = fileTitle(item);
+      
+      $("docModalTitle").textContent = title;
+      
+      const iframe = $("docIframe");
+      const fallback = $("docUnsupported");
+
+      iframe.style.display = "none";
+      fallback.style.display = "none";
+
+      // If it's a base64 PDF/Text OR a direct link to PDF/Text, we can iframe it.
+      const isBase64Doc = url.startsWith('data:application/pdf') || url.startsWith('data:text/');
+      const ext = url.split('.').pop().toLowerCase().split('?')[0];
+      const isRenderableLink = url.startsWith('http') && ['pdf', 'txt', 'csv'].includes(ext);
+
+      if (isBase64Doc || isRenderableLink) {
+        iframe.src = url;
+        iframe.style.display = "block";
+      } else {
+        fallback.style.display = "flex";
+      }
+
+      $("docBtnDownload").onclick = () => { downloadFile(index); };
+      openModal("docModal");
+    }
+
+    function openImageViewer(src, title, index) {
+      $("imageModalImg").src = src;
+      $("imageModalTitle").textContent = title || "Image";
+      $("imgBtnDownload").onclick = () => { downloadFile(index); };
+      openModal("imageModal");
+    }
+
+    // --- MODAL UTILS ---
+    function openModal(id) { $(id).classList.add("show"); }
+    function closeModal(id) { 
+      $(id).classList.remove("show"); 
+      if(id === 'docModal') $("docIframe").src = "about:blank"; // free memory
+    }
+    function closeModalOnBackdrop(e, id) { if(e.target.id === id) closeModal(id); }
+
+    window.addEventListener("keydown", e => {
+      if (e.key === "Escape") { closeModal("imageModal"); closeModal("docModal"); }
+    });
+
+    // Boot
+    syncAdminSettings();
+    loadFiles();
+  </script>
+</body>
+</html>
