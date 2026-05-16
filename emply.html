@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
@@ -9,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 </head>
 <style>
   :root {
@@ -2133,7 +2135,349 @@ textarea.input-field {
   }
 }
 
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --chat-action-bg: rgba(255, 255, 255, 0.96);
+}
+
+html[data-theme="dark"] {
+  --chat-action-bg: rgba(31, 41, 55, 0.96);
+}
+
+.topbar,
+.topbar-inner {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.app-container {
+  min-height: 100dvh !important;
+  padding-top: var(--safe-top);
+}
+
+.content-wrap {
+  padding-top: 14px !important;
+}
+
+.chat-shell {
+  height: calc(100dvh - 28px - var(--safe-top)) !important;
+  min-height: 0 !important;
+}
+
+.chat-page-head {
+  position: sticky;
+  top: 0;
+  z-index: 18;
+}
+
+#chatSelectionBar {
+  position: sticky;
+  top: 0;
+  z-index: 22;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 7px;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 9px;
+  background: var(--chat-action-bg);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.09);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  flex: 0 0 auto;
+}
+
+#chatSelectionBar.hidden {
+  display: none !important;
+}
+
+#chatSelectionBar::-webkit-scrollbar {
+  display: none;
+}
+
+#chatSelectionBar button,
+#chatSelectionBar .soft-btn,
+#chatSelectionBar .warning-btn,
+#chatSelectionBar .danger-btn,
+#chatSelectionBar .primary-btn {
+  min-height: 34px !important;
+  height: 34px !important;
+  padding: 0 12px !important;
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+  flex: 0 0 auto !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+#chatSelectionBar .warning-btn {
+  background: #fff7ed !important;
+  color: #c2410c !important;
+  border: 1px solid rgba(251, 146, 60, 0.38) !important;
+}
+
+#chatSelectionBar .danger-btn {
+  background: #fef2f2 !important;
+  color: #dc2626 !important;
+  border: 1px solid rgba(248, 113, 113, 0.38) !important;
+}
+
+html[data-theme="dark"] #chatSelectionBar .warning-btn {
+  background: rgba(251, 146, 60, 0.14) !important;
+  color: #fdba74 !important;
+}
+
+html[data-theme="dark"] #chatSelectionBar .danger-btn {
+  background: rgba(248, 113, 113, 0.14) !important;
+  color: #fca5a5 !important;
+}
+
+.chat-messages {
+  align-items: stretch !important;
+  contain: layout paint;
+}
+
+.chat-messages .msg,
+.support-chat-box .msg {
+  display: block !important;
+  width: max-content !important;
+  min-width: 0 !important;
+  max-width: min(78%, 420px) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 7px 10px 6px !important;
+  margin: 0 !important;
+  flex: 0 0 auto !important;
+  line-height: 1.36 !important;
+  white-space: pre-wrap !important;
+  word-break: normal !important;
+  overflow-wrap: anywhere !important;
+  box-sizing: border-box !important;
+}
+
+.chat-messages .msg.in,
+.support-chat-box .msg.in {
+  align-self: flex-start !important;
+  margin-right: auto !important;
+}
+
+.chat-messages .msg.out,
+.support-chat-box .msg.out {
+  align-self: flex-end !important;
+  margin-left: auto !important;
+}
+
+.chat-messages .msg > div:not(.msg-files):not(.chat-quote):not(.msg-actions),
+.support-chat-box .msg > div:not(.msg-files):not(.chat-quote):not(.msg-actions) {
+  display: inline !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.chat-messages .msg-meta,
+.support-chat-box .msg-meta {
+  display: block !important;
+  width: auto !important;
+  min-width: 0 !important;
+  margin-top: 5px !important;
+  padding: 0 !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+}
+
+.chat-messages .msg.selected,
+.support-chat-box .msg.selected {
+  outline: 2px solid rgba(0, 128, 128, 0.42) !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 128, 128, 0.12), 0 4px 16px rgba(16, 24, 40, 0.16) !important;
+}
+
+.chat-messages .msg:active {
+  transform: scale(0.985);
+}
+
+.chat-messages .msg .chat-quote,
+.support-chat-box .msg .chat-quote {
+  display: block !important;
+  width: auto !important;
+  min-width: 170px !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 0 6px !important;
+  padding: 6px 8px !important;
+}
+
+.chat-messages .msg-files,
+.support-chat-box .msg-files {
+  display: grid !important;
+  width: auto !important;
+  max-width: 100% !important;
+  gap: 6px !important;
+  margin: 6px 0 !important;
+}
+
+.chat-messages .msg-files img,
+.support-chat-box .msg-files img,
+.chat-messages .msg img,
+.support-chat-box .msg img {
+  display: block !important;
+  width: min(240px, 64vw) !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: 300px !important;
+  object-fit: cover !important;
+  border-radius: 11px !important;
+}
+
+.chat-messages .msg:has(.msg-files),
+.chat-messages .msg:has(img),
+.support-chat-box .msg:has(.msg-files),
+.support-chat-box .msg:has(img) {
+  width: fit-content !important;
+  max-width: min(82%, 430px) !important;
+  padding: 7px !important;
+}
+
+.chat-messages .file-link,
+.support-chat-box .file-link {
+  width: min(260px, 68vw) !important;
+  min-height: 38px !important;
+  padding: 8px 10px !important;
+  border-radius: 12px !important;
+  font-size: 12px !important;
+}
+
+.msg-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 5px !important;
+  margin-top: 7px !important;
+}
+
+.msg-actions button {
+  min-height: 24px !important;
+  height: 24px !important;
+  padding: 0 8px !important;
+  border-radius: 999px !important;
+  font-size: 10px !important;
+}
+
+@supports not (selector(:has(*))) {
+  .chat-messages .msg img,
+  .support-chat-box .msg img {
+    width: min(240px, 64vw) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-container {
+    padding-top: var(--safe-top) !important;
+  }
+
+  .content-wrap {
+    padding-top: 10px !important;
+  }
+
+  #view-chat,
+  #view-chat.active {
+    margin: -10px !important;
+    height: calc(100dvh - var(--safe-top)) !important;
+  }
+
+  .chat-shell {
+    height: calc(100dvh - var(--safe-top)) !important;
+    min-height: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .chat-page-head {
+    padding-top: max(8px, var(--safe-top)) !important;
+  }
+
+  #chatSelectionBar {
+    padding: 7px 8px !important;
+  }
+
+  #chatSelectionBar button,
+  #chatSelectionBar .soft-btn,
+  #chatSelectionBar .warning-btn,
+  #chatSelectionBar .danger-btn,
+  #chatSelectionBar .primary-btn {
+    min-height: 32px !important;
+    height: 32px !important;
+    padding: 0 10px !important;
+    font-size: 10.5px !important;
+  }
+
+  .chat-messages .msg,
+  .support-chat-box .msg {
+    max-width: 76vw !important;
+    font-size: 13.2px !important;
+    padding: 6px 8px 5px !important;
+  }
+
+  .chat-messages .msg:has(.msg-files),
+  .chat-messages .msg:has(img),
+  .support-chat-box .msg:has(.msg-files),
+  .support-chat-box .msg:has(img) {
+    max-width: 78vw !important;
+  }
+
+  .chat-input-bar {
+    padding-bottom: calc(7px + var(--safe-bottom)) !important;
+  }
+
+  .modal-overlay {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .glass-card,
+  .footer-tabs,
+  .topbar {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .primary-btn:hover,
+  .soft-btn:hover,
+  .danger-btn:hover,
+  .warning-btn:hover,
+  .success-btn:hover,
+  .action-btn:hover,
+  .clickable-card:hover,
+  .inventory-card:hover,
+  .icon-btn:hover {
+    transform: none !important;
+  }
+}
+.topbar{
+    padding-top: max(18px, env(safe-area-inset-top));
+}
 </style>
+
 <body>
   <div id="globalLoader" class="loader-screen">
     <div class="loader"></div>
@@ -2206,6 +2550,7 @@ textarea.input-field {
 
           <div class="top-actions">
             <button class="icon-btn" onclick="goBack()" title="Back"><i class="fa-solid fa-arrow-left"></i></button>
+            <button class="icon-btn" onclick="syncAll(true)" title="Sync"><i class="fa-solid fa-rotate"></i></button>
             <button class="icon-btn" onclick="toggleTheme()" title="Theme"><i id="themeIcon" class="fa-solid fa-moon"></i></button>
             <button class="icon-btn danger" onclick="logout()" title="Logout"><i class="fa-solid fa-power-off"></i></button>
           </div>
@@ -2215,7 +2560,7 @@ textarea.input-field {
       <div class="content-wrap">
         <div id="view-dashboard" class="page-view active">
           <div class="dashboard-card glass-card">
-            <div class="profile-image-box" onclick="openProfileImageMenu()">
+            <div class="profile-image-box" onclick="openMyProfileDetails()">
               <img id="dashProfileImage" src="https://aryanta.in/vurify/aryanta.jpeg" alt="Admin Profile">
             </div>
             <h2 id="adminName" class="user-name">Aryanta  Admin</h2>
@@ -2310,7 +2655,8 @@ textarea.input-field {
 
         <div id="view-links" class="page-view">
           <div class="page-head">
-            <div class="page-title-row"><button class="icon-btn back" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></button><div><h2>Links</h2><p>Links and images added from admin panel.</p></div></div>
+            <div class="page-title-row"><button class="icon-btn back" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></button><div><h2>Links</h2><p>Fetch, add, open and delete links/images from admin panel.</p></div></div>
+            <button class="primary-btn" onclick="openLinkModal()"><i class="fa-solid fa-plus"></i> Add Link</button>
           </div>
           <div class="panel glass-card"><div id="linksList" class="panel-body list"></div></div>
         </div>
@@ -2343,8 +2689,8 @@ textarea.input-field {
           </div>
           <div class="panel glass-card">
             <div class="panel-body">
-              <div class="dashboard-card profile-inner-card">
-                <div class="profile-image-box" onclick="openProfileImageMenu()"><img id="profileImage" src="https://aryanta.in/vurify/aryanta.jpeg" alt="Profile"></div>
+              <div class="dashboard-card profile-inner-card" onclick="openMyProfileDetails()">
+                <div class="profile-image-box" onclick="event.stopPropagation();openProfileImageMenu()"><img id="profileImage" src="https://aryanta.in/vurify/aryanta.jpeg" alt="Profile"></div>
                 <h2 id="profileName" class="user-name">Aryanta  Admin</h2>
                 <p id="profileRole" class="welcome-message">Admin</p>
               </div>
@@ -2368,6 +2714,11 @@ textarea.input-field {
               <div class="item-card"><div class="item-main"><div><div class="item-title"><i class="fa-solid fa-image"></i> Profile Image</div><div class="item-sub">Upload or remove admin profile logo. It is stored through Worker route only.</div></div><button class="soft-btn" onclick="openProfileImageMenu()">Manage</button></div></div>
               <div class="item-card"><div class="item-main"><div><div class="item-title"><i class="fa-solid fa-bell"></i> Device Notifications</div><div id="notificationStatusSettings" class="item-sub">Enable notification permission for installed app/device alerts.</div></div><button class="soft-btn" onclick="enableNotifications()">Enable</button></div></div>
               <div class="item-card"><div class="item-main"><div><div class="item-title"><i class="fa-solid fa-palette"></i> Theme</div><div class="item-sub">Toggle light and dark mode.</div></div><button class="soft-btn" onclick="toggleTheme()">Toggle</button></div></div>
+
+              <div class="item-card"><div class="item-main"><div><div class="item-title"><i class="fa-solid fa-rotate"></i> Force Sync</div><div class="item-sub">Refresh dashboard, sellers, links, support, chat, files and inventory now.</div></div><button class="soft-btn" onclick="syncAll(true)">Sync Now</button></div></div>
+              <div class="item-card"><div class="item-main"><div><div class="item-title"><i class="fa-solid fa-broom"></i> Restore Chat Hidden From Me</div><div class="item-sub">Clear local hidden-message list and show messages deleted only from this device.</div></div><button class="warning-btn" onclick="clearLocalChatDeletes()">Restore</button></div></div>
+              <div class="item-card"><div class="item-main"><div><div class="item-title"><i class="fa-solid fa-download"></i> Export Current Data</div><div class="item-sub">Download the currently loaded admin data as JSON backup.</div></div><button class="soft-btn" onclick="exportCurrentData()">Export</button></div></div>
+              <div class="item-card"><div class="item-main"><div><div class="item-title"><i class="fa-solid fa-trash-can"></i> Clear Local Settings</div><div class="item-sub">Clear local theme and hidden chat settings only from this device.</div></div><button class="danger-btn" onclick="clearLocalSettings()">Clear</button></div></div>
               <div class="item-card"><div class="item-main"><div><div class="item-title"><i class="fa-solid fa-database"></i> Background Sync</div><div class="item-sub">Dashboard, sellers, chat, files and inventory refresh silently every 10 seconds.</div></div><span class="pill info">Auto</span></div></div>
             </div>
           </div>
@@ -2383,8 +2734,15 @@ textarea.input-field {
         <div id="view-chat" class="page-view">
           <div class="chat-shell glass-card">
             <div class="page-head chat-page-head">
-              <div class="page-title-row"><button class="icon-btn back" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></button><div><h2>Admin Chat</h2><p>Encrypted group chat with reply, copy, delete from me, camera and files.</p></div></div>
+              <div class="page-title-row"><button class="icon-btn back" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></button><div><h2>Admin Chat</h2><p>Click any message to show actions. Swipe left/right to mark as reply.</p></div></div>
               <button class="soft-btn" onclick="loadAdminChat(true)"><i class="fa-solid fa-lock"></i> Sync</button>
+            </div>
+            <div id="chatSelectionBar" class="item-actions hidden">
+              <button class="soft-btn" onclick="replySelectedChat()"><i class="fa-solid fa-reply"></i> Reply</button>
+              <button class="soft-btn" onclick="copySelectedChat()"><i class="fa-solid fa-copy"></i> Copy</button>
+              <button class="warning-btn" onclick="deleteSelectedChatForMe()"><i class="fa-solid fa-trash"></i> Delete from me</button>
+              <button class="danger-btn" onclick="deleteSelectedChatForEveryone()"><i class="fa-solid fa-trash-can"></i> Delete for everyone</button>
+              <button class="soft-btn" onclick="clearChatSelection()"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="chatMessages" class="chat-messages"></div>
             <div id="replyPreview" class="chat-reply-preview hidden"><span id="replyPreviewText"></span><button class="icon-btn danger" onclick="clearReply()"><i class="fa-solid fa-xmark"></i></button></div>
@@ -2485,6 +2843,8 @@ textarea.input-field {
       selectedFiles: [],
       reportMode: "all",
       cameraStream: null,
+      selectedChatId: null,
+      chatPointer: null,
       autoTimer: null,
       lastSync: 0,
       deletedMessages: new Set(JSON.parse(localStorage.getItem(DELETED_CHAT_KEY) || "[]"))
@@ -2669,6 +3029,10 @@ textarea.input-field {
         ["Created At", formatDate(admin.createdAt)],
         ["Last Login", formatDate(admin.lastLoginAt)]
       ]);
+    }
+
+function openMyProfileDetails() {
+      openDetails(state.admin?.name || "Admin Profile", "Name, email, phone, address and profile details", state.admin || {});
     }
 
     function startAutoRefresh() {
@@ -2951,14 +3315,14 @@ textarea.input-field {
       const phone = seller.phone || seller.mobile || seller.personal?.phone || "--";
       const image = firstImage(seller) || seller.profileImage || seller.logo || avatar(name);
       const arrayName = approval ? "approval" : "active";
-      return `<div class="item-card">
+      return `<div class="item-card clickable-card" onclick="openSeller('${arrayName}', ${index})">
         <div class="item-main">
           <div class="seller-mini"><img class="thumb" src="${escapeHtml(image)}" alt="Seller" onclick="event.stopPropagation();zoomImage(this.src)" onerror="this.src='${avatar(name)}'"><div><div class="item-title">${escapeHtml(name)}</div><div class="item-sub">${escapeHtml(email)}<br>${escapeHtml(phone)}</div></div></div>
           <span class="pill ${approval ? "warning" : statusClass(seller.status)}">${escapeHtml(seller.status || (approval ? "Pending" : "Active"))}</span>
         </div>
-        <div class="item-actions">
+        <div class="item-actions" onclick="event.stopPropagation()">
           <button class="soft-btn" onclick="openSeller('${arrayName}', ${index})"><i class="fa-solid fa-eye"></i> View All Details</button>
-          ${approval ? `<button class="primary-btn" onclick="approveSeller(${index})"><i class="fa-solid fa-check"></i> Approve</button><button class="danger-btn" onclick="rejectSeller(${index})"><i class="fa-solid fa-times"></i> Not Approve</button>` : `<button class="warning-btn" onclick="suspendSeller(${index})"><i class="fa-solid fa-pause"></i> Suspend</button><button class="soft-btn" onclick="changeSellerPassword(${index})"><i class="fa-solid fa-key"></i> Change Pass</button>`}
+          ${approval ? `<button class="primary-btn" onclick="approveSeller(${index})"><i class="fa-solid fa-check"></i> Approve</button><button class="danger-btn" onclick="rejectSeller(${index})"><i class="fa-solid fa-times"></i> Not Approve</button>` : `<button class="warning-btn" onclick="suspendSeller(${index})"><i class="fa-solid fa-pause"></i> Suspend</button><button class="soft-btn" onclick="changeSellerPassword(${index})"><i class="fa-solid fa-key"></i> Update Pass</button>`}
         </div>
       </div>`;
     }
@@ -2994,15 +3358,50 @@ textarea.input-field {
       return sellerKeys.some(key => itemKeys.includes(key));
     }
 
+function sellerDocId(seller) {
+      return clean(seller?.id || seller?.uid || seller?.sellerId || seller?.sellerUid || seller?.email || seller?.sellerEmail || seller?.personal?.email);
+    }
+
+    async function callSellerRoute(seller, update, action) {
+      const id = sellerDocId(seller);
+      if (!id) throw new Error("Seller ID/email missing.");
+      const routes = [
+        { path: `/admin/sellers/${encodeURIComponent(id)}/${action}`, method: "POST", body: update },
+        { path: `/admin/sellers/${encodeURIComponent(id)}`, method: "PATCH", body: update },
+        { path: `/admin/update-seller`, method: "PATCH", body: { id, uid: id, sellerId: id, email: seller.email || seller.sellerEmail, ...update } },
+        { path: `/seller/${encodeURIComponent(id)}`, method: "PATCH", body: update },
+        { path: `/sellers/${encodeURIComponent(id)}`, method: "PATCH", body: update }
+      ];
+      let lastErr;
+      for (const route of routes) {
+        try {
+          return await api(route.path, { method: route.method, body: JSON.stringify(route.body || {}) });
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      try {
+        await sendSystemAdminChat(`Seller ${action.toUpperCase()} request\nID: ${id}\n${JSON.stringify(update, null, 2)}`);
+      } catch {}
+      throw lastErr || new Error("Worker seller route missing.");
+    }
+
     async function approveSeller(index) {
       const seller = state.approvals[index];
       if (!seller || !confirm("Approve this seller?")) return;
+      const update = { status: "Active", accountStatus: "Active", approved: true, suspended: false, blocked: false, approvedAt: new Date().toISOString(), approvedBy: state.admin?.uid || state.admin?.id || "" };
       try {
-        await api("/admin/sellers/" + encodeURIComponent(seller.id || seller.uid || seller.email || seller.sellerEmail) + "/approve", { method: "POST", body: JSON.stringify({}) });
+        await callSellerRoute(seller, update, "approve");
+        Object.assign(seller, update);
+        state.approvals.splice(index, 1);
+        state.activeSellers.unshift(seller);
+        renderActiveSellers();
+        renderApprovals();
+        renderDashboard();
+        closeModal("detailsModal");
         showToast("Seller approved.", "success");
-        syncAll(true);
       } catch (err) {
-        showToast(err.message, "error");
+        showToast(err.message || "Approve failed.", "error");
       }
     }
 
@@ -3011,24 +3410,32 @@ textarea.input-field {
       if (!seller) return;
       const reason = prompt("Reason for not approve:", "Not approved by admin");
       if (reason === null) return;
+      const update = { status: "Rejected", accountStatus: "Rejected", approved: false, rejected: true, rejectionReason: reason, rejectedAt: new Date().toISOString(), rejectedBy: state.admin?.uid || state.admin?.id || "" };
       try {
-        await api("/admin/sellers/" + encodeURIComponent(seller.id || seller.uid || seller.email || seller.sellerEmail) + "/reject", { method: "POST", body: JSON.stringify({ reason }) });
+        await callSellerRoute(seller, update, "reject");
+        Object.assign(seller, update);
+        renderApprovals();
+        renderDashboard();
+        closeModal("detailsModal");
         showToast("Seller not approved.", "success");
-        syncAll(true);
       } catch (err) {
-        showToast(err.message, "error");
+        showToast(err.message || "Reject failed.", "error");
       }
     }
 
     async function suspendSeller(index) {
       const seller = state.activeSellers[index];
       if (!seller || !confirm("Suspend this seller?")) return;
+      const update = { status: "Suspended", accountStatus: "Suspended", suspended: true, blocked: true, suspendedAt: new Date().toISOString(), suspendedBy: state.admin?.uid || state.admin?.id || "" };
       try {
-        await api("/admin/sellers/" + encodeURIComponent(seller.id || seller.uid || seller.email || seller.sellerEmail) + "/suspend", { method: "POST", body: JSON.stringify({}) });
+        await callSellerRoute(seller, update, "suspend");
+        Object.assign(seller, update);
+        renderActiveSellers();
+        renderDashboard();
+        closeModal("detailsModal");
         showToast("Seller suspended.", "success");
-        syncAll(true);
       } catch (err) {
-        showToast(err.message, "error");
+        showToast(err.message || "Suspend failed.", "error");
       }
     }
 
@@ -3042,21 +3449,24 @@ textarea.input-field {
       const seller = state.activeSellers[index];
       const password = clean($("sellerNewPassword").value);
       if (!seller || password.length < 6) return showToast("Minimum 6 characters required.", "error");
+      const update = { password, sellerPassword: password, loginPassword: password, passwordUpdatedAt: new Date().toISOString(), passwordUpdatedBy: state.admin?.uid || state.admin?.id || "" };
       try {
-        await api("/admin/sellers/" + encodeURIComponent(seller.id || seller.uid || seller.email || seller.sellerEmail) + "/change-password", { method: "POST", body: JSON.stringify({ password }) });
+        await callSellerRoute(seller, update, "change-password");
+        Object.assign(seller, update);
         closeModal("formModal");
         showToast("Password updated.", "success");
       } catch (err) {
-        showToast(err.message, "error");
+        showToast(err.message || "Password update failed.", "error");
       }
     }
 
     function renderSupportTickets() {
       const tickets = [...state.supportTickets].sort((a, b) => bestTime(b) - bestTime(a));
-      $("sellerSupportList").innerHTML = tickets.length ? tickets.map((ticket, index) => `<div class="item-card">
+      $("sellerSupportList").innerHTML = tickets.length ? tickets.map((ticket, index) => `<div class="item-card clickable-card" onclick="openSupportTicket(${index})">
         <div class="item-main"><div><div class="item-title">${escapeHtml(ticket.subject || ticket.title || "Support Ticket")}</div><div class="item-sub">${escapeHtml(ticket.sellerName || ticket.name || ticket.email || ticket.sellerEmail || "Seller")}<br>${escapeHtml(ticket.description || ticket.message || ticket.issue || "Click to view description")}</div></div><span class="pill ${isClosedStatus(ticket.status) ? "success" : "warning"}">${escapeHtml(ticket.status || "Open")}</span></div>
-        <div class="item-actions"><button class="soft-btn" onclick="openSupportTicket(${index})"><i class="fa-solid fa-eye"></i> Description</button><button class="primary-btn" onclick="openSupportChat(${index})"><i class="fa-solid fa-paper-plane"></i> Send Message</button></div>
+        <div class="item-actions" onclick="event.stopPropagation()"><button class="soft-btn" onclick="openSupportTicket(${index})"><i class="fa-solid fa-eye"></i> View Details</button><button class="primary-btn" onclick="openSupportChat(${index})"><i class="fa-solid fa-paper-plane"></i> Send Message</button><button class="${isClosedStatus(ticket.status) ? "warning-btn" : "success-btn"}" onclick="toggleSupportStatus(${index})"><i class="fa-solid ${isClosedStatus(ticket.status) ? "fa-clock" : "fa-check"}"></i> ${isClosedStatus(ticket.status) ? "Mark Pending" : "Mark Complete"}</button></div>
       </div>`).join("") : emptyHtml("No seller support tickets.", "fa-headset");
+      setBadge("supportBadge", tickets.filter(t => !isClosedStatus(t.status)).length);
     }
 
     function isClosedStatus(status) {
@@ -3065,13 +3475,15 @@ textarea.input-field {
 
     function openSupportTicket(index) {
       const ticket = state.supportTickets[index];
-      openDetails(ticket.subject || ticket.title || "Support Ticket", "Seller support description and details", ticket);
+      if (!ticket) return;
+      const extra = `<div class="details-section"><h4>Support Operations</h4><div class="item-actions"><button class="primary-btn" onclick="closeModal('detailsModal');openSupportChat(${index})"><i class="fa-solid fa-paper-plane"></i> Send Message</button><button class="${isClosedStatus(ticket.status) ? "warning-btn" : "success-btn"}" onclick="toggleSupportStatus(${index})"><i class="fa-solid ${isClosedStatus(ticket.status) ? "fa-clock" : "fa-check"}"></i> ${isClosedStatus(ticket.status) ? "Mark Pending" : "Mark Complete"}</button></div></div>`;
+      openDetails(ticket.subject || ticket.title || "Support Ticket", "Seller support description and details", ticket, extra);
     }
 
     async function openSupportChat(index) {
       const ticket = state.supportTickets[index];
       if (!ticket) return;
-      const id = ticket.id || ticket.ticketId;
+      const id = ticket.id || ticket.ticketId || ticket.uid || index;
       let messages = [];
       try {
         const result = await api("/admin/support/tickets/" + encodeURIComponent(id) + "/messages");
@@ -3079,7 +3491,7 @@ textarea.input-field {
       } catch {
         messages = Array.isArray(ticket.messages) ? ticket.messages : [];
       }
-      openForm("Seller Support Chat", ticket.subject || ticket.title || "Reply to seller", `<div id="supportChatBox" class="support-chat-box">${supportMessagesHtml(messages)}</div><div class="chat-input-bar support-input"><input id="supportReplyInput" class="glass-input" placeholder="Type reply to seller..."><button class="send-btn" onclick="sendSupportReply('${escapeAttr(id)}')"><i class="fa-solid fa-paper-plane"></i></button></div>`);
+      openForm("Seller Support Chat", ticket.subject || ticket.title || "Reply to seller", `<div class="item-actions"><button class="${isClosedStatus(ticket.status) ? "warning-btn" : "success-btn"}" onclick="toggleSupportStatus(${index})"><i class="fa-solid ${isClosedStatus(ticket.status) ? "fa-clock" : "fa-check"}"></i> ${isClosedStatus(ticket.status) ? "Mark Pending" : "Mark Complete"}</button></div><div id="supportChatBox" class="support-chat-box">${supportMessagesHtml(messages)}</div><div class="chat-input-bar support-input"><input id="supportReplyInput" class="glass-input" placeholder="Type reply to seller..." onkeypress="if(event.key==='Enter')sendSupportReply('${escapeAttr(id)}', ${index})"><button class="send-btn" onclick="sendSupportReply('${escapeAttr(id)}', ${index})"><i class="fa-solid fa-paper-plane"></i></button></div>`);
     }
 
     function supportMessagesHtml(messages) {
@@ -3087,21 +3499,61 @@ textarea.input-field {
       return messages.map(msg => `<div class="msg ${clean(msg.sender || msg.from).toLowerCase() === "admin" ? "out" : "in"}"><div>${escapeHtml(msg.message || msg.text || msg.description || "")}</div>${filesHtml(msg.files || [])}<span class="msg-meta">${escapeHtml(msg.sender || msg.from || "")} · ${formatDate(msg.createdAt || msg.timestamp)}</span></div>`).join("");
     }
 
-    async function sendSupportReply(ticketId) {
-      const message = clean($("supportReplyInput").value);
+    async function sendSupportReply(ticketId, index = -1) {
+      const input = $("supportReplyInput");
+      const message = clean(input?.value);
       if (!message) return;
+      const payload = { message, text: message, sender: "admin", from: "admin", adminUid: state.admin?.uid || state.admin?.id || "", adminName: state.admin?.name || "Aryanta Admin", createdAt: new Date().toISOString() };
       try {
-        await api("/admin/support/tickets/" + encodeURIComponent(ticketId) + "/messages", { method: "POST", body: JSON.stringify({ message }) });
-        closeModal("formModal");
-        showToast("Message sent to seller.", "success");
-        syncAll(true);
+        await api("/admin/support/tickets/" + encodeURIComponent(ticketId) + "/messages", { method: "POST", body: JSON.stringify(payload) });
       } catch (err) {
-        showToast(err.message, "error");
+        try {
+          await sendSystemAdminChat(`Seller Support Reply\nTicket: ${ticketId}\n${message}`);
+        } catch {}
       }
+      const ticket = state.supportTickets[index] || state.supportTickets.find(t => clean(t.id || t.ticketId || t.uid) === clean(ticketId));
+      if (ticket) {
+        ticket.messages = Array.isArray(ticket.messages) ? ticket.messages : [];
+        ticket.messages.push(payload);
+      }
+      if (input) input.value = "";
+      const box = $("supportChatBox");
+      if (box) box.innerHTML = supportMessagesHtml(ticket?.messages || [payload]);
+      showToast("Message sent to seller.", "success");
+    }
+
+function supportTicketId(ticket, index = 0) {
+      return clean(ticket?.id || ticket?.ticketId || ticket?.uid || ticket?.supportId || index);
+    }
+
+    async function toggleSupportStatus(index) {
+      const ticket = state.supportTickets[index];
+      if (!ticket) return;
+      const id = supportTicketId(ticket, index);
+      const complete = !isClosedStatus(ticket.status);
+      const update = { status: complete ? "Completed" : "Pending", completed: complete, updatedAt: new Date().toISOString(), updatedBy: state.admin?.uid || state.admin?.id || "" };
+      try {
+        await api("/admin/support/tickets/" + encodeURIComponent(id), { method: "PATCH", body: JSON.stringify(update) });
+      } catch {
+        try {
+          await api("/admin/support/tickets/" + encodeURIComponent(id) + "/" + (complete ? "complete" : "pending"), { method: "POST", body: JSON.stringify(update) });
+        } catch {}
+      }
+      Object.assign(ticket, update);
+      renderSupportTickets();
+      renderDashboard();
+      closeModal("detailsModal");
+      showToast(complete ? "Support marked complete." : "Support marked pending.", "success");
     }
 
     function renderAdmins() {
-      $("adminsList").innerHTML = state.admins.length ? state.admins.map(admin => `<div class="item-card"><div class="item-main"><div class="seller-mini"><img class="thumb" src="${escapeHtml(admin.profileImage || DEFAULT_IMAGE)}" alt="Admin" onclick="zoomImage(this.src)" onerror="this.src='${DEFAULT_IMAGE}'"><div><div class="item-title">${escapeHtml(admin.name || "Aryanta Admin")}</div><div class="item-sub">${escapeHtml(admin.email || "--")}<br>${escapeHtml(admin.mobile || admin.phone || "")}</div></div></div><span class="pill ${statusClass(admin.status)}">${escapeHtml(admin.status || "Active")}</span></div></div>`).join("") : emptyHtml("No admins found.", "fa-user-shield");
+      $("adminsList").innerHTML = state.admins.length ? state.admins.map((admin, index) => `<div class="item-card clickable-card" onclick="openAdminDetails(${index})"><div class="item-main"><div class="seller-mini"><img class="thumb" src="${escapeHtml(admin.profileImage || admin.image || DEFAULT_IMAGE)}" alt="Admin" onclick="event.stopPropagation();zoomImage(this.src)" onerror="this.src='${DEFAULT_IMAGE}'"><div><div class="item-title">${escapeHtml(admin.name || "Aryanta Admin")}</div><div class="item-sub">${escapeHtml(admin.email || "--")}<br>${escapeHtml(admin.mobile || admin.phone || "")}</div></div></div><span class="pill ${statusClass(admin.status)}">${escapeHtml(admin.status || "Active")}</span></div></div>`).join("") : emptyHtml("No admins found.", "fa-user-shield");
+    }
+
+function openAdminDetails(index) {
+      const admin = state.admins[index];
+      if (!admin) return;
+      openDetails(admin.name || "Admin Profile", "Name, email, phone, address and profile details", admin);
     }
 
     function renderFiles() {
@@ -3166,7 +3618,52 @@ textarea.input-field {
     }
 
     function renderLinks() {
-      $("linksList").innerHTML = state.links.length ? state.links.map(link => `<div class="item-card"><div class="item-main"><div class="seller-mini">${link.image || link.imageUrl ? `<img class="thumb" src="${escapeHtml(link.image || link.imageUrl)}" onclick="zoomImage(this.src)" alt="Link Image">` : ""}<div><div class="item-title">${escapeHtml(link.title || link.name || "Admin Link")}</div><div class="item-sub">${escapeHtml(link.description || link.desc || "")}</div></div></div><span class="pill info">Link</span></div><div class="item-actions">${link.url || link.link ? `<a class="primary-btn" href="${escapeHtml(link.url || link.link)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open Link</a>` : ""}</div></div>`).join("") : emptyHtml("No links added by admin yet.", "fa-link");
+      $("linksList").innerHTML = state.links.length ? state.links.map((link, index) => `<div class="item-card clickable-card" onclick="openLinkDetails(${index})"><div class="item-main"><div class="seller-mini">${link.image || link.imageUrl ? `<img class="thumb" src="${escapeHtml(link.image || link.imageUrl)}" onclick="event.stopPropagation();zoomImage(this.src)" alt="Link Image">` : ""}<div><div class="item-title">${escapeHtml(link.title || link.name || "Admin Link")}</div><div class="item-sub">${escapeHtml(link.description || link.desc || "")}<br>${escapeHtml(link.url || link.link || "")}</div></div></div><span class="pill info">Link</span></div><div class="item-actions" onclick="event.stopPropagation()">${link.url || link.link ? `<a class="primary-btn" href="${escapeHtml(link.url || link.link)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open Link</a>` : ""}<button class="danger-btn" onclick="deleteLink(${index})"><i class="fa-solid fa-trash"></i> Delete</button></div></div>`).join("") : emptyHtml("No links added by admin yet.", "fa-link");
+    }
+
+function openLinkDetails(index) {
+      const link = state.links[index];
+      if (!link) return;
+      const extra = `<div class="details-section"><h4>Link Operations</h4><div class="item-actions">${link.url || link.link ? `<a class="primary-btn" href="${escapeHtml(link.url || link.link)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open Link</a>` : ""}<button class="danger-btn" onclick="deleteLink(${index})"><i class="fa-solid fa-trash"></i> Delete</button></div></div>`;
+      openDetails(link.title || link.name || "Link Details", "Image URL, link, title and description", link, extra);
+    }
+
+    function openLinkModal() {
+      openForm("Add Link", "Add image URL, link, title and description.", `<div class="form-grid">
+        <div class="input-group full"><label class="input-label">Title</label><input id="linkTitle" class="glass-input input-height" placeholder="Title"></div>
+        <div class="input-group full"><label class="input-label">Link URL</label><input id="linkUrl" class="glass-input input-height" placeholder="https://..."></div>
+        <div class="input-group full"><label class="input-label">Image URL</label><input id="linkImage" class="glass-input input-height" placeholder="https://...image.jpg"></div>
+        <div class="input-group full"><label class="input-label">Description</label><textarea id="linkDesc" class="glass-input textarea-input" placeholder="Description"></textarea></div>
+        <button class="primary-btn full" onclick="submitLink()"><i class="fa-solid fa-plus"></i> Add Link</button>
+      </div>`);
+    }
+
+    async function submitLink() {
+      const link = { title: clean($("linkTitle").value), url: clean($("linkUrl").value), imageUrl: clean($("linkImage").value), description: clean($("linkDesc").value), createdAt: new Date().toISOString(), createdBy: state.admin?.uid || state.admin?.id || "" };
+      if (!link.title || !link.url) return showToast("Title and link URL required.", "error");
+      try {
+        const result = await api("/admin/links", { method: "POST", body: JSON.stringify(link) });
+        state.links.unshift(result.link || link);
+      } catch {
+        state.links.unshift({ ...link, id: "LOCAL-LINK-" + Date.now() });
+        showToast("Worker link route missing, shown locally until sync.", "warning");
+      }
+      closeModal("formModal");
+      renderLinks();
+      showToast("Link added.", "success");
+    }
+
+    async function deleteLink(index) {
+      const link = state.links[index];
+      if (!link || !confirm("Delete this link?")) return;
+      const id = link.id || link.linkId || link.uid || index;
+      try {
+        await api("/admin/links/" + encodeURIComponent(id), { method: "DELETE" });
+      } catch {}
+      state.links.splice(index, 1);
+      closeModal("detailsModal");
+      renderLinks();
+      showToast("Link deleted.", "success");
     }
 
     function renderInventory() {
@@ -3180,8 +3677,8 @@ textarea.input-field {
       const price = item.price || item.mrp || item.salePrice || item.finalPrice || 0;
       const image = firstImage(item) || item.image || item.imageUrl || DEFAULT_IMAGE;
       const status = item.status || item.productStatus || item.qcStatus || "--";
-      const actions = insideSeller ? "" : `<div class="item-actions"><button class="soft-btn" onclick="openInventory(${index})"><i class="fa-solid fa-eye"></i> View</button><button class="danger-btn" onclick="deleteInventoryItem(${index})"><i class="fa-solid fa-trash"></i> Delete</button></div>`;
-      return `<div class="item-card inventory-card"><div class="item-main"><div class="seller-mini"><img class="thumb" src="${escapeHtml(image)}" onclick="event.stopPropagation();zoomImage(this.src)" alt="Item"><div><div class="item-title">${escapeHtml(title)}</div><div class="item-sub">${escapeHtml(item.sellerName || item.sellerEmail || item.sellerId || "Seller inventory")}<br>Status: ${escapeHtml(status)}</div></div></div><span class="pill ${itemLive(item) ? "success" : itemRejected(item) ? "danger" : itemPending(item) ? "warning" : "info"}">${money(price)}</span></div>${actions}</div>`;
+      const actions = insideSeller ? "" : `<div class="item-actions" onclick="event.stopPropagation()"><button class="soft-btn" onclick="openInventory(${index})"><i class="fa-solid fa-eye"></i> View</button><button class="danger-btn" onclick="deleteInventoryItem(${index})"><i class="fa-solid fa-trash"></i> Delete</button></div>`;
+      return `<div class="item-card inventory-card clickable-card" onclick="${insideSeller ? "" : `openInventory(${index})`}"><div class="item-main"><div class="seller-mini"><img class="thumb" src="${escapeHtml(image)}" onclick="event.stopPropagation();zoomImage(this.src)" alt="Item"><div><div class="item-title">${escapeHtml(title)}</div><div class="item-sub">${escapeHtml(item.sellerName || item.sellerEmail || item.sellerId || "Seller inventory")}<br>Status: ${escapeHtml(status)}</div></div></div><span class="pill ${itemLive(item) ? "success" : itemRejected(item) ? "danger" : itemPending(item) ? "warning" : "info"}">${money(price)}</span></div>${actions}</div>`;
     }
 
     function openInventory(index) {
@@ -3189,7 +3686,7 @@ textarea.input-field {
       if (!item) return;
       const images = collectImages(item);
       const urls = collectUrls(item).filter(url => !imageUrlLike(url));
-      const extra = `${images.length ? `<div class="details-section"><h4>Images</h4><div class="doc-grid">${images.map((img, i) => `<div class="doc-item"><img src="${escapeHtml(img)}" onclick="zoomImage(this.src)"><span>Image ${i + 1}</span></div>`).join("")}</div></div>` : ""}${urls.length ? `<div class="details-section"><h4>Links / Documents</h4><div class="list">${urls.map(url => `<a class="file-link" href="${escapeHtml(url)}" target="_blank" rel="noopener"><i class="fa-solid fa-link"></i><span>Open Link</span></a>`).join("")}</div></div>` : ""}`;
+      const extra = `${images.length ? `<div class="details-section"><h4>Images</h4><div class="doc-grid">${images.map((img, i) => `<div class="doc-item"><img src="${escapeHtml(img)}" onclick="zoomImage(this.src)"><span>Image ${i + 1}</span></div>`).join("")}</div></div>` : ""}${urls.length ? `<div class="details-section"><h4>Links / Documents</h4><div class="list">${urls.map(url => `<a class="file-link" href="${escapeHtml(url)}" target="_blank" rel="noopener"><i class="fa-solid fa-link"></i><span>Open Link</span></a>`).join("")}</div></div>` : ""}<div class="details-section"><h4>Inventory Operations</h4><div class="item-actions"><button class="primary-btn" onclick="approveItem(${index})"><i class="fa-solid fa-check"></i> Accept & Make Live</button><button class="danger-btn" onclick="rejectItem(${index})"><i class="fa-solid fa-xmark"></i> Not Approve</button><button class="warning-btn" onclick="suspendItem(${index})"><i class="fa-solid fa-pause"></i> Suspend</button><button class="danger-btn" onclick="deleteInventoryItem(${index})"><i class="fa-solid fa-trash"></i> Delete</button></div></div>`;
       openDetails(item.title || item.name || item.productName || "Inventory Item", "Full inventory item details", item, extra);
     }
 
@@ -3260,7 +3757,7 @@ textarea.input-field {
       const price = item.price || item.mrp || item.salePrice || item.finalPrice || 0;
       const image = firstImage(item) || item.image || item.imageUrl || DEFAULT_IMAGE;
       const cls = itemLive(item) ? "success" : itemRejected(item) ? "danger" : itemSuspended(item) ? "danger" : "warning";
-      return `<div class="item-card"><div class="item-main"><div class="seller-mini"><img class="thumb" src="${escapeHtml(image)}" onclick="event.stopPropagation();zoomImage(this.src)" alt="Item"><div><div class="item-title">${escapeHtml(title)}</div><div class="item-sub">Seller: ${escapeHtml(item.sellerName || item.sellerEmail || item.sellerId || "--")}<br>SKU: ${escapeHtml(item.sku || item.productId || item.id || "--")} · Price: ${money(price)}</div></div></div><span class="pill ${cls}">${escapeHtml(item.status || item.productStatus || item.qcStatus || "Pending")}</span></div><div class="item-actions"><button class="soft-btn" onclick="openInventory(${realIndex})"><i class="fa-solid fa-eye"></i> Full Details</button><button class="primary-btn" onclick="approveItem(${realIndex})"><i class="fa-solid fa-check"></i> Accept & Make Live</button><button class="danger-btn" onclick="rejectItem(${realIndex})"><i class="fa-solid fa-xmark"></i> Not Approve</button><button class="warning-btn" onclick="suspendItem(${realIndex})"><i class="fa-solid fa-pause"></i> Suspend</button></div></div>`;
+      return `<div class="item-card clickable-card" onclick="openInventory(${realIndex})"><div class="item-main"><div class="seller-mini"><img class="thumb" src="${escapeHtml(image)}" onclick="event.stopPropagation();zoomImage(this.src)" alt="Item"><div><div class="item-title">${escapeHtml(title)}</div><div class="item-sub">Seller: ${escapeHtml(item.sellerName || item.sellerEmail || item.sellerId || "--")}<br>SKU: ${escapeHtml(item.sku || item.productId || item.id || "--")} · Price: ${money(price)}</div></div></div><span class="pill ${cls}">${escapeHtml(item.status || item.productStatus || item.qcStatus || "Pending")}</span></div><div class="item-actions" onclick="event.stopPropagation()"><button class="soft-btn" onclick="openInventory(${realIndex})"><i class="fa-solid fa-eye"></i> Full Details</button><button class="primary-btn" onclick="approveItem(${realIndex})"><i class="fa-solid fa-check"></i> Accept & Make Live</button><button class="danger-btn" onclick="rejectItem(${realIndex})"><i class="fa-solid fa-xmark"></i> Not Approve</button><button class="warning-btn" onclick="suspendItem(${realIndex})"><i class="fa-solid fa-pause"></i> Suspend</button></div></div>`;
     }
 
     async function approveItem(index) {
@@ -3338,25 +3835,28 @@ textarea.input-field {
     }
 
     async function renderAdminChat() {
-      const messages = [...state.adminChat].sort((a, b) => bestTime(a) - bestTime(b)).filter(msg => !state.deletedMessages.has(msg.id));
+      const messages = [...state.adminChat].sort((a, b) => bestTime(a) - bestTime(b)).filter(msg => !state.deletedMessages.has(getMessageId(msg)));
       if (!messages.length) {
         $("chatMessages").innerHTML = emptyHtml("No admin chat messages yet.", "fa-comments");
+        refreshChatSelectionBar();
         return;
       }
       const html = [];
       for (let i = 0; i < messages.length; i++) {
         const msg = messages[i];
+        const id = getMessageId(msg) || ("msg-" + i);
         const decoded = await decodeChatMessage(msg.message || msg.text || "");
-        const mine = clean(msg.adminUid || msg.senderUid || msg.uid) === clean(state.admin?.uid || state.admin?.id) || clean(msg.sender).toLowerCase() === "admin";
-        html.push(`<div class="msg ${mine ? "out" : "in"}">
+        const text = decoded.text || decoded.message || msg.message || msg.text || "";
+        const mine = clean(msg.adminUid || msg.senderUid || msg.uid) === clean(state.admin?.uid || state.admin?.id) || clean(msg.sender || msg.from).toLowerCase() === "admin";
+        html.push(`<div class="msg ${mine ? "out" : "in"} ${state.selectedChatId === id ? "selected" : ""}" data-chat-id="${escapeHtml(id)}" onclick="selectChatMessage('${escapeAttr(id)}')" onpointerdown="startChatPointer(event,'${escapeAttr(id)}')" onpointerup="endChatPointer(event,'${escapeAttr(id)}')" onpointercancel="cancelChatPointer()">
           ${decoded.reply ? `<div class="chat-quote">${escapeHtml(decoded.reply.text || decoded.reply.message || "Reply")}</div>` : ""}
-          <div>${escapeHtml(decoded.text || decoded.message || msg.message || "")}</div>
+          <div>${escapeHtml(text)}</div>
           ${filesHtml(msg.files || msg.attachments || [])}
           <span class="msg-meta">${escapeHtml(msg.adminName || msg.senderName || msg.sender || "Admin")} · ${formatDate(msg.createdAt || msg.timestamp)}</span>
-          <div class="msg-actions"><button onclick="replyChat('${escapeAttr(msg.id)}')">Reply</button><button onclick="copyChat('${escapeAttr(decoded.text || msg.message || "")}')">Copy</button><button onclick="deleteChatForMe('${escapeAttr(msg.id)}')">Delete from me</button></div>
         </div>`);
       }
       $("chatMessages").innerHTML = html.join("");
+      refreshChatSelectionBar();
       scrollChatBottom();
     }
 
@@ -3445,12 +3945,13 @@ textarea.input-field {
     }
 
     function replyChat(id) {
-      const msg = state.adminChat.find(item => clean(item.id) === clean(id));
+      const msg = state.adminChat.find(item => getMessageId(item) === clean(id));
       if (!msg) return;
       decodeChatMessage(msg.message || msg.text || "").then(decoded => {
-        state.reply = { id, text: decoded.text || decoded.message || "Message" };
+        state.reply = { id: getMessageId(msg), text: decoded.text || decoded.message || msg.message || msg.text || "Message" };
         $("replyPreviewText").textContent = "Replying to: " + state.reply.text.slice(0, 80);
         $("replyPreview").classList.remove("hidden");
+        clearChatSelection();
       });
     }
 
@@ -3465,10 +3966,101 @@ textarea.input-field {
     }
 
     function deleteChatForMe(id) {
-      state.deletedMessages.add(id);
+      const cleanId = clean(id);
+      if (!cleanId) return;
+      state.deletedMessages.add(cleanId);
       localStorage.setItem(DELETED_CHAT_KEY, JSON.stringify([...state.deletedMessages]));
+      if (state.selectedChatId === cleanId) clearChatSelection();
       renderAdminChat();
       showToast("Deleted from me.", "success");
+    }
+
+function getMessageId(msg) {
+      return clean(msg?.id || msg?.messageId || msg?.uid || msg?.chatId || msg?.createdAt || msg?.timestamp);
+    }
+
+    function selectedChatMessage() {
+      return state.adminChat.find(msg => getMessageId(msg) === state.selectedChatId);
+    }
+
+    async function selectedChatDecoded() {
+      const msg = selectedChatMessage();
+      if (!msg) return { msg: null, decoded: { text: "" } };
+      const decoded = await decodeChatMessage(msg.message || msg.text || "");
+      return { msg, decoded };
+    }
+
+    function selectChatMessage(id) {
+      state.selectedChatId = clean(id);
+      document.querySelectorAll(".msg").forEach(el => el.classList.toggle("selected", el.dataset.chatId === state.selectedChatId));
+      refreshChatSelectionBar();
+    }
+
+    function clearChatSelection() {
+      state.selectedChatId = null;
+      document.querySelectorAll(".msg.selected").forEach(el => el.classList.remove("selected"));
+      refreshChatSelectionBar();
+    }
+
+    function refreshChatSelectionBar() {
+      const bar = $("chatSelectionBar");
+      if (bar) bar.classList.toggle("hidden", !state.selectedChatId);
+    }
+
+    function replySelectedChat() {
+      if (state.selectedChatId) replyChat(state.selectedChatId);
+    }
+
+    async function copySelectedChat() {
+      const { decoded, msg } = await selectedChatDecoded();
+      if (!msg) return showToast("Select a message first.", "warning");
+      copyChat(decoded.text || decoded.message || msg.message || msg.text || "");
+    }
+
+    function deleteSelectedChatForMe() {
+      if (!state.selectedChatId) return showToast("Select a message first.", "warning");
+      deleteChatForMe(state.selectedChatId);
+    }
+
+    async function deleteSelectedChatForEveryone() {
+      if (!state.selectedChatId) return showToast("Select a message first.", "warning");
+      await deleteChatForEveryone(state.selectedChatId);
+    }
+
+    async function deleteChatForEveryone(id) {
+      const msg = state.adminChat.find(item => getMessageId(item) === clean(id));
+      if (!msg || !confirm("Delete this message for everyone?")) return;
+      const msgId = getMessageId(msg);
+      try {
+        await api("/admin/chat/messages/" + encodeURIComponent(msgId), { method: "DELETE" });
+      } catch {
+        try {
+          await api("/admin/chat/" + encodeURIComponent(msgId), { method: "DELETE" });
+        } catch {}
+      }
+      state.adminChat = state.adminChat.filter(item => getMessageId(item) !== msgId);
+      clearChatSelection();
+      renderAdminChat();
+      showToast("Deleted for everyone.", "success");
+    }
+
+    function startChatPointer(event, id) {
+      state.chatPointer = { id: clean(id), x: event.clientX, y: event.clientY, t: Date.now() };
+    }
+
+    function endChatPointer(event, id) {
+      const pointer = state.chatPointer;
+      state.chatPointer = null;
+      if (!pointer || pointer.id !== clean(id)) return;
+      const dx = event.clientX - pointer.x;
+      const dy = event.clientY - pointer.y;
+      if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) && Date.now() - pointer.t < 900) {
+        replyChat(id);
+      }
+    }
+
+    function cancelChatPointer() {
+      state.chatPointer = null;
     }
 
     function toggleChatPlus() {
@@ -3636,6 +4228,33 @@ textarea.input-field {
       if ($("themeIcon")) $("themeIcon").className = theme === "dark" ? "fa-solid fa-sun" : "fa-solid fa-moon";
     }
 
+function clearLocalChatDeletes() {
+      state.deletedMessages.clear();
+      localStorage.removeItem(DELETED_CHAT_KEY);
+      renderAdminChat();
+      showToast("Messages deleted only from me are visible again.", "success");
+    }
+
+    function clearLocalSettings() {
+      localStorage.removeItem("aryanta_user_portal_theme");
+      localStorage.removeItem(DELETED_CHAT_KEY);
+      state.deletedMessages.clear();
+      applyTheme("light");
+      renderAdminChat();
+      showToast("Local settings cleared.", "success");
+    }
+
+    function exportCurrentData() {
+      const copy = { ...state, selectedFiles: [], cameraStream: null, autoTimer: null, deletedMessages: [...state.deletedMessages] };
+      const blob = new Blob([JSON.stringify(copy, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "aryanta-admin-data.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
     function openDetails(title, sub, data, extraHtml = "") {
       $("detailsTitle").textContent = title;
       $("detailsSub").textContent = sub;
@@ -3800,6 +4419,27 @@ textarea.input-field {
     window.renderApprovals = renderApprovals;
     window.renderInventory = renderInventory;
     window.renderItemsApprove = renderItemsApprove;
+    window.syncAll = syncAll;
+    window.openMyProfileDetails = openMyProfileDetails;
+    window.openAdminDetails = openAdminDetails;
+    window.openLinkDetails = openLinkDetails;
+    window.openLinkModal = openLinkModal;
+    window.submitLink = submitLink;
+    window.deleteLink = deleteLink;
+    window.toggleSupportStatus = toggleSupportStatus;
+    window.selectChatMessage = selectChatMessage;
+    window.clearChatSelection = clearChatSelection;
+    window.replySelectedChat = replySelectedChat;
+    window.copySelectedChat = copySelectedChat;
+    window.deleteSelectedChatForMe = deleteSelectedChatForMe;
+    window.deleteSelectedChatForEveryone = deleteSelectedChatForEveryone;
+    window.deleteChatForEveryone = deleteChatForEveryone;
+    window.startChatPointer = startChatPointer;
+    window.endChatPointer = endChatPointer;
+    window.cancelChatPointer = cancelChatPointer;
+    window.clearLocalChatDeletes = clearLocalChatDeletes;
+    window.clearLocalSettings = clearLocalSettings;
+    window.exportCurrentData = exportCurrentData;
 
     init();
   </script>
