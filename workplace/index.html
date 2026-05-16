@@ -18,7 +18,7 @@
       --danger: #ef4444;
       --success: #16a34a;
       --soft: rgba(0, 128, 128, 0.10);
-      --shadow: 0 16px 42px rgba(16, 24, 40, 0.12);
+      --shadow: 0 18px 48px rgba(16, 24, 40, 0.14);
       --shadow-soft: 0 8px 22px rgba(16, 24, 40, 0.08);
     }
 
@@ -34,17 +34,17 @@
       width: 100%;
       height: 100%;
       min-height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--text);
       background: linear-gradient(160deg, #effafa 0%, #ffffff 45%, #e9f7f7 100%);
-      overflow: hidden;
-      overscroll-behavior: none;
-      touch-action: manipulation;
     }
 
     body {
       height: 100dvh;
       max-height: 100dvh;
+      touch-action: manipulation;
     }
 
     button,
@@ -67,61 +67,79 @@
       outline: none;
     }
 
-    .app-login {
+    img {
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+    }
+
+    .login-page {
       width: 100%;
       height: 100dvh;
       max-height: 100dvh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+      padding: max(10px, env(safe-area-inset-top)) 12px max(10px, env(safe-area-inset-bottom));
       position: relative;
       overflow: hidden;
+      isolation: isolate;
     }
 
-    .app-login::before,
-    .app-login::after {
+    .login-page::before,
+    .login-page::after {
       content: "";
       position: fixed;
       border-radius: 999px;
       pointer-events: none;
-      z-index: 0;
+      z-index: -1;
     }
 
-    .app-login::before {
-      width: 170px;
-      height: 170px;
-      top: -62px;
-      right: -62px;
-      background: rgba(0, 128, 128, 0.14);
+    .login-page::before {
+      width: 180px;
+      height: 180px;
+      right: -64px;
+      top: -64px;
+      background: rgba(0, 128, 128, 0.15);
     }
 
-    .app-login::after {
-      width: 150px;
-      height: 150px;
-      left: -58px;
-      bottom: -58px;
+    .login-page::after {
+      width: 160px;
+      height: 160px;
+      left: -62px;
+      bottom: -62px;
       background: rgba(0, 184, 184, 0.12);
     }
 
     .login-card {
       width: 100%;
       max-width: 420px;
-      max-height: calc(100dvh - 16px);
-      position: relative;
-      z-index: 1;
+      max-height: calc(100dvh - 20px);
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: clamp(22px, 7vw, 30px);
+      border-radius: 30px;
       box-shadow: var(--shadow);
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      position: relative;
     }
 
-    .login-top {
+    .login-card::before {
+      content: "";
+      position: absolute;
+      width: 170px;
+      height: 170px;
+      right: -78px;
+      bottom: -82px;
+      border-radius: 999px;
+      background: rgba(0, 128, 128, 0.07);
+      pointer-events: none;
+    }
+
+    .login-head {
       flex: 0 0 auto;
-      padding: clamp(16px, 4.8vh, 28px) 18px clamp(14px, 3.8vh, 22px);
+      padding: clamp(18px, 4.8vh, 30px) 18px clamp(14px, 3.6vh, 22px);
       text-align: center;
       color: #ffffff;
       background: linear-gradient(145deg, var(--primary-dark), var(--primary), var(--primary-light));
@@ -129,33 +147,22 @@
       overflow: hidden;
     }
 
-    .login-top::before {
+    .login-head::after {
       content: "";
       position: absolute;
       width: 150px;
       height: 150px;
-      right: -64px;
-      top: -64px;
+      right: -62px;
+      top: -66px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.13);
+      background: rgba(255, 255, 255, 0.14);
     }
 
-    .login-top::after {
-      content: "";
-      position: absolute;
-      width: 110px;
-      height: 110px;
-      left: -50px;
-      bottom: -54px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.10);
-    }
-
-    .brand-logo {
-      width: clamp(58px, 10.8vh, 80px);
-      height: clamp(58px, 10.8vh, 80px);
-      margin: 0 auto clamp(8px, 1.8vh, 13px);
-      border-radius: 25px;
+    .login-logo {
+      width: clamp(64px, 11vh, 84px);
+      height: clamp(64px, 11vh, 84px);
+      margin: 0 auto 12px;
+      border-radius: 27px;
       padding: 5px;
       background: #ffffff;
       box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
@@ -163,47 +170,48 @@
       z-index: 1;
     }
 
-    .brand-logo img {
+    .login-logo img {
       width: 100%;
       height: 100%;
-      display: block;
-      border-radius: 19px;
+      border-radius: 21px;
       object-fit: cover;
-      pointer-events: none;
-      user-select: none;
+      display: block;
     }
 
-    .login-top h1 {
+    .login-head h1 {
       position: relative;
       z-index: 1;
-      font-size: clamp(20px, 3.7vh, 26px);
+      font-size: clamp(21px, 3.9vh, 27px);
       line-height: 1.05;
       font-weight: 900;
       letter-spacing: -0.7px;
     }
 
-    .login-top p {
+    .login-head p {
       position: relative;
       z-index: 1;
       margin-top: 5px;
-      font-size: clamp(11px, 2vh, 13px);
-      font-weight: 700;
+      font-size: 12.5px;
+      line-height: 1.3;
+      font-weight: 750;
       opacity: 0.92;
     }
 
     .login-body {
       flex: 1 1 auto;
       min-height: 0;
-      padding: clamp(14px, 3vh, 22px) 16px clamp(14px, 2.8vh, 20px);
+      overflow: hidden;
+      padding: clamp(16px, 3vh, 23px) 17px;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      overflow: hidden;
+      position: relative;
+      z-index: 1;
     }
 
-    .secure-pill {
+    .login-pill {
       width: fit-content;
-      margin: 0 auto clamp(10px, 2vh, 16px);
+      margin: 0 auto 14px;
       min-height: 32px;
       display: flex;
       align-items: center;
@@ -217,42 +225,42 @@
       white-space: nowrap;
     }
 
-    .symbol-badge {
-      width: 22px;
-      height: 22px;
-      border-radius: 9px;
-      background: linear-gradient(145deg, var(--primary-dark), var(--primary));
-      color: #ffffff;
+    .mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 11px;
+      background: var(--soft);
+      color: var(--primary);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 900;
-      line-height: 1;
+      flex: 0 0 auto;
     }
 
-    .form-title {
+    .login-title {
       text-align: center;
-      margin-bottom: clamp(12px, 2.4vh, 17px);
+      margin-bottom: 16px;
     }
 
-    .form-title h2 {
-      font-size: clamp(20px, 3.5vh, 24px);
-      line-height: 1.12;
+    .login-title h2 {
+      font-size: clamp(21px, 3.6vh, 25px);
+      line-height: 1.1;
       font-weight: 900;
       letter-spacing: -0.55px;
     }
 
-    .form-title p {
-      margin-top: 5px;
+    .login-title p {
+      margin-top: 6px;
       color: var(--muted);
-      font-size: clamp(11.5px, 1.9vh, 13px);
-      font-weight: 650;
+      font-size: 12.5px;
       line-height: 1.35;
+      font-weight: 700;
     }
 
     .field {
-      margin-bottom: clamp(10px, 2vh, 14px);
+      margin-bottom: 13px;
     }
 
     .field label {
@@ -269,7 +277,7 @@
       position: relative;
     }
 
-    .input-icon {
+    .input-mark {
       position: absolute;
       left: 12px;
       top: 50%;
@@ -285,7 +293,6 @@
       font-size: 11px;
       font-weight: 900;
       pointer-events: none;
-      letter-spacing: -0.2px;
     }
 
     .input-box input {
@@ -295,7 +302,7 @@
       border-radius: 17px;
       background: #ffffff;
       color: var(--text);
-      padding: 0 47px;
+      padding: 0 48px;
       font-size: 15px;
       font-weight: 800;
       transition: border-color 0.16s ease, box-shadow 0.16s ease;
@@ -315,16 +322,13 @@
       right: 7px;
       top: 50%;
       transform: translateY(-50%);
-      width: 40px;
+      width: 42px;
       height: 40px;
       border-radius: 14px;
       background: var(--soft);
       color: var(--primary);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 900;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
 
     .remember-row {
@@ -332,7 +336,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      margin: 2px 0 clamp(12px, 2.3vh, 18px);
+      margin: 2px 0 16px;
       color: var(--muted);
       font-size: 12.5px;
       font-weight: 800;
@@ -342,7 +346,6 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      cursor: pointer;
       user-select: none;
       white-space: nowrap;
     }
@@ -354,7 +357,7 @@
       flex: 0 0 auto;
     }
 
-    .plain-btn {
+    .need-btn {
       background: transparent;
       color: var(--primary);
       font-size: 12.5px;
@@ -375,23 +378,22 @@
       font-size: 15px;
       font-weight: 900;
       box-shadow: 0 13px 24px rgba(0, 128, 128, 0.22);
-      transition: transform 0.14s ease, box-shadow 0.14s ease;
     }
 
-    .login-btn:active:not(:disabled) {
-      transform: scale(0.985);
-      box-shadow: 0 9px 20px rgba(0, 128, 128, 0.22);
+    .login-btn .mark {
+      background: rgba(255, 255, 255, 0.18);
+      color: #ffffff;
     }
 
     .support-box {
-      margin-top: clamp(10px, 2vh, 15px);
-      padding: clamp(10px, 2vh, 13px);
+      margin-top: 14px;
+      padding: 11px;
       border-radius: 17px;
       border: 1px dashed rgba(0, 128, 128, 0.28);
       background: rgba(0, 128, 128, 0.06);
       color: var(--muted);
       text-align: center;
-      font-size: clamp(11px, 1.8vh, 12px);
+      font-size: 11.5px;
       line-height: 1.35;
       font-weight: 720;
     }
@@ -401,47 +403,32 @@
       font-weight: 900;
     }
 
-    .copy-row {
+    .support-actions {
+      margin-top: 9px;
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 7px;
-      margin-top: 8px;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
     }
 
     .copy-btn {
-      min-height: clamp(36px, 5.8vh, 40px);
+      min-height: 38px;
       border-radius: 14px;
       background: #ffffff;
       border: 1px solid var(--border);
       color: var(--primary);
-      font-size: 11.5px;
-      font-weight: 900;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 7px;
-      word-break: break-word;
-    }
-
-    .mini-mark {
-      width: 21px;
-      height: 21px;
-      border-radius: 8px;
-      background: var(--soft);
-      color: var(--primary);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
       font-size: 11px;
       font-weight: 900;
-      flex: 0 0 auto;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding: 0 8px;
     }
 
     .toast-holder {
       position: fixed;
       left: 12px;
       right: 12px;
-      top: 12px;
+      top: calc(10px + env(safe-area-inset-top));
       z-index: 99999;
       display: grid;
       gap: 8px;
@@ -449,17 +436,17 @@
     }
 
     .toast {
-      min-height: 46px;
+      min-height: 44px;
       border-radius: 16px;
       background: #ffffff;
       border: 1px solid var(--border);
       box-shadow: var(--shadow-soft);
-      padding: 11px 13px;
+      padding: 10px 12px;
       display: flex;
       align-items: center;
-      gap: 9px;
+      gap: 8px;
       color: var(--text);
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 850;
       opacity: 0;
       transform: translateY(-12px);
@@ -472,18 +459,56 @@
       transform: none;
     }
 
-    .toast.success .toast-icon {
-      color: var(--success);
+    .toast.error .mark {
+      color: var(--danger);
+      background: rgba(239, 68, 68, 0.10);
     }
 
-    .toast.error .toast-icon {
-      color: var(--danger);
+    .toast.success .mark {
+      color: var(--success);
+      background: rgba(22, 163, 74, 0.10);
+    }
+
+    .loader-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 3000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+      background: rgba(244, 251, 251, 0.9);
+      overflow: hidden;
+    }
+
+    .loader-screen.active {
+      display: flex;
+    }
+
+    .loader {
+      width: 46px;
+      height: 46px;
+      border-radius: 999px;
+      border: 5px solid rgba(0, 128, 128, 0.14);
+      border-top-color: var(--primary);
+      animation: spin 0.9s linear infinite;
+    }
+
+    .loader-screen p {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
 
     .popup-overlay {
       position: fixed;
       inset: 0;
-      z-index: 99998;
+      z-index: 2500;
       display: none;
       align-items: center;
       justify-content: center;
@@ -506,19 +531,7 @@
       border: 1px solid var(--border);
       padding: 20px;
       text-align: center;
-      animation: popupIn 0.18s ease;
       overflow: hidden;
-    }
-
-    @keyframes popupIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px) scale(0.98);
-      }
-      to {
-        opacity: 1;
-        transform: none;
-      }
     }
 
     .popup-icon {
@@ -582,7 +595,6 @@
       justify-content: center;
       flex: 0 0 auto;
       font-size: 11px;
-      letter-spacing: -0.2px;
     }
 
     .popup-actions {
@@ -609,173 +621,113 @@
       color: #ffffff;
     }
 
-    .loader-screen {
-      position: fixed;
-      inset: 0;
-      z-index: 100000;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 12px;
-      background: rgba(244, 251, 251, 0.90);
-      overflow: hidden;
-    }
-
-    .loader-screen.active {
-      display: flex;
-    }
-
-    .loader {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      border: 5px solid rgba(0, 128, 128, 0.15);
-      border-top-color: var(--primary);
-      animation: spin 0.9s linear infinite;
-    }
-
-    .loader-screen p {
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 900;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    @media (min-width: 520px) {
-      .copy-row {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .toast-holder {
-        left: auto;
-        right: 18px;
-        width: min(390px, calc(100vw - 28px));
-      }
-    }
-
     @media (max-height: 700px) {
       .support-box {
-        font-size: 10.8px;
-        padding: 9px;
-      }
-
-      .copy-btn {
-        min-height: 34px;
+        display: none;
       }
     }
 
-    @media (max-height: 630px) {
-      .login-top p,
-      .form-title p,
-      .support-box > br,
-      .support-box > strong {
+    @media (max-height: 620px) {
+      .login-title p,
+      .login-head p {
         display: none;
       }
 
-      .support-box {
-        margin-top: 8px;
+      .login-card {
+        border-radius: 24px;
       }
-    }
 
-    @media (max-width: 360px) {
-      .app-login {
-        padding: 6px;
+      .login-head {
+        padding-top: 14px;
+        padding-bottom: 12px;
+      }
+
+      .login-logo {
+        width: 58px;
+        height: 58px;
+        border-radius: 20px;
+      }
+
+      .login-logo img {
+        border-radius: 15px;
       }
 
       .login-body {
-        padding-left: 13px;
-        padding-right: 13px;
+        padding: 14px;
       }
+    }
 
+    @media (max-width: 350px) {
       .remember-row {
-        font-size: 12px;
+        font-size: 11.5px;
       }
 
+      .support-actions,
       .popup-actions {
         grid-template-columns: 1fr;
       }
     }
   </style>
 </head>
+
 <body>
   <div id="toastHolder" class="toast-holder"></div>
 
   <div id="loaderScreen" class="loader-screen">
     <div class="loader"></div>
-    <p>Checking secure access...</p>
+    <p id="loaderText">Checking secure access...</p>
   </div>
 
-  <main class="app-login">
+  <main class="login-page">
     <section class="login-card">
-      <div class="login-top">
-        <div class="brand-logo">
-          <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta" draggable="false" />
+      <div class="login-head">
+        <div class="login-logo">
+          <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta" />
         </div>
         <h1>Aryanta Admin</h1>
-        <p>End to End Encrupted Login</p>
+        <p>Private Worker secured login</p>
       </div>
 
       <div class="login-body">
-        <div class="secure-pill">
-          <span class="symbol-badge">◆</span>
-          <span>Authorized Admins Only</span>
-        </div>
+        <div class="login-pill"><span class="mark">◆</span><span>Authorized admins only</span></div>
 
-        <div class="form-title">
-          <h2>Login to continue</h2>
-          <p>Enter your admin UID and password.</p>
+        <div class="login-title">
+          <h2>Login</h2>
+          <p>Only admin accounts created from the panel can access this area.</p>
         </div>
 
         <form id="loginForm" autocomplete="on">
           <div class="field">
             <label for="loginUid">Admin UID</label>
             <div class="input-box">
-              <span class="input-icon">ID</span>
-              <input id="loginUid" type="text" placeholder="Enter UID" autocomplete="username" autocapitalize="characters" spellcheck="false" required />
+              <span class="input-mark">ID</span>
+              <input id="loginUid" type="text" placeholder="Enter admin UID" autocomplete="username" autocapitalize="characters" spellcheck="false" required />
             </div>
           </div>
 
           <div class="field">
             <label for="loginPass">Password</label>
             <div class="input-box">
-              <span class="input-icon">PW</span>
+              <span class="input-mark">PW</span>
               <input id="loginPass" type="password" placeholder="Enter password" autocomplete="current-password" required />
-              <button id="togglePass" class="pass-btn" type="button" aria-label="Show password">SHOW</button>
+              <button id="togglePass" class="pass-btn" type="button">SHOW</button>
             </div>
           </div>
 
           <div class="remember-row">
-            <label for="rememberMe">
-              <input id="rememberMe" type="checkbox" />
-              Remember me
-            </label>
-            <button type="button" class="plain-btn" onclick="openNoAccountPopup()">Need access?</button>
+            <label for="rememberMe"><input id="rememberMe" type="checkbox" /> Remember me</label>
+            <button class="need-btn" type="button" onclick="openNoAccountPopup()">Need access?</button>
           </div>
 
-          <button id="loginBtn" class="login-btn" type="submit">
-            <span class="mini-mark">A</span>
-            <span>Login</span>
-          </button>
+          <button id="loginBtn" class="login-btn" type="submit"><span class="mark">A</span><span>Secure Authentication</span></button>
         </form>
 
         <div class="support-box">
-          <strong>If No account found?</strong><br />
-          Please contact Aryanta Admin for login details.
-          <div class="copy-row">
-            <button class="copy-btn" type="button" onclick="copyText('support@aryanta.in')">
-              <span class="mini-mark">@</span>
-              <span>support@aryanta.in</span>
-            </button>
-            <button class="copy-btn" type="button" onclick="copyText('641 405 4676')">
-              <span class="mini-mark">#</span>
-              <span>641 405 4676</span>
-            </button>
+          <strong>No account found?</strong><br />
+          Please contact Aryanta Admin for details.
+          <div class="support-actions">
+            <button class="copy-btn" type="button" onclick="copyText('support@aryanta.in')">support@aryanta.in</button>
+            <button class="copy-btn" type="button" onclick="copyText('641 405 4676')">641 405 4676</button>
           </div>
         </div>
       </div>
@@ -787,18 +739,10 @@
       <div class="popup-icon">!</div>
       <h3>No account found</h3>
       <p>No account found. Please contact Aryanta Admin for details.</p>
-
       <div class="contact-list">
-        <div class="contact-item">
-          <span>@</span>
-          <span>support@aryanta.in</span>
-        </div>
-        <div class="contact-item">
-          <span>#</span>
-          <span>641 405 4676</span>
-        </div>
+        <div class="contact-item"><span>@</span><span>support@aryanta.in</span></div>
+        <div class="contact-item"><span>#</span><span>641 405 4676</span></div>
       </div>
-
       <div class="popup-actions">
         <button class="popup-btn soft" type="button" onclick="copyText('support@aryanta.in')">Copy Email</button>
         <button class="popup-btn main" type="button" onclick="closeNoAccountPopup()">Okay</button>
@@ -808,10 +752,11 @@
 
   <script>
     const API_BASE = "https://rough-field-c679.official-aryanta.workers.dev";
+    const NEXT_PAGE = "admin.html";
     const TOKEN_KEY = "aryanta_admin_worker_token";
-    const UID_KEY = "aryanta_admin_saved_uid";
     const SESSION_TOKEN_KEY = "aryanta_admin_worker_session";
-    const SUCCESS_REDIRECT = "admin.html";
+    const ADMIN_PROFILE_KEY = "aryanta_admin_profile";
+    const UID_KEY = "aryanta_admin_saved_uid";
 
     const $ = id => document.getElementById(id);
 
@@ -819,38 +764,34 @@
       return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(SESSION_TOKEN_KEY) || "";
     }
 
-    function setToken(token, uid, remember) {
+    function setToken(token, remember) {
       if (!token) return;
-
       if (remember) {
         localStorage.setItem(TOKEN_KEY, token);
-        localStorage.setItem(UID_KEY, uid);
         sessionStorage.removeItem(SESSION_TOKEN_KEY);
       } else {
         sessionStorage.setItem(SESSION_TOKEN_KEY, token);
         localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(UID_KEY);
       }
     }
 
     function clearToken() {
       localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(UID_KEY);
       sessionStorage.removeItem(SESSION_TOKEN_KEY);
+      sessionStorage.removeItem(ADMIN_PROFILE_KEY);
     }
 
     async function api(path, options = {}) {
       const headers = new Headers(options.headers || {});
       if (!(options.body instanceof FormData)) headers.set("Content-Type", "application/json");
-      const token = getToken();
-      if (token) headers.set("Authorization", "Bearer " + token);
+      if (getToken()) headers.set("Authorization", "Bearer " + getToken());
 
-      const response = await fetch(API_BASE + path, { ...options, headers });
-      const data = await response.json().catch(() => ({ success: false, error: "Invalid Worker response" }));
+      const res = await fetch(API_BASE + path, { ...options, headers });
+      const data = await res.json().catch(() => ({ success: false, error: "Invalid Worker response" }));
 
-      if (!response.ok || data.success === false) {
+      if (!res.ok || data.success === false) {
         const err = new Error(data.error || "Request failed");
-        err.status = response.status;
+        err.status = res.status;
         err.data = data;
         throw err;
       }
@@ -858,8 +799,8 @@
       return data;
     }
 
-    function showLoader(text) {
-      $("loaderScreen").querySelector("p").textContent = text || "Checking secure access...";
+    function showLoader(text = "Checking secure access...") {
+      $("loaderText").textContent = text;
       $("loaderScreen").classList.add("active");
     }
 
@@ -876,17 +817,17 @@
         .replace(/'/g, "&#039;");
     }
 
-    function showToast(message, type) {
+    function showToast(message, type = "info") {
       const toast = document.createElement("div");
-      toast.className = "toast " + (type || "success");
-      toast.innerHTML = `<span class="toast-icon">${type === "error" ? "✕" : "✓"}</span><span>${escapeHtml(message)}</span>`;
+      toast.className = "toast " + type;
+      const mark = type === "error" ? "!" : type === "success" ? "✓" : "A";
+      toast.innerHTML = `<span class="mark">${mark}</span><span>${escapeHtml(message)}</span>`;
       $("toastHolder").appendChild(toast);
       requestAnimationFrame(() => toast.classList.add("show"));
-
       setTimeout(() => {
         toast.classList.remove("show");
         setTimeout(() => toast.remove(), 220);
-      }, 2400);
+      }, 2800);
     }
 
     function openNoAccountPopup() {
@@ -905,61 +846,65 @@
       try {
         await navigator.clipboard.writeText(text);
         showToast("Copied", "success");
-      } catch (e) {
-        showToast(text, "success");
+      } catch {
+        showToast(text, "info");
       }
     }
 
     function setLoginLoading(active) {
       const btn = $("loginBtn");
       btn.disabled = active;
-      btn.innerHTML = active ? `<span class="mini-mark">…</span><span>Checking</span>` : `<span class="mini-mark">A</span><span>Login</span>`;
+      btn.innerHTML = active
+        ? `<span class="mark">…</span><span>Authenticating...</span>`
+        : `<span class="mark">A</span><span>Secure Authentication</span>`;
     }
 
-    function redirectToDashboard() {
-      window.location.replace(SUCCESS_REDIRECT);
+    function goNext() {
+      window.location.replace(NEXT_PAGE);
     }
 
-    function setupSavedLogin() {
+    async function checkExistingSession() {
+      const token = getToken();
+      if (!token) return;
+      showLoader("Checking secure session...");
+      try {
+        const me = await api("/admin/me");
+        if (me && me.admin) sessionStorage.setItem(ADMIN_PROFILE_KEY, JSON.stringify(me.admin));
+        goNext();
+      } catch (err) {
+        clearToken();
+        hideLoader();
+      }
+    }
+
+    function loadSavedUid() {
       const savedUid = localStorage.getItem(UID_KEY) || "";
       if (savedUid) {
         $("loginUid").value = savedUid;
         $("rememberMe").checked = true;
       }
-
-      if (getToken()) {
-        redirectToDashboard();
-      }
-    }
-
-    function lockPageScroll() {
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
     }
 
     $("togglePass").addEventListener("click", () => {
       const input = $("loginPass");
-      const isHidden = input.type === "password";
-      input.type = isHidden ? "text" : "password";
-      $("togglePass").textContent = isHidden ? "HIDE" : "SHOW";
+      const hidden = input.type === "password";
+      input.type = hidden ? "text" : "password";
+      $("togglePass").textContent = hidden ? "HIDE" : "SHOW";
     });
 
     $("loginForm").addEventListener("submit", async event => {
       event.preventDefault();
-      lockPageScroll();
 
       const uid = $("loginUid").value.trim().toUpperCase();
       const password = $("loginPass").value.trim();
-      const remember = $("rememberMe").checked;
 
       if (!uid || !password) {
-        showToast("Enter UID and password", "error");
+        showToast("Enter UID and password.", "error");
         return;
       }
 
       setLoginLoading(true);
-      showLoader("Verifying login...");
+      showLoader("Authenticating...");
 
       try {
         const result = await api("/admin/login", {
@@ -967,50 +912,41 @@
           body: JSON.stringify({ uid, password })
         });
 
-        if (!result || !result.token) {
-          throw new Error("No account found");
-        }
+        if (!result || !result.token) throw new Error("No account found");
 
-        setToken(result.token, uid, remember);
+        const remember = $("rememberMe").checked;
+        setToken(result.token, remember);
+        if (remember) localStorage.setItem(UID_KEY, uid);
+        else localStorage.removeItem(UID_KEY);
+        if (result.admin) sessionStorage.setItem(ADMIN_PROFILE_KEY, JSON.stringify(result.admin));
 
-        if (result.admin) {
-          try {
-            sessionStorage.setItem("aryanta_admin_profile", JSON.stringify(result.admin));
-          } catch (e) {}
-        }
-
-        showToast("Login successful", "success");
-        setTimeout(redirectToDashboard, 300);
+        showToast("Access granted.", "success");
+        setTimeout(goNext, 300);
       } catch (err) {
         clearToken();
-        const message = String(err.message || "").toLowerCase();
-        const noAccount = err.status === 401 || err.status === 403 || message.includes("not found") || message.includes("invalid") || message.includes("unauthorized");
-
-        if (noAccount) {
-          openNoAccountPopup();
-        } else {
-          showToast(err.message || "Login failed", "error");
-        }
+        const msg = String(err.message || "").toLowerCase();
+        const noAccount = err.status === 401 || err.status === 403 || msg.includes("not found") || msg.includes("invalid") || msg.includes("unauthorized");
+        if (noAccount) openNoAccountPopup();
+        else showToast(err.message || "Login failed.", "error");
       } finally {
         hideLoader();
         setLoginLoading(false);
-        lockPageScroll();
       }
-    });
-
-    document.addEventListener("keydown", event => {
-      if (event.key === "Escape") closeNoAccountPopup();
     });
 
     document.addEventListener("touchmove", event => {
       if (!event.target.closest("input")) event.preventDefault();
     }, { passive: false });
 
-    window.addEventListener("resize", lockPageScroll);
-    window.addEventListener("orientationchange", lockPageScroll);
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") closeNoAccountPopup();
+    });
 
-    setupSavedLogin();
-    lockPageScroll();
+    window.addEventListener("resize", () => window.scrollTo(0, 0));
+    window.addEventListener("orientationchange", () => window.scrollTo(0, 0));
+
+    loadSavedUid();
+    checkExistingSession();
   </script>
 </body>
 </html>
