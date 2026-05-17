@@ -439,6 +439,8 @@
     let currentUser = safeJson(sessionStorage.getItem(PROFILE_KEY), safeJson(localStorage.getItem(PROFILE_KEY), {}));
     let userUid = currentUser.uid || currentUser.id || currentUser.adminId || getToken() || "";
     let userName = currentUser.name || currentUser.fullName || currentUser.displayName || currentUser.username || "Admin";
+    let userEmail = currentUser.email || currentUser.mail || "";
+    let userPhone = String(currentUser.phone || currentUser.mobile || currentUser.contact || "").replace(/\D/g, "").slice(-10);
 
     const $ = id => document.getElementById(id);
 
@@ -1099,6 +1101,31 @@
       return { ...verifyData, success: true, verified: true };
     }
 
+    function buildRazorpayUpiFirstConfig() {
+      return {
+        display: {
+          blocks: {
+            upi_block: {
+              name: "Pay via UPI",
+              instruments: [{ method: "upi" }]
+            },
+            other_block: {
+              name: "Other Payment Options",
+              instruments: [
+                { method: "card" },
+                { method: "netbanking" },
+                { method: "wallet" }
+              ]
+            }
+          },
+          sequence: ["block.upi_block", "block.other_block"],
+          preferences: {
+            show_default_blocks: true
+          }
+        }
+      };
+    }
+
     function openRazorpayCheckout(options) {
       if (typeof Razorpay === "undefined") throw new Error("Razorpay script not loaded. Check internet connection.");
       const rz = new Razorpay(options);
@@ -1133,8 +1160,20 @@
           currency: "INR",
           name: "Aryanta",
           description: `${description} • ${formatMoney(amountRupees)}`,
-          prefill: { name: userName },
-          notes: { userUid, userName, source: "transaction.html", description },
+          image: "https://aryanta.in/vurify/aryanta.jpeg",
+          method: {
+            upi: true,
+            card: true,
+            netbanking: true,
+            wallet: true
+          },
+          config: buildRazorpayUpiFirstConfig(),
+          prefill: {
+            name: userName,
+            email: userEmail || undefined,
+            contact: userPhone || undefined
+          },
+          notes: { userUid, userName, userEmail, userPhone, source: "transaction.html", description, preferredMethod: "upi" },
           handler: async function(response) {
             setLoad(true, meta.orderId ? "Verifying payment..." : "Saving payment...");
             try {
@@ -1155,7 +1194,9 @@
             } catch (e) { setLoad(false); showToast(e.message || "Save failed", "error", true); }
           },
           theme: { color: "#008080" },
-          modal: { ondismiss: () => { setLoad(false); showToast("Payment cancelled", "error", true); } }
+          retry: { enabled: true, max_count: 3 },
+          remember_customer: false,
+          modal: { ondismiss: () => { setLoad(false); showToast("Payment cancelled. If UPI is missing, enable UPI in Razorpay Dashboard and test again.", "error", true); } }
         };
         if (meta.orderId) options.order_id = meta.orderId;
         openRazorpayCheckout(options);
