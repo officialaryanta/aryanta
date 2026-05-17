@@ -201,14 +201,10 @@
     .iv-btn { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; background: rgba(255,255,255,0.1); }
     .iv-content { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; overflow: hidden; position: relative;}
     .iv-content img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; transition: transform 0.2s; }
-    
-    /* TOAST */
-    .toast-holder { position: fixed; top: calc(10px + var(--top-safe)); left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
-    .toast { background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-size: 13px; font-weight: 800; opacity: 0; transform: translateY(-20px); transition: 0.3s; display: flex; align-items: center; gap: 8px;}
-    .toast.show { opacity: 1; transform: translateY(0); }
 
 
 
+    /* EMOJI MENU */
     .btn-emoji { width: 42px; height: 42px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:20px; color:var(--muted); background:var(--bg); flex:0 0 auto; }
     .typing-pill { display:none; align-self:flex-start; background:var(--card); color:var(--muted); font-size:12px; font-weight:800; padding:8px 12px; border-radius:999px; margin:4px 0; box-shadow:0 1px 2px rgba(0,0,0,0.08); }
     .typing-pill.active { display:flex; align-items:center; gap:6px; }
@@ -326,6 +322,68 @@
       overscroll-behavior-x: contain;
     }
 
+
+
+    .chat-header-info { cursor: pointer; }
+    .jump-actions {
+      position: absolute;
+      right: 14px;
+      bottom: calc(88px + var(--bottom-safe));
+      z-index: 30;
+      display: grid;
+      gap: 8px;
+      opacity: 0; /* Hidden by default */
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .jump-actions.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .jump-actions button {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--card);
+      color: var(--primary);
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.14);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+    }
+    
+    .chat-target, .admin-chat-row {
+      width:100%;
+      min-height:64px;
+      border-radius:18px;
+      background:var(--bg);
+      border:1px solid var(--border);
+      padding:10px;
+      display:grid;
+      grid-template-columns:44px 1fr auto;
+      align-items:center;
+      gap:10px;
+      text-align:left;
+      color:var(--text);
+    }
+    .chat-target.active, .admin-chat-row.active { border-color:var(--primary); box-shadow:0 0 0 3px var(--soft); }
+    .chat-target img, .admin-chat-row img { width:44px; height:44px; border-radius:50%; object-fit:cover; background:var(--card); border:1px solid var(--border); }
+    .chat-target strong, .admin-chat-row strong { display:block; font-size:14px; font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .chat-target span, .admin-chat-row span { display:block; margin-top:3px; color:var(--muted); font-size:11px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .chat-target-title { color:var(--muted); font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:.4px; padding:0 4px; }
+    .chat-user-list { display:grid; gap:8px; padding-bottom:8px; scrollbar-width:none; }
+    .chat-user-list::-webkit-scrollbar { display:none; }
+    .chat-empty-row { padding:14px; border-radius:16px; background:var(--bg); color:var(--muted); font-size:13px; font-weight:800; text-align:center; }
+    
+    .msg-date-rich { font-weight:900; }
+    .msg-meta { user-select:none; }
+    body { user-select: none; -webkit-user-select: none; }
+    .chat-input, .search-box input { user-select:text; -webkit-user-select:text; }
+    a, button { -webkit-touch-callout:none; }
+
+
     /* Hide inputs */
     input[type="file"] { display: none; }
   </style>
@@ -337,25 +395,53 @@
   <input type="file" id="galleryInput" accept="image/*" multiple>
   <input type="file" id="docInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.json,.html,.css,.js,application/pdf,text/*,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple>
 
-  <div class="app-layout" id="appLayout">
+  <!-- NEW HOME SCREEN -->
+  <div class="app-layout" id="homeScreen">
+    <header class="topbar">
+      <button class="back-btn" onclick="window.location.href='admin.html'"><i class="fas fa-arrow-left"></i></button>
+      <div class="chat-header-info">
+        <div class="chat-title" style="font-size: 20px;">Chats</div>
+      </div>
+      <button class="menu-btn" onclick="openTopMenu()" title="Menu" aria-label="Open menu"><i class="fas fa-ellipsis-vertical"></i></button>
+    </header>
+    <main class="chat-box" style="padding: 12px; gap: 12px;">
+      <button class="chat-target active" id="targetGroup" onclick="selectGroupChat()">
+        <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Group">
+        <div><strong>Admin Group</strong><span>Send message to all admins</span></div>
+        <i class="fas fa-users"></i>
+      </button>
+      <div class="chat-target-title">Admins</div>
+      <div id="chatUserList" class="chat-user-list">
+        <div class="chat-empty-row">Loading admins...</div>
+      </div>
+    </main>
+  </div>
+
+  <!-- CHAT MESSAGES SCREEN (hidden by default) -->
+  <div class="app-layout" id="chatScreen" style="display: none;">
     
     <!-- TOPBAR -->
     <header class="topbar">
       <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
-      <div class="chat-header-info">
-        <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta" class="chat-avatar">
+      <div class="chat-header-info" onclick="openChatPicker()" role="button" aria-label="Open chat list">
+        <img id="headerAvatar" src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta" class="chat-avatar">
         <div>
-          <div class="chat-title">Admin Team</div>
-          <div class="chat-subtitle"><i class="fas fa-lock"></i> End-to-end encrypted</div>
+          <div class="chat-title" id="headerTitle">Admin Group</div>
+          <div class="chat-subtitle" id="headerSubtitle"><i class="fas fa-lock"></i> Group chat • all admins</div>
         </div>
       </div>
-      <button class="menu-btn" onclick="openTopMenu()"><i class="fas fa-ellipsis-vertical"></i></button>
+      <button class="menu-btn" onclick="openChatPicker()" title="Switch chat" aria-label="Switch chat"><i class="fas fa-users"></i></button>
+      <button class="menu-btn" onclick="openTopMenu()" title="Menu" aria-label="Open menu"><i class="fas fa-ellipsis-vertical"></i></button>
     </header>
 
     <!-- CHAT MESSAGES -->
     <main class="chat-box" id="chatBox">
       <!-- Dynamic Messages Here -->
     </main>
+
+    <div class="jump-actions" id="jumpActions">
+      <button type="button" onclick="scrollToBottom()" title="Go bottom" aria-label="Go bottom"><i class="fas fa-arrow-down"></i></button>
+    </div>
 
     <!-- INPUT AREA -->
     <footer class="input-wrapper">
@@ -422,6 +508,9 @@
   <div class="bottom-sheet" id="topMenu">
     <div class="sheet-handle"></div>
     <div class="menu-list">
+      <button class="menu-item" onclick="openChatPicker()">
+        <i class="fas fa-users"></i> Group / One-to-one Chat
+      </button>
       <button class="menu-item" onclick="openSearchMenu()">
         <i class="fas fa-magnifying-glass"></i> Search Messages
       </button>
@@ -457,9 +546,6 @@
       </button>
       <button class="menu-item" onclick="initiateReplyFromMenu()">
         <i class="fas fa-reply"></i> Reply
-      </button>
-      <button class="menu-item" onclick="copyMsgText()">
-        <i class="fas fa-copy"></i> Copy Text
       </button>
       <button class="menu-item danger" id="btnDelMe" onclick="deleteMsg('me')">
         <i class="fas fa-trash"></i> Delete for me
@@ -549,10 +635,12 @@
     const PROFILE_KEY = "aryanta_admin_profile";
     const SETTINGS_KEY = "aryanta_admin_settings";
     const ARYANTA_LOGO = "https://aryanta.in/vurify/aryanta.jpeg";
-    const CHAT_PATH = "admin_chats";
+    const GROUP_CHAT_PATH = "admin_chats";
+    const DIRECT_CHAT_ROOT = "admin_direct_chats";
     const TYPING_PATH = "admin_chat_typing";
     const PRESENCE_PATH = "admin_chat_presence";
     const ADMIN_PROFILES_PATH = "admin_chat_profiles";
+    const ADMINS_DB_PATH = "admins";
     const ADMIN_NOTIFICATION_PATH = "admin_notifications";
     const ADMIN_APP_MESSAGE_PATH = "aryanta_admin_app/messages";
     const ADMIN_BROADCAST_PATH = "notifications/admins";
@@ -580,6 +668,9 @@
     const myUid = String(currentUser.uid || currentUser.email || "admin");
     const myKey = safeKey(myUid);
     const myName = currentUser.name || currentUser.displayName || currentUser.fullName || currentUser.email || "Admin";
+
+    // CORE LAG FIX: In-memory decryption cache
+    let decryptedPayloadCache = {};
 
     function isUsableImage(value) {
       const v = String(value || "").trim();
@@ -636,6 +727,11 @@
 
     let myImage = resolveMyProfileImage();
     let adminProfileMap = {};
+    let activeChat = { type: "group", id: "group", uid: "all", name: "Admin Group", image: ARYANTA_LOGO };
+    let activeMessageRef = null;
+    let activeTypingRef = null;
+    let activePresenceRef = null;
+    let allAdminProfiles = [];
 
     const DEFAULT_SETTINGS = {
       notify: false,
@@ -645,7 +741,8 @@
       mic: false,
       music: false,
       audio: true,
-      theme: "light"
+      theme: "light",
+      messageDeleteDays: "0"
     };
 
     let appSettings = { ...DEFAULT_SETTINGS, ...safeJson(localStorage.getItem(SETTINGS_KEY), {}) };
@@ -679,18 +776,162 @@
       return profile.name || profile.fullName || profile.displayName || fallbackName || "Admin";
     }
 
+    function getActiveChatPath() {
+      if (activeChat.type === "direct") return `${DIRECT_CHAT_ROOT}/${getDirectChatId(myUid, activeChat.uid)}`;
+      return GROUP_CHAT_PATH;
+    }
+
+    function getDirectChatId(a, b) {
+      return [safeKey(a), safeKey(b)].sort().join("__");
+    }
+
+    function getTypingPathForActiveChat() {
+      return `${TYPING_PATH}/${safeKey(activeChat.type === "direct" ? getDirectChatId(myUid, activeChat.uid) : "group")}`;
+    }
+
+    function getPresencePathForActiveChat() {
+      return `${PRESENCE_PATH}/${safeKey(activeChat.type === "direct" ? getDirectChatId(myUid, activeChat.uid) : "group")}`;
+    }
+
+    function normalizeAdminProfile(uid, raw = {}) {
+      const id = String(raw.uid || raw.id || uid || "").trim();
+      if (!id) return null;
+      const image = firstUsableImage(
+        raw.profileImage,
+        raw.profilePic,
+        raw.profilePhoto,
+        raw.photoURL,
+        raw.photoUrl,
+        raw.photo,
+        raw.picture,
+        raw.avatar,
+        raw.image,
+        raw.imageUrl,
+        raw.userImage,
+        raw.adminImage,
+        raw.adminPhoto,
+        raw.logo,
+        raw.dp,
+        ARYANTA_LOGO
+      );
+      return {
+        uid: id,
+        key: safeKey(id),
+        name: raw.name || raw.fullName || raw.displayName || raw.userName || raw.email || id,
+        email: raw.email || raw.mail || "",
+        role: raw.role || "Admin",
+        image
+      };
+    }
+
+    function mergeAdminProfiles(sourceMap = {}) {
+      Object.entries(sourceMap || {}).forEach(([key, value]) => {
+        const profile = normalizeAdminProfile(value?.uid || key, value || {});
+        if (!profile) return;
+        adminProfileMap[profile.key] = { ...(adminProfileMap[profile.key] || {}), ...profile };
+      });
+      const selfProfile = normalizeAdminProfile(myUid, { ...currentUser, uid: myUid, name: myName, image: myImage, profileImage: myImage });
+      if (selfProfile) adminProfileMap[selfProfile.key] = { ...(adminProfileMap[selfProfile.key] || {}), ...selfProfile };
+      allAdminProfiles = Object.values(adminProfileMap).filter(p => p && p.uid).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+      renderChatUserList();
+      updateChatHeader();
+      renderMessages();
+    }
+
+    function updateChatHeader() {
+      const title = activeChat.type === "direct" ? (activeChat.name || "Admin") : "Admin Group";
+      const image = activeChat.type === "direct" ? firstUsableImage(activeChat.image, ARYANTA_LOGO) : ARYANTA_LOGO;
+      const subtitle = activeChat.type === "direct" ? `${activeChat.uid || "Admin"} • one-to-one chat` : "Group chat • all admins";
+      if ($("headerTitle")) $("headerTitle").textContent = title;
+      if ($("headerSubtitle")) $("headerSubtitle").innerHTML = `<i class="fas fa-lock"></i> ${escapeHtml(subtitle)}`;
+      if ($("headerAvatar")) $("headerAvatar").src = image;
+      document.querySelector("#targetGroup")?.classList.toggle("active", activeChat.type === "group");
+    }
+
+    function renderChatUserList() {
+      const list = $("chatUserList");
+      if (!list) return;
+      const admins = allAdminProfiles.filter(p => p.uid && safeKey(p.uid) !== myKey);
+      if (!admins.length) {
+        list.innerHTML = `<div class="chat-empty-row">No admin profiles found yet. Open admin.html once from each admin account so profile photo and UID can sync.</div>`;
+        return;
+      }
+      list.innerHTML = admins.map(p => `
+        <button class="admin-chat-row ${activeChat.type === 'direct' && safeKey(activeChat.uid) === safeKey(p.uid) ? 'active' : ''}" onclick="selectDirectChat('${escapeHtml(p.uid)}')">
+          <img src="${escapeHtml(firstUsableImage(p.image, ARYANTA_LOGO))}" alt="${escapeHtml(p.name)}" onerror="this.onerror=null;this.src='${ARYANTA_LOGO}'">
+          <div><strong>${escapeHtml(p.name)}</strong><span>${escapeHtml(p.uid)}${p.role ? ' • ' + escapeHtml(p.role) : ''}</span></div>
+          <i class="fas fa-message"></i>
+        </button>
+      `).join("");
+    }
+
+    // HOME SCREEN NAVIGATION LOGIC
+    function showHomeScreen() {
+      $("chatScreen").style.display = "none";
+      $("homeScreen").style.display = "flex";
+      if (activeMessageRef) { activeMessageRef.off(); activeMessageRef = null; }
+      if (activeTypingRef) { activeTypingRef.off(); activeTypingRef = null; }
+      renderChatUserList();
+      closeAllMenus();
+      try { history.pushState({ aryantaChat: true, layer: "home" }, ""); } catch {}
+    }
+
+    function openChatPicker() {
+      showHomeScreen();
+    }
+
+    function selectGroupChat() {
+      activeChat = { type: "group", id: "group", uid: "all", name: "Admin Group", image: ARYANTA_LOGO };
+      $("homeScreen").style.display = "none";
+      $("chatScreen").style.display = "flex";
+      switchChatSource();
+      closeAllMenus();
+      showToast("Group chat opened", { force: true });
+    }
+
+    function selectDirectChat(uid) {
+      const profile = adminProfileMap[safeKey(uid)] || normalizeAdminProfile(uid, {});
+      activeChat = { type: "direct", id: getDirectChatId(myUid, uid), uid, name: profile.name || uid, image: firstUsableImage(profile.image, ARYANTA_LOGO) };
+      $("homeScreen").style.display = "none";
+      $("chatScreen").style.display = "flex";
+      switchChatSource();
+      closeAllMenus();
+      showToast(`One-to-one chat: ${activeChat.name}`, { force: true });
+    }
+
+    function switchChatSource() {
+      if (activeMessageRef) activeMessageRef.off();
+      if (activeTypingRef) activeTypingRef.off();
+      messages = [];
+      selectedMsgIds.clear();
+      selectedMsgId = null;
+      replyingToId = null;
+      chatClearedAt = Number(localStorage.getItem(`chat_cleared_${myKey}_${safeKey(activeChat.id || activeChat.type)}`) || 0);
+      firstMessageLoadDone = false;
+      lastKnownMessageTs = 0;
+      updateChatHeader();
+      renderMessages();
+      listenForMessages(); // restart listener
+      listenTyping();      // restart typing listener
+      try { history.pushState({ aryantaChat: true, layer: "chat" }, ""); } catch {}
+      setTimeout(scrollToBottom, 200);
+    }
+
     async function updateMyChatProfile() {
       myImage = resolveMyProfileImage();
       const profile = {
         uid: myUid,
         name: myName,
+        fullName: myName,
         image: myImage,
         profileImage: myImage,
         photoURL: myImage,
+        role: currentUser.role || "Admin",
         updatedAt: Date.now()
       };
       try {
         await db.ref(`${ADMIN_PROFILES_PATH}/${myKey}`).update(profile);
+        await db.ref(`${ADMINS_DB_PATH}/${myKey}/chatProfile`).update(profile).catch(() => {});
       } catch (err) {
         // Profile sharing needs Firebase rules. Chat still works without this.
       }
@@ -698,8 +939,16 @@
 
     function listenAdminProfiles() {
       db.ref(ADMIN_PROFILES_PATH).on("value", snap => {
-        adminProfileMap = snap.val() || {};
-        renderMessages();
+        mergeAdminProfiles(snap.val() || {});
+      }, () => {});
+      db.ref(ADMINS_DB_PATH).on("value", snap => {
+        const admins = snap.val() || {};
+        const flat = {};
+        Object.entries(admins).forEach(([key, value]) => {
+          const raw = value?.chatProfile ? { ...value, ...value.chatProfile } : value;
+          flat[key] = raw || {};
+        });
+        mergeAdminProfiles(flat);
       }, () => {});
     }
 
@@ -727,6 +976,8 @@
       if (appSettings.mic !== true) $("btnMic")?.classList.add("permission-disabled");
       else $("btnMic")?.classList.remove("permission-disabled");
       maybeRequestNotificationPermission();
+      updateChatHeader();
+      applyAutoDeletePolicy().catch(() => {});
     }
 
     function maybeRequestNotificationPermission() {
@@ -761,32 +1012,37 @@
     }
 
     function buildChatNotificationBody(msg) {
+      const sender = msg?.senderName || getAdminName(msg?.senderUid, "Admin");
       const text = String(msg?.text || "").trim();
-      if (text) return text.length > 130 ? text.slice(0, 127) + "..." : text;
-      if (Array.isArray(msg?.attachments) && msg.attachments.length) {
-        return `${msg.senderName || "Admin"} sent ${describeAttachment(msg.attachments[0])}`;
+      const scope = activeChat.type === "direct" ? "Private chat" : "Admin group";
+      if (text) {
+        const clean = text.length > 120 ? text.slice(0, 117) + "..." : text;
+        return `${sender}: ${clean}`;
       }
-      return "New message received";
+      if (Array.isArray(msg?.attachments) && msg.attachments.length) {
+        return `${sender} sent ${describeAttachment(msg.attachments[0])} in ${scope}`;
+      }
+      return `${sender} sent a new message in ${scope}`;
     }
 
     function notifyIncomingMessage(msg) {
       loadAdminSettings();
       if (!appSettings.notify || !msg || msg.senderUid === myUid) return;
-      const title = "New message";
+      const title = activeChat.type === "direct" ? "Aryanta private message" : "Aryanta group message";
       const body = buildChatNotificationBody(msg);
       if (document.visibilityState === "hidden" && "Notification" in window && Notification.permission === "granted") {
         try {
           new Notification(title, {
             body,
-            icon: ARYANTA_LOGO,
-            image: ARYANTA_LOGO,
+            icon: getMessageAvatar(msg),
+            image: getMessageAvatar(msg),
             badge: ARYANTA_LOGO,
-            tag: "aryanta-admin-chat",
+            tag: `aryanta-admin-chat-${safeKey(activeChat.id || activeChat.type)}`,
             silent: appSettings.audio !== true
           });
         } catch {}
       } else {
-        showToast(`${title}: ${body}`, { force: true });
+        showToast(body, { force: true, duration: 3200 });
       }
       playNotifySound();
     }
@@ -797,7 +1053,7 @@
       const id = `CHAT-NOTIFY-${now}-${Math.floor(Math.random() * 9999)}`;
       const common = {
         id,
-        title: "New message",
+        title: activeChat.type === "direct" ? "Aryanta private message" : "Aryanta group message",
         body,
         message: body,
         type: "admin_chat",
@@ -807,9 +1063,11 @@
         senderName: msg.senderName || myName,
         senderImage: getKnownSenderImage(msg.senderUid || myUid, msg.senderImage),
         messageId: msg.id || "",
-        chatPath: CHAT_PATH,
+        chatPath: getActiveChatPath(),
+        chatType: activeChat.type,
+        chatId: activeChat.id || "group",
         url: "x.html",
-        target: "all_admins",
+        target: activeChat.type === "direct" ? safeKey(activeChat.uid) : "all_admins",
         createdAt: now,
         date: new Date(now).toISOString(),
         readBy: {}
@@ -834,7 +1092,7 @@
       await db.ref().update(updates);
 
       // Optional Worker push support. If the Worker endpoint is not available, the Firebase notification records still save.
-      const pushPayload = { ...common, recipients: "all_admins" };
+      const pushPayload = { ...common, recipients: common.target, recipientUid: activeChat.type === "direct" ? activeChat.uid : "all_admins" };
       const endpoints = [
         `${WORKER_API}/admin/push`,
         `${WORKER_API}/push-admins`,
@@ -900,9 +1158,10 @@
       setupListeners();
       listenAdminProfiles();
       updateMyChatProfile();
-      listenForMessages();
+      setupNoCopyProtection();
       setupPresence();
-      listenTyping();
+      showHomeScreen(); // By default start at the home screen!
+      
       window.addEventListener("storage", event => {
         if (event.key === SETTINGS_KEY) {
           applyAdminSettings();
@@ -922,7 +1181,6 @@
           lastKnownMessageTs = Math.max(lastKnownMessageTs, Date.now() - 1000);
         }
       });
-      setTimeout(scrollToBottom, 300);
     }
 
     function applySavedTheme() {
@@ -938,18 +1196,46 @@
       showToast("Theme follows Admin Settings");
     }
 
-    function goBack() { window.location.href = "admin.html"; }
+    function goBack() {
+      if (closeTopLayer()) return;
+      if ($("chatScreen").style.display !== "none") {
+         showHomeScreen();
+         return;
+      }
+      window.location.href = "admin.html";
+    }
 
-    function showToast(msg, options = {}) {
-      loadAdminSettings();
-      if (!options.force && appSettings.notify !== true) return;
-      const holder = $("toastHolder");
-      if (!holder) return;
-      const toast = document.createElement("div");
-      toast.className = "toast show";
-      toast.innerHTML = `<i class="fas fa-info-circle"></i><span>${escapeHtml(msg)}</span>`;
-      holder.appendChild(toast);
-      setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 300); }, Number(options.duration || 2200));
+    function closeTopLayer() {
+      if ($("imageViewer")?.classList.contains("active")) { closeImageViewer(); return true; }
+      if ($("fileViewer")?.classList.contains("active")) { closeFileViewer(); return true; }
+      if ($("cameraModal")?.classList.contains("active")) { closeCameraSheet(); return true; }
+      if ($("mainOverlay")?.classList.contains("active")) { closeAllMenus(); return true; }
+      if (document.body.classList.contains("select-mode")) { cancelSelectMode(); return true; }
+      return false;
+    }
+
+    function setupMobileBackHandler() {
+      try { history.replaceState({ aryantaChat: true }, ""); history.pushState({ aryantaChat: true, layer: "home" }, ""); } catch {}
+      window.addEventListener("popstate", () => {
+        if (closeTopLayer()) {
+          try { history.pushState({ aryantaChat: true, layer: "chat" }, ""); } catch {}
+          return;
+        }
+        if ($("chatScreen").style.display !== "none") {
+           showHomeScreen();
+           try { history.pushState({ aryantaChat: true, layer: "home" }, ""); } catch {}
+           return;
+        }
+        window.location.href = "admin.html";
+      });
+    }
+
+    function setupNoCopyProtection() {
+      document.addEventListener("contextmenu", e => e.preventDefault());
+      document.addEventListener("copy", e => {
+        const tag = String(document.activeElement?.tagName || "").toLowerCase();
+        if (tag !== "textarea" && tag !== "input") e.preventDefault();
+      });
     }
 
     function handleInputResize() {
@@ -1096,9 +1382,9 @@
       if (!confirm(`Delete ${selectedMsgIds.size} message(s) for everyone?`)) return;
       const updates = {};
       selectedMsgIds.forEach(id => {
-        updates[`${CHAT_PATH}/${id}/deletedForAll`] = true;
-        updates[`${CHAT_PATH}/${id}/text`] = "";
-        updates[`${CHAT_PATH}/${id}/attachments`] = null;
+        updates[`${getActiveChatPath()}/${id}/deletedForAll`] = true;
+        updates[`${getActiveChatPath()}/${id}/text`] = "";
+        updates[`${getActiveChatPath()}/${id}/attachments`] = null;
       });
       try {
         await db.ref().update(updates);
@@ -1403,7 +1689,19 @@
       if (!raw) return raw;
       if (raw.encrypted && raw.payloadEnc) {
         try {
-          const plain = await decryptChatPayload(raw.payloadEnc);
+          // Lag Fix: Pull decrypted object from cache instead of running heavy crypto every time
+          let plain;
+          if (decryptedPayloadCache[raw.id]) {
+            plain = decryptedPayloadCache[raw.id];
+          } else {
+            plain = await decryptChatPayload(raw.payloadEnc);
+            decryptedPayloadCache[raw.id] = plain;
+            // Free up memory if cache gets too large
+            if (Object.keys(decryptedPayloadCache).length > 200) {
+               delete decryptedPayloadCache[Object.keys(decryptedPayloadCache)[0]];
+            }
+          }
+          
           const merged = { ...raw, ...plain, decrypted: true };
           merged.senderName = getAdminName(merged.senderUid, merged.senderName);
           merged.senderImage = getKnownSenderImage(merged.senderUid, merged.senderImage);
@@ -1442,7 +1740,10 @@
         text,
         attachments: outgoingAttachments,
         replyTo: replyingToId,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        chatType: activeChat.type,
+        chatId: activeChat.id || "group",
+        targetUid: activeChat.type === "direct" ? activeChat.uid : "all_admins"
       };
       let encryptedPayload;
       try {
@@ -1457,6 +1758,9 @@
         senderName: myName,
         senderImage: myImage,
         timestamp: plainPayload.timestamp,
+        chatType: activeChat.type,
+        chatId: activeChat.id || "group",
+        targetUid: activeChat.type === "direct" ? activeChat.uid : "all_admins",
         replyTo: replyingToId,
         encrypted: true,
         payloadEnc: encryptedPayload,
@@ -1473,7 +1777,7 @@
       cancelReply();
       handleInputResize();
       try {
-        await db.ref(`${CHAT_PATH}/${msgId}`).set(payload);
+        await db.ref(`${getActiveChatPath()}/${msgId}`).set(payload);
         sendAdminChatNotification({ ...payload, ...plainPayload }).catch(() => {});
         if (!typingRemoteDisabled) await db.ref(`${TYPING_PATH}/${myKey}`).remove().catch(() => { typingRemoteDisabled = true; });
         scrollToBottom();
@@ -1483,11 +1787,14 @@
     }
 
     function listenForMessages() {
-      db.ref(CHAT_PATH).orderByChild("timestamp").limitToLast(150).on("value", async snap => {
+      const path = getActiveChatPath();
+      activeMessageRef = db.ref(path).orderByChild("timestamp").limitToLast(180);
+      activeMessageRef.on("value", async snap => {
         const data = snap.val() || {};
         const rawMessages = Object.values(data).filter(Boolean).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
         const normalized = await Promise.all(rawMessages.map(normalizeIncomingMessage));
         messages = normalized.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+        await applyAutoDeletePolicy();
 
         const newestTs = messages.reduce((max, m) => Math.max(max, Number(m.timestamp || 0)), 0);
         if (firstMessageLoadDone) {
@@ -1499,22 +1806,50 @@
         lastKnownMessageTs = Math.max(lastKnownMessageTs, newestTs);
         firstMessageLoadDone = true;
         renderMessages();
-      }, () => showToast("Could not load chat"));
+      }, () => showToast("Could not load chat", { force: true }));
+    }
+
+    async function applyAutoDeletePolicy() {
+      loadAdminSettings();
+      const days = Number(appSettings.messageDeleteDays || 0);
+      if (!days || days < 1) return;
+      const cutoff = Date.now() - (days * 24 * 60 * 60 * 1000);
+      const updates = {};
+      messages.forEach(m => {
+        if (m.senderUid === myUid && !m.deletedForAll && Number(m.timestamp || 0) < cutoff) {
+          updates[`${getActiveChatPath()}/${m.id}/deletedForAll`] = true;
+          updates[`${getActiveChatPath()}/${m.id}/text`] = "";
+          updates[`${getActiveChatPath()}/${m.id}/attachments`] = null;
+          updates[`${getActiveChatPath()}/${m.id}/autoDeletedBySetting`] = true;
+        }
+      });
+      if (Object.keys(updates).length) await db.ref().update(updates).catch(() => {});
     }
 
     function formatTime(ts) {
       if (!ts) return "";
-      return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      return new Date(ts).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function formatSmartTime(ts) {
+      if (!ts) return "";
+      const d = new Date(ts);
+      const today = new Date();
+      const yest = new Date(today); yest.setDate(yest.getDate() - 1);
+      const time = d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+      if (d.toDateString() === today.toDateString()) return `Today at ${time}`;
+      if (d.toDateString() === yest.toDateString()) return `Yesterday at ${time}`;
+      return `${d.toLocaleDateString("en-IN", { day: "numeric", month: "short" })} at ${time}`;
     }
 
     function formatDateBanner(ts) {
       if (!ts) return "";
       const d = new Date(ts);
       const today = new Date();
-      if (d.toDateString() === today.toDateString()) return "Today";
       const yest = new Date(today); yest.setDate(yest.getDate() - 1);
+      if (d.toDateString() === today.toDateString()) return "Today";
       if (d.toDateString() === yest.toDateString()) return "Yesterday";
-      return d.toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" });
+      return d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
     }
 
     function visibleMessages() {
@@ -1570,7 +1905,7 @@
         inner += renderReactions(m);
       }
       const star = m.stars && m.stars[myKey] ? `<i class="fas fa-star msg-star"></i>` : "";
-      inner += `<div class="msg-meta">${star}${formatTime(m.timestamp)} ${isMe && !m.deletedForAll ? '<i class="fas fa-check-double" style="color:var(--primary)"></i>' : ''}</div>`;
+      inner += `<div class="msg-meta"><span class="msg-date-rich">${star}${formatSmartTime(m.timestamp)}</span> ${isMe && !m.deletedForAll ? '<i class="fas fa-check-double" style="color:var(--primary)"></i>' : ''}</div>`;
       return inner;
     }
 
@@ -1635,7 +1970,9 @@
 
     function scrollToBottom() {
       const box = $("chatBox");
-      box.scrollTop = box.scrollHeight;
+      if (box) {
+         box.scrollTo({ top: box.scrollHeight, behavior: "smooth" });
+      }
     }
 
     function scrollToMsg(id) {
@@ -1673,7 +2010,7 @@
       try {
         const msg = messages.find(m => m.id === selectedMsgId);
         const current = msg?.reactions?.[myKey];
-        await db.ref(`${CHAT_PATH}/${selectedMsgId}/reactions/${myKey}`).set(current === emoji ? null : emoji);
+        await db.ref(`${getActiveChatPath()}/${selectedMsgId}/reactions/${myKey}`).set(current === emoji ? null : emoji);
         closeAllMenus();
       } catch { showToast("Reaction failed"); }
     }
@@ -1683,7 +2020,7 @@
       try {
         const msg = messages.find(m => m.id === selectedMsgId);
         const current = !!(msg?.stars && msg.stars[myKey]);
-        await db.ref(`${CHAT_PATH}/${selectedMsgId}/stars/${myKey}`).set(current ? null : true);
+        await db.ref(`${getActiveChatPath()}/${selectedMsgId}/stars/${myKey}`).set(current ? null : true);
         closeAllMenus();
         showToast(current ? "Unstarred" : "Starred");
       } catch { showToast("Could not update star"); }
@@ -1692,8 +2029,8 @@
     async function deleteMsg(type) {
       if (!selectedMsgId) return;
       try {
-        if (type === "all") await db.ref(`${CHAT_PATH}/${selectedMsgId}`).update({ deletedForAll: true, text: "", attachments: null });
-        else await db.ref(`${CHAT_PATH}/${selectedMsgId}/deletedFor`).push(myUid);
+        if (type === "all") await db.ref(`${getActiveChatPath()}/${selectedMsgId}`).update({ deletedForAll: true, text: "", attachments: null });
+        else await db.ref(`${getActiveChatPath()}/${selectedMsgId}/deletedFor`).push(myUid);
         closeAllMenus();
       } catch { showToast("Delete failed"); }
     }
@@ -1701,7 +2038,7 @@
     function clearChat() {
       if (!confirm("Clear all chat history only on this device?")) return;
       chatClearedAt = Date.now();
-      localStorage.setItem(`chat_cleared_${myKey}`, chatClearedAt);
+      localStorage.setItem(`chat_cleared_${myKey}_${safeKey(activeChat.id || activeChat.type)}`, chatClearedAt);
       renderMessages();
       closeAllMenus();
       showToast("Chat cleared");
@@ -1723,9 +2060,10 @@
       $("ivImg").src = url;
       $("ivDownloadBtn").onclick = () => downloadDataUrl(url, name);
       $("imageViewer").classList.add("active");
+      try { history.pushState({ aryantaChat: true, layer: "image" }, ""); } catch {}
     }
 
-    function closeImageViewer() { $("imageViewer").classList.remove("active"); }
+    function closeImageViewer() { $("imageViewer").classList.remove("active"); $("ivImg").src = ""; }
 
     function openFileViewer(att) {
       $("fvTitle").textContent = att.name || "File";
@@ -1740,6 +2078,7 @@
       }
       window.__currentViewedFile = att;
       $("fileViewer").classList.add("active");
+      try { history.pushState({ aryantaChat: true, layer: "file" }, ""); } catch {}
     }
 
     function downloadCurrentViewedFile() {
@@ -1782,26 +2121,32 @@
     }
 
     function setupPresence() {
-      const ref = db.ref(`${PRESENCE_PATH}/${myKey}`);
-      ref.set({ name: myName, ts: Date.now(), online: true }).catch(() => {});
-      ref.onDisconnect().remove();
-      setInterval(() => ref.update({ ts: Date.now(), online: true }).catch(() => {}), 25000);
+      const base = getPresencePathForActiveChat();
+      activePresenceRef = db.ref(`${base}/${myKey}`);
+      activePresenceRef.set({ name: myName, uid: myUid, image: myImage, ts: Date.now(), online: true }).catch(() => {});
+      activePresenceRef.onDisconnect().remove();
+      setInterval(() => {
+        if (activePresenceRef) activePresenceRef.update({ ts: Date.now(), online: true }).catch(() => {});
+      }, 25000);
     }
 
     function sendTypingSignal() {
       if (typingRemoteDisabled) return;
       const text = $("chatInput").value.trim();
       clearTimeout(typingTimer);
+      const base = getTypingPathForActiveChat();
       if (!text) {
-        db.ref(`${TYPING_PATH}/${myKey}`).remove().catch(() => { typingRemoteDisabled = true; });
+        db.ref(`${base}/${myKey}`).remove().catch(() => { typingRemoteDisabled = true; });
         return;
       }
-      db.ref(`${TYPING_PATH}/${myKey}`).set({ name: myName, ts: Date.now() }).catch(() => { typingRemoteDisabled = true; });
-      typingTimer = setTimeout(() => db.ref(`${TYPING_PATH}/${myKey}`).remove().catch(() => { typingRemoteDisabled = true; }), 1800);
+      db.ref(`${base}/${myKey}`).set({ name: myName, uid: myUid, image: myImage, ts: Date.now() }).catch(() => { typingRemoteDisabled = true; });
+      typingTimer = setTimeout(() => db.ref(`${base}/${myKey}`).remove().catch(() => { typingRemoteDisabled = true; }), 1800);
     }
 
     function listenTyping() {
-      db.ref(TYPING_PATH).on("value", snap => {
+      const base = getTypingPathForActiveChat();
+      activeTypingRef = db.ref(base);
+      activeTypingRef.on("value", snap => {
         const data = snap.val() || {};
         const now = Date.now();
         const names = Object.entries(data)
@@ -1831,10 +2176,29 @@
           sendMessage();
         }
       });
+      
+      // Fixed: Jump bottom button appears only when scrolled up
+      $("chatBox")?.addEventListener("scroll", () => {
+        const box = $("chatBox");
+        const jump = $("jumpActions");
+        if (jump && box) {
+          // Check how far we are from the bottom
+          const distanceFromBottom = box.scrollHeight - box.scrollTop - box.clientHeight;
+          if (distanceFromBottom > 150) {
+            jump.classList.add("visible");
+          } else {
+            jump.classList.remove("visible");
+          }
+        }
+      });
+      
+      window.addEventListener("offline", () => showToast("Internet is offline. Messages will load when connection returns.", { force: true, duration: 3500 }));
+      window.addEventListener("online", () => showToast("Back online. Syncing chat.", { force: true, duration: 2200 }));
+      document.addEventListener("keydown", e => { if (e.key === "Escape") closeTopLayer(); });
       window.addEventListener("beforeunload", () => {
         try {
-          if (!typingRemoteDisabled) db.ref(`${TYPING_PATH}/${myKey}`).remove();
-          db.ref(`${PRESENCE_PATH}/${myKey}`).remove();
+          if (!typingRemoteDisabled) db.ref(`${getTypingPathForActiveChat()}/${myKey}`).remove();
+          if (activePresenceRef) activePresenceRef.remove();
         } catch {}
       });
     }
