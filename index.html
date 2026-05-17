@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +7,8 @@
     <link rel="apple-touch-icon" href="/android-chrome-192x192.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="preconnect" href="https://rough-field-c679.official-aryanta.workers.dev" crossorigin>
+    <link rel="dns-prefetch" href="//rough-field-c679.official-aryanta.workers.dev">
     <title>Aryanta | Store</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -291,10 +294,14 @@
         let baseCategoryProducts = []; 
         let currentlyDisplayed = 0;
         
-        const INITIAL_BATCH = window.innerWidth < 768 ? 6 : 12;
-const SCROLL_BATCH = window.innerWidth < 768 ? 8 : 12; 
-
-        let siteConfig = { isSpecialDay: false, specialDayName: "" };
+        const INITIAL_BATCH = 10;
+const SCROLL_BATCH = 10;
+const HOME_FULL_CATALOG_LIMIT = 1000;
+let HOME_CATALOG_READY = false;
+let siteConfig = { isSpecialDay: false, specialDayName: "", specialEvent: null };
+let currentSpecialEvent = null;
+const PUBLIC_BROADCAST_PATHS = ["/get-broadcasts", "/broadcasts"];
+const PUBLIC_CONFIG_PATHS = ["/config", "/site-config"];
         let appSettings = { theme: 'system', notifications: true, searchSuggestions: true };
         
         let wishlist = []; 
@@ -370,6 +377,349 @@ function renderOrHideBanners(data) {
     } else {
         if (bannerSection) bannerSection.style.display = "none";
     }
+}
+
+
+function unwrapFirestoreValue(value) {
+    if (!value || typeof value !== "object") return value;
+
+    if (Object.prototype.hasOwnProperty.call(value, "stringValue")) return value.stringValue;
+    if (Object.prototype.hasOwnProperty.call(value, "integerValue")) return Number(value.integerValue || 0);
+    if (Object.prototype.hasOwnProperty.call(value, "doubleValue")) return Number(value.doubleValue || 0);
+    if (Object.prototype.hasOwnProperty.call(value, "booleanValue")) return value.booleanValue === true;
+    if (Object.prototype.hasOwnProperty.call(value, "timestampValue")) return value.timestampValue;
+    if (Object.prototype.hasOwnProperty.call(value, "nullValue")) return null;
+    if (Object.prototype.hasOwnProperty.call(value, "arrayValue")) {
+        return (value.arrayValue.values || []).map(unwrapFirestoreValue);
+    }
+    if (Object.prototype.hasOwnProperty.call(value, "mapValue")) {
+        return unwrapFirestoreFields(value.mapValue.fields || {});
+    }
+    return value;
+}
+
+function unwrapFirestoreFields(fields) {
+    const out = {};
+    if (!fields || typeof fields !== "object") return out;
+    Object.keys(fields).forEach(key => {
+        out[key] = unwrapFirestoreValue(fields[key]);
+    });
+    return out;
+}
+
+function normalizeRawProductObject(item, fallbackId = "") {
+    if (!item || typeof item !== "object") return item;
+
+    let p = item;
+    if (item.fields && typeof item.fields === "object") {
+        p = unwrapFirestoreFields(item.fields);
+        if (item.name && !p.id) p.id = String(item.name).split("/").pop();
+    }
+
+    if (fallbackId && !p.id) p.id = fallbackId;
+    if (item.id && !p.id) p.id = item.id;
+    if (item.docId && !p.docId) p.docId = item.docId;
+
+    return p;
+}
+
+function aryantaArrayFromResponse(data, keys = ["products", "items", "data", "results"]) {
+    if (!data) return [];
+    if (Array.isArray(data)) return data.map((item, index) => normalizeRawProductObject(item, String(index)));
+
+    if (data && typeof data === "object") {
+        if (Array.isArray(data.documents)) {
+            return data.documents.map(doc => normalizeRawProductObject(doc));
+        }
+
+        for (const key of keys) {
+            if (Array.isArray(data[key])) return data[key].map((item, index) => normalizeRawProductObject(item, String(index)));
+        }
+
+        if (data.data && typeof data.data === "object") {
+            if (Array.isArray(data.data.documents)) {
+                return data.data.documents.map(doc => normalizeRawProductObject(doc));
+            }
+            for (const key of keys) {
+                if (Array.isArray(data.data[key])) return data.data[key].map((item, index) => normalizeRawProductObject(item, String(index)));
+            }
+        }
+
+        const values = Object.entries(data)
+            .filter(([key, value]) => !["success", "ok", "message", "count", "total", "timestamp", "banners", "banner", "slides"].includes(key) && value && typeof value === "object")
+            .map(([key, value]) => normalizeRawProductObject(value, key));
+
+        if (values.length && values.some(v => v && (v.name || v.title || v.productName || v.price || v.image || v.images || v.approvalStatus || v.status))) {
+            return values;
+        }
+    }
+
+    return [];
+}
+
+
+function getStatusText(value) {
+    return String(value ?? "").trim().toLowerCase();
+}
+
+function isActiveDateWindow(start, end) {
+    const now = Date.now();
+    const startMs = start ? new Date(start).getTime() : 0;
+    const endMs = end ? new Date(end).getTime() : 0;
+    if (Number.isFinite(startMs) && startMs > 0 && now < startMs) return false;
+    if (Number.isFinite(endMs) && endMs > 0 && now > endMs) return false;
+    return true;
+}
+
+function isSponsoredProduct(p = {}) {
+    const status = getStatusText([p.sponsorStatus, p.sponsoredStatus, p.adStatus, p.boostStatus, p.promotionStatus].filter(Boolean).join(" "));
+    return boolIsTrue(p.sponsored) ||
+        boolIsTrue(p.isSponsored) ||
+        boolIsTrue(p.ad) ||
+        boolIsTrue(p.isAd) ||
+        boolIsTrue(p.promoted) ||
+        boolIsTrue(p.isPromoted) ||
+        boolIsTrue(p.boosted) ||
+        boolIsTrue(p.isBoosted) ||
+        boolIsTrue(p.sponcep) ||
+        boolIsTrue(p.sponce) ||
+        boolIsTrue(p.sponsor) ||
+        status.includes("active") ||
+        status.includes("sponsor") ||
+        status.includes("boost") ||
+        status.includes("promot");
+}
+
+function isRandomTopProduct(p = {}) {
+    const flagText = getStatusText([p.rank, p.homeRank, p.homeSlot, p.displayMode, p.mark, p.tag].filter(Boolean).join(" "));
+    return boolIsTrue(p.random) ||
+        boolIsTrue(p.isRandom) ||
+        boolIsTrue(p.rand) ||
+        boolIsTrue(p.markRand) ||
+        boolIsTrue(p.randomTop) ||
+        boolIsTrue(p.showOnTop) ||
+        boolIsTrue(p.featured) ||
+        boolIsTrue(p.isFeatured) ||
+        flagText.includes("random") ||
+        flagText.includes("top") ||
+        flagText.includes("featured");
+}
+
+function isProductInSpecialEvent(p = {}) {
+    return boolIsTrue(p.specialDay) ||
+        boolIsTrue(p.isSpecialDay) ||
+        !!p.activeEventId ||
+        (p.offerPercent && Number(p.offerPercent) > 0) ||
+        isActiveDateWindow(p.saleStart, p.saleEnd);
+}
+
+function rankedRandomProducts(products = []) {
+    const unique = new Map();
+    (products || []).forEach(p => {
+        const item = toHomeCardProduct(p);
+        if (item && item.id && !item.isDummy) unique.set(String(item.id), item);
+    });
+    const items = Array.from(unique.values());
+    const sponsored = shuffleArray(items.filter(isSponsoredProduct));
+    const randomTop = shuffleArray(items.filter(p => !isSponsoredProduct(p) && isRandomTopProduct(p)));
+    const eventItems = shuffleArray(items.filter(p => !isSponsoredProduct(p) && !isRandomTopProduct(p) && isProductInSpecialEvent(p)));
+    const normal = shuffleArray(items.filter(p => !isSponsoredProduct(p) && !isRandomTopProduct(p) && !isProductInSpecialEvent(p)));
+    return [...sponsored, ...randomTop, ...eventItems, ...normal];
+}
+
+function pickRandomSuggestions(matches = [], limit = 3) {
+    const clean = (matches || []).filter(p => p && !p.isDummy);
+    const sponsored = shuffleArray(clean.filter(isSponsoredProduct));
+    const rest = shuffleArray(clean.filter(p => !isSponsoredProduct(p)));
+    return [...sponsored, ...rest].slice(0, limit);
+}
+
+function normalizePublicConfig(data = {}) {
+    const d = data && data.config ? data.config : data;
+    const special = d.special_day || d.specialDay || d.special_event || d.specialEvent || d.siteSpecialDay || d;
+    return {
+        raw: d,
+        specialDay: special && typeof special === "object" ? special : null,
+        popup: d.popup || d.systemPopup || d.notice || null
+    };
+}
+
+function normalizeBroadcastList(data) {
+    const list = aryantaArrayFromResponse(data, ["broadcasts", "items", "data", "results", "documents", "messages"]);
+    return list
+        .map((b, index) => ({
+            ...b,
+            id: b.id || b.docId || b.broadcastId || b.timestamp || `broadcast-${index}`,
+            title: b.title || b.heading || b.name || "Aryanta Update",
+            message: b.message || b.text || b.body || b.desc || "New update from Aryanta.",
+            timestamp: b.timestamp || b.time || b.createdAt || b.updatedAt || new Date().toISOString(),
+            isActive: b.isActive !== false && b.active !== false && b.deleted !== true
+        }))
+        .filter(b => b.isActive && b.message)
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+}
+
+function applySpecialDayTheme(eventData) {
+    const eventName = eventData.eventName || eventData.name || eventData.title || "Special Day";
+    currentSpecialEvent = eventData;
+    siteConfig.isSpecialDay = true;
+    siteConfig.specialDayName = eventName;
+    siteConfig.specialEvent = eventData;
+
+    document.body.classList.add("theme-special-day", "aryanta-event-mode");
+    document.documentElement.style.setProperty("--event-accent", eventData.accentColor || eventData.color || "#ff3b30");
+    document.documentElement.style.setProperty("--event-accent-2", eventData.secondaryColor || "#ffb703");
+
+    const festiveBar = document.getElementById("festiveAnnouncement");
+    if (festiveBar) {
+        festiveBar.style.display = "block";
+        festiveBar.innerHTML = `🎉 ${escapeHtml(eventName)} is LIVE! ${escapeHtml(eventData.subtitle || eventData.message || "Exclusive offers are active now.")} 🎉`;
+    }
+
+    const main = document.querySelector(".main-content") || document.body;
+    if (main && !document.getElementById("specialDayHero")) {
+        const hero = document.createElement("section");
+        hero.id = "specialDayHero";
+        hero.className = "special-day-hero";
+        hero.innerHTML = `
+            <div class="special-day-copy">
+                <span class="special-day-pill"><i class="fas fa-bolt"></i> Live event</span>
+                <h1>${escapeHtml(eventName)}</h1>
+                <p>${escapeHtml(eventData.description || eventData.message || "Fresh live deals from approved Aryanta sellers.")}</p>
+            </div>
+            <button class="special-day-btn" onclick="document.getElementById('productShelf')?.scrollIntoView({behavior:'smooth', block:'start'})">
+                Shop live offers <i class="fas fa-arrow-right"></i>
+            </button>
+        `;
+        const banner = document.getElementById("mainBannerSection");
+        if (banner && banner.parentNode) banner.parentNode.insertBefore(hero, banner);
+        else main.prepend(hero);
+    }
+}
+
+function clearSpecialDayTheme() {
+    siteConfig.isSpecialDay = false;
+    siteConfig.specialDayName = "";
+    siteConfig.specialEvent = null;
+    currentSpecialEvent = null;
+    document.body.classList.remove("theme-special-day", "aryanta-event-mode");
+    const bar = document.getElementById("festiveAnnouncement");
+    if (bar) bar.style.display = "none";
+    const hero = document.getElementById("specialDayHero");
+    if (hero) hero.remove();
+}
+
+function normalizeHomeFastResponse(data) {
+    const productSource = data && data.products ? data.products : data;
+    const bannerSource = data && (data.banners || data.banner || data.slides) ? (data.banners || data.banner || data.slides) : data;
+    return {
+        products: aryantaArrayFromResponse(productSource, ["products", "items", "data", "results", "documents"]),
+        banners: aryantaArrayFromResponse(bannerSource, ["banners", "banner", "slides", "images", "data", "items"])
+    };
+}
+
+function boolIsFalse(value) {
+    return value === false || value === "false" || value === 0 || value === "0" || String(value).toLowerCase() === "no";
+}
+
+function boolIsTrue(value) {
+    return value === true || value === "true" || value === 1 || value === "1" || String(value).toLowerCase() === "yes";
+}
+
+function isProductVisibleForHome(raw) {
+    if (!raw || typeof raw !== "object") return false;
+
+    const p = normalizeRawProductObject(raw);
+    const statusWords = String([
+        p.status,
+        p.approvalStatus,
+        p.qcStatus,
+        p.productStatus,
+        p.visibility,
+        p.publishStatus,
+        p.liveStatus
+    ].filter(Boolean).join(" ")).trim().toLowerCase();
+
+    const hardHidden =
+        boolIsTrue(p.hidden) ||
+        boolIsTrue(p.deleted) ||
+        boolIsTrue(p.isDeleted) ||
+        boolIsFalse(p.isVisible) ||
+        boolIsFalse(p.visible) ||
+        boolIsFalse(p.publicVisible) ||
+        boolIsFalse(p.isPublicVisible);
+
+    if (hardHidden) return false;
+
+    const sellerOffline =
+        boolIsTrue(p.sellerOffline) ||
+        boolIsTrue(p.storeOffline) ||
+        boolIsTrue(p.offline) ||
+        (p.settings && boolIsTrue(p.settings.offline));
+
+    if (sellerOffline) return false;
+
+    const blockedWords = ["deleted", "disabled", "rejected", "reject", "blocked", "suspended", "suspend", "inactive", "cancelled", "canceled", "private"];
+    if (blockedWords.some(word => statusWords.includes(word))) return false;
+
+    const pendingOnly = ["pending", "review", "draft", "hold", "unapproved"].some(word => statusWords.includes(word));
+    const approvedLive =
+        ["approved", "approve", "qc pass", "passed", "active", "live", "published", "public", "visible"].some(word => statusWords.includes(word)) ||
+        boolIsTrue(p.isVisible) ||
+        boolIsTrue(p.visible) ||
+        boolIsTrue(p.approved) ||
+        boolIsTrue(p.isApproved) ||
+        boolIsTrue(p.live);
+
+    if (pendingOnly && !approvedLive) return false;
+
+    return true;
+}
+
+function makeProductId(p) {
+    const direct = String(
+        p?.id ||
+        p?.productId ||
+        p?.productID ||
+        p?.uid ||
+        p?.sku ||
+        p?.docId ||
+        p?.itemId ||
+        p?.slug ||
+        ""
+    ).trim();
+
+    if (direct) return direct;
+
+    const name = String(p?.name || p?.title || p?.productName || "product").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    return `${name || "product"}-${Math.abs(JSON.stringify(p || {}).split("").reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0))}`;
+}
+
+function normalizeProductsForHome(data) {
+    return aryantaArrayFromResponse(data, ["products", "items", "data", "results"])
+        .filter(isProductVisibleForHome)
+        .map(toHomeCardProduct)
+        .filter(p => p && p.id);
+}
+
+function renderNoProductsState(message = "No products found right now.") {
+    const shelf = document.getElementById("productShelf");
+    const loader = document.getElementById("infiniteScrollLoader");
+    if (loader) loader.style.visibility = "hidden";
+    if (!shelf) return;
+
+    shelf.innerHTML = `
+        <div style="grid-column:1/-1; width:100%; min-height:220px; display:flex; align-items:center; justify-content:center; padding:30px;">
+            <div style="max-width:420px; width:100%; background:var(--surface, #fff); border:1px solid var(--border, #e5e7eb); border-radius:24px; padding:28px; text-align:center; box-shadow:var(--shadow-sm, 0 10px 30px rgba(0,0,0,.08));">
+                <div style="width:64px;height:64px;border-radius:22px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;background:rgba(0,128,128,.1);color:#008080;font-size:26px;">
+                    <i class="fas fa-box-open"></i>
+                </div>
+                <h3 style="font-size:20px;font-weight:800;margin-bottom:8px;color:var(--text-main,#111827);">Products not loaded</h3>
+                <p style="font-size:14px;line-height:1.6;color:var(--text-muted,#6b7280);font-weight:600;">${escapeHtml(message)}</p>
+                <button onclick="bootHomeUltraFast(true)" style="margin-top:18px;border:0;border-radius:14px;padding:13px 18px;background:#008080;color:#fff;font-weight:800;cursor:pointer;">Retry Loading</button>
+            </div>
+        </div>
+    `;
 }
 
 
@@ -487,10 +837,11 @@ async function checkSessionDB() {
 
         if (!res.ok) return;
 
-        const userData = await res.json();
+        const payload = await res.json();
+        const userData = payload && payload.user ? payload.user : payload;
 
-        cart = userData.cart || [];
-        wishlist = userData.wishlist || [];
+        cart = Array.isArray(userData?.cart) ? userData.cart : [];
+        wishlist = Array.isArray(userData?.wishlist) ? userData.wishlist : [];
 
         updateCartBadge();
         refreshVisibleCartWishlistButtons();
@@ -552,50 +903,62 @@ function refreshVisibleCartWishlistButtons() {
 
         async function fetchAppConfig() {
             try {
-                const res = await fetch(`${API_BASE_URL}/config`);
-                const data = await res.json();
-
-                if(data && data.special_day && data.special_day.isActive) {
-                    const now = new Date();
-                    const start = new Date(data.special_day.startTime);
-                    const end = new Date(data.special_day.endTime);
-                    if(now >= start && now <= end) {
-                        siteConfig.isSpecialDay = true;
-                        siteConfig.specialDayName = data.special_day.eventName;
-                        document.body.classList.add('theme-special-day');
-                        const festiveBar = document.getElementById('festiveAnnouncement');
-                        if(festiveBar) {
-                            festiveBar.style.display = 'block';
-                            festiveBar.innerText = `🎉 ${siteConfig.specialDayName} is LIVE! Enjoy exclusive offers. 🎉`;
-                        }
-                    }
+                let data = null;
+                for (const path of PUBLIC_CONFIG_PATHS) {
+                    data = await fetchJsonWithTimeout(path, 5000).catch(() => null);
+                    if (data) break;
                 }
-                
-                if (appSettings.notifications && data && data.showPopup && !sessionStorage.getItem('popupShown')) {
-                    document.getElementById('popupTitle').innerText = data.popupTitle || "Notice";
-                    document.getElementById('popupDesc').innerText = data.popupDesc || "Welcome to Aryanta Store.";
+                if (!data) return;
+
+                const normalized = normalizePublicConfig(data);
+                const special = normalized.specialDay;
+                const isActive = special && (special.isActive === true || special.active === true || special.enabled === true || String(special.status || '').toLowerCase() === 'active');
+
+                if (isActive && isActiveDateWindow(special.startTime || special.start || special.startsAt, special.endTime || special.end || special.endsAt)) {
+                    applySpecialDayTheme(special);
+                } else {
+                    clearSpecialDayTheme();
+                }
+
+                const popup = normalized.popup || normalized.raw;
+                if (appSettings.notifications && popup && (popup.showPopup || popup.popupEnabled) && !sessionStorage.getItem('popupShown')) {
+                    document.getElementById('popupTitle').innerText = popup.popupTitle || popup.title || "Notice";
+                    document.getElementById('popupDesc').innerText = popup.popupDesc || popup.message || popup.desc || "Welcome to Aryanta Store.";
                     openModalId('systemPopup');
                     sessionStorage.setItem('popupShown', 'true');
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.warn("Config loading skipped:", e);
+            }
         }
 
         async function listenForBroadcasts() {
-            if(!appSettings.notifications) return; 
+            if (!appSettings.notifications) return;
             try {
-                const res = await fetch(`${API_BASE_URL}/get-broadcasts`);
-                const data = await res.json();
-                if(data && data.length > 0) {
-                    const b = data[0]; 
+                let broadcasts = [];
+                for (const path of PUBLIC_BROADCAST_PATHS) {
+                    const data = await fetchJsonWithTimeout(path, 5500).catch(() => null);
+                    const list = normalizeBroadcastList(data);
+                    if (list.length) {
+                        broadcasts = list;
+                        break;
+                    }
+                }
+
+                if (broadcasts.length > 0) {
+                    const b = broadcasts[0];
+                    const broadcastKey = String(b.id || b.timestamp || b.title);
                     const lastSeen = sessionStorage.getItem('last_seen_broadcast');
-                    if(lastSeen !== b.id) {
+                    if (lastSeen !== broadcastKey) {
                         document.getElementById('broadcastTitle').innerText = b.title;
                         document.getElementById('broadcastMessage').innerText = b.message;
                         openModalId('broadcastModal');
-                        sessionStorage.setItem('last_seen_broadcast', b.id);
+                        sessionStorage.setItem('last_seen_broadcast', broadcastKey);
                     }
                 }
-            } catch(e) { }
+            } catch(e) {
+                console.warn("Broadcast loading skipped:", e);
+            }
         }
 
        async function fetchBannersFast() {
@@ -658,101 +1021,131 @@ function refreshVisibleCartWishlistButtons() {
         }
 
         function buildHomeLayout(products) {
-            let sponsored = products.filter(p => p.sponsored === true);
-            if (sponsored.length < 9) {
-                let nonSponsored = shuffleArray(products.filter(p => p.sponsored !== true));
-               sponsored = [...sponsored, ...nonSponsored.slice(0, 9 - sponsored.length)];
-            } else {
-                sponsored = shuffleArray(sponsored).slice(0, 9);
-            }
-            
-            let usedIds = new Set(sponsored.map(p => p.id));
-            let categoryMap = {};
-            
-            products.forEach(p => {
-                if(usedIds.has(p.id)) return;
-                let cat = p.category || 'Other';
-                if(!categoryMap[cat]) categoryMap[cat] = [];
-                categoryMap[cat].push(p);
-            });
-            
-            let catMixed = [];
-            for (let cat in categoryMap) {
-                let catItems = shuffleArray(categoryMap[cat]).slice(0, 2);
-                catMixed.push(...catItems);
-                catItems.forEach(p => usedIds.add(p.id));
-            }
-            
-            let remaining = shuffleArray(products.filter(p => !usedIds.has(p.id)));
-            return [...sponsored, ...catMixed, ...remaining];
+            return rankedRandomProducts(products);
         }
+
+function mergeProductCatalog(rawProducts, options = {}) {
+    const replace = options.replace === true;
+    const normalized = (rawProducts || [])
+        .map(normalizeRawProductObject)
+        .filter(isProductVisibleForHome)
+        .map(toHomeCardProduct)
+        .filter(p => p && p.id && !p.isDummy);
+
+    const currentMap = replace ? new Map() : new Map(allProducts.map(p => [String(p.id), p]));
+    normalized.forEach(p => currentMap.set(String(p.id), { ...(currentMap.get(String(p.id)) || {}), ...p }));
+
+    allProducts = Array.from(currentMap.values());
+
+    if (replace) {
+        baseCategoryProducts = buildHomeLayout(allProducts);
+    } else {
+        const used = new Set(baseCategoryProducts.map(p => String(p.id)));
+        const incoming = buildHomeLayout(allProducts.filter(p => !used.has(String(p.id))));
+        baseCategoryProducts = [...baseCategoryProducts, ...incoming];
+    }
+
+    renderCategoryPills();
+    return normalized.length;
+}
+
+async function fetchFirstWorkingProductList(paths, timeout = 4500) {
+    for (const path of paths) {
+        const data = await fetchJsonWithTimeout(path, timeout).catch(() => null);
+        if (!data) continue;
+        const normalized = normalizeHomeFastResponse(data);
+        const products = normalized.products && normalized.products.length ? normalized.products : aryantaArrayFromResponse(data, ["products", "items", "data", "results", "documents"]);
+        if (products.length) return { products, banners: normalized.banners || [] };
+    }
+    return { products: [], banners: [] };
+}
+
+async function loadFullCatalogInBackground(seedProducts = []) {
+    try {
+        const paths = [
+            `/products?limit=${HOME_FULL_CATALOG_LIMIT}&approved=true&live=true`,
+            `/products?limit=${HOME_FULL_CATALOG_LIMIT}`,
+            `/home-fast?limit=${HOME_FULL_CATALOG_LIMIT}`,
+            `/products`
+        ];
+
+        const allRaw = [...seedProducts];
+        await Promise.all(paths.map(async path => {
+            const data = await fetchJsonWithTimeout(path, 12000).catch(() => null);
+            if (!data) return;
+            const normalized = normalizeHomeFastResponse(data);
+            const products = normalized.products && normalized.products.length ? normalized.products : aryantaArrayFromResponse(data, ["products", "items", "data", "results", "documents"]);
+            allRaw.push(...products);
+        }));
+
+        const before = allProducts.length;
+        mergeProductCatalog(allRaw, { replace: false });
+        HOME_CATALOG_READY = true;
+
+        if (allProducts.length > before && currentlyDisplayed >= baseCategoryProducts.length - SCROLL_BATCH - 1) {
+            setTimeout(() => loadMoreProducts(SCROLL_BATCH), 60);
+        }
+
+        setTimeout(() => injectGoogleMerchantData(allProducts.slice(0, 60)), 1000);
+    } catch (err) {
+        console.warn("Full catalog background load failed:", err);
+        HOME_CATALOG_READY = true;
+    }
+}
 
  async function fetchProducts() {
     return bootHomeUltraFast();
 }
 
-async function bootHomeUltraFast() {
-    if (HOME_LOADING_PROMISE) return HOME_LOADING_PROMISE;
+async function bootHomeUltraFast(force = false) {
+    if (HOME_LOADING_PROMISE && !force) return HOME_LOADING_PROMISE;
 
     HOME_LOADING_PROMISE = (async () => {
-        const safetyTimer = setTimeout(hideMainLoaderFast, 5000);
+        const safetyTimer = setTimeout(hideMainLoaderFast, 6500);
 
         try {
-            const homePromise = fetchJsonWithTimeout("/home-fast?limit=180", 2200).catch(() => null);
-            const productsPromise = fetchJsonWithTimeout("/products", 4500).catch(() => []);
-            const bannersPromise = fetchJsonWithTimeout("/banners", 3000).catch(() => []);
-
-            const homeData = await homePromise;
-
-            let rawProducts = Array.isArray(homeData?.products) ? homeData.products : [];
-            let rawBanners = Array.isArray(homeData?.banners) ? homeData.banners : [];
-
-            if (rawProducts.length === 0) {
-                rawProducts = await productsPromise;
-            }
-
-            if (rawBanners.length === 0) {
-                rawBanners = await bannersPromise;
-            }
-
-            HOME_RAM_CACHE = {
-                products: rawProducts,
-                banners: rawBanners
-            };
-
-            allProducts = Array.isArray(rawProducts)
-                ? rawProducts.filter(p => p && p.isVisible !== false && p.hidden !== true)
-                : [];
-
-            const lightProducts = allProducts
-                .filter(p => !p.isDummy)
-                .map(toHomeCardProduct)
-                .filter(p => p && p.id);
-
-            baseCategoryProducts = buildHomeLayout(lightProducts);
-
-            renderCategoryPills();
-
-            currentlyDisplayed = 0;
-
             const shelf = document.getElementById("productShelf");
+            if (force && shelf) shelf.innerHTML = "";
+            currentlyDisplayed = 0;
+            HOME_CATALOG_READY = false;
+
+            const bannerPromise = fetchJsonWithTimeout("/banners", 5500).catch(() => null);
+
+            const first = await fetchFirstWorkingProductList([
+                "/home-fast?limit=10&random=1&approved=true&live=true",
+                "/products?limit=10&random=1&approved=true&live=true",
+                "/home-fast?limit=20",
+                "/products?limit=20",
+                "/products"
+            ], 5200);
+
+            const initialProducts = first.products || [];
+            mergeProductCatalog(initialProducts, { replace: true });
+
             if (shelf) shelf.innerHTML = "";
 
-            loadMoreProducts(INITIAL_BATCH);
-            loadRecentlyViewedFromStorage();
-
-            renderOrHideBanners(rawBanners);
+            if (baseCategoryProducts.length) {
+                loadMoreProducts(INITIAL_BATCH);
+                loadRecentlyViewedFromStorage();
+            } else {
+                renderNoProductsState("No approved/live products came from Worker yet. Background catalog fetch is still trying /products.");
+            }
 
             hideMainLoaderFast();
 
-            setTimeout(() => {
-                injectGoogleMerchantData(lightProducts.slice(0, 20));
-            }, 3500);
+            const bannerData = await bannerPromise;
+            const rawBanners = (first.banners && first.banners.length)
+                ? first.banners
+                : aryantaArrayFromResponse(bannerData, ["banners", "banner", "slides", "data", "items", "images"]);
+            renderOrHideBanners(rawBanners);
+
+            loadFullCatalogInBackground(initialProducts);
 
         } catch (err) {
             console.error("Home loading failed:", err);
             hideMainLoaderFast();
-            showToast("Products loading slow. Please refresh once.");
+            renderNoProductsState("Products could not be loaded from the Worker. Please check the Cloudflare Worker /products and /home-fast routes.");
+            if (typeof showToast === "function") showToast("Products loading failed. Please check Worker routes.");
         } finally {
             clearTimeout(safetyTimer);
             HOME_LOADING_PROMISE = null;
@@ -761,7 +1154,6 @@ async function bootHomeUltraFast() {
 
     return HOME_LOADING_PROMISE;
 }
-
         
 
         function injectGoogleMerchantData(products) {
@@ -815,39 +1207,64 @@ async function bootHomeUltraFast() {
         let aryantaActiveCategory = "All";
 let aryantaQuickArrivalMode = false;
 
-function toHomeCardProduct(p) {
-    const id = String(p.id || p.productId || p.uid || p.sku || p.docId || "").trim();
+function toHomeCardProduct(raw) {
+    if (!raw || typeof raw !== "object") return null;
+
+    const p = normalizeRawProductObject(raw);
+    const id = makeProductId(p);
 
     const image =
         p.image ||
         p.imageUrl ||
         p.img ||
         p.thumbnail ||
+        p.photo ||
+        p.coverImage ||
+        p.mainImage ||
+        p.productImage ||
         (Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : "") ||
+        (Array.isArray(p.imageUrls) && p.imageUrls.length > 0 ? p.imageUrls[0] : "") ||
         "https://aryanta.in/vurify/aryanta.jpeg";
 
+    const images = Array.isArray(p.images) && p.images.length > 0
+        ? p.images
+        : (Array.isArray(p.imageUrls) && p.imageUrls.length > 0 ? p.imageUrls : [image]);
+
+    const price = Number(p.price ?? p.listedPrice ?? p.sellingPrice ?? p.finalPrice ?? p.salePrice ?? p.offerPrice ?? p.mrp ?? 0);
+    const reviewCount = Number(p.reviewCount ?? p.reviewsCount ?? p.totalReviews ?? 0);
+    const avgRating = p.avgRating || p.rating || p.averageRating || (reviewCount ? "4.5" : "New");
+    const name = p.name || p.title || p.productName || p.itemName || p.productTitle || "Aryanta Product";
+
     return {
+        ...p,
         id,
-        productId: p.productId || id,
-        name: p.name || p.title || p.productName || "Aryanta Product",
-        price: Number(p.price || p.sellingPrice || p.finalPrice || 0),
+        productId: p.productId || p.productID || p.product_id || id,
+        name,
+        price: Number.isFinite(price) ? price : 0,
         image,
-        images: Array.isArray(p.images) && p.images.length > 0 ? p.images : [image],
-        brand: p.brand || "",
-        category: p.category || "Other",
-        stock: Number(p.stock || 0),
-        avgRating: p.avgRating || "New",
-        reviewCount: Number(p.reviewCount || 0),
-        sponsored: p.sponsored === true,
+        imageUrl: p.imageUrl || image,
+        images: images.filter(Boolean),
+        brand: p.brand || p.brandName || p.company || p.sellerName || "",
+        category: p.category || p.cat || p.section || p.productCategory || "Other",
+        stock: Number(p.stock ?? p.quantity ?? p.qty ?? p.availableStock ?? 0),
+        avgRating,
+        reviewCount: Number.isFinite(reviewCount) ? reviewCount : 0,
+        sponsored: isSponsoredProduct(p),
+        randomTop: isRandomTopProduct(p),
+        specialDeal: isProductInSpecialEvent(p),
+        offerPercent: Number(p.offerPercent || p.discountPercent || p.discount || 0),
         isDummy: p.isDummy === true,
-        desc: p.desc || p.description || ""
+        sku: p.sku || p.SKU || "",
+        sellerName: p.sellerName || p.companyName || p.storeName || "",
+        desc: p.desc || p.description || p.shortDescription || p.highlights || ""
     };
 }
 
 function getLightProducts() {
     return allProducts
-        .filter(p => !p.isDummy)
-        .map(toHomeCardProduct);
+        .filter(p => p && !p.isDummy && isProductVisibleForHome(p))
+        .map(toHomeCardProduct)
+        .filter(Boolean);
 }
 
 function renderProductSet(products) {
@@ -909,7 +1326,7 @@ window.filterCategory = function(cat) {
         products = buildHomeLayout(products);
     }
 
-    renderProductSet(shuffleArray(products));
+    renderProductSet(rankedRandomProducts(products));
     closeAllModals();
 };
 
@@ -921,7 +1338,7 @@ window.filterQuickArrivals = function() {
         return p.avgRating === 'New' || !p.reviewCount;
     });
 
-    renderProductSet(shuffleArray(products));
+    renderProductSet(rankedRandomProducts(products));
 };
 
 window.loadMoreProducts = function(batchCount = SCROLL_BATCH) {
@@ -982,6 +1399,12 @@ window.loadMoreProducts = function(batchCount = SCROLL_BATCH) {
 
         const imgPriority = currentlyDisplayed + index < 4 ? 'high' : 'low';
 
+        const promoBadges = `
+            ${p.sponsored ? '<span class="p-badge p-sponsored"><i class="fas fa-bullhorn"></i> Sponsored</span>' : ''}
+            ${p.randomTop && !p.sponsored ? '<span class="p-badge p-random"><i class="fas fa-fire"></i> Top Pick</span>' : ''}
+            ${p.specialDeal ? `<span class="p-badge p-special"><i class="fas fa-bolt"></i> ${p.offerPercent ? `${p.offerPercent}% OFF` : 'Live Deal'}</span>` : ''}
+        `;
+
         const imgNodes = `
             <img 
                 class="p-img-layer active"
@@ -1005,6 +1428,7 @@ window.loadMoreProducts = function(batchCount = SCROLL_BATCH) {
                 onclick="event.stopPropagation(); toggleWishlist('${productId}')"></i>
 
             <div class="list-image-container" id="img-cont-${productId}">
+                <div class="product-badge-stack">${promoBadges}</div>
                 ${imgNodes}
             </div>
 
@@ -1064,7 +1488,7 @@ window.loadMoreProducts = function(batchCount = SCROLL_BATCH) {
             const cMin = parseFloat(document.getElementById('customMinPrice').value);
             const cMax = parseFloat(document.getElementById('customMaxPrice').value);
             
-            let filtered = allProducts.filter(p => !p.isDummy);
+            let filtered = getLightProducts();
             
             const dInput = document.getElementById("desktopSearchInput").value.toLowerCase().trim();
             const mInput = document.getElementById("mobileSearchInput").value.toLowerCase().trim();
@@ -1073,7 +1497,7 @@ window.loadMoreProducts = function(batchCount = SCROLL_BATCH) {
             if (query !== "") {
                 const terms = query.split(' ').filter(t => t.length > 0);
                 filtered = filtered.filter(p => terms.every(t => {
-                    const searchStr = `${p.name} ${p.brand || ''} ${p.category || ''} ${p.id || ''}`.toLowerCase();
+                    const searchStr = `${p.name} ${p.brand || ''} ${p.category || ''} ${p.id || ''} ${p.sku || ''} ${p.sellerName || ''} ${p.desc || ''}`.toLowerCase();
                     return searchStr.includes(t) || mathScientificFuzzyMatch(searchStr, t);
                 }));
                 
@@ -1108,15 +1532,18 @@ window.loadMoreProducts = function(batchCount = SCROLL_BATCH) {
                 document.getElementById('activeFilterNotice').style.display = 'none';
             }
 
-            baseCategoryProducts = shuffleArray(filtered);
+            baseCategoryProducts = rankedRandomProducts(filtered);
             currentlyDisplayed = 0;
             document.getElementById('productShelf').innerHTML = "";
             loadMoreProducts(INITIAL_BATCH);
         }
         function getFirstProductImage(p) {
-    if (p.image) return p.image;
-    if (Array.isArray(p.images) && p.images.length > 0) return p.images[0];
-    if (p.imageUrl) return p.imageUrl;
+    if (p?.image) return p.image;
+    if (p?.imageUrl) return p.imageUrl;
+    if (p?.img) return p.img;
+    if (p?.thumbnail) return p.thumbnail;
+    if (Array.isArray(p?.images) && p.images.length > 0) return p.images[0];
+    if (Array.isArray(p?.imageUrls) && p.imageUrls.length > 0) return p.imageUrls[0];
     return "https://aryanta.in/vurify/aryanta.jpeg";
 }
 
@@ -1355,7 +1782,7 @@ function escapeHtml(str = "") {
                 return;
             }
 
-            const product = allProducts.find(p => String(p.id) === String(id));
+            const product = findProductByAnyId(id);
             if(!product) return;
             
             const idx = cart.findIndex(i => String(i.id) === String(id));
@@ -1385,7 +1812,7 @@ function escapeHtml(str = "") {
             }
 
             // Mocks tracking in case it doesn't trigger gracefully 
-            const product = allProducts.find(p => String(p.id) === String(id));
+            const product = findProductByAnyId(id);
             if(!product) return;
             
             trackRecentlyViewed(product);
@@ -1434,14 +1861,7 @@ function escapeHtml(str = "") {
         }
 
        function getProductKey(p) {
-    return String(
-        p?.id ||
-        p?.productId ||
-        p?.uid ||
-        p?.sku ||
-        p?.docId ||
-        ""
-    ).trim();
+    return makeProductId(p);
 }
 
 function findProductByAnyId(id) {
@@ -1452,9 +1872,12 @@ function findProductByAnyId(id) {
         return [
             p.id,
             p.productId,
+            p.productID,
             p.uid,
             p.sku,
-            p.docId
+            p.docId,
+            p.itemId,
+            p.slug
         ].some(v => String(v || "").trim() === sid);
     }) || null;
 }
@@ -1818,24 +2241,28 @@ function enableRecentViewedScroll() {
                 searchTimeout = setTimeout(() => {
                     const terms = query.split(' ').filter(t => t.length > 0);
                     let filtered = allProducts.filter(p => !p.isDummy && terms.every(t => {
-                        const searchStr = `${p.name} ${p.brand || ''} ${p.category || ''}`.toLowerCase();
+                        const searchStr = `${p.name} ${p.brand || ''} ${p.category || ''} ${p.id || ''} ${p.sku || ''} ${p.sellerName || ''} ${p.desc || ''}`.toLowerCase();
                         return searchStr.includes(t) || mathScientificFuzzyMatch(searchStr, t);
                     }));
+
+                    if (!filtered.length && query.length <= 2) {
+                        filtered = allProducts.filter(p => !p.isDummy);
+                    }
                     
-                    filtered.sort((a, b) => (b.sponsored === true ? 1 : 0) - (a.sponsored === true ? 1 : 0));
+                    const suggestions = pickRandomSuggestions(filtered, 3);
                     
-                    dropdown.innerHTML = filtered.slice(0, 3).map(p => `
-                        <div class="search-item" onclick="window.location.href='https://aryanta.in/product?id=${p.id}'">
-                            <img src="${p.images && p.images.length > 0 ? p.images[0] : p.image}" style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px;">
-                            <div style="display:flex; flex-direction:column; overflow:hidden;">
-                                <span style="font-weight: 600; font-size: 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                                    ${p.name} ${p.sponsored ? '<span class="s-sponsored-tag">Ad</span>' : ''}
+                    dropdown.innerHTML = `${HOME_CATALOG_READY ? '' : '<div class="search-item"><i class="fas fa-spinner fa-spin"></i><span>Loading full catalog...</span></div>'}` + suggestions.map(p => `
+                        <div class="search-item ${p.sponsored ? 'search-sponsored' : ''}" onclick="window.location.href='https://aryanta.in/product?id=${encodeURIComponent(p.id)}'">
+                            <img src="${p.images && p.images.length > 0 ? p.images[0] : p.image}" loading="lazy" decoding="async" style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px;">
+                            <div class="search-item-copy">
+                                <span class="search-item-title">
+                                    ${escapeHtml(p.name)} ${p.sponsored ? '<span class="s-sponsored-tag">Sponsored</span>' : ''}${p.randomTop && !p.sponsored ? '<span class="s-sponsored-tag s-top-tag">Top</span>' : ''}
                                 </span>
-                                <span style="font-weight: 800; font-size: 12px; color:var(--primary);">₹${Number(p.price).toLocaleString('en-IN')}</span>
+                                <span class="search-item-price">₹${Number(p.price).toLocaleString('en-IN')}</span>
                             </div>
                         </div>`).join("");
-                    dropdown.style.display = filtered.length > 0 ? "block" : "none";
-                }, 100); 
+                    dropdown.style.display = suggestions.length > 0 ? "block" : "none";
+                }, 80); 
             });
 
             input.addEventListener("keypress", function(e) {
