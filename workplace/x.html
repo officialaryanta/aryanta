@@ -66,46 +66,57 @@
     /* TOPBAR */
     .topbar { flex: 0 0 auto; padding: var(--top-safe) 12px 10px; background: var(--card); border-bottom: 1px solid var(--chat-border); display: flex; align-items: center; gap: 12px; z-index: 10; }
     .back-btn { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text); }
-    .chat-header-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
+    .chat-header-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; cursor: pointer; }
     .chat-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
     .chat-title { font-size: 16px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .chat-subtitle { font-size: 11px; color: var(--primary); font-weight: 700; }
     .menu-btn { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--text); }
 
     /* MESSAGES AREA */
-    .chat-box { flex: 1 1 auto; overflow-y: auto; padding: 16px 12px; display: flex; flex-direction: column; gap: 8px; position: relative; scroll-behavior: smooth; }
+    .chat-box { flex: 1 1 auto; overflow-y: auto; padding: 16px 12px; display: flex; flex-direction: column; gap: 8px; position: relative; scroll-behavior: smooth; touch-action: pan-y; width: 100%; min-width: 0;}
     
     /* HIDE SCROLLBAR */
     .chat-box::-webkit-scrollbar { display: none; }
     .chat-box { -ms-overflow-style: none; scrollbar-width: none; }
     
     /* CHAT BUBBLES */
-    .msg-row { display: flex; align-items: center; width: 100%; margin-bottom: 4px; position: relative; transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1); }
+    .msg-row { display: flex; align-items: center; width: 100%; margin-bottom: 4px; position: relative; transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1); max-width: 100%; min-width: 0; overflow: visible;}
     .msg-row.in { justify-content: flex-start; }
     .msg-row.out { justify-content: flex-end; }
+    .msg-row.with-avatar { gap: 7px; align-items: flex-end; }
+    .msg-row.in.with-avatar { justify-content: flex-start; }
+    .msg-row.out.with-avatar { justify-content: flex-end; }
     
-    .bubble { max-width: 80%; padding: 8px 12px; border-radius: 16px; font-size: 14.5px; line-height: 1.4; position: relative; word-break: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: pointer; }
-    .msg-row.in .bubble { background: var(--msg-in); border-top-left-radius: 4px; }
-    .msg-row.out .bubble { background: var(--msg-out); border-top-right-radius: 4px; }
+    .bubble { max-width: calc(100% - 42px); padding: 8px 12px; border-radius: 16px; font-size: 14.5px; line-height: 1.4; position: relative; word-break: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: pointer; overflow-wrap: anywhere;}
+    .msg-row.in .bubble { background: var(--msg-in); border-top-left-radius: 4px; order: 2;}
+    .msg-row.out .bubble { background: var(--msg-out); border-top-right-radius: 4px; order: 2;}
 
     .msg-sender { font-size: 11px; font-weight: 800; color: var(--primary); margin-bottom: 3px; display: block; }
-    .msg-row.out .msg-sender { display: none; } 
+    .msg-row.out .msg-sender { display: block; text-align: right; color: rgba(0,128,128,0.92); } 
+    html[data-theme="dark"] .msg-row.out .msg-sender { color: #a7f3d0; }
     
-    .msg-text { margin-bottom: 4px; white-space: pre-wrap; }
-    .msg-meta { display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .msg-text { margin-bottom: 4px; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;}
+    .msg-meta { display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-size: 10px; color: var(--muted); margin-top: 2px; user-select: none;}
+    .msg-date-rich { font-weight:900; }
     
     /* Attachments in Bubble */
-    .msg-attachment { border-radius: 12px; overflow: hidden; margin-top: 4px; margin-bottom: 6px; }
-    .msg-attachment img { width: 100%; max-height: 250px; object-fit: cover; display: block; border-radius: 10px; cursor: pointer; }
-    .msg-file { display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 10px; text-decoration: none; color: inherit; margin-top: 4px; margin-bottom: 6px; }
+    .msg-attachment { border-radius: 12px; overflow: hidden; margin-top: 4px; margin-bottom: 6px; max-width: 100%;}
+    .msg-attachment img { width: 100%; max-height: 250px; object-fit: cover; display: block; border-radius: 10px; cursor: pointer; max-width: 100%;}
+    .msg-file { display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 10px; text-decoration: none; color: inherit; margin-top: 4px; margin-bottom: 6px; max-width: 100%;}
     .msg-file i { font-size: 24px; color: var(--primary); }
-    .msg-file div { font-weight: 700; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .msg-file div { font-weight: 700; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: anywhere; word-break: break-word;}
+    .msg-video { width:100%; max-height:260px; border-radius:10px; display:block; background:#000; max-width: 100%;}
+
+    /* Avatar */
+    .msg-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); background: var(--card); flex: 0 0 auto; }
+    .msg-row.out .msg-avatar { order: 3; }
+    .msg-row.in .msg-avatar { order: 1; }
 
     /* Quoted Reply */
     .quote-box { background: rgba(0,0,0,0.06); border-left: 4px solid var(--primary); border-radius: 8px; padding: 6px 10px; margin-bottom: 6px; font-size: 12px; cursor: pointer; }
     html[data-theme="dark"] .quote-box { background: rgba(255,255,255,0.05); }
     .quote-sender { font-weight: 800; color: var(--primary); margin-bottom: 2px; }
-    .quote-text { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .quote-text { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: anywhere; word-break: break-word;}
 
     /* Swipe Icon Indicator */
     .swipe-reply-icon { position: absolute; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 50%; background: var(--card); box-shadow: 0 2px 10px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; color: var(--primary); opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: -1; }
@@ -120,7 +131,9 @@
     .date-divider span { background: var(--card); padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 700; color: var(--muted); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
     /* MULTI-SELECT CHECKBOX */
-    .msg-checkbox { display: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--muted); margin-right: 12px; align-items: center; justify-content: center; font-size: 12px; color: white; transition: 0.2s; flex: 0 0 auto; }
+    .msg-checkbox { display: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--muted); align-items: center; justify-content: center; font-size: 12px; color: white; transition: 0.2s; flex: 0 0 auto; }
+    .msg-row.out .msg-checkbox { order: 1; margin-right: 12px; margin-left: 0; }
+    .msg-row.in .msg-checkbox { order: 0; margin-right: 0; margin-left: 12px; }
     .msg-checkbox.checked { background: var(--primary); border-color: var(--primary); }
     .msg-checkbox.checked::after { content: '\f00c'; font-family: "Font Awesome 6 Free"; font-weight: 900; }
     body.select-mode .msg-checkbox { display: flex; }
@@ -129,15 +142,13 @@
     /* INPUT AREA */
     .input-wrapper { flex: 0 0 auto; background: var(--card); padding: 8px 12px calc(8px + var(--bottom-safe)); border-top: 1px solid var(--chat-border); position: relative; z-index: 20; }
     
-    /* Reply Preview above input */
     .reply-preview-bar { display: none; background: var(--bg); border-left: 4px solid var(--primary); padding: 8px 12px; border-radius: 12px 12px 0 0; margin: -8px -12px 8px -12px; position: relative; }
     .reply-preview-bar.active { display: block; }
     .rp-sender { font-size: 12px; font-weight: 800; color: var(--primary); margin-bottom: 2px; }
-    .rp-text { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 20px; }
+    .rp-text { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 20px; overflow-wrap: anywhere; word-break: break-word;}
     .rp-close { position: absolute; right: 10px; top: 10px; color: var(--muted); padding: 5px; }
 
-    /* Attachment Preview */
-    .att-preview-bar { display: none; gap: 10px; overflow-x: auto; padding-bottom: 10px; }
+    .att-preview-bar { display: none; gap: 10px; overflow-x: auto; padding-bottom: 10px; overscroll-behavior-x: contain;}
     .att-preview-bar.active { display: flex; }
     .att-item { position: relative; width: 60px; height: 60px; border-radius: 10px; background: var(--bg); flex: 0 0 auto; }
     .att-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; border: 1px solid var(--border); }
@@ -147,19 +158,23 @@
     .input-row { display: flex; align-items: flex-end; gap: 8px; }
     .btn-attach { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--muted); background: var(--bg); flex: 0 0 auto; transition: 0.2s;}
     .btn-attach.active { transform: rotate(45deg); color: var(--primary); }
+    .btn-emoji { width: 42px; height: 42px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:20px; color:var(--muted); background:var(--bg); flex:0 0 auto; }
     
-    .chat-input { flex: 1; min-height: 42px; max-height: 120px; background: var(--bg); border-radius: 21px; padding: 10px 16px; font-size: 15px; resize: none; overflow-y: auto; line-height: 1.4; border: 1px solid var(--chat-border); }
+    .chat-input { flex: 1; min-height: 42px; max-height: 120px; background: var(--bg); border-radius: 21px; padding: 10px 16px; font-size: 15px; resize: none; overflow-y: auto; line-height: 1.4; border: 1px solid var(--chat-border); user-select:text; -webkit-user-select:text;}
     .chat-input:focus { border-color: var(--primary); }
     .chat-input::-webkit-scrollbar { display: none; }
     
     .btn-action-round { width: 42px; height: 42px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 16px; flex: 0 0 auto; transition: 0.2s; position: relative;}
-    
-    /* Mic specific styling */
     .btn-mic { display: flex; }
     .btn-mic.recording { background: var(--danger); animation: pulseMic 1.5s infinite; }
     @keyframes pulseMic { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
-    
     .btn-send { display: none; }
+
+    .input-wrapper.typing-active .btn-attach,
+    .input-wrapper.typing-active .btn-emoji,
+    .input-wrapper.typing-active .btn-mic { display: none !important; }
+    .input-wrapper.typing-active .btn-send { display: flex !important; }
+    .input-wrapper.typing-active .chat-input { border-radius: 18px; min-height: 48px; padding: 12px 16px; }
 
     /* SELECT MODE ACTION BAR */
     .select-bar { display: none; align-items: center; justify-content: space-between; width: 100%; }
@@ -171,13 +186,10 @@
     /* BOTTOM SHEET MENUS */
     .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; opacity: 0; pointer-events: none; transition: 0.2s; }
     .overlay.active { opacity: 1; pointer-events: auto; }
-    
     .bottom-sheet { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%) translateY(100%); width: 100%; max-width: 600px; background: var(--card); border-radius: 24px 24px 0 0; z-index: 101; transition: 0.3s cubic-bezier(0.25, 1, 0.5, 1); padding: 20px; padding-bottom: calc(20px + var(--bottom-safe)); }
     .bottom-sheet.active { transform: translateX(-50%) translateY(0); }
-    
     .sheet-handle { width: 40px; height: 5px; border-radius: 5px; background: var(--border); margin: 0 auto 20px; }
 
-    /* Attachment Menu Grid */
     .attach-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: center; }
     .attach-opt { display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--text); font-size: 13px; font-weight: 700; cursor: pointer; }
     .attach-icon { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: 0.2s; }
@@ -186,7 +198,6 @@
     .ic-gal { background: linear-gradient(135deg, #a855f7, #6366f1); }
     .ic-doc { background: linear-gradient(135deg, #3b82f6, #2563eb); }
 
-    /* Context Menu / Top Menu */
     .menu-list { display: flex; flex-direction: column; }
     .menu-item { display: flex; align-items: center; gap: 14px; padding: 16px 10px; font-size: 16px; font-weight: 700; border-bottom: 1px solid var(--chat-border); color: var(--text); }
     .menu-item:last-child { border-bottom: none; }
@@ -202,30 +213,30 @@
     .iv-content { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; overflow: hidden; position: relative;}
     .iv-content img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; transition: transform 0.2s; }
 
-
-
     /* EMOJI MENU */
-    .btn-emoji { width: 42px; height: 42px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:20px; color:var(--muted); background:var(--bg); flex:0 0 auto; }
+    .emoji-grid { display:grid; grid-template-columns:repeat(8, 1fr); gap:8px; }
+    .emoji-grid button { height:38px; border-radius:12px; background:var(--bg); font-size:22px; display:flex; align-items:center; justify-content:center; }
+    
     .typing-pill { display:none; align-self:flex-start; background:var(--card); color:var(--muted); font-size:12px; font-weight:800; padding:8px 12px; border-radius:999px; margin:4px 0; box-shadow:0 1px 2px rgba(0,0,0,0.08); }
     .typing-pill.active { display:flex; align-items:center; gap:6px; }
     .typing-dots span { display:inline-block; width:4px; height:4px; border-radius:50%; background:var(--primary); margin:0 1px; animation:typingDots 1.2s infinite ease-in-out; }
     .typing-dots span:nth-child(2){ animation-delay:.15s; }
     .typing-dots span:nth-child(3){ animation-delay:.3s; }
     @keyframes typingDots { 0%,80%,100%{ opacity:.25; transform:translateY(0);} 40%{ opacity:1; transform:translateY(-3px);} }
-    .msg-video { width:100%; max-height:260px; border-radius:10px; display:block; background:#000; }
+    
     .reaction-strip { display:flex; gap:8px; padding:4px 6px 12px; justify-content:center; flex-wrap:wrap; }
     .reaction-strip button { width:38px; height:38px; border-radius:50%; background:var(--bg); display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
     .msg-reactions { display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-top:4px; }
     .msg-reaction-pill { background:var(--card); border:1px solid var(--border); border-radius:999px; padding:2px 7px; font-size:12px; line-height:1.2; box-shadow:0 1px 2px rgba(0,0,0,0.08); }
     .msg-star { color:#f59e0b; margin-right:4px; }
-    .emoji-grid { display:grid; grid-template-columns:repeat(8, 1fr); gap:8px; }
-    .emoji-grid button { height:38px; border-radius:12px; background:var(--bg); font-size:22px; display:flex; align-items:center; justify-content:center; }
+    
     .search-box { display:flex; align-items:center; gap:10px; background:var(--bg); border:1px solid var(--border); border-radius:16px; padding:10px 12px; margin-bottom:14px; }
-    .search-box input { flex:1; font-size:15px; }
+    .search-box input { flex:1; font-size:15px; user-select:text; -webkit-user-select:text;}
     .search-results { max-height:45dvh; overflow:auto; display:flex; flex-direction:column; gap:8px; }
     .search-result { text-align:left; padding:12px; border-radius:14px; background:var(--bg); border:1px solid var(--border); }
     .search-result strong { display:block; color:var(--primary); font-size:12px; margin-bottom:4px; }
     .search-result span { display:block; color:var(--text); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    
     .camera-modal, .file-viewer { position:fixed; inset:0; z-index:1200; background:#000; color:#fff; display:none; flex-direction:column; }
     .camera-modal.active, .file-viewer.active { display:flex; }
     .camera-top, .camera-actions, .fv-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:max(12px, env(safe-area-inset-top)) 14px 12px; background:rgba(0,0,0,0.45); z-index:2; }
@@ -243,25 +254,6 @@
     .file-card p { color:rgba(255,255,255,0.72); font-size:13px; margin-bottom:16px; }
     .file-card button { background:#fff; color:#111; font-weight:900; padding:12px 18px; border-radius:999px; }
 
-
-    .input-wrapper.typing-active .btn-attach,
-    .input-wrapper.typing-active .btn-emoji,
-    .input-wrapper.typing-active .btn-mic { display: none !important; }
-    .input-wrapper.typing-active .btn-send { display: flex !important; }
-    .input-wrapper.typing-active .chat-input { border-radius: 18px; min-height: 48px; padding: 12px 16px; }
-
-    .msg-row.with-avatar { gap: 7px; align-items: flex-end; }
-    .msg-row.in.with-avatar { justify-content: flex-start; }
-    .msg-row.out.with-avatar { justify-content: flex-end; }
-    .msg-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); background: var(--card); flex: 0 0 auto; }
-    .msg-row.out .msg-avatar { order: 3; }
-    .msg-row.out .bubble { order: 2; }
-    .msg-row.out .msg-checkbox { order: 1; }
-    .msg-row.in .msg-avatar { order: 1; }
-    .msg-row.in .bubble { order: 2; }
-    .msg-row.in .msg-checkbox { order: 0; }
-    .msg-row.out .msg-sender { display: block; text-align: right; color: rgba(0,128,128,0.92); }
-    html[data-theme="dark"] .msg-row.out .msg-sender { color: #a7f3d0; }
     .blocked-attachment { display:flex; align-items:center; gap:10px; padding:10px; border-radius:10px; background:rgba(239,68,68,0.08); color:var(--danger); font-size:12px; font-weight:800; margin:4px 0 6px; }
     .blocked-attachment i { font-size:18px; }
 
@@ -274,100 +266,18 @@
     .camera-small-action.send { background:#008080; }
     .permission-disabled { opacity:.45; filter:grayscale(.6); }
 
-
     /* Aryanta fixes: stop left/right page scrolling and keep all chat content inside screen */
-    html, body, .app-layout, .topbar, .input-wrapper, .chat-box {
-      max-width: 100%;
-      overflow-x: hidden !important;
-      overscroll-behavior-x: none;
-    }
-    .app-layout {
-      width: 100%;
-      min-width: 0;
-    }
-    .chat-box {
-      touch-action: pan-y;
-      width: 100%;
-      min-width: 0;
-    }
-    .msg-row {
-      max-width: 100%;
-      min-width: 0;
-      overflow: visible;
-    }
-    .msg-row.with-avatar {
-      max-width: 100%;
-    }
-    .bubble {
-      min-width: 0;
-      max-width: calc(100% - 42px);
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
-    .msg-text,
-    .quote-text,
-    .msg-file div,
-    .chat-title,
-    .rp-text {
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
-    .msg-attachment,
-    .msg-attachment img,
-    .msg-video,
-    .msg-file {
-      max-width: 100%;
-    }
-    .att-preview-bar {
-      overscroll-behavior-x: contain;
-    }
+    html, body, .app-layout, .topbar, .input-wrapper, .chat-box { max-width: 100%; overflow-x: hidden !important; overscroll-behavior-x: none; }
+    .app-layout { width: 100%; min-width: 0; }
+    .chat-box { touch-action: pan-y; width: 100%; min-width: 0; }
+    .msg-row { max-width: 100%; min-width: 0; overflow: visible; }
+    .msg-row.with-avatar { max-width: 100%; }
 
-
-
-    .chat-header-info { cursor: pointer; }
-    .jump-actions {
-      position: absolute;
-      right: 14px;
-      bottom: calc(88px + var(--bottom-safe));
-      z-index: 30;
-      display: grid;
-      gap: 8px;
-      opacity: 0; /* Hidden by default */
-      pointer-events: none;
-      transition: opacity 0.2s;
-    }
-    .jump-actions.visible {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .jump-actions button {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background: var(--card);
-      color: var(--primary);
-      border: 1px solid var(--border);
-      box-shadow: 0 10px 24px rgba(0,0,0,0.14);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      pointer-events: auto;
-    }
+    .jump-actions { position: absolute; right: 14px; bottom: calc(88px + var(--bottom-safe)); z-index: 30; display: grid; gap: 8px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .jump-actions.visible { opacity: 1; pointer-events: auto; }
+    .jump-actions button { width: 38px; height: 38px; border-radius: 50%; background: var(--card); color: var(--primary); border: 1px solid var(--border); box-shadow: 0 10px 24px rgba(0,0,0,0.14); display: flex; align-items: center; justify-content: center; pointer-events: auto; }
     
-    .chat-target, .admin-chat-row {
-      width:100%;
-      min-height:64px;
-      border-radius:18px;
-      background:var(--bg);
-      border:1px solid var(--border);
-      padding:10px;
-      display:grid;
-      grid-template-columns:44px 1fr auto;
-      align-items:center;
-      gap:10px;
-      text-align:left;
-      color:var(--text);
-    }
+    .chat-target, .admin-chat-row { width:100%; min-height:64px; border-radius:18px; background:var(--bg); border:1px solid var(--border); padding:10px; display:grid; grid-template-columns:44px 1fr auto; align-items:center; gap:10px; text-align:left; color:var(--text); }
     .chat-target.active, .admin-chat-row.active { border-color:var(--primary); box-shadow:0 0 0 3px var(--soft); }
     .chat-target img, .admin-chat-row img { width:44px; height:44px; border-radius:50%; object-fit:cover; background:var(--card); border:1px solid var(--border); }
     .chat-target strong, .admin-chat-row strong { display:block; font-size:14px; font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -377,12 +287,13 @@
     .chat-user-list::-webkit-scrollbar { display:none; }
     .chat-empty-row { padding:14px; border-radius:16px; background:var(--bg); color:var(--muted); font-size:13px; font-weight:800; text-align:center; }
     
-    .msg-date-rich { font-weight:900; }
-    .msg-meta { user-select:none; }
     body { user-select: none; -webkit-user-select: none; }
-    .chat-input, .search-box input { user-select:text; -webkit-user-select:text; }
     a, button { -webkit-touch-callout:none; }
 
+    /* TOAST */
+    .toast-holder { position: fixed; top: calc(10px + var(--top-safe)); left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    .toast { background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-size: 13px; font-weight: 800; opacity: 0; transform: translateY(-20px); transition: 0.3s; display: flex; align-items: center; gap: 8px;}
+    .toast.show { opacity: 1; transform: translateY(0); }
 
     /* Hide inputs */
     input[type="file"] { display: none; }
@@ -410,9 +321,9 @@
         <div><strong>Admin Group</strong><span>Send message to all admins</span></div>
         <i class="fas fa-users"></i>
       </button>
-      <div class="chat-target-title">Admins</div>
+      <div class="chat-target-title">Users</div>
       <div id="chatUserList" class="chat-user-list">
-        <div class="chat-empty-row">Loading admins...</div>
+        <div class="chat-empty-row">Loading users...</div>
       </div>
     </main>
   </div>
@@ -567,8 +478,6 @@
     </div>
   </div>
 
-
-
   <!-- EMOJI MENU -->
   <div class="bottom-sheet" id="emojiMenu">
     <div class="sheet-handle"></div>
@@ -614,7 +523,6 @@
     <div class="fv-body" id="fvBody"></div>
   </div>
 
-
   <!-- TOASTS -->
   <div id="toastHolder" class="toast-holder"></div>
 
@@ -641,10 +549,8 @@
     const PRESENCE_PATH = "admin_chat_presence";
     const ADMIN_PROFILES_PATH = "admin_chat_profiles";
     const ADMINS_DB_PATH = "admins";
-    const ADMIN_NOTIFICATION_PATH = "admin_notifications";
-    const ADMIN_APP_MESSAGE_PATH = "aryanta_admin_app/messages";
-    const ADMIN_BROADCAST_PATH = "notifications/admins";
-    const WORKER_API = "https://rough-field-c679.official-aryanta.workers.dev";
+    const USERS_DB_PATH = "users";
+    const EMPLOYEES_DB_PATH = "employees";
     const MAX_FILE_SIZE = 4 * 1024 * 1024;
     const MAX_ATTACHMENTS = 10;
     const MAX_IMAGES_PER_MINUTE = 10;
@@ -655,18 +561,70 @@
     const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]));
     const safeKey = value => String(value || "guest").replace(/[.#$\/[\]]/g, "_");
 
-    let currentUser = safeJson(sessionStorage.getItem(PROFILE_KEY), null) || safeJson(localStorage.getItem(PROFILE_KEY), null) || {};
-    if (!currentUser.uid) {
-      let localUid = localStorage.getItem("aryanta_chat_local_uid");
-      if (!localUid) {
-        localUid = "local-" + Date.now() + "-" + Math.floor(Math.random() * 9999);
-        localStorage.setItem("aryanta_chat_local_uid", localUid);
-      }
-      currentUser = { uid: localUid, name: "Admin" };
+    const SESSION_KEYS = [
+      PROFILE_KEY,
+      "aryanta_admin_user",
+      "aryanta_current_admin",
+      "aryanta_login_admin",
+      "active_admin",
+      "admin_profile",
+      "aryanta_admin_session",
+      "aryanta_admin_auth",
+      "aryanta_user",
+      "aryanta_logged_admin"
+    ];
+
+    function pickObject(value) {
+      if (!value || typeof value !== "object") return {};
+      if (value.admin && typeof value.admin === "object") return { ...value, ...value.admin };
+      if (value.user && typeof value.user === "object") return { ...value, ...value.user };
+      if (value.profile && typeof value.profile === "object") return { ...value, ...value.profile };
+      if (value.data && typeof value.data === "object") return { ...value, ...value.data };
+      return value;
     }
 
-    const myUid = String(currentUser.uid || currentUser.email || "admin");
-    const myKey = safeKey(myUid);
+    function normalizeStoredAdmin(value = {}) {
+      const raw = pickObject(value);
+      const uid = String(raw.uid || raw.adminUid || raw.adminID || raw.id || raw.userId || raw.userID || "").trim();
+      return {
+        ...raw,
+        uid,
+        name: raw.name || raw.fullName || raw.displayName || raw.userName || raw.adminName || raw.email || uid || "Admin",
+        email: raw.email || raw.mail || "",
+        role: raw.role || raw.type || "Admin"
+      };
+    }
+
+    function readCurrentAdminFromStorage() {
+      let best = {};
+      SESSION_KEYS.forEach(key => {
+        const sessionValue = normalizeStoredAdmin(safeJson(sessionStorage.getItem(key), {}));
+        const localValue = normalizeStoredAdmin(safeJson(localStorage.getItem(key), {}));
+        if (sessionValue.uid) best = { ...best, ...sessionValue };
+        if (localValue.uid && !best.uid) best = { ...best, ...localValue };
+      });
+      return best;
+    }
+
+    function isLocalUid(uid) {
+      const value = String(uid || "").trim().toLowerCase();
+      return !value || value === "guest" || value === "admin" || value === "null" || value === "undefined" || value.startsWith("local-") || value.startsWith("temp-") || value.startsWith("anonymous");
+    }
+
+    function isRealAdminUid(uid) {
+      return /^(ADM|ARY)-\d{4,}$/i.test(String(uid || "").trim());
+    }
+
+    function isSafeChatUid(uid) {
+      const value = String(uid || "").trim();
+      if (isLocalUid(value)) return false;
+      if (value.length > 80) return false;
+      return /^[A-Za-z0-9_@.\-]+$/.test(value);
+    }
+
+    let currentUser = normalizeStoredAdmin(readCurrentAdminFromStorage());
+    const myUid = String(currentUser.uid || "").trim();
+    const myKey = safeKey(myUid || "guest");
     const myName = currentUser.name || currentUser.displayName || currentUser.fullName || currentUser.email || "Admin";
 
     // CORE LAG FIX: In-memory decryption cache
@@ -727,11 +685,13 @@
 
     let myImage = resolveMyProfileImage();
     let adminProfileMap = {};
+    let userProfileMap = {};
     let activeChat = { type: "group", id: "group", uid: "all", name: "Admin Group", image: ARYANTA_LOGO };
     let activeMessageRef = null;
     let activeTypingRef = null;
     let activePresenceRef = null;
     let allAdminProfiles = [];
+    let allUserProfiles = [];
 
     const DEFAULT_SETTINGS = {
       notify: false,
@@ -752,8 +712,49 @@
     let lastKnownMessageTs = 0;
     let typingRemoteDisabled = true;
 
+    // --- UTILS AND ALERTS ---
+    function showToast(msg, options = {}) {
+      loadAdminSettings();
+      if (!options.force && appSettings.notify !== true) return;
+      const holder = $("toastHolder");
+      if (!holder) return;
+      const toast = document.createElement("div");
+      toast.className = "toast show";
+      toast.innerHTML = `<i class="fas fa-info-circle"></i><span>${escapeHtml(msg)}</span>`;
+      holder.appendChild(toast);
+      setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 300); }, Number(options.duration || 2200));
+    }
+
+    function requireValidChatLogin() {
+      if (isRealAdminUid(myUid)) return true;
+      showLockedChatScreen();
+      showToast("Login first with a real admin UID to access chat.", { force: true, duration: 4500 });
+      return false;
+    }
+
+    function showLockedChatScreen() {
+      const home = $("homeScreen");
+      const chat = $("chatScreen");
+      if (chat) chat.style.display = "none";
+      if (!home) return;
+      home.style.display = "flex";
+      home.innerHTML = `
+        <header class="topbar">
+          <button class="back-btn" onclick="window.location.href='admin.html'"><i class="fas fa-arrow-left"></i></button>
+          <div class="chat-header-info"><div class="chat-title" style="font-size:20px;">Chats Locked</div></div>
+        </header>
+        <main class="chat-box" style="padding:24px;align-items:center;justify-content:center;text-align:center;">
+          <div style="width:min(360px,100%);background:var(--card);border:1px solid var(--border);border-radius:26px;padding:24px;box-shadow:0 14px 36px rgba(0,0,0,.08);">
+            <img src="${ARYANTA_LOGO}" alt="Aryanta" style="width:74px;height:74px;border-radius:50%;object-fit:cover;margin-bottom:14px;border:1px solid var(--border);">
+            <h2 style="font-size:20px;margin-bottom:8px;">Login required</h2>
+            <p style="font-size:13px;color:var(--muted);font-weight:700;line-height:1.45;margin-bottom:18px;">Chat can write only with a real admin UID like ADM-289711. Local/guest IDs are blocked to stop Firebase permission_denied errors.</p>
+            <button onclick="window.location.href='admin.html'" style="background:var(--primary);color:#fff;font-weight:900;border-radius:999px;padding:12px 18px;width:100%;">Open Admin Login</button>
+          </div>
+        </main>`;
+    }
+
     function getKnownSenderImage(uid, fallbackImage) {
-      const profile = adminProfileMap[safeKey(uid)] || {};
+      const profile = userProfileMap[safeKey(uid)] || adminProfileMap[safeKey(uid)] || {};
       return firstUsableImage(
         fallbackImage,
         profile.profileImage,
@@ -772,17 +773,21 @@
     }
 
     function getAdminName(uid, fallbackName) {
-      const profile = adminProfileMap[safeKey(uid)] || {};
+      const profile = userProfileMap[safeKey(uid)] || adminProfileMap[safeKey(uid)] || {};
       return profile.name || profile.fullName || profile.displayName || fallbackName || "Admin";
     }
 
-    function getActiveChatPath() {
-      if (activeChat.type === "direct") return `${DIRECT_CHAT_ROOT}/${getDirectChatId(myUid, activeChat.uid)}`;
-      return GROUP_CHAT_PATH;
-    }
-
+    // --- MULTI-CHAT LOGIC ---
     function getDirectChatId(a, b) {
       return [safeKey(a), safeKey(b)].sort().join("__");
+    }
+
+    function getActiveChatPath() {
+      if (activeChat.type === "direct") {
+        if (!isSafeChatUid(myUid) || !isSafeChatUid(activeChat.uid) || String(activeChat.uid).toLowerCase().startsWith("local-")) return null;
+        return `${DIRECT_CHAT_ROOT}/${getDirectChatId(myUid, activeChat.uid)}`;
+      }
+      return GROUP_CHAT_PATH;
     }
 
     function getTypingPathForActiveChat() {
@@ -794,78 +799,182 @@
     }
 
     function normalizeAdminProfile(uid, raw = {}) {
-      const id = String(raw.uid || raw.id || uid || "").trim();
+      const item = pickObject(raw || {});
+      const id = String(item.uid || item.adminUid || item.adminID || item.id || item.userId || item.userID || uid || "").trim();
       if (!id) return null;
       const image = firstUsableImage(
-        raw.profileImage,
-        raw.profilePic,
-        raw.profilePhoto,
-        raw.photoURL,
-        raw.photoUrl,
-        raw.photo,
-        raw.picture,
-        raw.avatar,
-        raw.image,
-        raw.imageUrl,
-        raw.userImage,
-        raw.adminImage,
-        raw.adminPhoto,
-        raw.logo,
-        raw.dp,
+        item.profileImage,
+        item.profilePic,
+        item.profilePhoto,
+        item.photoURL,
+        item.photoUrl,
+        item.photo,
+        item.picture,
+        item.avatar,
+        item.image,
+        item.imageUrl,
+        item.userImage,
+        item.adminImage,
+        item.adminPhoto,
+        item.logo,
+        item.dp,
         ARYANTA_LOGO
       );
       return {
         uid: id,
         key: safeKey(id),
-        name: raw.name || raw.fullName || raw.displayName || raw.userName || raw.email || id,
-        email: raw.email || raw.mail || "",
-        role: raw.role || "Admin",
-        image
+        name: item.name || item.fullName || item.displayName || item.userName || item.adminName || item.email || id,
+        email: item.email || item.mail || "",
+        role: item.role || item.type || "Admin",
+        image,
+        source: "admins",
+        updatedAt: Number(item.updatedAt || item.lastLoginAt || item.createdAt || 0)
       };
+    }
+
+    function normalizeChatUserProfile(uid, raw = {}, source = "users") {
+      const item = pickObject(raw || {});
+      const id = String(
+        item.uid ||
+        item.userUid ||
+        item.userUID ||
+        item.customerUid ||
+        item.customerUID ||
+        item.id ||
+        item.userId ||
+        item.userID ||
+        item.phone ||
+        item.mobile ||
+        item.email ||
+        uid ||
+        ""
+      ).trim();
+      if (!id || !isSafeChatUid(id)) return null;
+      const image = firstUsableImage(
+        item.profileImage,
+        item.profilePic,
+        item.profilePhoto,
+        item.photoURL,
+        item.photoUrl,
+        item.photo,
+        item.picture,
+        item.avatar,
+        item.image,
+        item.imageUrl,
+        item.userImage,
+        item.customerImage,
+        item.logo,
+        item.dp,
+        ARYANTA_LOGO
+      );
+      return {
+        uid: id,
+        key: safeKey(id),
+        name: item.name || item.fullName || item.displayName || item.userName || item.customerName || item.username || item.email || item.phone || id,
+        email: item.email || item.mail || "",
+        phone: item.phone || item.mobile || item.phoneNumber || "",
+        role: item.role || item.type || item.accountType || "user",
+        image,
+        source,
+        updatedAt: Number(item.updatedAt || item.lastLoginAt || item.createdAt || item.timestamp || 0)
+      };
+    }
+
+    function isAdminLikeProfile(profile = {}) {
+      const uid = String(profile.uid || "").trim();
+      const key = safeKey(uid);
+      const role = String(profile.role || profile.type || profile.accountType || "").toLowerCase();
+      const name = String(profile.name || profile.fullName || profile.displayName || "").toLowerCase();
+      const source = String(profile.source || "").toLowerCase();
+      if (adminProfileMap[key]) return true;
+      if (/^(ADM|ARY)-\d{4,}$/i.test(uid)) return true;
+      if (source === "admins" || source === "admin_chat_profiles") return true;
+      if (role.includes("admin") || role.includes("owner") || role.includes("staff")) return true;
+      if (name === "admin" || name.startsWith("admin ") || name.includes(" administrator")) return true;
+      return false;
+    }
+
+    function refreshUserProfiles() {
+      allUserProfiles = Object.values(userProfileMap)
+        .filter(p => p && p.uid)
+        .filter(p => isSafeChatUid(p.uid))
+        .filter(p => safeKey(p.uid) !== myKey)
+        .filter(p => !isAdminLikeProfile(p))
+        .sort((a, b) => {
+          const au = Number(a.updatedAt || 0);
+          const bu = Number(b.updatedAt || 0);
+          if (bu !== au) return bu - au;
+          return String(a.name || a.uid).localeCompare(String(b.name || b.uid));
+        });
+      renderChatUserList();
+      updateChatHeader();
     }
 
     function mergeAdminProfiles(sourceMap = {}) {
       Object.entries(sourceMap || {}).forEach(([key, value]) => {
-        const profile = normalizeAdminProfile(value?.uid || key, value || {});
+        const profile = normalizeAdminProfile(value?.uid || value?.id || key, value || {});
         if (!profile) return;
         adminProfileMap[profile.key] = { ...(adminProfileMap[profile.key] || {}), ...profile };
       });
       const selfProfile = normalizeAdminProfile(myUid, { ...currentUser, uid: myUid, name: myName, image: myImage, profileImage: myImage });
       if (selfProfile) adminProfileMap[selfProfile.key] = { ...(adminProfileMap[selfProfile.key] || {}), ...selfProfile };
-      allAdminProfiles = Object.values(adminProfileMap).filter(p => p && p.uid).sort((a, b) => String(a.name).localeCompare(String(b.name)));
-      renderChatUserList();
-      updateChatHeader();
+      allAdminProfiles = Object.values(adminProfileMap)
+        .filter(p => p && p.uid)
+        .sort((a, b) => String(a.name || a.uid).localeCompare(String(b.name || b.uid)));
+      refreshUserProfiles();
+      renderMessages();
+    }
+
+    function mergeUserProfiles(sourceMap = {}, source = "users") {
+      Object.entries(sourceMap || {}).forEach(([key, value]) => {
+        const profile = normalizeChatUserProfile(value?.uid || value?.id || key, value || {}, source);
+        if (!profile) return;
+        if (isAdminLikeProfile(profile)) return;
+        userProfileMap[profile.key] = { ...(userProfileMap[profile.key] || {}), ...profile };
+      });
+      refreshUserProfiles();
       renderMessages();
     }
 
     function updateChatHeader() {
-      const title = activeChat.type === "direct" ? (activeChat.name || "Admin") : "Admin Group";
+      const title = activeChat.type === "direct" ? (activeChat.name || "User") : "Admin Group";
       const image = activeChat.type === "direct" ? firstUsableImage(activeChat.image, ARYANTA_LOGO) : ARYANTA_LOGO;
-      const subtitle = activeChat.type === "direct" ? `${activeChat.uid || "Admin"} • one-to-one chat` : "Group chat • all admins";
+      const subtitle = activeChat.type === "direct" ? `${activeChat.uid || "User"} • User chat` : `Group chat • ${allAdminProfiles.length || "all"} admins`;
       if ($("headerTitle")) $("headerTitle").textContent = title;
       if ($("headerSubtitle")) $("headerSubtitle").innerHTML = `<i class="fas fa-lock"></i> ${escapeHtml(subtitle)}`;
       if ($("headerAvatar")) $("headerAvatar").src = image;
       document.querySelector("#targetGroup")?.classList.toggle("active", activeChat.type === "group");
+      const groupText = document.querySelector("#targetGroup span");
+      if (groupText) groupText.textContent = `All admins group • ${allAdminProfiles.length || 0} admins`;
+      const titleNode = document.querySelector(".chat-target-title");
+      if (titleNode) titleNode.textContent = `Users (${allUserProfiles.length})`;
     }
 
     function renderChatUserList() {
       const list = $("chatUserList");
       if (!list) return;
-      const admins = allAdminProfiles.filter(p => p.uid && safeKey(p.uid) !== myKey);
-      if (!admins.length) {
-        list.innerHTML = `<div class="chat-empty-row">No admin profiles found yet. Open admin.html once from each admin account so profile photo and UID can sync.</div>`;
+      const users = allUserProfiles;
+
+      if (!users.length) {
+        list.innerHTML = `<div class="chat-empty-row">No normal users found yet. This list reads from /users and hides admin accounts.</div>`;
+        updateChatHeader();
         return;
       }
-      list.innerHTML = admins.map(p => `
-        <button class="admin-chat-row ${activeChat.type === 'direct' && safeKey(activeChat.uid) === safeKey(p.uid) ? 'active' : ''}" onclick="selectDirectChat('${escapeHtml(p.uid)}')">
-          <img src="${escapeHtml(firstUsableImage(p.image, ARYANTA_LOGO))}" alt="${escapeHtml(p.name)}" onerror="this.onerror=null;this.src='${ARYANTA_LOGO}'">
-          <div><strong>${escapeHtml(p.name)}</strong><span>${escapeHtml(p.uid)}${p.role ? ' • ' + escapeHtml(p.role) : ''}</span></div>
-          <i class="fas fa-message"></i>
-        </button>
-      `).join("");
+
+      list.innerHTML = users.map(p => {
+        const sub = [p.phone, p.email, p.uid].filter(Boolean).slice(0, 2).join(" • ") || p.uid;
+        return `
+          <button class="admin-chat-row ${activeChat.type === 'direct' && safeKey(activeChat.uid) === safeKey(p.uid) ? 'active' : ''}" onclick="selectDirectChat('${escapeHtml(p.uid)}')">
+            <img src="${escapeHtml(firstUsableImage(p.image, ARYANTA_LOGO))}" alt="${escapeHtml(p.name)}" onerror="this.onerror=null;this.src='${ARYANTA_LOGO}'">
+            <div><strong>${escapeHtml(p.name)}</strong><span>${escapeHtml(sub)}</span></div>
+            <i class="fas fa-message"></i>
+          </button>
+        `;
+      }).join("");
+      updateChatHeader();
     }
 
-    // HOME SCREEN NAVIGATION LOGIC
+    // --- SCREEN NAVIGATION LOGIC ---
     function showHomeScreen() {
       $("chatScreen").style.display = "none";
       $("homeScreen").style.display = "flex";
@@ -881,6 +990,7 @@
     }
 
     function selectGroupChat() {
+      if (!requireValidChatLogin()) return;
       activeChat = { type: "group", id: "group", uid: "all", name: "Admin Group", image: ARYANTA_LOGO };
       $("homeScreen").style.display = "none";
       $("chatScreen").style.display = "flex";
@@ -890,16 +1000,38 @@
     }
 
     function selectDirectChat(uid) {
-      const profile = adminProfileMap[safeKey(uid)] || normalizeAdminProfile(uid, {});
-      activeChat = { type: "direct", id: getDirectChatId(myUid, uid), uid, name: profile.name || uid, image: firstUsableImage(profile.image, ARYANTA_LOGO) };
+      if (!requireValidChatLogin()) return;
+      if (!isSafeChatUid(uid) || String(uid).toLowerCase().startsWith("local-")) {
+        showToast("This user is not logged in with a real account yet. Direct chat is blocked for local/guest IDs.", { force: true, duration: 4200 });
+        return;
+      }
+      const profile = userProfileMap[safeKey(uid)] || allUserProfiles.find(p => safeKey(p.uid) === safeKey(uid));
+      if (!profile) {
+        showToast("User not found in /users yet. Refresh after the user is added.", { force: true, duration: 4200 });
+        return;
+      }
+      if (isAdminLikeProfile(profile)) {
+        showToast("Admins are available only in Admin Group. Direct admin-to-admin chat is disabled.", { force: true, duration: 4200 });
+        return;
+      }
+      activeChat = { type: "direct", id: getDirectChatId(myUid, profile.uid), uid: profile.uid, name: profile.name || profile.uid, image: firstUsableImage(profile.image, ARYANTA_LOGO), targetRole: "user" };
       $("homeScreen").style.display = "none";
       $("chatScreen").style.display = "flex";
       switchChatSource();
       closeAllMenus();
-      showToast(`One-to-one chat: ${activeChat.name}`, { force: true });
+      showToast(`User chat opened`, { force: true });
     }
 
     function switchChatSource() {
+      if (!requireValidChatLogin()) return;
+      if (activeChat.type === "direct") {
+        const targetProfile = userProfileMap[safeKey(activeChat.uid)] || allUserProfiles.find(p => safeKey(p.uid) === safeKey(activeChat.uid));
+        if (!isSafeChatUid(activeChat.uid) || String(activeChat.uid).toLowerCase().startsWith("local-") || !targetProfile || isAdminLikeProfile(targetProfile)) {
+          showHomeScreen();
+          showToast("Direct chat blocked: open a normal user from the Users list. Admins stay in group chat only.", { force: true, duration: 4200 });
+          return;
+        }
+      }
       if (activeMessageRef) activeMessageRef.off();
       if (activeTypingRef) activeTypingRef.off();
       messages = [];
@@ -911,13 +1043,14 @@
       lastKnownMessageTs = 0;
       updateChatHeader();
       renderMessages();
-      listenForMessages(); // restart listener
-      listenTyping();      // restart typing listener
+      listenForMessages(); 
+      listenTyping();      
       try { history.pushState({ aryantaChat: true, layer: "chat" }, ""); } catch {}
       setTimeout(scrollToBottom, 200);
     }
 
     async function updateMyChatProfile() {
+      if (!isRealAdminUid(myUid)) return;
       myImage = resolveMyProfileImage();
       const profile = {
         uid: myUid,
@@ -938,6 +1071,7 @@
     }
 
     function listenAdminProfiles() {
+      if (!isRealAdminUid(myUid)) return;
       db.ref(ADMIN_PROFILES_PATH).on("value", snap => {
         mergeAdminProfiles(snap.val() || {});
       }, () => {});
@@ -950,6 +1084,15 @@
         });
         mergeAdminProfiles(flat);
       }, () => {});
+    }
+
+    function listenUserProfiles() {
+      if (!isRealAdminUid(myUid)) return;
+      const onUsers = source => snap => mergeUserProfiles(snap.val() || {}, source);
+      db.ref(USERS_DB_PATH).on("value", onUsers("users"), err => {
+        showToast("Could not load users list. Check /users read rule.", { force: true, duration: 3600 });
+      });
+      db.ref(EMPLOYEES_DB_PATH).on("value", onUsers("employees"), () => {});
     }
 
     function loadAdminSettings() {
@@ -977,7 +1120,6 @@
       else $("btnMic")?.classList.remove("permission-disabled");
       maybeRequestNotificationPermission();
       updateChatHeader();
-      applyAutoDeletePolicy().catch(() => {});
     }
 
     function maybeRequestNotificationPermission() {
@@ -1011,101 +1153,35 @@
       } catch {}
     }
 
-    function buildChatNotificationBody(msg) {
-      const sender = msg?.senderName || getAdminName(msg?.senderUid, "Admin");
-      const text = String(msg?.text || "").trim();
-      const scope = activeChat.type === "direct" ? "Private chat" : "Admin group";
-      if (text) {
-        const clean = text.length > 120 ? text.slice(0, 117) + "..." : text;
-        return `${sender}: ${clean}`;
-      }
-      if (Array.isArray(msg?.attachments) && msg.attachments.length) {
-        return `${sender} sent ${describeAttachment(msg.attachments[0])} in ${scope}`;
-      }
-      return `${sender} sent a new message in ${scope}`;
-    }
-
     function notifyIncomingMessage(msg) {
       loadAdminSettings();
       if (!appSettings.notify || !msg || msg.senderUid === myUid) return;
-      const title = activeChat.type === "direct" ? "Aryanta private message" : "Aryanta group message";
-      const body = buildChatNotificationBody(msg);
+      
+      const chatName = activeChat.type === "direct" ? msg.senderName : "Admin Group";
+      const title = `${chatName} (New Message)`;
+      const sender = msg.senderName || "User";
+      const text = String(msg.text || "").trim();
+      
+      let body = text ? text : (Array.isArray(msg.attachments) && msg.attachments.length ? describeAttachment(msg.attachments[0]) : "New message");
+      if (activeChat.type === "group") body = `${sender}: ${body}`;
+      
       if (document.visibilityState === "hidden" && "Notification" in window && Notification.permission === "granted") {
         try {
           new Notification(title, {
             body,
             icon: getMessageAvatar(msg),
-            image: getMessageAvatar(msg),
-            badge: ARYANTA_LOGO,
-            tag: `aryanta-admin-chat-${safeKey(activeChat.id || activeChat.type)}`,
+            tag: `aryanta-chat-${activeChat.id || 'group'}`,
             silent: appSettings.audio !== true
           });
         } catch {}
+      } else if (document.visibilityState === "hidden") {
+         showToast(body, { force: true, duration: 3200 });
       } else {
-        showToast(body, { force: true, duration: 3200 });
+         if ($("chatScreen").style.display === "none") {
+             showToast(`New message from ${chatName}`, { force: true, duration: 3200 });
+         }
       }
       playNotifySound();
-    }
-
-    async function sendAdminChatNotification(msg) {
-      const body = buildChatNotificationBody(msg);
-      const now = Date.now();
-      const id = `CHAT-NOTIFY-${now}-${Math.floor(Math.random() * 9999)}`;
-      const common = {
-        id,
-        title: activeChat.type === "direct" ? "Aryanta private message" : "Aryanta group message",
-        body,
-        message: body,
-        type: "admin_chat",
-        icon: ARYANTA_LOGO,
-        logo: ARYANTA_LOGO,
-        senderUid: msg.senderUid || myUid,
-        senderName: msg.senderName || myName,
-        senderImage: getKnownSenderImage(msg.senderUid || myUid, msg.senderImage),
-        messageId: msg.id || "",
-        chatPath: getActiveChatPath(),
-        chatType: activeChat.type,
-        chatId: activeChat.id || "group",
-        url: "x.html",
-        target: activeChat.type === "direct" ? safeKey(activeChat.uid) : "all_admins",
-        createdAt: now,
-        date: new Date(now).toISOString(),
-        readBy: {}
-      };
-
-      const updates = {};
-      updates[`${ADMIN_NOTIFICATION_PATH}/${id}`] = common;
-      updates[`${ADMIN_BROADCAST_PATH}/${id}`] = common;
-      updates[`${ADMIN_APP_MESSAGE_PATH}/${id}`] = {
-        title: common.title,
-        body: common.body,
-        type: common.type,
-        url: "https://aryanta.in/workplace",
-        icon: ARYANTA_LOGO,
-        logo: ARYANTA_LOGO,
-        senderName: common.senderName,
-        senderUid: common.senderUid,
-        messageId: common.messageId,
-        createdAt: common.createdAt
-      };
-
-      await db.ref().update(updates);
-
-      // Optional Worker push support. If the Worker endpoint is not available, the Firebase notification records still save.
-      const pushPayload = { ...common, recipients: common.target, recipientUid: activeChat.type === "direct" ? activeChat.uid : "all_admins" };
-      const endpoints = [
-        `${WORKER_API}/admin/push`,
-        `${WORKER_API}/push-admins`,
-        `${WORKER_API}/send-notification`
-      ];
-      endpoints.forEach(url => {
-        fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(pushPayload),
-          keepalive: true
-        }).catch(() => {});
-      });
     }
 
     function getImageRateKey() {
@@ -1140,7 +1216,6 @@
       localStorage.setItem(getImageRateKey(), JSON.stringify(old));
     }
 
-
     let messages = [];
     let replyingToId = null;
     let selectedMsgId = null;
@@ -1156,11 +1231,16 @@
       applyAdminSettings();
       buildEmojiGrid();
       setupListeners();
-      listenAdminProfiles();
-      updateMyChatProfile();
       setupNoCopyProtection();
+      if (!isRealAdminUid(myUid)) {
+        showLockedChatScreen();
+        return;
+      }
+      listenAdminProfiles();
+      listenUserProfiles();
+      updateMyChatProfile();
       setupPresence();
-      showHomeScreen(); // By default start at the home screen!
+      showHomeScreen(); 
       
       window.addEventListener("storage", event => {
         if (event.key === SETTINGS_KEY) {
@@ -1231,7 +1311,7 @@
     }
 
     function setupNoCopyProtection() {
-      document.addEventListener("contextmenu", e => e.preventDefault());
+      document.addEventListener("contextmenu", e => { if(!e.target.closest('.msg-row')) e.preventDefault(); });
       document.addEventListener("copy", e => {
         const tag = String(document.activeElement?.tagName || "").toLowerCase();
         if (tag !== "textarea" && tag !== "input") e.preventDefault();
@@ -1438,7 +1518,6 @@
       $("cameraModal").classList.remove("active");
     }
 
-
     function renderCameraPreviewStrip() {
       const strip = $("cameraPreviewStrip");
       if (!strip) return;
@@ -1622,7 +1701,6 @@
       $("replyPreview").classList.remove("active");
     }
 
-
     const ENC_VERSION = "ARYANTA-E2EE-V1";
     let cachedCryptoKey = null;
 
@@ -1689,14 +1767,12 @@
       if (!raw) return raw;
       if (raw.encrypted && raw.payloadEnc) {
         try {
-          // Lag Fix: Pull decrypted object from cache instead of running heavy crypto every time
           let plain;
           if (decryptedPayloadCache[raw.id]) {
             plain = decryptedPayloadCache[raw.id];
           } else {
             plain = await decryptChatPayload(raw.payloadEnc);
             decryptedPayloadCache[raw.id] = plain;
-            // Free up memory if cache gets too large
             if (Object.keys(decryptedPayloadCache).length > 200) {
                delete decryptedPayloadCache[Object.keys(decryptedPayloadCache)[0]];
             }
@@ -1719,15 +1795,30 @@
       }
       return {
         ...raw,
-        senderName: getAdminName(raw.senderUid, raw.senderName || "Admin"),
+        senderName: getAdminName(raw.senderUid, raw.senderName || "User"),
         senderImage: getKnownSenderImage(raw.senderUid, raw.senderImage)
       };
     }
 
     async function sendMessage() {
+      if (!requireValidChatLogin()) return;
+      if (activeChat.type === "direct") {
+        const targetProfile = userProfileMap[safeKey(activeChat.uid)] || allUserProfiles.find(p => safeKey(p.uid) === safeKey(activeChat.uid));
+        if (!isSafeChatUid(activeChat.uid) || String(activeChat.uid).toLowerCase().startsWith("local-") || !targetProfile || isAdminLikeProfile(targetProfile)) {
+          showToast("Cannot send here. Direct chat is only for normal users; admins are in Admin Group.", { force: true, duration: 4200 });
+          return;
+        }
+      }
+
+      const chatPath = getActiveChatPath();
+      if (!chatPath) {
+        showToast("Invalid chat path. Message not sent.", { force: true, duration: 4200 });
+        return;
+      }
+
       const text = $("chatInput").value.trim();
       if (!text && attachmentsBase64.length === 0) return;
-      if (attachmentsBase64.length > MAX_ATTACHMENTS) return showToast(`Maximum ${MAX_ATTACHMENTS} files allowed`);
+      if (attachmentsBase64.length > MAX_ATTACHMENTS) return showToast(`Maximum ${MAX_ATTACHMENTS} files allowed`, { force: true });
 
       myImage = resolveMyProfileImage();
       updateMyChatProfile();
@@ -1745,11 +1836,12 @@
         chatId: activeChat.id || "group",
         targetUid: activeChat.type === "direct" ? activeChat.uid : "all_admins"
       };
+      
       let encryptedPayload;
       try {
         encryptedPayload = await encryptChatPayload(plainPayload);
       } catch (err) {
-        return showToast("Encryption failed. Message not sent");
+        return showToast("Encryption failed. Message not sent", { force: true });
       }
 
       const payload = {
@@ -1768,62 +1860,57 @@
         reactions: {},
         stars: {}
       };
-
-      $("chatInput").value = "";
-      $("chatInput").style.height = "auto";
-      attachmentsBase64 = [];
-      renderAttachmentPreview();
-      renderCameraPreviewStrip();
-      cancelReply();
-      handleInputResize();
+      
       try {
-        await db.ref(`${getActiveChatPath()}/${msgId}`).set(payload);
-        sendAdminChatNotification({ ...payload, ...plainPayload }).catch(() => {});
-        if (!typingRemoteDisabled) await db.ref(`${TYPING_PATH}/${myKey}`).remove().catch(() => { typingRemoteDisabled = true; });
+        await db.ref(`${chatPath}/${msgId}`).set(payload);
+        if (!typingRemoteDisabled) await db.ref(`${getTypingPathForActiveChat()}/${myKey}`).remove().catch(() => { typingRemoteDisabled = true; });
+        $("chatInput").value = "";
+        $("chatInput").style.height = "auto";
+        attachmentsBase64 = [];
+        renderAttachmentPreview();
+        renderCameraPreviewStrip();
+        cancelReply();
+        handleInputResize();
         scrollToBottom();
-      } catch {
-        showToast("Failed to send message");
+      } catch (err) {
+        const message = String(err && (err.message || err.code || err) || "");
+        if (message.includes("permission_denied") || message.includes("PERMISSION_DENIED")) {
+          showToast("Firebase rules blocked this write. Update RTDB rules for admin_chats/admin_direct_chats and avoid local IDs.", { force: true, duration: 5600 });
+        } else {
+          showToast("Failed to send message: " + message, { force: true, duration: 4200 });
+        }
       }
     }
 
     function listenForMessages() {
       const path = getActiveChatPath();
+      if (!path) {
+        showToast("Invalid chat path. Cannot load this chat.", { force: true, duration: 4200 });
+        return;
+      }
       activeMessageRef = db.ref(path).orderByChild("timestamp").limitToLast(180);
       activeMessageRef.on("value", async snap => {
         const data = snap.val() || {};
         const rawMessages = Object.values(data).filter(Boolean).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
         const normalized = await Promise.all(rawMessages.map(normalizeIncomingMessage));
         messages = normalized.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-        await applyAutoDeletePolicy();
 
         const newestTs = messages.reduce((max, m) => Math.max(max, Number(m.timestamp || 0)), 0);
         if (firstMessageLoadDone) {
           messages
             .filter(m => Number(m.timestamp || 0) > lastKnownMessageTs && m.senderUid !== myUid && !m.deletedForAll)
-            .slice(-3)
-            .forEach(notifyIncomingMessage);
+            .forEach(m => notifyIncomingMessage(m)); // Alert for all new messages missed
         }
         lastKnownMessageTs = Math.max(lastKnownMessageTs, newestTs);
         firstMessageLoadDone = true;
         renderMessages();
-      }, () => showToast("Could not load chat", { force: true }));
-    }
-
-    async function applyAutoDeletePolicy() {
-      loadAdminSettings();
-      const days = Number(appSettings.messageDeleteDays || 0);
-      if (!days || days < 1) return;
-      const cutoff = Date.now() - (days * 24 * 60 * 60 * 1000);
-      const updates = {};
-      messages.forEach(m => {
-        if (m.senderUid === myUid && !m.deletedForAll && Number(m.timestamp || 0) < cutoff) {
-          updates[`${getActiveChatPath()}/${m.id}/deletedForAll`] = true;
-          updates[`${getActiveChatPath()}/${m.id}/text`] = "";
-          updates[`${getActiveChatPath()}/${m.id}/attachments`] = null;
-          updates[`${getActiveChatPath()}/${m.id}/autoDeletedBySetting`] = true;
-        }
+      }, (err) => {
+         if(err.message && err.message.includes("permission_denied")) {
+             showToast("Permission denied reading this chat.", { force: true });
+         } else {
+             showToast("Could not load chat", { force: true });
+         }
       });
-      if (Object.keys(updates).length) await db.ref().update(updates).catch(() => {});
     }
 
     function formatTime(ts) {
@@ -2007,20 +2094,24 @@
 
     async function reactToSelected(emoji) {
       if (!selectedMsgId) return;
+      const chatPath = getActiveChatPath();
+      if (!chatPath) return showToast("Invalid chat path", { force: true });
       try {
         const msg = messages.find(m => m.id === selectedMsgId);
         const current = msg?.reactions?.[myKey];
-        await db.ref(`${getActiveChatPath()}/${selectedMsgId}/reactions/${myKey}`).set(current === emoji ? null : emoji);
+        await db.ref(`${chatPath}/${selectedMsgId}/reactions/${myKey}`).set(current === emoji ? null : emoji);
         closeAllMenus();
       } catch { showToast("Reaction failed"); }
     }
 
     async function toggleStarSelected() {
       if (!selectedMsgId) return;
+      const chatPath = getActiveChatPath();
+      if (!chatPath) return showToast("Invalid chat path", { force: true });
       try {
         const msg = messages.find(m => m.id === selectedMsgId);
         const current = !!(msg?.stars && msg.stars[myKey]);
-        await db.ref(`${getActiveChatPath()}/${selectedMsgId}/stars/${myKey}`).set(current ? null : true);
+        await db.ref(`${chatPath}/${selectedMsgId}/stars/${myKey}`).set(current ? null : true);
         closeAllMenus();
         showToast(current ? "Unstarred" : "Starred");
       } catch { showToast("Could not update star"); }
@@ -2028,9 +2119,11 @@
 
     async function deleteMsg(type) {
       if (!selectedMsgId) return;
+      const chatPath = getActiveChatPath();
+      if (!chatPath) return showToast("Invalid chat path", { force: true });
       try {
-        if (type === "all") await db.ref(`${getActiveChatPath()}/${selectedMsgId}`).update({ deletedForAll: true, text: "", attachments: null });
-        else await db.ref(`${getActiveChatPath()}/${selectedMsgId}/deletedFor`).push(myUid);
+        if (type === "all") await db.ref(`${chatPath}/${selectedMsgId}`).update({ deletedForAll: true, text: "", attachments: null });
+        else await db.ref(`${chatPath}/${selectedMsgId}/deletedFor`).push(myUid);
         closeAllMenus();
       } catch { showToast("Delete failed"); }
     }
@@ -2121,6 +2214,7 @@
     }
 
     function setupPresence() {
+      if (!isRealAdminUid(myUid)) return;
       const base = getPresencePathForActiveChat();
       activePresenceRef = db.ref(`${base}/${myKey}`);
       activePresenceRef.set({ name: myName, uid: myUid, image: myImage, ts: Date.now(), online: true }).catch(() => {});
@@ -2177,12 +2271,10 @@
         }
       });
       
-      // Fixed: Jump bottom button appears only when scrolled up
       $("chatBox")?.addEventListener("scroll", () => {
         const box = $("chatBox");
         const jump = $("jumpActions");
         if (jump && box) {
-          // Check how far we are from the bottom
           const distanceFromBottom = box.scrollHeight - box.scrollTop - box.clientHeight;
           if (distanceFromBottom > 150) {
             jump.classList.add("visible");
