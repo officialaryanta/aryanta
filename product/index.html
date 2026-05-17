@@ -1,7 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="manifest" href="/manifest.json">
+    <!-- Manifest loads only on production domain to avoid 404 on local Live Server -->
+    <script>
+      (function(){
+        var h = location.hostname;
+        if (h && h !== '127.0.0.1' && h !== 'localhost') {
+          var m = document.createElement('link');
+          m.rel = 'manifest';
+          m.href = '/manifest.json';
+          document.head.appendChild(m);
+        }
+      })();
+    </script>
     <meta name="theme-color" content="#f5f5f7">
     <link rel="apple-touch-icon" href="/android-chrome-192x192.png">
     <meta charset="UTF-8">
@@ -11,11 +22,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono&display=swap" rel="stylesheet">
     
+
+    <link rel="preconnect" href="https://rough-field-c679.official-aryanta.workers.dev" crossorigin>
+    <link rel="dns-prefetch" href="//rough-field-c679.official-aryanta.workers.dev">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <!-- Centralized Stylesheet -->
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 
@@ -94,6 +108,44 @@
 
     <div class="dimmer" id="overlay" onclick="closeAllModals()"></div>
 
+    <!-- Product Filter Sidebar -->
+    <aside class="side-panel right-panel filter-panel" id="filterSidebar" aria-label="Product filters">
+        <div class="panel-header">
+            <i class="fas fa-times close-sidebar" onclick="closeAllModals()"></i>
+            <h3 class="filter-title"><i class="fas fa-sliders-h"></i> Filters</h3>
+            <p class="filter-subtitle">Refine similar products instantly.</p>
+        </div>
+        <div class="filter-body">
+            <div class="filter-group">
+                <h4><i class="fas fa-indian-rupee-sign"></i> Price</h4>
+                <label class="custom-radio"><input type="radio" name="similarPriceFilter" value="all" checked onchange="applySimilarFilters()"><span>All Prices</span></label>
+                <label class="custom-radio"><input type="radio" name="similarPriceFilter" value="199" onchange="applySimilarFilters()"><span>Under ₹199</span></label>
+                <label class="custom-radio"><input type="radio" name="similarPriceFilter" value="399" onchange="applySimilarFilters()"><span>Under ₹399</span></label>
+                <label class="custom-radio"><input type="radio" name="similarPriceFilter" value="699" onchange="applySimilarFilters()"><span>Under ₹699</span></label>
+                <label class="custom-radio"><input type="radio" name="similarPriceFilter" value="999" onchange="applySimilarFilters()"><span>Under ₹999</span></label>
+                <div class="custom-price-inputs">
+                    <input type="number" inputmode="numeric" id="similarMinPrice" placeholder="Min ₹">
+                    <input type="number" inputmode="numeric" id="similarMaxPrice" placeholder="Max ₹">
+                    <button class="btn-go" onclick="applySimilarFilters()">Go</button>
+                </div>
+            </div>
+            <div class="filter-group">
+                <h4><i class="fas fa-arrow-trend-up"></i> Sort & Trust</h4>
+                <label class="custom-radio"><input type="radio" name="similarSortFilter" value="smart" checked onchange="applySimilarFilters()"><span>Smart Boost</span></label>
+                <label class="custom-radio"><input type="radio" name="similarSortFilter" value="sponsored" onchange="applySimilarFilters()"><span>Sponsored First</span></label>
+                <label class="custom-radio"><input type="radio" name="similarSortFilter" value="rating" onchange="applySimilarFilters()"><span>Top Rated</span></label>
+                <label class="custom-radio"><input type="radio" name="similarSortFilter" value="new" onchange="applySimilarFilters()"><span>New Arrivals</span></label>
+                <label class="custom-radio"><input type="radio" name="similarSortFilter" value="low" onchange="applySimilarFilters()"><span>Price Low to High</span></label>
+                <label class="custom-radio"><input type="radio" name="similarSortFilter" value="high" onchange="applySimilarFilters()"><span>Price High to Low</span></label>
+            </div>
+            <div class="filter-actions">
+                <button class="btn-outline" onclick="resetSimilarFilters()"><i class="fas fa-rotate-left"></i> Reset</button>
+                <button class="btn-prime" onclick="closeAllModals()"><i class="fas fa-check"></i> Show Results</button>
+            </div>
+        </div>
+    </aside>
+
+
     <!-- Floating Theme Button (PC) -->
     <button id="themeToggleBtn" class="floating-theme-btn" onclick="toggleThemeCycle()" title="Toggle Theme">
         <i class="fas fa-desktop"></i>
@@ -109,7 +161,7 @@
             <div class="product-gallery">
                 <div class="main-image-wrapper" id="imageWrapper">
                     <!-- Disabled Fullscreen onClick logic per request -->
-                    <img id="mainProductImage" src="" alt="Product Image">
+                    <img id="mainProductImage" src="" alt="Product Image" fetchpriority="high" decoding="async">
                     <button class="share-img-btn" onclick="copyProductLink()" title="Share Product">
                         <i class="fas fa-share-nodes"></i> Share
                     </button>
@@ -208,6 +260,9 @@
                     <button class="btn-add-cart" id="btnAddToCart" onclick="toggleCartPage()">
                         <i class="fas fa-shopping-cart"></i> <span>Add to Cart</span>
                     </button>
+                    <button class="btn-wishlist" id="btnWishlist" onclick="toggleWishlistCurrent()" title="Add to Wishlist">
+                        <i class="far fa-heart"></i>
+                    </button>
                     <button class="btn-buy-now" id="btnBuyNow" onclick="quickBuy(currentProduct.id)">
                         <i class="fas fa-bolt"></i> Buy Now
                     </button>
@@ -262,8 +317,12 @@
             </div>
         </section>
 
-        <h3 class="section-title">Similar Products</h3>
+        <div class="section-title-row">
+            <h3 class="section-title">Similar Products</h3>
+            <button class="global-filter-btn" onclick="openProductFilter()"><i class="fas fa-filter"></i> Filter</button>
+        </div>
         <div class="scroller-wrapper">
+            <div class="active-filter-chips" id="activeFilterChips" style="display:none;"></div>
             <div class="scroller-track" id="similarProductsTrack">
                 <!-- Smart Items go here -->
             </div>
@@ -461,11 +520,16 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             cart = JSON.parse(localStorage.getItem('local_cart')) || [];
+            wishlist = JSON.parse(localStorage.getItem('aryanta_wishlist')) || [];
             activeSession = JSON.parse(localStorage.getItem('active_session'));
             
             loadAppSettings(); 
-            checkSession();
+            loadSpecialDayAndBroadcast();
+            setInterval(fetchSpecialDayConfig, 120000);
+            setInterval(fetchLatestBroadcast, 120000);
+            if (typeof checkSession === 'function') checkSession();
             updateCartBadge();
+            installSearchHideOnScroll();
             
             if(activeSession && activeSession.email) {
                 fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(activeSession.email)}`)
@@ -611,54 +675,58 @@
             input.addEventListener("input", function () {
                 clearTimeout(searchTimeout);
                 const query = this.value.toLowerCase().trim();
-                
-                // Toggle icon
-                if (query !== "") {
-                    micBtn.classList.remove("fa-microphone");
-                    micBtn.classList.add("fa-arrow-right"); 
-                } else {
-                    micBtn.classList.remove("fa-arrow-right", "fa-search");
-                    micBtn.classList.add("fa-microphone");
+
+                if (micBtn) {
+                    if (query !== "") {
+                        micBtn.classList.remove("fa-microphone");
+                        micBtn.classList.add("fa-arrow-right"); 
+                    } else {
+                        micBtn.classList.remove("fa-arrow-right", "fa-search");
+                        micBtn.classList.add("fa-microphone");
+                    }
                 }
 
-                if (query === "") { 
+                if (query === "" || !appSettings.searchSuggestions) { 
                     dropdown.style.display = "none"; 
                     return; 
                 }
-                
-                if (!appSettings.searchSuggestions) {
-                    dropdown.style.display = "none";
-                    return;
-                }
 
                 searchTimeout = setTimeout(() => {
-                    const terms = query.split(' ');
-                    let filtered = allProducts.filter(p => !p.isDummy && terms.every(t => 
-                        p.name.toLowerCase().includes(t) || (p.brand || "").toLowerCase().includes(t) || fuzzyMatch(p.name, t)
-                    ));
+                    const terms = query.split(/\s+/).filter(Boolean);
+                    const matched = getSearchableProducts().filter(p => {
+                        const searchText = `${p.name || ""} ${p.brand || ""} ${p.category || ""} ${p.id || ""} ${p.sku || ""}`.toLowerCase();
+                        return terms.every(t => searchText.includes(t) || fuzzyMatch(searchText, t));
+                    });
 
-                    // Sort Sponsored top
-                    filtered.sort((a, b) => (b.sponsored === true ? 1 : 0) - (a.sponsored === true ? 1 : 0));
+                    const sponsoredPool = shuffleArrayFast(matched.filter(isSponsoredProduct));
+                    const boostedPool = shuffleArrayFast(matched.filter(isBoostedProduct));
+                    const normalPool = shuffleArrayFast(matched.filter(p => !isSponsoredProduct(p) && !isBoostedProduct(p)));
+                    const finalList = uniqueByProductId([...sponsoredPool, ...boostedPool, ...normalPool]).slice(0, 3);
 
-                    // Max 3 Limit as requested
-                    let htmlList = filtered.slice(0, 3).map(p => `
-                        <div class="search-item" onclick="window.location.href='https://aryanta.in/product?id=${p.id}'">
-                            <img src="${p.images && p.images.length > 0 ? p.images[0] : p.image}" style="width: 44px; height: 44px; object-fit: contain; border-radius: 8px; border:1px solid var(--border); padding:2px;">
-                            <div style="display:flex; flex-direction:column; overflow:hidden; padding-left:5px;">
-                                <span style="font-weight: 700; font-size: 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-main);">
-                                    ${p.name} ${p.sponsored ? '<span class="s-sponsored-tag">Ad</span>' : ''}
-                                </span>
-                                <span style="font-weight: 800; font-size: 13px; color:var(--primary); margin-top:2px;">₹${Number(p.price).toLocaleString('en-IN')}</span>
-                            </div>
-                        </div>`).join("");
-                    
-                    if(filtered.length > 0) {
-                        htmlList += `<div style="text-align:center; padding:12px; border-top:1px solid var(--border); color:var(--text-muted); font-size:13px; font-weight:600; cursor:pointer;" onclick="this.parentElement.style.display='none'"><i class="fas fa-times"></i> Close Suggestions</div>`;
+                    let htmlList = finalList.map(p => {
+                        const img = getProductImageSafe(p);
+                        const tag = isSponsoredProduct(p) ? '<span class="s-sponsored-tag">Sponsored</span>' : (isBoostedProduct(p) ? '<span class="s-sponsored-tag boosted">Boosted</span>' : '');
+                        return `
+                            <div class="search-item" onclick="window.location.href='https://aryanta.in/product?id=${encodeURIComponent(p.id)}'">
+                                <img src="${escapeAttr(img)}" loading="lazy" decoding="async" style="width: 44px; height: 44px; object-fit: contain; border-radius: 8px; border:1px solid var(--border); padding:2px;">
+                                <div style="display:flex; flex-direction:column; overflow:hidden; padding-left:5px; min-width:0; width:100%;">
+                                    <span style="font-weight: 800; font-size: 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-main);">
+                                        ${escapeHtmlText(p.name || "Aryanta Product")} ${tag}
+                                    </span>
+                                    <span style="font-weight: 900; font-size: 13px; color:var(--primary); margin-top:2px;">₹${Number(p.price || 0).toLocaleString('en-IN')}</span>
+                                </div>
+                            </div>`;
+                    }).join("");
+
+                    if(finalList.length > 0) {
+                        htmlList += `<div style="text-align:center; padding:12px; border-top:1px solid var(--border); color:var(--text-muted); font-size:13px; font-weight:700; cursor:pointer;" onclick="this.parentElement.style.display='none'"><i class="fas fa-times"></i> Close Suggestions</div>`;
+                    } else if(isFullCatalogLoading) {
+                        htmlList = `<div style="padding:15px; color:var(--text-muted); font-size:13px; font-weight:700;"><i class="fas fa-spinner fa-spin"></i> Searching more products...</div>`;
                     }
-                    
+
                     dropdown.innerHTML = htmlList;
-                    dropdown.style.display = filtered.length > 0 ? "block" : "none";
-                }, 100); 
+                    dropdown.style.display = htmlList ? "block" : "none";
+                }, 60); 
             });
 
             input.addEventListener("keypress", function(e) {
@@ -669,7 +737,7 @@
             });
         }
 
-        function fuzzyMatch(str, pattern) {
+                function fuzzyMatch(str, pattern) {
             pattern = pattern.toLowerCase(); str = str.toLowerCase();
             let patternIdx = 0; let strIdx = 0;
             while (patternIdx < pattern.length && strIdx < str.length) {
@@ -694,69 +762,472 @@
             renderRevImages();
         };
 
-        // --- ZERO LOCAL CACHING FETCH ---
-        async function fetchProducts() {
+        // --- PRODUCT-FIRST FAST FETCH ENGINE ---
+        const INITIAL_SIMILAR_TOTAL = 20;
+        const INITIAL_SPONSORED_TOP = 12;
+        const LOAD_MORE_NORMAL_COUNT = 20;
+        const LOAD_MORE_SPONSORED_COUNT = 12;
+        const FAST_SIMILAR_LIMIT = INITIAL_SIMILAR_TOTAL;
+        let isFullCatalogLoading = false;
+        let backgroundCatalogLoaded = false;
+        let lastBroadcastSeen = "";
+        let specialDayCacheKey = "";
+        let similarPoolKey = "";
+        let similarSponsoredOrder = [];
+        let similarBoostedOrder = [];
+        let similarNormalOrder = [];
+        let similarSponsoredVisible = INITIAL_SPONSORED_TOP;
+        let similarNormalVisible = INITIAL_SIMILAR_TOTAL;
+        let similarBoostedVisible = 8;
+        let wishlist = [];
+        let userActionPriority = false;
+        let lastScrollYForSearch = 0;
+        let similarFilters = { price: "all", sort: "smart", min: 0, max: 0 };
+
+        function runWhenIdle(fn, delay = 0) {
+            if ("requestIdleCallback" in window) {
+                requestIdleCallback(fn, { timeout: 1600 });
+            } else {
+                setTimeout(fn, delay || 120);
+            }
+        }
+
+        function unwrapFirestoreValue(value) {
+            if (!value || typeof value !== "object") return value;
+            if ("stringValue" in value) return value.stringValue;
+            if ("integerValue" in value) return Number(value.integerValue);
+            if ("doubleValue" in value) return Number(value.doubleValue);
+            if ("booleanValue" in value) return !!value.booleanValue;
+            if ("timestampValue" in value) return value.timestampValue;
+            if ("arrayValue" in value) return (value.arrayValue.values || []).map(unwrapFirestoreValue);
+            if ("mapValue" in value) {
+                const out = {};
+                Object.entries(value.mapValue.fields || {}).forEach(([k, v]) => out[k] = unwrapFirestoreValue(v));
+                return out;
+            }
+            return value;
+        }
+
+        function normalizeFirestoreDoc(raw) {
+            if (!raw || typeof raw !== "object") return raw;
+            if (raw.fields) {
+                const out = {};
+                Object.entries(raw.fields).forEach(([k, v]) => out[k] = unwrapFirestoreValue(v));
+                out.id = raw.id || raw.name?.split("/").pop() || out.id;
+                return out;
+            }
+            return raw;
+        }
+
+        function firstNonEmpty(...values) {
+            for (const v of values) {
+                if (v !== undefined && v !== null && String(v).trim() !== "") return v;
+            }
+            return "";
+        }
+
+        function getProductImageSafe(p) {
+            if (!p) return "https://aryanta.in/vurify/aryanta.jpeg";
+            if (Array.isArray(p.images) && p.images.length) return p.images[0];
+            if (Array.isArray(p.imageUrls) && p.imageUrls.length) return p.imageUrls[0];
+            return p.image || p.imageUrl || p.img || p.thumbnail || "https://aryanta.in/vurify/aryanta.jpeg";
+        }
+
+        function normalizeProductItem(raw) {
+            let p = normalizeFirestoreDoc(raw);
+            if (!p || typeof p !== "object") return null;
+            if (p.product && typeof p.product === "object") p = { ...normalizeFirestoreDoc(p.product), id: p.id || p.product.id };
+            if (p.data && typeof p.data === "object") p = { ...normalizeFirestoreDoc(p.data), id: p.id || p.data.id };
+
+            const id = firstNonEmpty(p.id, p.productId, p.pid, p.sku, p.docId);
+            const name = firstNonEmpty(p.name, p.title, p.productName, p.itemName, "Aryanta Product");
+            const image = getProductImageSafe(p);
+            const images = Array.isArray(p.images) && p.images.length
+                ? p.images
+                : (Array.isArray(p.imageUrls) && p.imageUrls.length ? p.imageUrls : [image]);
+
+            const price = Number(firstNonEmpty(p.price, p.salePrice, p.sellingPrice, p.finalPrice, p.amount, 0));
+            const mrp = Number(firstNonEmpty(p.mrp, p.maxPrice, p.originalPrice, p.oldPrice, price));
+            const stock = Number(firstNonEmpty(p.stock, p.quantity, p.qty, p.availableStock, 999));
+
+            return {
+                ...p,
+                id: String(id || Math.random().toString(36).slice(2)),
+                name: String(name),
+                title: String(name),
+                brand: firstNonEmpty(p.brand, p.company, p.sellerName, ""),
+                category: firstNonEmpty(p.category, p.cat, "General"),
+                image,
+                images,
+                price: Number.isFinite(price) ? price : 0,
+                mrp: Number.isFinite(mrp) ? mrp : price,
+                stock: Number.isFinite(stock) ? stock : 0,
+                desc: firstNonEmpty(p.desc, p.description, p.shortDescription, ""),
+                isDummy: !!p.isDummy
+            };
+        }
+
+        function isLiveProduct(p) {
+            if (!p || !p.id || p.isDummy) return false;
+            const statusText = String(firstNonEmpty(p.status, p.approvalStatus, p.productStatus, p.sellerStatus, "")).toLowerCase();
+            const visibilityText = String(firstNonEmpty(p.visibility, p.publicStatus, "")).toLowerCase();
+
+            if (p.deleted === true || p.isDeleted === true || p.blocked === true || p.isBlocked === true) return false;
+            if (p.isVisible === false || p.visible === false || p.isPublicVisible === false || p.publicVisible === false) return false;
+            if (p.isLive === false || p.live === false || p.isApproved === false || p.approved === false) return false;
+            if (["rejected", "blocked", "deleted", "disabled", "hidden", "private", "offline"].some(x => statusText.includes(x) || visibilityText.includes(x))) return false;
+            if (["pending", "review", "draft"].some(x => statusText === x || visibilityText === x)) return false;
+            if (Number(p.stock) <= 0 && p.allowBackorder !== true && p.backorder !== true) return false;
+            return true;
+        }
+
+        function normalizeProductList(payload) {
+            const raw = payload?.products || payload?.items || payload?.data || payload?.docs || payload?.documents || payload?.results || payload;
+            const arr = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+            const map = new Map();
+            arr.map(normalizeProductItem).filter(isLiveProduct).forEach(p => {
+                if (!map.has(String(p.id))) map.set(String(p.id), p);
+            });
+            return Array.from(map.values());
+        }
+
+        function mergeProducts(products) {
+            const map = new Map(allProducts.map(p => [String(p.id), p]));
+            normalizeProductList(products).forEach(p => map.set(String(p.id), { ...(map.get(String(p.id)) || {}), ...p }));
+            allProducts = Array.from(map.values()).filter(isLiveProduct);
+            return allProducts;
+        }
+
+        function shuffleArrayFast(arr) {
+            const copy = [...arr];
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        function isSponsoredProduct(p) {
+            const text = String(p?.promotion || p?.promotionType || p?.adType || p?.campaignType || p?.tag || "").toLowerCase();
+            return p?.sponsored === true || p?.isSponsored === true || p?.isAd === true || p?.ad === true || p?.sponsor === true || p?.sponser === true || p?.sponce === true || text.includes("sponsor") || text.includes("ad");
+        }
+
+        function isBoostedProduct(p) {
+            const text = String(p?.promotion || p?.promotionType || p?.rankType || p?.tag || "").toLowerCase();
+            const score = Number(p?.boostScore || p?.boost || p?.priority || p?.rank || 0);
+            return !isSponsoredProduct(p) && (p?.boosted === true || p?.isBoosted === true || p?.featured === true || p?.isFeatured === true || p?.markRandom === true || p?.markedRandom === true || p?.randomTop === true || p?.isRandom === true || score > 0 || text.includes("boost") || text.includes("feature") || text.includes("random"));
+        }
+
+        function uniqueByProductId(list) {
+            const seen = new Set();
+            return list.filter(p => {
+                const id = String(p?.id || "");
+                if (!id || seen.has(id)) return false;
+                seen.add(id);
+                return true;
+            });
+        }
+
+        function getSearchableProducts() {
+            if (allProducts.length) return allProducts.filter(isLiveProduct);
+            return currentProduct ? [currentProduct] : [];
+        }
+
+        function escapeHtmlText(str = "") {
+            return String(str)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        function escapeAttr(str = "") {
+            return escapeHtmlText(str).replaceAll("`", "&#096;");
+        }
+
+        async function fetchPublicJson(path, timeoutMs = 4500) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
             try {
-                const res = await fetch(`${API_BASE_URL}/products`);
-                if (!res.ok) throw new Error("Fetch failed with status " + res.status);
-                const products = await res.json();
-                if (!Array.isArray(products)) throw new Error("Products API did not return an array");
-                
-                allProducts = products;
+                const res = await fetch(`${API_BASE_URL}${path}`, {
+                    signal: controller.signal,
+                    cache: "no-store",
+                    headers: { "Accept": "application/json" }
+                });
+                clearTimeout(timer);
+                if (!res.ok) throw new Error(`${path} returned ${res.status}`);
+                return await res.json();
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
+        async function fetchSingleProduct(productId) {
+            if (!productId) return null;
+            const encoded = encodeURIComponent(productId);
+            const paths = [
+                `/product?id=${encoded}`,
+                `/product?productId=${encoded}`,
+                `/products?id=${encoded}`
+            ];
+
+            for (const path of paths) {
+                try {
+                    const data = await fetchPublicJson(path, 2800);
+                    const list = normalizeProductList(data);
+                    const exact = list.find(p => String(p.id) === String(productId)) || list[0];
+                    if (exact && isLiveProduct(exact)) return exact;
+                } catch(e) {}
+            }
+            return null;
+        }
+
+        async function fetchProductBatch(limit = FAST_SIMILAR_LIMIT) {
+            const paths = [
+                `/home-fast?limit=${limit}`,
+                `/products?limit=${limit}`,
+                `/products`
+            ];
+            for (const path of paths) {
+                try {
+                    const data = await fetchPublicJson(path, 3800);
+                    const list = normalizeProductList(data);
+                    if (list.length) return list;
+                } catch(e) {}
+            }
+            return [];
+        }
+
+        async function fetchProducts() {
+            const productId = new URLSearchParams(window.location.search).get("id");
+
+            try {
+                let initialProduct = productId ? await fetchSingleProduct(productId) : null;
+
+                if (!initialProduct) {
+                    const firstBatch = await fetchProductBatch(INITIAL_SIMILAR_TOTAL + LOAD_MORE_NORMAL_COUNT + LOAD_MORE_SPONSORED_COUNT + 1);
+                    if (firstBatch.length) {
+                        initialProduct = productId
+                            ? firstBatch.find(p => String(p.id) === String(productId)) || firstBatch[0]
+                            : shuffleArrayFast(firstBatch)[0];
+                        mergeProducts(firstBatch);
+                    }
+                } else {
+                    mergeProducts([initialProduct]);
+                }
+
+                if (!initialProduct) throw new Error("No live product returned by Worker.");
+
+                currentProduct = initialProduct;
+                if (!productId || String(productId) !== String(initialProduct.id)) {
+                    window.history.replaceState(null, "", "?id=" + encodeURIComponent(initialProduct.id));
+                }
+
                 initProductPage();
+                queueBackgroundProductFetches();
+
             } catch (err) {
-                console.error("Products fetch failed:", err);
+                console.error("Product boot failed:", err);
                 const loader = document.getElementById('pageLoader');
                 if (loader) {
                     loader.innerHTML = `
                         <p style="color:var(--danger); font-weight:800; text-align:center; font-size:18px;">
-                            <i class="fas fa-exclamation-triangle"></i> Error loading product.<br><span style="font-size:14px; font-weight:600;">Please check your connection and refresh.</span>
+                            <i class="fas fa-exclamation-triangle"></i> Error loading product.<br>
+                            <span style="font-size:14px; font-weight:600;">Please check Worker /product and /products routes.</span>
                         </p>
                     `;
                 }
             }
         }
 
-        function initProductPage() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const productId = urlParams.get('id');
-            
-            if(productId) { 
-                currentProduct = allProducts.find(p => String(p.id) === String(productId));
-            }
-            
-            if(!currentProduct || currentProduct.isDummy) { 
-                const validProducts = allProducts.filter(p => !p.isDummy);
-                if (validProducts.length > 0) {
-                    const randomIndex = Math.floor(Math.random() * validProducts.length);
-                    currentProduct = validProducts[randomIndex];
-                    window.history.replaceState(null, '', '?id=' + currentProduct.id);
-                } else {
-                    window.location.href = 'https://aryanta.in/'; 
-                    return; 
+        function queueBackgroundProductFetches() {
+            setTimeout(async () => {
+                if (userActionPriority) return;
+                isFullCatalogLoading = true;
+                try {
+                    const quickMore = await fetchProductBatch(12);
+                    mergeProducts(quickMore);
+                    renderSimilarProducts();
+                } finally {
+                    isFullCatalogLoading = false;
                 }
+            }, 30);
+
+            runWhenIdle(async () => {
+                if (backgroundCatalogLoaded || userActionPriority) return;
+                isFullCatalogLoading = true;
+                try {
+                    const data = await fetchPublicJson(`/products?limit=320`, 6500).catch(() => null);
+                    if (data) {
+                        mergeProducts(normalizeProductList(data));
+                        backgroundCatalogLoaded = true;
+                        renderSimilarProducts();
+                    }
+                } finally {
+                    isFullCatalogLoading = false;
+                }
+            }, 1300);
+        }
+
+        async function loadSpecialDayAndBroadcast() {
+            Promise.allSettled([fetchSpecialDayConfig(), fetchLatestBroadcast()]);
+        }
+
+        function pickConfigObject(data) {
+            if (!data) return null;
+            const source = data.special_day || data.specialDay || data.activeSpecialDay || data.event || data.config || data;
+            if (Array.isArray(source)) return source.find(Boolean) || null;
+            return source;
+        }
+
+        function isEventCurrentlyActive(event) {
+            if (!event) return false;
+            if (event.active === false || event.enabled === false || event.isActive === false) return false;
+            const now = Date.now();
+            const start = event.startAt || event.startDate || event.saleStart || event.from;
+            const end = event.endAt || event.endDate || event.saleEnd || event.to;
+            if (start && new Date(start).getTime() > now) return false;
+            if (end && new Date(end).getTime() < now) return false;
+            return !!(event.title || event.name || event.message || event.bannerText || event.theme || event.color);
+        }
+
+        async function fetchSpecialDayConfig() {
+            const paths = ["/config?key=special_day", "/config?key=specialDay", "/config", "/banners?type=special"];
+            for (const path of paths) {
+                try {
+                    const data = await fetchPublicJson(path, 2800);
+                    const event = pickConfigObject(data);
+                    if (isEventCurrentlyActive(event)) {
+                        applySpecialDayTheme(event);
+                        return;
+                    }
+                } catch(e) {}
+            }
+            removeSpecialDayTheme();
+        }
+
+        function applySpecialDayTheme(event = {}) {
+            const key = JSON.stringify({
+                title: event.title || event.name || "",
+                message: event.message || event.bannerText || "",
+                color: event.color || event.accent || ""
+            });
+            if (specialDayCacheKey === key) return;
+            specialDayCacheKey = key;
+
+            document.body.classList.add("theme-special-day");
+            document.body.style.setProperty("--special-accent", event.color || event.accent || "#ff3b30");
+            document.body.style.setProperty("--special-accent-2", event.secondaryColor || event.bg2 || "#ff8a00");
+
+            let bar = document.getElementById("festiveAnnouncement");
+            if (!bar) {
+                bar = document.createElement("div");
+                bar.id = "festiveAnnouncement";
+                bar.className = "festive-bar";
+                document.body.prepend(bar);
+            }
+            bar.style.display = "block";
+            bar.innerHTML = `<i class="fas fa-bolt"></i> ${escapeHtmlText(event.bannerText || event.message || event.title || event.name || "Aryanta Special Day is live")}`;
+
+            const productBox = document.querySelector(".product-container");
+            if (productBox && !document.getElementById("specialDayRibbon")) {
+                const ribbon = document.createElement("div");
+                ribbon.id = "specialDayRibbon";
+                ribbon.className = "special-day-ribbon";
+                ribbon.innerHTML = `<i class="fas fa-gift"></i> ${escapeHtmlText(event.title || event.name || "Special Day Deal")}`;
+                productBox.prepend(ribbon);
+            }
+        }
+
+        function removeSpecialDayTheme() {
+            document.body.classList.remove("theme-special-day");
+            const bar = document.getElementById("festiveAnnouncement");
+            if (bar) bar.style.display = "none";
+            const ribbon = document.getElementById("specialDayRibbon");
+            if (ribbon) ribbon.remove();
+            specialDayCacheKey = "";
+        }
+
+        async function fetchLatestBroadcast() {
+            const paths = ["/get-broadcasts?limit=1", "/broadcasts?limit=1", "/get-broadcasts", "/broadcasts"];
+            for (const path of paths) {
+                try {
+                    const data = await fetchPublicJson(path, 3000);
+                    const list = data?.broadcasts || data?.items || data?.data || data?.results || data;
+                    const arr = Array.isArray(list) ? list : (list ? [list] : []);
+                    const broadcast = arr
+                        .map(normalizeFirestoreDoc)
+                        .filter(Boolean)
+                        .sort((a, b) => new Date(b.timestamp || b.createdAt || 0) - new Date(a.timestamp || a.createdAt || 0))[0];
+
+                    if (broadcast && (broadcast.title || broadcast.message || broadcast.text)) {
+                        showBroadcastPopup(broadcast);
+                        return;
+                    }
+                } catch(e) {}
+            }
+        }
+
+        function showBroadcastPopup(broadcast) {
+            const id = String(broadcast.id || broadcast.timestamp || broadcast.createdAt || broadcast.title || "");
+            if (!id || sessionStorage.getItem("aryanta_seen_broadcast") === id || lastBroadcastSeen === id) return;
+            lastBroadcastSeen = id;
+            sessionStorage.setItem("aryanta_seen_broadcast", id);
+
+            let overlay = document.getElementById("publicBroadcastOverlay");
+            if (!overlay) {
+                overlay = document.createElement("div");
+                overlay.id = "publicBroadcastOverlay";
+                overlay.className = "modal-overlay show";
+                overlay.innerHTML = `
+                    <div class="modal-box public-broadcast-box" style="text-align:center;">
+                        <button class="modal-close" onclick="document.getElementById('publicBroadcastOverlay').classList.remove('show')"><i class="fas fa-times"></i></button>
+                        <div class="broadcast-icon"><i class="fas fa-bullhorn"></i></div>
+                        <h3 class="modal-title" id="publicBroadcastTitle">Aryanta Update</h3>
+                        <p id="publicBroadcastMessage" class="public-broadcast-message"></p>
+                        <button class="btn-prime" onclick="document.getElementById('publicBroadcastOverlay').classList.remove('show')">Okay</button>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+            }
+            document.getElementById("publicBroadcastTitle").innerText = broadcast.title || "Aryanta Update";
+            document.getElementById("publicBroadcastMessage").innerText = broadcast.message || broadcast.text || broadcast.desc || "";
+            overlay.classList.add("show");
+        }
+
+        function initProductPage() {
+            if(!currentProduct || !isLiveProduct(currentProduct)) {
+                window.location.href = 'https://aryanta.in/';
+                return;
             }
 
-            // Detect Gift Card Mode
+            currentProduct = normalizeProductItem(currentProduct);
+            mergeProducts([currentProduct]);
+
             isGiftCardMode = (currentProduct.category && currentProduct.category.toLowerCase() === 'gift card') || currentProduct.isGiftCard;
 
-            // Save Keyword Preferences
-            let catPref = currentProduct.category || "General";
-            let kwPref = currentProduct.name.split(' ')[0] || ""; 
+            const catPref = currentProduct.category || "General";
+            const kwPref = (currentProduct.name || "").split(' ')[0] || ""; 
             setCookie('ary_pref_cat', catPref + "||" + kwPref, 30);
 
             loadDeliveryPreview();
             renderProductDetails();
-            renderSimilarProducts(); 
-            loadReviews(); 
-            renderQA();
-            
-            if(!isGiftCardMode) {
-                drawGraph('7d');
-            }
-            
-            document.getElementById('pageLoader').classList.add('hidden');
-            document.getElementById('mainContent').style.opacity = '1';
+
+            const loader = document.getElementById('pageLoader');
+            if (loader) loader.classList.add('hidden');
+            const main = document.getElementById('mainContent');
+            if (main) main.style.opacity = '1';
+
+            renderSimilarProducts();
+
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    loadReviews(); 
+                    renderQA();
+                    if(!isGiftCardMode) drawGraph('7d');
+                }, 80);
+            });
         }
 
         function loadDeliveryPreview() {
@@ -1000,6 +1471,191 @@
             document.getElementById('authPromptModal').classList.remove('show');
         }
 
+
+        function prioritizeUserAction(btn, label) {
+            userActionPriority = true;
+            isFullCatalogLoading = false;
+            if (btn) {
+                btn.disabled = true;
+                btn.classList.add("is-processing");
+                if (label) btn.dataset.oldHtml = btn.innerHTML, btn.innerHTML = label;
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.classList.remove("is-processing");
+                    if (btn.dataset.oldHtml) {
+                        btn.innerHTML = btn.dataset.oldHtml;
+                        delete btn.dataset.oldHtml;
+                    }
+                    userActionPriority = false;
+                }, 650);
+            } else {
+                setTimeout(() => { userActionPriority = false; }, 650);
+            }
+        }
+
+        function persistUserStateFast(type = "cart") {
+            if (!activeSession || !activeSession.email) return;
+            const payload = JSON.stringify({
+                email: activeSession.email,
+                updates: { cart: cart, wishlist: wishlist },
+                projectId: PROJECT_ID
+            });
+            try {
+                if (navigator.sendBeacon) {
+                    const blob = new Blob([payload], { type: "application/json" });
+                    navigator.sendBeacon(`${API_BASE_URL}/update-user`, blob);
+                    return;
+                }
+            } catch(e) {}
+            fetch(`${API_BASE_URL}/update-user`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: payload,
+                keepalive: true
+            }).catch(() => {});
+        }
+
+        function getProductByIdFast(id) {
+            if (!id && currentProduct) return currentProduct;
+            return allProducts.find(x => String(x.id) === String(id)) || (currentProduct && String(currentProduct.id) === String(id) ? currentProduct : null);
+        }
+
+        function getGiftAwarePrice(p) {
+            let priceToPush = Number(p?.price || currentFinalPrice || 0);
+            const isGift = p && ((p.category && String(p.category).toLowerCase() === 'gift card') || p.isGiftCard);
+            if (isGift && currentProduct && String(p.id) === String(currentProduct.id)) {
+                const input = document.getElementById('giftCardValueInput');
+                const inputVal = input ? Number(input.value) : 0;
+                if (!inputVal || inputVal < 1) {
+                    showAlert("Please enter a valid gift card amount.", "Missing Info");
+                    return null;
+                }
+                priceToPush = inputVal;
+            }
+            return priceToPush;
+        }
+
+        function updateWishlistButton() {
+            if (!currentProduct) return;
+            const btn = document.getElementById('btnWishlist');
+            if (!btn) return;
+            const exists = wishlist.some(i => String(i.id || i) === String(currentProduct.id));
+            btn.classList.toggle('active', exists);
+            btn.innerHTML = exists ? '<i class="fas fa-heart"></i>' : '<i class="far fa-heart"></i>';
+            btn.title = exists ? 'Remove from Wishlist' : 'Add to Wishlist';
+        }
+
+        window.toggleWishlistCurrent = function() {
+            if(!activeSession) { openAuthPrompt(); return; }
+            if(!currentProduct) return;
+            toggleWishlistItem(currentProduct.id);
+        }
+
+        window.toggleWishlistItem = function(id, btnElement) {
+            if(!activeSession) { openAuthPrompt(); return; }
+            const p = getProductByIdFast(id);
+            if(!p) return;
+            prioritizeUserAction(btnElement || document.getElementById('btnWishlist'));
+            const idx = wishlist.findIndex(i => String(i.id || i) === String(p.id));
+            if(idx > -1) {
+                wishlist.splice(idx, 1);
+                showToast("Removed from Wishlist");
+            } else {
+                wishlist.unshift({ ...p, addedAt: new Date().toISOString() });
+                showToast("Added to Wishlist");
+            }
+            localStorage.setItem('aryanta_wishlist', JSON.stringify(wishlist));
+            updateWishlistButton();
+            renderSimilarProducts();
+            persistUserStateFast('wishlist');
+        }
+
+        function installSearchHideOnScroll() {
+            let ticking = false;
+            lastScrollYForSearch = window.scrollY || 0;
+            window.addEventListener('scroll', () => {
+                if (ticking) return;
+                ticking = true;
+                requestAnimationFrame(() => {
+                    const y = window.scrollY || document.documentElement.scrollTop || 0;
+                    const goingDown = y > lastScrollYForSearch + 8;
+                    const goingUp = y < lastScrollYForSearch - 8;
+                    if (goingDown && y > 90) document.body.classList.add('search-collapsed');
+                    else if (goingUp || y < 60) document.body.classList.remove('search-collapsed');
+                    lastScrollYForSearch = Math.max(0, y);
+                    ticking = false;
+                });
+            }, { passive: true });
+        }
+
+        window.openProductFilter = function() {
+            const panel = document.getElementById('filterSidebar');
+            const overlay = document.getElementById('overlay');
+            if(panel) panel.classList.add('open');
+            if(overlay) overlay.classList.add('show');
+        }
+
+        window.applySimilarFilters = function() {
+            const priceInput = document.querySelector('input[name="similarPriceFilter"]:checked');
+            const sortInput = document.querySelector('input[name="similarSortFilter"]:checked');
+            similarFilters.price = priceInput ? priceInput.value : 'all';
+            similarFilters.sort = sortInput ? sortInput.value : 'smart';
+            similarFilters.min = Number(document.getElementById('similarMinPrice')?.value || 0);
+            similarFilters.max = Number(document.getElementById('similarMaxPrice')?.value || 0);
+            similarPoolKey = '';
+            similarSponsoredVisible = INITIAL_SPONSORED_TOP;
+            similarBoostedVisible = 8;
+            similarNormalVisible = INITIAL_SIMILAR_TOTAL;
+            renderActiveFilterChips();
+            renderSimilarProducts();
+        }
+
+        window.resetSimilarFilters = function() {
+            document.querySelectorAll('input[name="similarPriceFilter"]').forEach(r => r.checked = r.value === 'all');
+            document.querySelectorAll('input[name="similarSortFilter"]').forEach(r => r.checked = r.value === 'smart');
+            const min = document.getElementById('similarMinPrice');
+            const max = document.getElementById('similarMaxPrice');
+            if(min) min.value = '';
+            if(max) max.value = '';
+            similarFilters = { price: 'all', sort: 'smart', min: 0, max: 0 };
+            similarPoolKey = '';
+            renderActiveFilterChips();
+            renderSimilarProducts();
+        }
+
+        function renderActiveFilterChips() {
+            const box = document.getElementById('activeFilterChips');
+            if(!box) return;
+            const chips = [];
+            if(similarFilters.price && similarFilters.price !== 'all') chips.push(`Under ₹${similarFilters.price}`);
+            if(similarFilters.min || similarFilters.max) chips.push(`₹${similarFilters.min || 0} - ₹${similarFilters.max || '∞'}`);
+            if(similarFilters.sort && similarFilters.sort !== 'smart') chips.push(similarFilters.sort.replace(/^./, c => c.toUpperCase()));
+            box.style.display = chips.length ? 'flex' : 'none';
+            box.innerHTML = chips.map(c => `<span>${escapeHtmlText(c)}</span>`).join('') + (chips.length ? `<button onclick="resetSimilarFilters()"><i class="fas fa-times"></i></button>` : '');
+        }
+
+        function passesSimilarFilters(p) {
+            const price = Number(p?.price || 0);
+            if (similarFilters.price !== 'all' && price > Number(similarFilters.price)) return false;
+            if (similarFilters.min && price < similarFilters.min) return false;
+            if (similarFilters.max && price > similarFilters.max) return false;
+            return true;
+        }
+
+        function getProductTime(p) {
+            return new Date(p?.createdAt || p?.updatedAt || p?.timestamp || p?.addedAt || 0).getTime() || 0;
+        }
+
+        function sortSimilarList(list) {
+            const arr = [...list];
+            const sort = similarFilters.sort || 'smart';
+            if (sort === 'rating') return arr.sort((a,b) => Number(b.rating || b.avgRating || 0) - Number(a.rating || a.avgRating || 0));
+            if (sort === 'new') return arr.sort((a,b) => getProductTime(b) - getProductTime(a));
+            if (sort === 'low') return arr.sort((a,b) => Number(a.price || 0) - Number(b.price || 0));
+            if (sort === 'high') return arr.sort((a,b) => Number(b.price || 0) - Number(a.price || 0));
+            return arr;
+        }
+
         function checkCartBtnStatus() {
             if(!currentProduct || isGiftCardMode) return;
             let inCart = cart.some(i => String(i.id) === String(currentProduct.id));
@@ -1015,23 +1671,18 @@
                 btn.style.color = "var(--text-main)";
                 btn.style.borderColor = "var(--border)";
             }
+            updateWishlistButton();
         }
 
-        // Modified for Custom Gift Card Pricing
+        // Instant cart engine: local update first, background sync later.
         window.toggleCartPage = function() {
             if(!activeSession) { openAuthPrompt(); return; }
             if(!currentProduct) return;
-            
-            let finalPriceToAdd = currentFinalPrice;
-            
-            if(isGiftCardMode) {
-                const inputVal = document.getElementById('giftCardValueInput').value;
-                if(!inputVal || inputVal < 1) {
-                    showAlert("Please enter a valid gift card amount.", "Missing Info");
-                    return;
-                }
-                finalPriceToAdd = Number(inputVal);
-            }
+            const btn = document.getElementById('btnAddToCart');
+            prioritizeUserAction(btn, '<i class="fas fa-circle-notch fa-spin"></i> <span>Adding...</span>');
+
+            const finalPriceToAdd = getGiftAwarePrice(currentProduct);
+            if(finalPriceToAdd === null) return;
 
             const idx = cart.findIndex(i => String(i.id) === String(currentProduct.id));
             if (idx > -1) {
@@ -1039,18 +1690,17 @@
                     cart.splice(idx, 1);
                     showToast("Item removed from Cart");
                 } else {
-                    cart[idx].price = finalPriceToAdd; // Update price if already in cart
+                    cart[idx].price = finalPriceToAdd;
                     showToast("Gift card updated in Cart");
                 }
             } else {
-                cart.push({ ...currentProduct, price: finalPriceToAdd, qty: 1 });
+                cart.unshift({ ...currentProduct, price: finalPriceToAdd, qty: 1, selected: true });
                 showToast("Item added to Cart");
             }
-            
             localStorage.setItem('local_cart', JSON.stringify(cart));
             updateCartBadge();
             checkCartBtnStatus();
-            saveCartToDB();
+            persistUserStateFast('cart');
         }
 
         function saveCartToDB() {
@@ -1060,81 +1710,120 @@
         }
 
         // --- ENHANCED: Stock Market Style Line Graph ---
-        window.drawGraph = function(period, btnEl) {
+        window.drawGraph = function(period = '7d', btnEl) {
             if(btnEl) {
                 document.querySelectorAll('.graph-filters button').forEach(b => b.classList.remove('active'));
                 btnEl.classList.add('active');
             }
-            
+
             const canvas = document.getElementById('priceCanvas');
             if(!canvas) return;
+
+            const parent = canvas.parentElement || canvas;
+            const css = getComputedStyle(document.body);
+            const textColor = css.getPropertyValue('--text-main').trim() || '#1d1d1f';
+            const mutedColor = css.getPropertyValue('--text-muted').trim() || '#86868b';
+            const successColor = css.getPropertyValue('--success').trim() || '#34c759';
+            const surfaceColor = css.getPropertyValue('--surface').trim() || '#ffffff';
+            const borderColor = css.getPropertyValue('--border').trim() || 'rgba(0,0,0,0.12)';
+
+            const dpr = Math.max(1, window.devicePixelRatio || 1);
+            const rectWidth = Math.max(280, parent.clientWidth || canvas.clientWidth || 320);
+            const rectHeight = 210;
+            canvas.width = Math.floor(rectWidth * dpr);
+            canvas.height = Math.floor(rectHeight * dpr);
+            canvas.style.width = rectWidth + 'px';
+            canvas.style.height = rectHeight + 'px';
+
             const ctx = canvas.getContext('2d');
-            canvas.width = canvas.parentElement.clientWidth;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            let points = period === '3m' ? 20 : (period === '6m' ? 30 : (period === 'all' ? 50 : 10));
-            let data = [];
-            
-            for(let i=0; i<points; i++) {
-                let progress = i / (points - 1);
-                let val = currentFinalPrice + (currentMaxPrice - currentFinalPrice) * Math.pow(1 - progress, 3);
-                data.unshift(val); 
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, rectWidth, rectHeight);
+
+            const finalPrice = Math.max(1, Number(currentFinalPrice || currentProduct?.price || 1));
+            const normalPrice = Math.max(1, Number(currentNormalPrice || currentProduct?.price || finalPrice));
+            const maxPrice = Math.max(finalPrice, normalPrice, Number(currentMaxPrice || currentProduct?.mrp || finalPrice));
+            const minPrice = Math.min(finalPrice, normalPrice, maxPrice);
+            const range = Math.max(1, maxPrice - minPrice);
+            const points = period === '3m' ? 20 : (period === '6m' ? 30 : (period === 'all' ? 50 : 10));
+            const labels = [];
+            const data = [];
+
+            for(let i = 0; i < points; i++) {
+                const progress = i / Math.max(1, points - 1);
+                const wave = Math.sin(progress * Math.PI * 2.25) * range * 0.035;
+                const dropCurve = (maxPrice - finalPrice) * Math.pow(1 - progress, 2.15);
+                const val = Math.max(minPrice, Math.min(maxPrice, finalPrice + dropCurve + wave));
+                data.push(val);
+                labels.push(i);
             }
 
-            const max = currentMaxPrice;
-            const min = currentNormalPrice;
-            const range = (max - min) || 1;
+            const padL = 42, padR = 16, padT = 26, padB = 32;
+            const w = rectWidth - padL - padR;
+            const h = rectHeight - padT - padB;
+            const coords = data.map((val, i) => ({
+                x: padL + (i / Math.max(1, data.length - 1)) * w,
+                y: padT + h - ((val - minPrice) / range) * h
+            }));
 
-            let coords = [];
-            let paddingY = 25; 
-            let usableHeight = canvas.height - (paddingY * 2);
-
-            for(let i=0; i<data.length; i++) {
-                let x = (i / (data.length - 1)) * canvas.width;
-                let y = paddingY + usableHeight - ((data[i] - min) / range) * usableHeight;
-                coords.push({x, y});
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = borderColor;
+            ctx.beginPath();
+            for(let i = 0; i <= 4; i++) {
+                const y = padT + (h / 4) * i;
+                ctx.moveTo(padL, y);
+                ctx.lineTo(rectWidth - padR, y);
             }
+            ctx.stroke();
 
-            // Green gradient for stock market feel
+            const gradient = ctx.createLinearGradient(0, padT, 0, rectHeight - padB);
+            gradient.addColorStop(0, 'rgba(52,199,89,0.30)');
+            gradient.addColorStop(1, 'rgba(52,199,89,0.02)');
             ctx.beginPath();
             ctx.moveTo(coords[0].x, coords[0].y);
-            for(let i=1; i<coords.length; i++) ctx.lineTo(coords[i].x, coords[i].y);
-            ctx.lineTo(canvas.width, canvas.height);
-            ctx.lineTo(0, canvas.height);
+            for(let i = 1; i < coords.length; i++) {
+                const prev = coords[i - 1];
+                const cur = coords[i];
+                const midX = (prev.x + cur.x) / 2;
+                ctx.bezierCurveTo(midX, prev.y, midX, cur.y, cur.x, cur.y);
+            }
+            ctx.lineTo(coords[coords.length - 1].x, rectHeight - padB);
+            ctx.lineTo(coords[0].x, rectHeight - padB);
             ctx.closePath();
-            
-            let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            gradient.addColorStop(0, 'rgba(52, 199, 89, 0.25)'); // Success Green
-            gradient.addColorStop(1, 'rgba(52, 199, 89, 0.0)');
             ctx.fillStyle = gradient;
             ctx.fill();
 
-            // Sharp line
             ctx.beginPath();
-            ctx.strokeStyle = '#34c759'; // Success Green
-            ctx.lineWidth = 3;
-            ctx.lineJoin = 'round';
             ctx.moveTo(coords[0].x, coords[0].y);
-            for(let i=1; i<coords.length; i++) ctx.lineTo(coords[i].x, coords[i].y);
+            for(let i = 1; i < coords.length; i++) {
+                const prev = coords[i - 1];
+                const cur = coords[i];
+                const midX = (prev.x + cur.x) / 2;
+                ctx.bezierCurveTo(midX, prev.y, midX, cur.y, cur.x, cur.y);
+            }
+            ctx.strokeStyle = successColor;
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
             ctx.stroke();
 
-            ctx.fillStyle = 'var(--surface)';
-            ctx.lineWidth = 2;
-            for(let i=0; i<coords.length; i++) {
-                ctx.beginPath();
-                ctx.arc(coords[i].x, coords[i].y, 4, 0, Math.PI*2);
-                ctx.fill();
-                ctx.stroke();
-            }
+            const last = coords[coords.length - 1];
+            ctx.beginPath();
+            ctx.arc(last.x, last.y, 5, 0, Math.PI * 2);
+            ctx.fillStyle = surfaceColor;
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = successColor;
+            ctx.stroke();
 
-            ctx.fillStyle = 'var(--text-muted)';
-            ctx.font = '600 11px var(--font-main)';
-            ctx.fillText(`Max MRP: ₹${Math.round(max)}`, 10, 15);
-            ctx.fillText(`Normal: ₹${Math.round(min)}`, 10, canvas.height - 10);
-            
-            ctx.fillStyle = 'var(--text-main)';
-            ctx.font = '800 14px var(--font-main)';
-            ctx.fillText(`Current: ₹${currentFinalPrice}`, canvas.width - 115, paddingY > 15 ? paddingY - 5 : 20);
+            ctx.fillStyle = mutedColor;
+            ctx.font = '700 11px Plus Jakarta Sans, sans-serif';
+            ctx.fillText(`MRP ₹${Math.round(maxPrice).toLocaleString('en-IN')}`, 8, padT + 4);
+            ctx.fillText(`Low ₹${Math.round(minPrice).toLocaleString('en-IN')}`, 8, rectHeight - padB + 4);
+
+            ctx.fillStyle = textColor;
+            ctx.font = '900 14px Plus Jakarta Sans, sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(`Now ₹${Math.round(finalPrice).toLocaleString('en-IN')}`, rectWidth - padR, 18);
+            ctx.textAlign = 'left';
         }
 
         window.openAddressModal = async function() {
@@ -1557,79 +2246,152 @@
         }
 
         // --- MATH/SCIENCE OPTIMIZED LIGHTNING RENDER ---
-        function renderSimilarProducts() {
-            if(!currentProduct) return;
-            
-            let rawPref = getCookie('ary_pref_cat') || "||";
-            let prefArr = rawPref.split("||");
-            let prefCat = prefArr[0] || currentProduct.category;
-            let prefKw = (prefArr[1] || "").toLowerCase();
+        function getSimilarPoolParts() {
+            if(!currentProduct) return { sponsored: [], boosted: [], normal: [] };
 
-            let similarMatch = allProducts.filter(p => {
-                if(p.isDummy || String(p.id) === String(currentProduct.id)) return false;
-                if(p.category === prefCat) return true;
-                if(prefKw && p.name.toLowerCase().includes(prefKw)) return true;
-                return false;
+            const rawPref = getCookie('ary_pref_cat') || "||";
+            const prefArr = rawPref.split("||");
+            const prefCat = prefArr[0] || currentProduct.category;
+            const prefKw = (prefArr[1] || "").toLowerCase();
+
+            const pool = getSearchableProducts()
+                .filter(p => String(p.id) !== String(currentProduct.id))
+                .filter(passesSimilarFilters);
+
+            const similarMatch = pool.filter(p => {
+                const productName = String(p.name || "").toLowerCase();
+                return p.category === prefCat || (prefKw && productName.includes(prefKw));
             });
-            
-            let otherCat = allProducts.filter(p => !p.isDummy && String(p.id) !== String(currentProduct.id) && !similarMatch.includes(p));
-            
-            similarMatch = similarMatch.sort(() => 0.5 - Math.random());
-            otherCat = otherCat.sort(() => 0.5 - Math.random());
-            
-            let combined = [...similarMatch, ...otherCat].slice(0, 30);
-            
-            const wrapper = document.querySelector('.scroller-wrapper');
-            const track = document.getElementById('similarProductsTrack');
+            const otherProducts = pool.filter(p => !similarMatch.some(x => String(x.id) === String(p.id)));
+            let rankedPool = uniqueByProductId([...similarMatch, ...otherProducts]);
+            rankedPool = sortSimilarList(rankedPool);
 
-            if(combined.length === 0) {
-                if (wrapper) wrapper.style.display = 'none';
+            const sponsored = rankedPool.filter(isSponsoredProduct);
+            const boosted = rankedPool.filter(isBoostedProduct);
+            const normal = rankedPool.filter(p => !isSponsoredProduct(p) && !isBoostedProduct(p));
+
+            if (similarFilters.sort === 'sponsored') return { sponsored, boosted, normal };
+            return { sponsored, boosted, normal };
+        }
+
+        function rebuildSimilarPoolsIfNeeded(force = false) {
+            const parts = getSimilarPoolParts();
+            const key = [...parts.sponsored, ...parts.boosted, ...parts.normal].map(p => String(p.id)).sort().join('|');
+            if(!force && key === similarPoolKey) return;
+
+            const isFirstBuild = !similarPoolKey;
+            const oldSponsoredVisible = similarSponsoredVisible || INITIAL_SPONSORED_TOP;
+            const oldBoostedVisible = similarBoostedVisible || 8;
+            const oldNormalVisible = similarNormalVisible || INITIAL_SIMILAR_TOTAL;
+
+            similarPoolKey = key;
+            similarSponsoredOrder = shuffleArrayFast(parts.sponsored);
+            similarBoostedOrder = shuffleArrayFast(parts.boosted);
+            similarNormalOrder = shuffleArrayFast(parts.normal);
+
+            const initialSponsoredCount = Math.min(INITIAL_SPONSORED_TOP, similarSponsoredOrder.length);
+            const initialBoostedCount = Math.min(Math.max(0, INITIAL_SIMILAR_TOTAL - initialSponsoredCount), similarBoostedOrder.length);
+            const initialNormalCount = Math.max(0, INITIAL_SIMILAR_TOTAL - initialSponsoredCount - initialBoostedCount);
+
+            if (isFirstBuild) {
+                similarSponsoredVisible = initialSponsoredCount;
+                similarBoostedVisible = initialBoostedCount;
+                similarNormalVisible = initialNormalCount;
                 return;
-            } else {
-                if (wrapper) wrapper.style.display = 'block';
             }
 
-            if(track) {
-                const fragment = document.createDocumentFragment();
-                let initialBatch = combined.slice(0, 10);
-                
-                initialBatch.forEach(p => {
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = createSimilarCardHTML(p);
-                    fragment.appendChild(tempDiv.firstElementChild);
-                });
-                
-                track.appendChild(fragment);
-                
-                if(combined.length > 10) {
-                    setTimeout(() => {
-                        const bgFragment = document.createDocumentFragment();
-                        let restBatch = combined.slice(10, 30);
-                        restBatch.forEach(p => {
-                            const tDiv = document.createElement('div');
-                            tDiv.innerHTML = createSimilarCardHTML(p);
-                            bgFragment.appendChild(tDiv.firstElementChild);
-                        });
-                        
-                        const backBtnWrapper = document.createElement('div');
-                        backBtnWrapper.style.cssText = "grid-column: 1/-1; text-align:center; padding: 40px 0;";
-                        backBtnWrapper.innerHTML = `<button class="btn-outline bounce-hover" style="margin: 0 auto; width: 220px;" onclick="window.location.href='https://aryanta.in/'">Back to Store</button>`;
-                        bgFragment.appendChild(backBtnWrapper);
-                        
-                        window.requestAnimationFrame(() => track.appendChild(bgFragment));
-                    }, 500); 
-                } else {
-                    track.insertAdjacentHTML('beforeend', `
-                        <div style="grid-column: 1/-1; text-align:center; padding: 40px 0;">
-                            <button class="btn-outline bounce-hover" style="margin: 0 auto; width: 220px;" onclick="window.location.href='https://aryanta.in/'">Back to Store</button>
-                        </div>
-                    `);
-                }
+            similarSponsoredVisible = Math.max(initialSponsoredCount, Math.min(oldSponsoredVisible, similarSponsoredOrder.length || oldSponsoredVisible));
+            similarBoostedVisible = Math.max(initialBoostedCount, Math.min(oldBoostedVisible, similarBoostedOrder.length || oldBoostedVisible));
+            similarNormalVisible = Math.max(initialNormalCount, Math.min(oldNormalVisible, similarNormalOrder.length || oldNormalVisible));
+        }
+
+        function getVisibleSimilarProducts() {
+            rebuildSimilarPoolsIfNeeded();
+            return uniqueByProductId([
+                ...similarSponsoredOrder.slice(0, similarSponsoredVisible),
+                ...similarBoostedOrder.slice(0, similarBoostedVisible),
+                ...similarNormalOrder.slice(0, similarNormalVisible)
+            ]);
+        }
+
+        function hasMoreSimilarProducts() {
+            return similarSponsoredVisible < similarSponsoredOrder.length || similarBoostedVisible < similarBoostedOrder.length || similarNormalVisible < similarNormalOrder.length || isFullCatalogLoading || !backgroundCatalogLoaded;
+        }
+
+        window.loadMoreSimilarProducts = function() {
+            similarSponsoredVisible += LOAD_MORE_SPONSORED_COUNT;
+            similarBoostedVisible += 8;
+            similarNormalVisible += LOAD_MORE_NORMAL_COUNT;
+            renderSimilarProducts();
+
+            if(!backgroundCatalogLoaded && !isFullCatalogLoading) {
+                isFullCatalogLoading = true;
+                fetchPublicJson(`/products?limit=320`, 7000)
+                    .then(data => {
+                        if(data) {
+                            mergeProducts(normalizeProductList(data));
+                            rebuildSimilarPoolsIfNeeded(true);
+                            renderSimilarProducts();
+                        }
+                    })
+                    .catch(() => {})
+                    .finally(() => {
+                        backgroundCatalogLoaded = true;
+                        isFullCatalogLoading = false;
+                        renderSimilarProducts();
+                    });
             }
         }
-        
+
+        function renderSimilarProducts() {
+            if(!currentProduct) return;
+
+            const wrapper = document.querySelector('.scroller-wrapper');
+            const track = document.getElementById('similarProductsTrack');
+            if(!track) return;
+
+            rebuildSimilarPoolsIfNeeded();
+            const combined = getVisibleSimilarProducts();
+            track.innerHTML = "";
+
+            if(combined.length === 0) {
+                if (wrapper) wrapper.style.display = 'block';
+                track.innerHTML = `
+                    <div class="similar-controls">
+                        <div class="similar-loading-card">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Finding more live products...</span>
+                        </div>
+                        <button class="btn-outline bounce-hover similar-back-btn" onclick="window.location.href='https://aryanta.in/'">
+                            <i class="fas fa-arrow-left"></i> Back to Store
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            if (wrapper) wrapper.style.display = 'block';
+
+            const fragment = document.createDocumentFragment();
+            combined.forEach(p => {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = createSimilarCardHTML(p);
+                fragment.appendChild(tempDiv.firstElementChild);
+            });
+
+            const controls = document.createElement('div');
+            controls.className = "similar-controls";
+            controls.innerHTML = `
+                ${hasMoreSimilarProducts() ? `<button class="btn-prime bounce-hover similar-load-more-btn" onclick="loadMoreSimilarProducts()"><i class="fas fa-bolt"></i> Load More Products</button>` : ``}
+                <button class="btn-outline bounce-hover similar-back-btn" onclick="window.location.href='https://aryanta.in/'"><i class="fas fa-arrow-left"></i> Back to Store</button>
+            `;
+            fragment.appendChild(controls);
+
+            requestAnimationFrame(() => track.appendChild(fragment));
+        }
+
         function createSimilarCardHTML(p) {
-            let img = p.images && p.images.length > 0 ? p.images[0] : p.image;
+            let img = getProductImageSafe(p);
             let sellerText = '';
             let adminVerified = false;
             
@@ -1654,20 +2416,24 @@
                 : `<button class="s-add-btn" style="flex:1; background:var(--surface); color:var(--text-main); border-color:var(--border);" onclick="event.stopPropagation(); quickAddCart('${p.id}', this)"><i class="fas fa-shopping-cart"></i></button>`;
 
             return `
-                <div class="similar-card" onclick="window.location.href='?id=${p.id}'">
+                <div class="similar-card ${isSponsoredProduct(p) ? 'is-sponsored-card' : (isBoostedProduct(p) ? 'is-boosted-card' : '')}" onclick="window.location.href='?id=${encodeURIComponent(p.id)}'">
+                    ${isSponsoredProduct(p) ? '<div class="sponsored-ribbon">Sponsored</div>' : (isBoostedProduct(p) ? '<div class="sponsored-ribbon boosted-ribbon">Boosted</div>' : '')}
                     <div class="s-card-top">
-                        <img src="${img}" class="s-img">
+                        <img src="${escapeAttr(img)}" class="s-img" loading="lazy" decoding="async">
                         <div class="s-details">
-                            <div class="s-title">${p.name}</div>
+                            <div class="s-title">${escapeHtmlText(p.name || 'Aryanta Product')}</div>
                             <div class="seller-line">
-                                <span>Sold by ${sellerText}</span> ${verifiedIcon}
+                                <span>Sold by ${escapeHtmlText(sellerText)}</span> ${verifiedIcon}
                             </div>
                             <div class="s-price">${priceHTML}</div>
                         </div>
                     </div>
-                    <div style="display:flex; gap:12px; margin-top: auto; width: 100%;">
+                    <div class="similar-actions">
                         ${cartBtnHtml}
-                        <button class="s-buy-btn" style="flex:4;" onclick="event.stopPropagation(); quickBuy('${p.id}')">Buy Now</button>
+                        <button class="s-wishlist-btn ${wishlist.some(i => String(i.id || i) === String(p.id)) ? 'active' : ''}" onclick="event.stopPropagation(); toggleWishlistItem('${p.id}', this)" title="Wishlist">
+                            <i class="${wishlist.some(i => String(i.id || i) === String(p.id)) ? 'fas' : 'far'} fa-heart"></i>
+                        </button>
+                        <button class="s-buy-btn" onclick="event.stopPropagation(); quickBuy('${p.id}')">Buy Now</button>
                     </div>
                 </div>
             `;
@@ -1675,98 +2441,91 @@
 
         window.quickAddCart = function(id, btnElement) {
             if(!activeSession) { openAuthPrompt(); return; }
-            let p = allProducts.find(x => String(x.id) === String(id));
-            if(p) {
-                let existingIdx = cart.findIndex(i => String(i.id) === String(p.id));
-                if(existingIdx > -1) {
-                    cart.splice(existingIdx, 1);
-                    showToast("Removed from Cart");
-                    if(btnElement) {
-                        btnElement.innerHTML = '<i class="fas fa-shopping-cart"></i>';
-                        btnElement.style.background = 'var(--surface)';
-                        btnElement.style.color = 'var(--text-main)';
-                        btnElement.style.borderColor = 'var(--border)';
-                    }
-                } else {
-                    cart.push({ ...p, price: p.price, qty: 1 });
-                    showToast("Added to Cart");
-                    if(btnElement) {
-                        btnElement.innerHTML = '<i class="fas fa-times"></i>';
-                        btnElement.style.background = 'rgba(255, 59, 48, 0.1)';
-                        btnElement.style.color = 'var(--danger)';
-                        btnElement.style.borderColor = 'transparent';
-                    }
-                }
-                saveCartToDB();
-                updateCartBadge();
-                if (currentProduct && String(currentProduct.id) === String(id)) checkCartBtnStatus();
+            const p = getProductByIdFast(id);
+            if(!p) return;
+            prioritizeUserAction(btnElement);
+            const existingIdx = cart.findIndex(i => String(i.id) === String(p.id));
+            if(existingIdx > -1) {
+                cart.splice(existingIdx, 1);
+                showToast("Removed from Cart");
+            } else {
+                cart.unshift({ ...p, price: p.price, qty: 1, selected: true });
+                showToast("Added to Cart");
             }
+            localStorage.setItem('local_cart', JSON.stringify(cart));
+            updateCartBadge();
+            if (currentProduct && String(currentProduct.id) === String(id)) checkCartBtnStatus();
+            renderSimilarProducts();
+            persistUserStateFast('cart');
         }
 
         // Updated Smart Buy Now Action
-        window.quickBuy = async function(id) {
+        window.quickBuy = function(id) {
             if(!activeSession) { openAuthPrompt(); return; }
-            let p = allProducts.find(x => String(x.id) === String(id)) || currentProduct;
-            
-            if(p) {
-                let existingIdx = cart.findIndex(i => String(i.id) === String(p.id));
-                let isGift = (p.category && p.category.toLowerCase() === 'gift card') || p.isGiftCard;
-                
-                let priceToPush = p.price || currentFinalPrice;
-                
-                if(isGift && String(p.id) === String(currentProduct.id)) {
-                    let inputVal = document.getElementById('giftCardValueInput').value;
-                    if(!inputVal || inputVal < 1) {
-                        showAlert("Please enter a valid gift card amount.", "Missing Info");
-                        return;
-                    }
-                    priceToPush = Number(inputVal);
-                }
-                
-                if(existingIdx === -1) {
-                    cart.push({ ...p, price: priceToPush, qty: 1, selected: true });
-                } else {
-                    cart[existingIdx].qty += 1;
-                    cart[existingIdx].price = priceToPush;
-                    cart[existingIdx].selected = true;
-                }
-                
-                localStorage.setItem('local_cart', JSON.stringify(cart));
-                showToast("Item Secured! Redirecting to checkout...");
-                
-                try {
-                    await fetch(`${API_BASE_URL}/update-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: activeSession.email, updates: { cart: cart }, projectId: PROJECT_ID }) });
-                    window.location.href = 'https://aryanta.in/cart/';
-                } catch(e) {
-                    window.location.href = 'https://aryanta.in/cart/';
-                }
-            }
-        }
+            const buyBtn = String(id) === String(currentProduct?.id) ? document.getElementById('btnBuyNow') : null;
+            prioritizeUserAction(buyBtn, '<i class="fas fa-circle-notch fa-spin"></i> Securing...');
 
-        window.switchTab = function(tabId) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-            document.getElementById(tabId).classList.add('active');
+            const p = getProductByIdFast(id) || currentProduct;
+            if(!p) return;
+            const priceToPush = getGiftAwarePrice(p);
+            if(priceToPush === null) return;
+
+            const existingIdx = cart.findIndex(i => String(i.id) === String(p.id));
+            if(existingIdx === -1) {
+                cart.unshift({ ...p, price: priceToPush, qty: 1, selected: true });
+            } else {
+                cart[existingIdx].qty = Math.max(1, Number(cart[existingIdx].qty || 1));
+                cart[existingIdx].price = priceToPush;
+                cart[existingIdx].selected = true;
+            }
+            localStorage.setItem('local_cart', JSON.stringify(cart));
+            updateCartBadge();
+            showToast("Item added. Opening cart...");
+            persistUserStateFast('cart');
+            setTimeout(() => { window.location.href = 'https://aryanta.in/cart/'; }, 60);
         }
 
         function checkSession() {
             const accBtn = document.getElementById('accountBtn');
+            const sidebarUser = document.getElementById('sidebarUser');
+            const sidebarRole = document.getElementById('sidebarRole');
+            const sidebarLogoutBtn = document.getElementById('sidebarLogoutBtn');
+            const sidebarAvatar = document.getElementById('sidebarAvatar');
+            const sidebarPrimeBadge = document.getElementById('sidebarPrimeBadge');
+            const sidebarAccountLink = document.getElementById('sidebarAccountLink');
+
+            try {
+                if (!activeSession) {
+                    activeSession = JSON.parse(localStorage.getItem('active_session') || 'null');
+                }
+            } catch(e) { activeSession = null; }
+
             if (activeSession && activeSession.email) {
-                document.getElementById('sidebarUser').innerText = activeSession.name;
-                document.getElementById('sidebarRole').innerText = activeSession.isPrime ? "Prime Member" : "Store Member";
-                document.getElementById('sidebarLogoutBtn').style.display = "flex"; 
-                
-                let avatar = activeSession.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(activeSession.email)}`;
-                document.getElementById('sidebarAvatar').src = avatar;
-                accBtn.innerHTML = `<img src="${avatar}" class="nav-avatar"> <span class="desktop-only" style="font-weight:700;">${activeSession.name.split(' ')[0]}</span>`;
-                accBtn.onclick = () => location.href = 'https://aryanta.in/profile/';
+                const displayName = activeSession.name || activeSession.fullName || activeSession.email.split('@')[0] || 'User';
+                const firstName = String(displayName).split(' ')[0] || 'User';
+                const avatar = activeSession.avatar || activeSession.photoURL || activeSession.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(activeSession.email)}`;
+
+                if (sidebarUser) sidebarUser.innerText = displayName;
+                if (sidebarRole) sidebarRole.innerText = activeSession.isPrime ? 'Prime Member' : 'Store Member';
+                if (sidebarLogoutBtn) sidebarLogoutBtn.style.display = 'flex';
+                if (sidebarAvatar) sidebarAvatar.src = avatar;
+                if (sidebarPrimeBadge) sidebarPrimeBadge.style.display = activeSession.isPrime ? 'flex' : 'none';
+                if (sidebarAccountLink) sidebarAccountLink.onclick = () => location.href = 'https://aryanta.in/profile/';
+                if (accBtn) {
+                    accBtn.innerHTML = `<img src="${avatar}" class="nav-avatar" alt="Profile"> <span class="desktop-only" style="font-weight:700;">${firstName}</span>`;
+                    accBtn.onclick = () => location.href = 'https://aryanta.in/profile/';
+                }
             } else {
-                document.getElementById('sidebarUser').innerText = 'Welcome Guest'; 
-                document.getElementById('sidebarRole').innerText = `Sign in for deals`; 
-                document.getElementById('sidebarLogoutBtn').style.display = "none";
-                accBtn.innerHTML = `<i class="fas fa-user-circle" style="font-size:24px; margin-right:6px;"></i> <span class="desktop-only" style="font-weight:700;">Sign In</span>`;
-                accBtn.onclick = () => location.href = 'https://aryanta.in/login/'; 
+                if (sidebarUser) sidebarUser.innerText = 'Welcome Guest';
+                if (sidebarRole) sidebarRole.innerText = 'Sign in for best deals';
+                if (sidebarLogoutBtn) sidebarLogoutBtn.style.display = 'none';
+                if (sidebarAvatar) sidebarAvatar.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Guest';
+                if (sidebarPrimeBadge) sidebarPrimeBadge.style.display = 'none';
+                if (sidebarAccountLink) sidebarAccountLink.onclick = () => location.href = 'https://aryanta.in/login/';
+                if (accBtn) {
+                    accBtn.innerHTML = `<i class="fas fa-user-circle" style="font-size:24px; margin-right:6px;"></i> <span class="desktop-only" style="font-weight:700;">Sign In</span>`;
+                    accBtn.onclick = () => location.href = 'https://aryanta.in/login/';
+                }
             }
         }
 
@@ -1782,7 +2541,8 @@
         function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
         
         window.closeAllModals = function() { 
-            document.getElementById('sidebar').classList.remove('open'); 
+            document.getElementById('sidebar').classList.remove('open');
+            const fp = document.getElementById('filterSidebar'); if(fp) fp.classList.remove('open'); 
             document.getElementById('overlay').classList.remove('show'); 
             document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('show'));
             document.querySelectorAll('.full-screen-panel').forEach(m => m.classList.remove('show'));
