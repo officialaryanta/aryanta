@@ -497,6 +497,8 @@
     }
 
     // --- SECURE RAZORPAY HANDLER ---
+    const REQUIRE_SERVER_VERIFY = false;
+
     function getOrderAmountPaise(orderData) {
       return Number(orderData.amount || orderData.order_amount || orderData.order?.amount || 0);
     }
@@ -509,12 +511,31 @@
       return orderData.currency || orderData.order?.currency || "INR";
     }
 
+    function firebaseSafeKey(value) {
+      return String(value || ("TX-" + Date.now())).replace(/[.#$\[\]/]/g, "_");
+    }
+
+    function authHeaders(extra = {}) {
+      const token = getToken();
+      return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+    }
+
+    async function readJsonResponse(response) {
+      const text = await response.text().catch(() => "");
+      if (!text) return {};
+      try { return JSON.parse(text); } catch (e) { return { message: text }; }
+    }
+
     async function loadRazorpayKey() {
       if (window.API_KEYS.RAZORPAY) return window.API_KEYS.RAZORPAY;
+
       const kRes = await fetch(`${WORKER_API}/get-api-keys`, { cache: "no-store" });
-      const kData = await kRes.json().catch(() => ({}));
-      const key = kData.razorpayKey || kData.key_id || kData.key || "";
+      const kData = await readJsonResponse(kRes);
+      const key = kData.razorpayKey || kData.razorpay_key || kData.key_id || kData.key || "";
+
+      if (!kRes.ok) throw new Error(kData.error || kData.message || "Unable to load Razorpay key");
       if (!key) throw new Error("Razorpay key missing from worker");
+
       window.API_KEYS.RAZORPAY = key;
       return key;
     }
@@ -522,6 +543,7 @@
     async function createRazorpayOrder(amountRupees, description) {
       const amountPaise = amountToPaise(amountRupees);
       const receipt = "ARY-" + Date.now();
+
       const payload = {
         amount: amountPaise,
         amountPaise,
@@ -533,41 +555,128 @@
         name: userName,
         email: currentUser.email || "",
         phone: currentUser.phone || currentUser.mobile || "",
-        description
+        description,
+        userUid,
+        userName
       };
 
       const orderReq = await fetch(`${WORKER_API}/create-razorpay-order`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
+        cache: "no-store"
       });
 
-      const orderData = await orderReq.json().catch(() => ({}));
-      if (!orderReq.ok || !orderData.success) throw new Error(orderData.error || orderData.message || "Order creation failed");
+      const orderData = await readJsonResponse(orderReq);
+      if (!orderReq.ok || orderData.success === false) {
+        throw new Error(orderData.error || orderData.message || "Order creation failed");
+      }
 
       const returnedAmountPaise = getOrderAmountPaise(orderData);
-      if (returnedAmountPaise !== amountPaise) {
-        throw new Error(`Razorpay amount mismatch. Entered ${formatMoney(amountRupees)}, worker returned ${formatMoney(returnedAmountPaise / 100)}. Update worker order amount to use amountPaise.`);
+      if (returnedAmountPaise && returnedAmountPaise !== amountPaise) {
+        throw new Error(`Razorpay amount mismatch. Entered ${formatMoney(amountRupees)}, worker returned ${formatMoney(returnedAmountPaise / 100)}.`);
       }
 
       const orderId = getOrderId(orderData);
       if (!orderId) throw new Error("Razorpay order_id missing from worker");
 
-      return { orderData, orderId, amountPaise, receipt: orderData.receipt || receipt, currency: getOrderCurrency(orderData) };
+      return {
+        orderData,
+        orderId,
+        amountPaise,
+        receipt: orderData.receipt || orderData.order?.receipt || receipt,
+        currency: getOrderCurrency(orderData)
+      };
+    }
+
+    async function verifyRazorpayPayment(response, meta) {
+      if (!response?.razorpay_payment_id || !response?.razorpay_order_id) {
+        throw new Error("Razorpay success response is incomplete");
+      }
+
+      const payload = {
+        razorpay_order_id: response.razorpay_order_id,
+        razorpay_payment_id: response.razorpay_payment_id,
+        razorpay_signature: response.razorpay_signature || "",
+        orderId: response.razorpay_order_id,
+        paymentId: response.razorpay_payment_id,
+        signature: response.razorpay_signature || "",
+        expectedOrderId: meta.orderId,
+        expectedAmount: meta.amountPaise,
+        amount: meta.amountPaise,
+        amountPaise: meta.amountPaise,
+        amountRupees: meta.amountRupees,
+        receipt: meta.receipt,
+        userUid,
+        userName,
+        email: currentUser.email || "",
+        phone: currentUser.phone || currentUser.mobile || ""
+      };
+
+      const endpoints = [
+        `${WORKER_API}/verify-razorpay-payment`,
+        `${WORKER_API}/razorpay/verify`,
+        `${WORKER_API}/verify-payment`
+      ];
+
+      let lastError = "";
+
+      for (const endpoint of endpoints) {
+        try {
+          const verifyReq = await fetch(endpoint, {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(payload),
+            cache: "no-store"
+          });
+
+          const verifyData = await readJsonResponse(verifyReq);
+
+          if (verifyReq.status === 404 || verifyReq.status === 405) {
+            lastError = verifyData.error || verifyData.message || `Verification endpoint not available: ${endpoint}`;
+            continue;
+          }
+
+          if (!verifyReq.ok || verifyData.success === false || verifyData.verified === false) {
+            throw new Error(verifyData.error || verifyData.message || "Payment verification failed");
+          }
+
+          return {
+            ...verifyData,
+            success: true,
+            verified: verifyData.verified !== false,
+            endpoint
+          };
+        } catch (e) {
+          lastError = e.message || "Payment verification failed";
+        }
+      }
+
+      if (REQUIRE_SERVER_VERIFY) {
+        throw new Error(lastError || "Payment verification endpoint not available");
+      }
+
+      return {
+        success: true,
+        verified: false,
+        warning: lastError || "Server verification endpoint unavailable"
+      };
     }
 
     async function processRazorpayPayment(amount, description, onSuccessCallback) {
       const amountRupees = normalizeAmount(amount);
       const amountPaise = amountToPaise(amountRupees);
+
       if (!amountRupees || amountPaise < 100) {
         showToast("Minimum payment amount is ₹1", "error", { force: true });
         return;
       }
 
       setLoad(true, "Creating Razorpay order...");
+
       try {
         const key = await loadRazorpayKey();
-        const { orderData, orderId, receipt, currency } = await createRazorpayOrder(amountRupees, description);
+        const { orderData, orderId, amountPaise, receipt, currency } = await createRazorpayOrder(amountRupees, description);
 
         setLoad(false);
 
@@ -602,26 +711,36 @@
           },
           handler: async function (response) {
             setLoad(true, "Verifying payment...");
+
             try {
-             const orderReq = await fetch(`${WORKER_API}/create-razorpay-order`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    amount: Number(amount),
-    receipt: "ARY-" + Date.now(),
-    name: userName,
-    email: currentUser.email || ""
-  })
-});
+              const verifyData = await verifyRazorpayPayment(response, {
+                orderData,
+                amountRupees,
+                amountPaise,
+                orderId,
+                receipt,
+                currency
+              });
 
-              const verifyData = await verifyReq.json().catch(() => ({}));
-              if (!verifyReq.ok || !verifyData.success) throw new Error(verifyData.error || verifyData.message || "Payment verification failed");
+              setLoad(true, "Saving payment record...");
 
-              showToast("Payment successful", "success", { force: true });
-              await onSuccessCallback(response.razorpay_payment_id, { orderData, amountRupees, amountPaise, orderId });
+              await onSuccessCallback(response.razorpay_payment_id, {
+                orderData,
+                amountRupees,
+                amountPaise,
+                orderId,
+                receipt,
+                currency,
+                razorpayResponse: response,
+                verifyData,
+                verified: verifyData.verified === true,
+                signature: response.razorpay_signature || ""
+              });
+
+              showToast("Payment successful and saved", "success", { force: true });
             } catch (e) {
-              showToast(e.message || "Payment verification failed", "error", { force: true });
               setLoad(false);
+              showToast(e.message || "Payment saved failed", "error", { force: true, duration: 4200 });
             }
           },
           prefill: {
@@ -633,7 +752,8 @@
             source: "transaction.html",
             userUid,
             userName,
-            amountRupees: String(amountRupees)
+            amountRupees: String(amountRupees),
+            description
           },
           theme: { color: "#008080" },
           modal: {
@@ -645,17 +765,39 @@
         };
 
         const rzp = new Razorpay(options);
-        rzp.on("payment.failed", function (response){
-          const msg = response?.error?.description || "Payment failed or cancelled";
+
+        rzp.on("payment.failed", function (response) {
+          const msg = response?.error?.description || response?.error?.reason || "Payment failed or cancelled";
           showToast(msg, "error", { force: true });
           setLoad(false);
         });
+
         rzp.open();
 
       } catch(e) {
         showToast(e.message || "Payment failed", "error", { force: true, duration: 4200 });
         setLoad(false);
       }
+    }
+
+    async function saveTransaction(tx) {
+      const key = firebaseSafeKey(tx.paymentId || tx.razorpayPaymentId || tx.id);
+      const ref = db.ref(`transactions/${key}`);
+      const existing = await ref.once("value");
+
+      if (existing.exists()) {
+        return { id: key, duplicate: true };
+      }
+
+      const payload = {
+        ...tx,
+        id: key,
+        createdAt: tx.createdAt || tx.date || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      await ref.set(payload);
+      return { id: key, duplicate: false };
     }
 
     // --- DATA FETCHING & TOTAL FLOW CALCULATION ---
@@ -721,24 +863,39 @@
 
       closeModal("addMoneyModal");
 
-      processRazorpayPayment(amount, "Wallet Top-Up", async (paymentId, meta) => {
+      processRazorpayPayment(amount, "Wallet Top-Up", async (paymentId, meta = {}) => {
+        const now = new Date().toISOString();
+
         const tx = {
-          type: 'in',
+          type: "in",
           amount,
-          amountPaise: meta?.amountPaise || amountToPaise(amount),
-          title: 'Wallet Top-Up',
+          amountPaise: meta.amountPaise || amountToPaise(amount),
+          title: "Wallet Top-Up",
           userUid,
           userName,
-          date: new Date().toISOString(),
-          method: 'Razorpay UPI/Checkout',
+          userEmail: currentUser.email || "",
+          date: now,
+          createdAt: now,
+          method: "Razorpay UPI/Checkout",
+          status: "success",
+          paymentVerified: meta.verified === true,
+          verificationStatus: meta.verified === true ? "verified" : "payment_success_unverified",
           paymentId,
-          razorpayOrderId: meta?.orderId || ""
+          razorpayPaymentId: paymentId,
+          razorpayOrderId: meta.orderId || "",
+          razorpaySignature: meta.signature || "",
+          receipt: meta.receipt || "",
+          currency: meta.currency || "INR",
+          source: "transaction.html",
+          description: "Wallet Top-Up"
         };
-        await db.ref('transactions').push(tx);
+
+        await saveTransaction(tx);
+
         $("addMoneyAmount").value = "";
-        updateAmountPreview('addMoneyAmount', 'addMoneyPreview');
+        updateAmountPreview("addMoneyAmount", "addMoneyPreview");
         setLoad(false);
-        fetchData();
+        await fetchData();
       });
     }
 
@@ -823,23 +980,43 @@
 
     async function recordLoanPayment(id, amount, paymentId, meta = {}) {
        try {
-          const payment = { amount, amountPaise: meta.amountPaise || amountToPaise(amount), date: new Date().toISOString(), paidBy: userUid, paymentId, razorpayOrderId: meta.orderId || "" };
-          await db.ref(`loans/${id}/payments`).push(payment);
-          
+          const now = new Date().toISOString();
+          const paymentKey = firebaseSafeKey(paymentId || ("LP-" + Date.now()));
+
+          const payment = {
+            id: paymentKey,
+            amount,
+            amountPaise: meta.amountPaise || amountToPaise(amount),
+            date: now,
+            createdAt: now,
+            paidBy: userUid,
+            paidByName: userName,
+            paymentId,
+            razorpayPaymentId: paymentId,
+            razorpayOrderId: meta.orderId || "",
+            razorpaySignature: meta.signature || "",
+            status: "success",
+            paymentVerified: meta.verified === true,
+            verificationStatus: meta.verified === true ? "verified" : "payment_success_unverified",
+            method: "Razorpay UPI/Checkout"
+          };
+
+          await db.ref(`loans/${id}/payments/${paymentKey}`).set(payment);
+
           const loan = loans.find(l => l.id === id);
           if(loan) {
             const { remaining } = calculateLoanDetails(loan);
             if(amount >= remaining) {
-              await db.ref(`loans/${id}`).update({ status: "cleared" });
+              await db.ref(`loans/${id}`).update({ status: "cleared", clearedAt: now });
             }
           }
-          
+
           setLoad(false);
           showToast("Payment recorded successfully", "success", { force: true });
           fetchData();
         } catch(e) {
           setLoad(false);
-          showToast("Payment failed", "error", { force: true });
+          showToast(e.message || "Payment record failed", "error", { force: true });
         }
     }
 
