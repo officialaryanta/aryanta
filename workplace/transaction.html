@@ -5,14 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Aryanta Vault & Transactions</title>
   
-  <!-- Font Awesome -->
+  <script>
+    // STRICT AUTHENTICATION LOCK
+    const TOKEN_KEY = "aryanta_admin_worker_token";
+    const SESSION_TOKEN_KEY = "aryanta_admin_worker_session";
+    const LOGIN_PAGE = "index.html";
+    if (!(localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(SESSION_TOKEN_KEY))) {
+      window.location.replace(LOGIN_PAGE);
+    }
+  </script>
+
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
   
-  <!-- Firebase Compat SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-database-compat.js"></script>
 
-  <!-- Razorpay SDK -->
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
   <style>
@@ -50,22 +57,10 @@
     button:active { transform: scale(0.96); }
     button:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    /* Fix for Calendar Icon Visibility */
-    input[type="date"]::-webkit-calendar-picker-indicator {
-      cursor: pointer;
-      opacity: 0.6;
-      transition: 0.2s;
-    }
-    input[type="date"]::-webkit-calendar-picker-indicator:hover {
-      opacity: 1;
-    }
-    html[data-theme="dark"] input[type="date"] {
-      color-scheme: dark;
-    }
-    html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
-      filter: invert(1) brightness(1.5);
-      opacity: 0.8;
-    }
+    input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.6; transition: 0.2s; }
+    input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+    html[data-theme="dark"] input[type="date"] { color-scheme: dark; }
+    html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1) brightness(1.5); opacity: 0.8; }
 
     .fas, .fa-solid { display: inline-block !important; line-height: 1 !important; font-weight: 900 !important; }
 
@@ -77,7 +72,6 @@
     .wrap { width: 100%; max-width: 430px; margin: 0 auto; display: grid; gap: 12px; }
 
     .topbar { min-height: 56px; display: grid; grid-template-columns: 45px minmax(0, 1fr) auto; align-items: center; gap: 9px; }
-    .topbar.banner-hidden { display: none !important; }
     .icon-btn { width: 45px; height: 45px; border-radius: 16px; background: var(--card); border: 1px solid var(--border); color: var(--primary); box-shadow: var(--shadow-soft); display: inline-flex; align-items: center; justify-content: center; font-size: 16px; }
 
     .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -89,11 +83,11 @@
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; box-shadow: var(--shadow-soft); overflow: hidden; padding: 16px;}
     .hero { background: linear-gradient(145deg, var(--primary-dark), var(--primary), var(--primary-light)); color: #ffffff; text-align: center; padding: 24px 16px; position: relative; }
     .hero h2 { font-size: 14px; font-weight: 800; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;}
-    .hero .balance { font-size: 38px; font-weight: 900; letter-spacing: -1px; }
+    .hero .balance { font-size: 38px; font-weight: 900; letter-spacing: -1px; transition: 0.3s ease; }
 
     /* Tabs */
     .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 4px; }
-    .tab { min-height: 38px; border-radius: 14px; background: var(--card-soft); border: 1px solid var(--border); color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 800; transition: 0.2s ease;}
+    .tab { min-height: 38px; border-radius: 14px; background: var(--card-soft); border: 1px solid var(--border); color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; font-weight: 800; transition: 0.2s ease;}
     .tab.active { background: var(--primary); border-color: var(--primary); color: #ffffff; }
 
     .panel-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
@@ -104,7 +98,8 @@
 
     /* Transaction List */
     .list { display: grid; gap: 10px; }
-    .t-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--card-soft); border: 1px solid var(--border); border-radius: 16px; }
+    .t-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--card-soft); border: 1px solid var(--border); border-radius: 16px; cursor: pointer; transition: 0.2s ease; }
+    .t-item:active { background: var(--border); transform: scale(0.98); }
     .t-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex: 0 0 auto; }
     .t-icon.in { background: rgba(22, 163, 74, 0.12); color: var(--success); }
     .t-icon.out { background: rgba(239, 68, 68, 0.12); color: var(--danger); }
@@ -187,55 +182,49 @@
           </div>
         </div>
         <div class="top-actions">
-          <button class="icon-btn" onclick="fetchData()"><i id="refreshIcon" class="fas fa-rotate"></i></button>
+          <button class="icon-btn" onclick="initDataFetch()"><i id="refreshIcon" class="fas fa-rotate"></i></button>
         </div>
       </header>
 
-      <!-- HERO -->
       <section class="card hero">
-        <h2>Total Flow Added</h2>
+        <h2 id="heroTitle">Total Flow Added</h2>
         <div class="balance" id="totalFlow">₹0</div>
       </section>
 
-      <!-- TABS -->
       <div class="tabs">
-        <button id="tabAll" class="tab active" onclick="setTab('all')"><i class="fas fa-border-all"></i> All</button>
-        <button id="tabTx" class="tab" onclick="setTab('tx')"><i class="fas fa-money-bill-transfer"></i> Transact</button>
+        <button id="tabAll" class="tab active" onclick="setTab('all')"><i class="fas fa-globe"></i> Transactions</button>
+        <button id="tabMy" class="tab" onclick="setTab('my')"><i class="fas fa-user"></i> My Transact</button>
         <button id="tabLoan" class="tab" onclick="setTab('loan')"><i class="fas fa-hand-holding-dollar"></i> Loans</button>
       </div>
 
-      <!-- TRANSACTIONS SECTION -->
       <section class="card" id="txSection">
         <div class="panel-title">
-          <h3><i class="fas fa-money-bill-wave"></i> Transactions</h3>
+          <h3 id="txTitleText"><i class="fas fa-money-bill-wave"></i> Transactions</h3>
           <button id="addMoneyBtn" onclick="openModal('addMoneyModal')"><i class="fas fa-plus"></i> Add Money</button>
         </div>
         <div class="list" id="txList">
-          <div style="text-align: center; color: var(--muted); font-size: 12px; padding: 20px;">Loading transactions...</div>
+          <div style="text-align: center; color: var(--muted); font-size: 12px; padding: 20px;">Fetching records...</div>
         </div>
       </section>
 
-      <!-- LOANS SECTION -->
       <section class="card" id="loanSection" style="display: none;">
         <div class="panel-title">
           <h3><i class="fas fa-building-columns"></i> Loan System</h3>
           <button id="getLoanHeaderBtn" onclick="requestLoanCheck()"><i class="fas fa-hand-holding-dollar"></i> Get Loan</button>
         </div>
         <div class="list" id="loanList">
-           <div style="text-align: center; color: var(--muted); font-size: 12px; padding: 20px;">Loading loans...</div>
+           <div style="text-align: center; color: var(--muted); font-size: 12px; padding: 20px;">Fetching loans...</div>
         </div>
       </section>
     </div>
   </main>
 
-  <!-- BOTTOM NAVIGATION -->
   <nav class="bottom-nav">
     <button class="nav-btn" onclick="goPage('admin.html')"><span class="mini-mark"><i class="fa-solid fa-house"></i></span><span class="btn-text">Home</span></button>
     <button class="nav-btn" onclick="goPage('admin.html#profile')"><span class="mini-mark"><i class="fa-solid fa-user"></i></span><span class="btn-text">Profile</span></button>
     <button class="nav-btn" onclick="goPage('x.html')"><span class="mini-mark"><i class="fa-solid fa-comments"></i></span><span class="btn-text">Chat</span></button>
   </nav>
 
-  <!-- ADD MONEY MODAL (USER TOPUP) -->
   <div id="addMoneyModal" class="modal" onclick="closeModalOnBackdrop(event, 'addMoneyModal')">
     <div class="modal-card">
       <div class="modal-head">
@@ -244,8 +233,8 @@
       </div>
       <div class="modal-body">
         <div class="field">
-          <label>User Name</label>
-          <input type="text" id="addMoneyName" readonly />
+          <label>Title / Description</label>
+          <input type="text" id="addMoneyTitle" value="Wallet Top-Up" placeholder="e.g. Wallet Top-Up" />
         </div>
         <div class="field">
           <label>Amount (₹)</label>
@@ -257,7 +246,28 @@
     </div>
   </div>
 
-  <!-- GET LOAN MODAL -->
+  <div id="txDetailsModal" class="modal" onclick="closeModalOnBackdrop(event, 'txDetailsModal')">
+    <div class="modal-card">
+      <div class="modal-head">
+        <strong style="font-size: 16px; font-weight: 900;">Transaction Details</strong>
+        <button class="icon-btn" style="color: var(--danger); background: var(--bg);" onclick="closeModal('txDetailsModal')"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" style="gap: 16px;">
+        <div style="text-align: center;">
+          <div id="detAmount" style="font-size: 32px; font-weight: 900; margin-bottom: 4px; color: var(--text);">₹0</div>
+          <div id="detTitle" style="color: var(--muted); font-size: 14px; font-weight: 800;">Description</div>
+        </div>
+        <div class="loan-details" style="background: var(--bg); padding: 16px; border-radius: 16px;">
+          <div style="grid-column: 1 / -1;">Tx ID: <strong id="detTxId" style="word-break: break-all; font-family: monospace;">---</strong></div>
+          <div style="grid-column: 1 / -1;">Date: <strong id="detDate">---</strong></div>
+          <div style="grid-column: 1 / -1;">Name: <strong id="detName">---</strong></div>
+          <div style="grid-column: 1 / -1;" id="detDeliveryBox">Delivery Charge: <strong id="detDelivery">₹0</strong></div>
+          <div style="grid-column: 1 / -1;">User UID: <strong id="detUid" style="word-break: break-all; font-family: monospace;">---</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="loanModal" class="modal" onclick="closeModalOnBackdrop(event, 'loanModal')">
     <div class="modal-card">
       <div class="modal-head">
@@ -285,7 +295,6 @@
     </div>
   </div>
 
-  <!-- PAY LOAN MODAL (RAZORPAY) -->
   <div id="payModal" class="modal" onclick="closeModalOnBackdrop(event, 'payModal')">
     <div class="modal-card">
       <div class="modal-head">
@@ -319,115 +328,62 @@
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
     
-    // Cloudflare Worker Base URL for Razorpay Integration
     const WORKER_API = "https://rough-field-c679.official-aryanta.workers.dev";
-    window.API_KEYS = { RAZORPAY: "" }; // Will be fetched securely
+    window.API_KEYS = { RAZORPAY: "" };
 
-    const SETTINGS_KEY = "aryanta_admin_settings";
-    const TOKEN_KEY = "aryanta_admin_worker_token";
-    const SESSION_TOKEN_KEY = "aryanta_admin_worker_session";
     const PROFILE_KEY = "aryanta_admin_profile";
-    const LOGIN_PAGE = "index.html";
 
-    let transactions = [];
-    let loans = [];
+    // Data Stores
+    let allTransactions = []; // Final merged array of everything
+    let rawTransactions = []; // Base transactions
+    let rawOrders = [];       // Shop cart.html orders
+    let rawRefunds = [];      // Seller payouts / admin refunds
+    
+    let globalLoans = []; 
+    let myLoans = [];
+
     let currentToast = null;
     let activeTab = 'all';
-
-    const DEFAULT_SETTINGS = {
-      appLock: false,
-      pin: "",
-      biometric: false,
-      notify: false,
-      banner: true,
-      camera: false,
-      files: false,
-      mic: false,
-      music: false,
-      audio: true,
-      messageDeleteDays: "0",
-      locationEnabled: false,
-      locationData: { city: "<na>", state: "<na>", country: "<na>" },
-      theme: "light"
-    };
-
-    let appSettings = { ...DEFAULT_SETTINGS };
+    
     const currentUser = safeJson(sessionStorage.getItem(PROFILE_KEY), {});
     const userUid = currentUser.uid || currentUser.id || "";
     const userName = currentUser.name || currentUser.fullName || "User";
-    const isAdmin = String(currentUser.role || "").toLowerCase() === "admin";
 
     const $ = id => document.getElementById(id);
 
-    // --- SECURE BOOT + ADMIN SETTINGS SYNC ---
-    function safeJson(value, fallback) {
-      try { return JSON.parse(value || "") || fallback; } catch (e) { return fallback; }
-    }
-
+    // --- UTILITIES ---
+    function safeJson(value, fallback) { try { return JSON.parse(value || "") || fallback; } catch (e) { return fallback; } }
     function getToken() { return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(SESSION_TOKEN_KEY) || ""; }
     function goPage(url) { window.location.href = url; }
     function escapeHtml(val) { return String(val ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
     function formatMoney(num) { return "₹" + Number(num || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 }); }
+    function formatDateTime(iso) {
+      if(!iso) return "N/A";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return "N/A";
+      return d.toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric' }) + " • " + d.toLocaleTimeString("en-IN", { hour: '2-digit', minute:'2-digit' });
+    }
     function formatDate(iso) {
       if(!iso) return "N/A";
       const d = new Date(iso);
       if (Number.isNaN(d.getTime())) return "N/A";
       return d.toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric' });
     }
-
     function normalizeAmount(value) {
       const raw = String(value ?? "").replace(/,/g, "").trim();
       const amount = Number(raw);
-      if (!Number.isFinite(amount)) return 0;
-      return Math.round(amount * 100) / 100;
+      return Number.isFinite(amount) ? Math.round(amount * 100) / 100 : 0;
     }
+    function amountToPaise(value) { return Math.round(normalizeAmount(value) * 100); }
 
-    function amountToPaise(value) {
-      return Math.round(normalizeAmount(value) * 100);
-    }
-
-    function loadAdminSettings() {
-      const savedSettings = safeJson(localStorage.getItem(SETTINGS_KEY), {});
-      appSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
-      applyTheme(appSettings.theme || "light");
-      applyBanner();
-    }
-
-    function applyTheme(theme) {
-      const useDark = theme === "dark" || (theme === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
-      document.documentElement.setAttribute("data-theme", useDark ? "dark" : "light");
-    }
-
-    function applyBanner() {
-      const topbar = document.querySelector(".topbar");
-      if (!topbar) return;
-      topbar.classList.toggle("banner-hidden", appSettings.banner === false);
-    }
-
-    function initApp() {
-      if(!getToken()) { window.location.replace(LOGIN_PAGE); return; }
-      loadAdminSettings();
-      window.addEventListener("storage", event => {
-        if (event.key === SETTINGS_KEY) loadAdminSettings();
-      });
-      if (window.matchMedia) {
-        window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => {
-          if ((appSettings.theme || "light") === "system") applyTheme("system");
-        });
-      }
-    }
-
-    function showToast(message, type = "info", options = {}) {
-      if (!options.force && !appSettings.notify) return;
+    function showToast(message, type = "info") {
       if (currentToast) { currentToast.remove(); }
       const holder = $("toastHolder");
       if (!holder) return;
 
       const toast = document.createElement("div");
       toast.className = "toast";
-
-      let icon = "fa-bell";
-      let color = "var(--primary)";
+      let icon = "fa-bell", color = "var(--primary)";
       if(type === "error") { icon = "fa-circle-exclamation"; color = "var(--danger)"; }
       if(type === "success") { icon = "fa-circle-check"; color = "var(--success)"; }
 
@@ -437,20 +393,7 @@
       currentToast = toast;
       requestAnimationFrame(() => toast.classList.add("show"));
 
-      let startY = 0;
-      toast.addEventListener("pointerdown", e => { startY = e.clientY; });
-      toast.addEventListener("pointerup", e => {
-        if ((e.clientY - startY) < -22) {
-          toast.classList.remove("show");
-          setTimeout(() => toast.remove(), 220);
-        }
-      });
-      toast.addEventListener("click", () => {
-        toast.classList.remove("show");
-        setTimeout(() => toast.remove(), 220);
-      });
-
-      setTimeout(() => { toast.classList.remove("show"); setTimeout(()=>toast.remove(), 220); }, Number(options.duration || 2600));
+      setTimeout(() => { toast.classList.remove("show"); setTimeout(()=>toast.remove(), 220); }, 2600);
     }
 
     function updateAmountPreview(inputId, previewId) {
@@ -461,479 +404,235 @@
       if (valueNode) valueNode.textContent = formatMoney(amount);
     }
 
-    function openModal(id) { 
-      if(id === "addMoneyModal") $("addMoneyName").value = userName;
-      $(id).classList.add("show"); 
-    }
+    function openModal(id) { $(id).classList.add("show"); }
     function closeModal(id) { $(id).classList.remove("show"); }
     function closeModalOnBackdrop(event, id) { if (event.target.id === id) closeModal(id); }
     
     function setLoad(state, text="Processing...") {
-      if (state) {
-        $("loaderText").textContent = text;
-        $("loaderOverlay").classList.add("active");
-      } else {
-        $("loaderOverlay").classList.remove("active");
-      }
+      if (state) { $("loaderText").textContent = text; $("loaderOverlay").classList.add("active"); } 
+      else { $("loaderOverlay").classList.remove("active"); }
     }
 
     // --- TAB LOGIC ---
     function setTab(tab) {
       activeTab = tab;
       $("tabAll").classList.toggle("active", tab === 'all');
-      $("tabTx").classList.toggle("active", tab === 'tx');
+      $("tabMy").classList.toggle("active", tab === 'my');
       $("tabLoan").classList.toggle("active", tab === 'loan');
 
       if(tab === 'all') {
-        $("txSection").style.display = "block";
-        $("loanSection").style.display = "none"; // Never show loans in ALL tab
-      } else if (tab === 'tx') {
-        $("txSection").style.display = "block";
-        $("loanSection").style.display = "none";
+        $("txSection").style.display = "block"; $("loanSection").style.display = "none";
+        $("txTitleText").innerHTML = `<i class="fas fa-globe"></i> All Transactions`;
+        renderTransactions(); updateHeroStats();
+      } else if (tab === 'my') {
+        $("txSection").style.display = "block"; $("loanSection").style.display = "none";
+        $("txTitleText").innerHTML = `<i class="fas fa-user"></i> My Transactions`;
+        renderTransactions(); updateHeroStats();
       } else if (tab === 'loan') {
-        $("txSection").style.display = "none";
-        $("loanSection").style.display = "block";
+        $("txSection").style.display = "none"; $("loanSection").style.display = "block";
+        renderLoans(); updateHeroStats();
       }
     }
 
-    // --- SECURE RAZORPAY HANDLER ---
-    const REQUIRE_SERVER_VERIFY = false;
-
-    function getOrderAmountPaise(orderData) {
-      return Number(orderData.amount || orderData.order_amount || orderData.order?.amount || 0);
-    }
-
-    function getOrderId(orderData) {
-      return orderData.order_id || orderData.id || orderData.order?.id || "";
-    }
-
-    function getOrderCurrency(orderData) {
-      return orderData.currency || orderData.order?.currency || "INR";
-    }
-
-    function firebaseSafeKey(value) {
-      return String(value || ("TX-" + Date.now())).replace(/[.#$\[\]/]/g, "_");
-    }
-
-    function authHeaders(extra = {}) {
-      const token = getToken();
-      return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
-    }
-
-    async function readJsonResponse(response) {
-      const text = await response.text().catch(() => "");
-      if (!text) return {};
-      try { return JSON.parse(text); } catch (e) { return { message: text }; }
-    }
-
-    async function loadRazorpayKey() {
-      if (window.API_KEYS.RAZORPAY) return window.API_KEYS.RAZORPAY;
-
-      const kRes = await fetch(`${WORKER_API}/get-api-keys`, { cache: "no-store" });
-      const kData = await readJsonResponse(kRes);
-      const key = kData.razorpayKey || kData.razorpay_key || kData.key_id || kData.key || "";
-
-      if (!kRes.ok) throw new Error(kData.error || kData.message || "Unable to load Razorpay key");
-      if (!key) throw new Error("Razorpay key missing from worker");
-
-      window.API_KEYS.RAZORPAY = key;
-      return key;
-    }
-
-    async function createRazorpayOrder(amountRupees, description) {
-      const amountPaise = amountToPaise(amountRupees);
-      const receipt = "ARY-" + Date.now();
-
-      const payload = {
-        amount: amountPaise,
-        amountPaise,
-        amount_paise: amountPaise,
-        amountRupees,
-        amount_rupees: amountRupees,
-        currency: "INR",
-        receipt,
-        name: userName,
-        email: currentUser.email || "",
-        phone: currentUser.phone || currentUser.mobile || "",
-        description,
-        userUid,
-        userName
-      };
-
-      const orderReq = await fetch(`${WORKER_API}/create-razorpay-order`, {
-        method: "POST",
-        headers: authHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify(payload),
-        cache: "no-store"
-      });
-
-      const orderData = await readJsonResponse(orderReq);
-      if (!orderReq.ok || orderData.success === false) {
-        throw new Error(orderData.error || orderData.message || "Order creation failed");
-      }
-
-      const returnedAmountPaise = getOrderAmountPaise(orderData);
-      if (returnedAmountPaise && returnedAmountPaise !== amountPaise) {
-        throw new Error(`Razorpay amount mismatch. Entered ${formatMoney(amountRupees)}, worker returned ${formatMoney(returnedAmountPaise / 100)}.`);
-      }
-
-      const orderId = getOrderId(orderData);
-      if (!orderId) throw new Error("Razorpay order_id missing from worker");
-
-      return {
-        orderData,
-        orderId,
-        amountPaise,
-        receipt: orderData.receipt || orderData.order?.receipt || receipt,
-        currency: getOrderCurrency(orderData)
-      };
-    }
-
-    async function verifyRazorpayPayment(response, meta) {
-      if (!response?.razorpay_payment_id || !response?.razorpay_order_id) {
-        throw new Error("Razorpay success response is incomplete");
-      }
-
-      const payload = {
-        razorpay_order_id: response.razorpay_order_id,
-        razorpay_payment_id: response.razorpay_payment_id,
-        razorpay_signature: response.razorpay_signature || "",
-        orderId: response.razorpay_order_id,
-        paymentId: response.razorpay_payment_id,
-        signature: response.razorpay_signature || "",
-        expectedOrderId: meta.orderId,
-        expectedAmount: meta.amountPaise,
-        amount: meta.amountPaise,
-        amountPaise: meta.amountPaise,
-        amountRupees: meta.amountRupees,
-        receipt: meta.receipt,
-        userUid,
-        userName,
-        email: currentUser.email || "",
-        phone: currentUser.phone || currentUser.mobile || ""
-      };
-
-      const endpoints = [
-        `${WORKER_API}/verify-razorpay-payment`,
-        `${WORKER_API}/razorpay/verify`,
-        `${WORKER_API}/verify-payment`
-      ];
-
-      let lastError = "";
-
-      for (const endpoint of endpoints) {
-        try {
-          const verifyReq = await fetch(endpoint, {
-            method: "POST",
-            headers: authHeaders({ "Content-Type": "application/json" }),
-            body: JSON.stringify(payload),
-            cache: "no-store"
-          });
-
-          const verifyData = await readJsonResponse(verifyReq);
-
-          if (verifyReq.status === 404 || verifyReq.status === 405) {
-            lastError = verifyData.error || verifyData.message || `Verification endpoint not available: ${endpoint}`;
-            continue;
-          }
-
-          if (!verifyReq.ok || verifyData.success === false || verifyData.verified === false) {
-            throw new Error(verifyData.error || verifyData.message || "Payment verification failed");
-          }
-
-          return {
-            ...verifyData,
-            success: true,
-            verified: verifyData.verified !== false,
-            endpoint
-          };
-        } catch (e) {
-          lastError = e.message || "Payment verification failed";
-        }
-      }
-
-      if (REQUIRE_SERVER_VERIFY) {
-        throw new Error(lastError || "Payment verification endpoint not available");
-      }
-
-      return {
-        success: true,
-        verified: false,
-        warning: lastError || "Server verification endpoint unavailable"
-      };
-    }
-
-    async function processRazorpayPayment(amount, description, onSuccessCallback) {
-      const amountRupees = normalizeAmount(amount);
-      const amountPaise = amountToPaise(amountRupees);
-
-      if (!amountRupees || amountPaise < 100) {
-        showToast("Minimum payment amount is ₹1", "error", { force: true });
-        return;
-      }
-
-      setLoad(true, "Creating Razorpay order...");
-
-      try {
-        const key = await loadRazorpayKey();
-        const { orderData, orderId, amountPaise, receipt, currency } = await createRazorpayOrder(amountRupees, description);
-
-        setLoad(false);
-
-        const options = {
-          key,
-          amount: amountPaise,
-          currency,
-          name: "Aryanta",
-          description: `${description} • ${formatMoney(amountRupees)}`,
-          order_id: orderId,
-          webview_intent: true,
-          method: {
-            upi: true,
-            card: true,
-            netbanking: true,
-            wallet: true,
-            paylater: true
-          },
-          config: {
-            display: {
-              blocks: {
-                upi_block: {
-                  name: "Pay using UPI",
-                  instruments: [
-                    { method: "upi" }
-                  ]
-                }
-              },
-              sequence: ["block.upi_block"],
-              preferences: { show_default_blocks: true }
-            }
-          },
-          handler: async function (response) {
-            setLoad(true, "Verifying payment...");
-
-            try {
-              const verifyData = await verifyRazorpayPayment(response, {
-                orderData,
-                amountRupees,
-                amountPaise,
-                orderId,
-                receipt,
-                currency
-              });
-
-              setLoad(true, "Saving payment record...");
-
-              await onSuccessCallback(response.razorpay_payment_id, {
-                orderData,
-                amountRupees,
-                amountPaise,
-                orderId,
-                receipt,
-                currency,
-                razorpayResponse: response,
-                verifyData,
-                verified: verifyData.verified === true,
-                signature: response.razorpay_signature || ""
-              });
-
-              showToast("Payment successful and saved", "success", { force: true });
-            } catch (e) {
-              setLoad(false);
-              showToast(e.message || "Payment saved failed", "error", { force: true, duration: 4200 });
-            }
-          },
-          prefill: {
-            name: userName,
-            email: currentUser.email || "",
-            contact: currentUser.phone || currentUser.mobile || ""
-          },
-          notes: {
-            source: "transaction.html",
-            userUid,
-            userName,
-            amountRupees: String(amountRupees),
-            description
-          },
-          theme: { color: "#008080" },
-          modal: {
-            ondismiss: function() {
-              setLoad(false);
-              showToast("Payment cancelled", "error");
-            }
-          }
-        };
-
-        const rzp = new Razorpay(options);
-
-        rzp.on("payment.failed", function (response) {
-          const msg = response?.error?.description || response?.error?.reason || "Payment failed or cancelled";
-          showToast(msg, "error", { force: true });
-          setLoad(false);
-        });
-
-        rzp.open();
-
-      } catch(e) {
-        showToast(e.message || "Payment failed", "error", { force: true, duration: 4200 });
-        setLoad(false);
-      }
-    }
-
-    async function saveTransaction(tx) {
-      const key = firebaseSafeKey(tx.paymentId || tx.razorpayPaymentId || tx.id);
-      const ref = db.ref(`transactions/${key}`);
-      const existing = await ref.once("value");
-
-      if (existing.exists()) {
-        return { id: key, duplicate: true };
-      }
-
-      const payload = {
-        ...tx,
-        id: key,
-        createdAt: tx.createdAt || tx.date || new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      await ref.set(payload);
-      return { id: key, duplicate: false };
-    }
-
-    // --- DATA FETCHING & TOTAL FLOW CALCULATION ---
-    async function fetchData() {
+    // --- REALTIME BACKGROUND SYNC WITH MULTIPLE NODES ---
+    function initDataFetch() {
       const icon = $("refreshIcon");
       icon.classList.add("fa-spin");
-      try {
-        const [txSnap, lnSnap] = await Promise.all([
-          db.ref('transactions').once('value'),
-          db.ref('loans').once('value')
-        ]);
 
-        const txData = txSnap.val() || {};
-        const lnData = lnSnap.val() || {};
+      // 1. Fetch native Transactions
+      db.ref('transactions').on('value', snap => {
+        const data = snap.val() || {};
+        rawTransactions = Object.keys(data).map(k => ({ id: k, ...data[k], _sourceType: 'native' }));
+        mergeAndRenderData(); icon.classList.remove("fa-spin");
+      });
 
-        transactions = Object.keys(txData).map(k => ({ id: k, ...txData[k] })).sort((a,b) => new Date(b.date) - new Date(a.date));
-        
-        const allFetchedLoans = Object.keys(lnData).map(k => ({ id: k, ...lnData[k] })).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
-        
-        // Filter loans to only show the logged-in user's loans
-        loans = allFetchedLoans.filter(l => l.uid === userUid);
+      // 2. Fetch Orders (from cart.html)
+      db.ref('orders').on('value', snap => {
+        const data = snap.val() || {};
+        rawOrders = Object.keys(data).map(k => ({ id: k, ...data[k], _sourceType: 'order' }));
+        mergeAndRenderData();
+      });
 
-        // Global Flow calculation considers ALL transactions and ALL loans
-        updateTotalFlow(transactions, allFetchedLoans);
-        
-        renderTransactions();
-        renderLoans();
-      } catch (err) {
-        showToast("Database connection error", "error");
-      } finally {
-        icon.classList.remove("fa-spin");
-      }
+      // 3. Fetch Seller Payouts/Refunds (from seller.js / admin.js)
+      db.ref('payouts').on('value', snap => {
+        const data = snap.val() || {};
+        rawRefunds = Object.keys(data).map(k => ({ id: k, ...data[k], _sourceType: 'refund' }));
+        mergeAndRenderData();
+      });
+      
+      // Also catch explicit 'refunds' node if separated
+      db.ref('refunds').on('value', snap => {
+         const data = snap.val() || {};
+         const rData = Object.keys(data).map(k => ({ id: k, ...data[k], _sourceType: 'refund_exact' }));
+         rawRefunds = [...rawRefunds, ...rData]; // Merge payouts and exact refunds
+         mergeAndRenderData();
+      });
+
+      // 4. Fetch Loans
+      db.ref('loans').on('value', snap => {
+        const lnData = snap.val() || {};
+        globalLoans = Object.keys(lnData).map(k => ({ id: k, ...lnData[k] })).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+        myLoans = globalLoans.filter(l => l.uid === userUid);
+        updateHeroStats();
+        if(activeTab === 'loan') renderLoans();
+      });
     }
 
-    function updateTotalFlow(allTxs, allLns) {
+    function mergeAndRenderData() {
+       // Convert Orders into Transaction objects (Shop)
+       const mappedOrders = rawOrders.filter(o => o.paymentStatus === 'paid' || o.status === 'completed' || o.status === 'processing').map(o => ({
+           id: o.id,
+           type: 'in', 
+           amount: normalizeAmount(o.total || o.totalAmount || o.amount),
+           title: 'Shop',
+           userName: o.customerName || o.userName || 'Customer',
+           userUid: o.userId || o.uid || 'N/A',
+           date: o.createdAt || o.date || new Date().toISOString(),
+           deliveryCharge: normalizeAmount(o.deliveryCharge || o.shippingFee),
+           source: 'cart.html'
+       }));
+
+       // Convert Refunds/Payouts into Transaction objects
+       const mappedRefunds = rawRefunds.map(r => ({
+           id: r.id,
+           type: 'out', 
+           amount: normalizeAmount(r.amount),
+           title: (r.type === 'refund' || r._sourceType === 'refund_exact') ? 'Customer Refund' : 'Seller Payout',
+           userName: r.sellerName || r.userName || 'System/Seller',
+           userUid: r.sellerId || r.uid || 'N/A',
+           date: r.createdAt || r.date || new Date().toISOString(),
+           source: 'seller.js'
+       }));
+
+       allTransactions = [...rawTransactions, ...mappedOrders, ...mappedRefunds]
+           .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+       
+       updateHeroStats();
+       if(activeTab === 'all' || activeTab === 'my') renderTransactions();
+    }
+
+    function updateHeroStats() {
       let total = 0;
       
-      // Calculate Transactions
-      allTxs.forEach(t => {
-        if(t.type === 'in') total += (t.amount || 0);
-        else if(t.type === 'out') total -= (t.amount || 0);
-      });
-
-      // Calculate Loans
-      allLns.forEach(l => {
-        if(l.status === 'approved' || l.status === 'cleared') {
-          total -= (l.amount || 0); // Money given out as loan is negative flow
-          if(l.payments) {
-            Object.values(l.payments).forEach(p => {
-              total += (p.amount || 0); // Money paid back is positive flow
-            });
-          }
-        }
-      });
-
+      if (activeTab === 'my') {
+         // My Total Flow: Only money *I* added
+         const myTxs = allTransactions.filter(t => t.userUid === userUid && t.type === 'in');
+         myTxs.forEach(t => total += (t.amount || 0));
+         $('heroTitle').textContent = "My Total Added";
+         
+      } else {
+         // Global Flow
+         allTransactions.forEach(t => {
+            if(t.type === 'in') total += (t.amount || 0);
+            else if(t.type === 'out') total -= (t.amount || 0);
+         });
+         globalLoans.forEach(l => {
+            if(l.status === 'approved' || l.status === 'cleared') {
+               total -= (l.amount || 0); 
+               if(l.payments) { Object.values(l.payments).forEach(p => { total += (p.amount || 0); }); }
+            }
+         });
+         $('heroTitle').textContent = "Total Flow Added";
+      }
       $("totalFlow").textContent = formatMoney(total);
     }
 
-    // --- TRANSACTIONS ---
-    function submitAddMoney() {
-      const amount = normalizeAmount($("addMoneyAmount").value);
-      if(!amount || amount <= 0) return showToast("Enter a valid amount", "error", { force: true });
+    // --- TRANSACTION DETAILS MODAL ---
+    function openTxDetails(id) {
+      const tx = allTransactions.find(t => t.id === id);
+      if(!tx) return;
+      
+      const isAdd = tx.type === 'in';
+      $('detAmount').textContent = (isAdd ? '+' : '-') + formatMoney(tx.amount);
+      $('detAmount').style.color = isAdd ? 'var(--success)' : 'var(--danger)';
+      $('detTitle').textContent = tx.title || tx.description || 'Transaction Record';
+      
+      $('detTxId').textContent = tx.id || 'N/A';
+      $('detDate').textContent = formatDateTime(tx.date);
+      $('detName').textContent = tx.userName || 'Admin';
+      $('detUid').textContent = tx.userUid || 'N/A';
 
-      closeModal("addMoneyModal");
+      if(tx.source === 'cart.html' || typeof tx.deliveryCharge !== 'undefined') {
+          $('detDeliveryBox').style.display = 'block';
+          $('detDelivery').textContent = formatMoney(tx.deliveryCharge || 0);
+      } else {
+          $('detDeliveryBox').style.display = 'none';
+      }
 
-      processRazorpayPayment(amount, "Wallet Top-Up", async (paymentId, meta = {}) => {
-        const now = new Date().toISOString();
-
-        const tx = {
-          type: "in",
-          amount,
-          amountPaise: meta.amountPaise || amountToPaise(amount),
-          title: "Wallet Top-Up",
-          userUid,
-          userName,
-          userEmail: currentUser.email || "",
-          date: now,
-          createdAt: now,
-          method: "Razorpay UPI/Checkout",
-          status: "success",
-          paymentVerified: meta.verified === true,
-          verificationStatus: meta.verified === true ? "verified" : "payment_success_unverified",
-          paymentId,
-          razorpayPaymentId: paymentId,
-          razorpayOrderId: meta.orderId || "",
-          razorpaySignature: meta.signature || "",
-          receipt: meta.receipt || "",
-          currency: meta.currency || "INR",
-          source: "transaction.html",
-          description: "Wallet Top-Up"
-        };
-
-        await saveTransaction(tx);
-
-        $("addMoneyAmount").value = "";
-        updateAmountPreview("addMoneyAmount", "addMoneyPreview");
-        setLoad(false);
-        await fetchData();
-      });
+      openModal('txDetailsModal');
     }
 
+    // --- TRANSACTIONS RENDER ---
     function renderTransactions() {
       let html = "";
+      let listToRender = activeTab === 'my' 
+        ? allTransactions.filter(t => t.userUid === userUid) 
+        : allTransactions;
 
-      transactions.forEach(t => {
+      if(listToRender.length === 0) {
+        $("txList").innerHTML = `<div style="text-align:center; padding:15px; color:var(--muted); font-size:12px; font-weight:800;">No transactions found</div>`;
+        return;
+      }
+
+      const displayLimit = 50;
+      const displayList = listToRender.slice(0, displayLimit);
+
+      displayList.forEach(t => {
         const isAdd = t.type === 'in';
         const icon = isAdd ? 'fa-arrow-down' : 'fa-arrow-up';
         const sign = isAdd ? '+' : '-';
         const adder = t.userName || 'Admin';
+        const shopBadge = t.title === 'Shop' ? ' <i class="fas fa-store" style="color:var(--warning); font-size:10px;"></i>' : '';
         
         html += `
-          <div class="t-item">
+          <div class="t-item" onclick="openTxDetails('${t.id}')">
             <div class="t-icon ${t.type}"><i class="fas ${icon}"></i></div>
             <div class="t-info">
-              <strong>${escapeHtml(t.title)}</strong>
-              <span>${formatDate(t.date)} • User: ${escapeHtml(adder)}</span>
+              <strong>${escapeHtml(t.title || 'Transaction')}${shopBadge}</strong>
+              <span>${formatDate(t.date)} • ${escapeHtml(adder)}</span>
             </div>
             <div class="t-amount ${t.type}">${sign}${formatMoney(t.amount)}</div>
           </div>
         `;
       });
 
-      if(transactions.length === 0) {
-        html = `<div style="text-align:center; padding:15px; color:var(--muted); font-size:12px; font-weight:800;">No transactions yet</div>`;
+      if (listToRender.length > displayLimit) {
+        html += `<div style="text-align:center; padding:10px; font-size:11px; color:var(--muted); font-weight:800;">Showing top ${displayLimit} recent records</div>`;
       }
 
       $("txList").innerHTML = html;
     }
 
-    // --- LOANS (INTELLIGENT LIMITER) ---
+    // --- ADD MONEY (TOPUP) ---
+    function submitAddMoney() {
+      const amount = normalizeAmount($("addMoneyAmount").value);
+      const title = $("addMoneyTitle").value.trim() || "Wallet Top-Up";
+      if(!amount || amount <= 0) return showToast("Enter a valid amount", "error");
+
+      closeModal("addMoneyModal");
+
+      processRazorpayPayment(amount, title, async (paymentId, meta = {}) => {
+        const now = new Date().toISOString();
+        const tx = {
+          type: "in", amount, amountPaise: meta.amountPaise || amountToPaise(amount),
+          title: title, userUid, userName,
+          date: now, createdAt: now, method: "Razorpay UPI/Checkout", status: "success",
+          paymentVerified: meta.verified === true,
+          paymentId, razorpayPaymentId: paymentId, razorpayOrderId: meta.orderId || "",
+          source: "transaction.html", description: title
+        };
+        await saveTransaction(tx);
+        $("addMoneyAmount").value = "";
+        $("addMoneyTitle").value = "Wallet Top-Up";
+        updateAmountPreview("addMoneyAmount", "addMoneyPreview");
+        setLoad(false);
+      });
+    }
+
+    // --- LOANS ---
     function requestLoanCheck() {
-      const hasRunningLoan = loans.some(l => l.status === 'pending' || l.status === 'approved');
-      if (hasRunningLoan) {
-        showToast("First clear the running loan!", "error", { force: true });
-        return;
-      }
+      const hasRunningLoan = myLoans.some(l => l.status === 'pending' || l.status === 'approved');
+      if (hasRunningLoan) return showToast("First clear the running loan!", "error");
       openModal('loanModal');
     }
 
@@ -942,19 +641,15 @@
       const reason = $("loanReason").value.trim();
       const payBy = $("loanDate").value;
 
-      if(!amount || amount <= 0 || !reason || !payBy) return showToast("Fill all loan details", "error", { force: true });
+      if(!amount || amount <= 0 || !reason || !payBy) return showToast("Fill all loan details", "error");
 
-      const loan = { 
-        uid: userUid, userName: userName, amount, reason, payBy, status: "pending", createdAt: new Date().toISOString() 
-      };
-
+      const loan = { uid: userUid, userName: userName, amount, reason, payBy, status: "pending", createdAt: new Date().toISOString() };
       try {
         await db.ref('loans').push(loan);
         $("loanAmount").value = ""; $("loanReason").value = ""; $("loanDate").value = "";
         closeModal("loanModal");
-        showToast("Loan request submitted", "success", { force: true });
-        fetchData();
-      } catch(e) { showToast("Request failed", "error", { force: true }); }
+        showToast("Loan request submitted", "success");
+      } catch(e) { showToast("Request failed", "error"); }
     }
 
     function openPayModal(id) {
@@ -967,11 +662,11 @@
     function submitPayment() {
       const id = $("payLoanId").value;
       const amount = normalizeAmount($("payAmount").value);
-      if(!amount || amount <= 0) return showToast("Invalid payment amount", "error", { force: true });
+      if(!amount || amount <= 0) return showToast("Invalid payment amount", "error");
 
       closeModal("payModal");
 
-      processRazorpayPayment(amount, "Loan Repayment", async (paymentId, meta) => {
+      processRazorpayPayment(amount, "Paid Loan", async (paymentId, meta) => {
           $("payAmount").value = "";
           updateAmountPreview('payAmount', 'payAmountPreview');
           recordLoanPayment(id, amount, paymentId, meta);
@@ -983,101 +678,54 @@
           const now = new Date().toISOString();
           const paymentKey = firebaseSafeKey(paymentId || ("LP-" + Date.now()));
 
+          // Save to Loans
           const payment = {
-            id: paymentKey,
-            amount,
-            amountPaise: meta.amountPaise || amountToPaise(amount),
-            date: now,
-            createdAt: now,
-            paidBy: userUid,
-            paidByName: userName,
-            paymentId,
-            razorpayPaymentId: paymentId,
-            razorpayOrderId: meta.orderId || "",
-            razorpaySignature: meta.signature || "",
-            status: "success",
-            paymentVerified: meta.verified === true,
-            verificationStatus: meta.verified === true ? "verified" : "payment_success_unverified",
-            method: "Razorpay UPI/Checkout"
+            id: paymentKey, amount, amountPaise: meta.amountPaise || amountToPaise(amount),
+            date: now, createdAt: now, paidBy: userUid, paidByName: userName,
+            paymentId, razorpayPaymentId: paymentId, razorpayOrderId: meta.orderId || "",
+            status: "success", method: "Razorpay UPI/Checkout"
           };
-
           await db.ref(`loans/${id}/payments/${paymentKey}`).set(payment);
 
-          const loan = loans.find(l => l.id === id);
+          // FORCES PAYMENT TO SHOW TO EVERYONE AS A TRANSACTION (Per your request)
+          const globalTx = {
+             id: paymentKey, type: "in", amount, amountPaise: meta.amountPaise || amountToPaise(amount),
+             title: "Loan Repayment", userUid, userName, date: now, createdAt: now,
+             method: "Razorpay UPI/Checkout", status: "success", paymentId,
+             source: "loan_repayment"
+          };
+          await saveTransaction(globalTx);
+
+          // Clear Loan check
+          const loan = globalLoans.find(l => l.id === id);
           if(loan) {
             const { remaining } = calculateLoanDetails(loan);
-            if(amount >= remaining) {
-              await db.ref(`loans/${id}`).update({ status: "cleared", clearedAt: now });
-            }
+            if(amount >= remaining) { await db.ref(`loans/${id}`).update({ status: "cleared", clearedAt: now }); }
           }
-
           setLoad(false);
-          showToast("Payment recorded successfully", "success", { force: true });
-          fetchData();
-        } catch(e) {
-          setLoad(false);
-          showToast(e.message || "Payment record failed", "error", { force: true });
-        }
-    }
-
-    function calculateLoanDetails(loan) {
-      let principal = loan.amount || 0;
-      let totalPaid = 0;
-      let historyHtml = "";
-      
-      if(loan.payments) {
-        Object.values(loan.payments).forEach(p => {
-          totalPaid += p.amount;
-          historyHtml += `<div class="loan-history-item"><span>${formatDate(p.date)}</span><span>${formatMoney(p.amount)} Paid</span></div>`;
-        });
-      }
-
-      let interest = 0;
-      if(loan.status === 'approved' && loan.approvedAt) {
-        const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-        const weeksElapsed = Math.floor((new Date() - new Date(loan.approvedAt)) / msPerWeek);
-        if(weeksElapsed > 0) {
-          interest = principal * 0.03 * weeksElapsed;
-        }
-      }
-
-      const totalDue = principal + interest;
-      const remaining = totalDue - totalPaid;
-
-      return { principal, interest, totalDue, totalPaid, remaining, historyHtml };
+          showToast("Payment recorded successfully", "success");
+        } catch(e) { setLoad(false); showToast(e.message || "Payment record failed", "error"); }
     }
 
     function renderLoans() {
       let html = "";
-      
-      if(loans.length === 0) {
-        html = `
-        <div style="text-align:center; padding:20px;">
+      if(myLoans.length === 0) {
+        html = `<div style="text-align:center; padding:20px;">
           <div style="color:var(--muted); font-size:13px; font-weight:800; margin-bottom:12px;">No active loans</div>
           <button style="background:var(--soft); color:var(--primary); padding:10px 20px; border-radius:12px; font-weight:900;" onclick="requestLoanCheck()">Request a Loan</button>
         </div>`;
       }
 
-      loans.forEach(l => {
+      myLoans.forEach(l => {
         const { principal, interest, totalPaid, remaining, historyHtml } = calculateLoanDetails(l);
         let actionHtml = "";
         
         if(l.status === 'pending') {
            actionHtml = `<div class="loan-actions"><button class="loan-btn outline" disabled>Awaiting Admin Approval...</button></div>`;
         } else if (l.status === 'approved') {
-          actionHtml = `
-            <div class="loan-actions">
-              <button class="loan-btn" onclick="openPayModal('${l.id}')"><i class="fas fa-shield-halved"></i> Make Payment</button>
-            </div>
-            ${historyHtml ? `<div class="loan-history" style="margin-top:8px;">${historyHtml}</div>` : ''}
-          `;
+          actionHtml = `<div class="loan-actions"><button class="loan-btn" onclick="openPayModal('${l.id}')"><i class="fas fa-shield-halved"></i> Make Payment</button></div>${historyHtml ? `<div class="loan-history" style="margin-top:8px;">${historyHtml}</div>` : ''}`;
         } else if (l.status === 'cleared') {
-            actionHtml = `
-            <div class="loan-actions">
-              <button class="loan-btn outline" style="border-color:var(--success); color:var(--success)" disabled>Loan Successfully Cleared</button>
-            </div>
-            ${historyHtml ? `<div class="loan-history" style="margin-top:8px;">${historyHtml}</div>` : ''}
-          `;
+          actionHtml = `<div class="loan-actions"><button class="loan-btn outline" style="border-color:var(--success); color:var(--success)" disabled>Loan Successfully Cleared</button></div>${historyHtml ? `<div class="loan-history" style="margin-top:8px;">${historyHtml}</div>` : ''}`;
         }
 
         html += `
@@ -1097,13 +745,92 @@
           </div>
         `;
       });
-
       $("loanList").innerHTML = html;
     }
 
-    // Initialize
-    initApp();
-    fetchData();
+    function calculateLoanDetails(loan) {
+      let principal = loan.amount || 0;
+      let totalPaid = 0; let historyHtml = "";
+      if(loan.payments) {
+        Object.values(loan.payments).forEach(p => {
+          totalPaid += p.amount;
+          historyHtml += `<div class="loan-history-item"><span>${formatDate(p.date)}</span><span>${formatMoney(p.amount)} Paid</span></div>`;
+        });
+      }
+      let interest = 0;
+      if(loan.status === 'approved' && loan.approvedAt) {
+        const weeksElapsed = Math.floor((new Date() - new Date(loan.approvedAt)) / (7 * 24 * 60 * 60 * 1000));
+        if(weeksElapsed > 0) interest = principal * 0.03 * weeksElapsed;
+      }
+      return { principal, interest, totalDue: principal + interest, totalPaid, remaining: (principal + interest) - totalPaid, historyHtml };
+    }
+
+    // --- CORE PAYMENT ENGINE ---
+    function firebaseSafeKey(value) { return String(value || ("TX-" + Date.now())).replace(/[.#$\[\]/]/g, "_"); }
+    function authHeaders(extra = {}) { const token = getToken(); return token ? { ...extra, Authorization: `Bearer ${token}` } : extra; }
+    async function readJsonResponse(res) { const txt = await res.text().catch(()=>""); try { return JSON.parse(txt); } catch(e) { return {message:txt}; } }
+    
+    async function loadRazorpayKey() {
+      if (window.API_KEYS.RAZORpay) return window.API_KEYS.RAZORPAY;
+      const kRes = await fetch(`${WORKER_API}/get-api-keys`, { cache: "no-store" });
+      const kData = await readJsonResponse(kRes);
+      if (!kRes.ok) throw new Error(kData.error || "Unable to load Razorpay key");
+      return (window.API_KEYS.RAZORPAY = kData.razorpayKey || kData.key_id || kData.key || "");
+    }
+
+    async function createRazorpayOrder(amountRupees, description) {
+      const amountPaise = amountToPaise(amountRupees), receipt = "ARY-" + Date.now();
+      const payload = { amountPaise, amountRupees, currency: "INR", receipt, name: userName, description, userUid };
+      const orderReq = await fetch(`${WORKER_API}/create-razorpay-order`, { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(payload), cache: "no-store" });
+      const orderData = await readJsonResponse(orderReq);
+      if (!orderReq.ok) throw new Error(orderData.error || "Order creation failed");
+      return { orderData, orderId: orderData.id || orderData.order_id, amountPaise, receipt, currency: "INR" };
+    }
+
+    async function verifyRazorpayPayment(res, meta) {
+      const payload = { razorpay_order_id: res.razorpay_order_id, razorpay_payment_id: res.razorpay_payment_id, razorpay_signature: res.razorpay_signature, orderId: res.razorpay_order_id, paymentId: res.razorpay_payment_id, amountPaise: meta.amountPaise, amountRupees: meta.amountRupees, receipt: meta.receipt, userUid, userName };
+      const verifyReq = await fetch(`${WORKER_API}/verify-razorpay-payment`, { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(payload), cache: "no-store" });
+      const verifyData = await readJsonResponse(verifyReq);
+      if (!verifyReq.ok || verifyData.verified === false) throw new Error(verifyData.error || "Payment verification failed");
+      return { ...verifyData, success: true, verified: true };
+    }
+
+    async function processRazorpayPayment(amount, description, onSuccessCallback) {
+      const amountRupees = normalizeAmount(amount), amountPaise = amountToPaise(amountRupees);
+      if (amountPaise < 100) return showToast("Minimum ₹1", "error");
+      setLoad(true, "Creating order...");
+      try {
+        const key = await loadRazorpayKey();
+        const { orderData, orderId, receipt, currency } = await createRazorpayOrder(amountRupees, description);
+        setLoad(false);
+
+        new Razorpay({
+          key, amount: amountPaise, currency, name: "Aryanta", description: `${description} • ${formatMoney(amountRupees)}`,
+          order_id: orderId, prefill: { name: userName },
+          handler: async function (response) {
+            setLoad(true, "Verifying payment...");
+            try {
+              await verifyRazorpayPayment(response, { orderId, amountPaise, amountRupees, receipt });
+              setLoad(true, "Saving record...");
+              await onSuccessCallback(response.razorpay_payment_id, { orderId, amountPaise, receipt, currency, verified: true, signature: response.razorpay_signature });
+              showToast("Payment successful", "success");
+            } catch(e) { setLoad(false); showToast(e.message || "Save failed", "error"); }
+          },
+          theme: { color: "#008080" },
+          modal: { ondismiss: () => { setLoad(false); showToast("Payment cancelled", "error"); } }
+        }).open();
+      } catch(e) { setLoad(false); showToast(e.message || "Payment failed", "error"); }
+    }
+
+    async function saveTransaction(tx) {
+      const key = firebaseSafeKey(tx.paymentId || tx.id);
+      const ref = db.ref(`transactions/${key}`);
+      if ((await ref.once("value")).exists()) return;
+      await ref.set({ ...tx, id: key, updatedAt: new Date().toISOString() });
+    }
+
+    // Fire it up (auth check happens twice for ultra security)
+    if(getToken()) initDataFetch();
   </script>
 </body>
 </html>
