@@ -278,6 +278,54 @@
     .camera-small-action.send { background:#008080; }
     .permission-disabled { opacity:.45; filter:grayscale(.6); }
 
+
+    /* Aryanta fixes: stop left/right page scrolling and keep all chat content inside screen */
+    html, body, .app-layout, .topbar, .input-wrapper, .chat-box {
+      max-width: 100%;
+      overflow-x: hidden !important;
+      overscroll-behavior-x: none;
+    }
+    .app-layout {
+      width: 100%;
+      min-width: 0;
+    }
+    .chat-box {
+      touch-action: pan-y;
+      width: 100%;
+      min-width: 0;
+    }
+    .msg-row {
+      max-width: 100%;
+      min-width: 0;
+      overflow: visible;
+    }
+    .msg-row.with-avatar {
+      max-width: 100%;
+    }
+    .bubble {
+      min-width: 0;
+      max-width: calc(100% - 42px);
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .msg-text,
+    .quote-text,
+    .msg-file div,
+    .chat-title,
+    .rp-text {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .msg-attachment,
+    .msg-attachment img,
+    .msg-video,
+    .msg-file {
+      max-width: 100%;
+    }
+    .att-preview-bar {
+      overscroll-behavior-x: contain;
+    }
+
     /* Hide inputs */
     input[type="file"] { display: none; }
   </style>
@@ -504,6 +552,11 @@
     const CHAT_PATH = "admin_chats";
     const TYPING_PATH = "admin_chat_typing";
     const PRESENCE_PATH = "admin_chat_presence";
+    const ADMIN_PROFILES_PATH = "admin_chat_profiles";
+    const ADMIN_NOTIFICATION_PATH = "admin_notifications";
+    const ADMIN_APP_MESSAGE_PATH = "aryanta_admin_app/messages";
+    const ADMIN_BROADCAST_PATH = "notifications/admins";
+    const WORKER_API = "https://rough-field-c679.official-aryanta.workers.dev";
     const MAX_FILE_SIZE = 4 * 1024 * 1024;
     const MAX_ATTACHMENTS = 10;
     const MAX_IMAGES_PER_MINUTE = 10;
@@ -526,9 +579,63 @@
 
     const myUid = String(currentUser.uid || currentUser.email || "admin");
     const myKey = safeKey(myUid);
-    const myName = currentUser.name || currentUser.displayName || currentUser.email || "Admin";
+    const myName = currentUser.name || currentUser.displayName || currentUser.fullName || currentUser.email || "Admin";
 
-    const myImage = currentUser.profileImage || currentUser.image || currentUser.photo || localStorage.getItem("aryanta_admin_profile_image") || ARYANTA_LOGO;
+    function isUsableImage(value) {
+      const v = String(value || "").trim();
+      if (!v || v === "<na>" || v === "null" || v === "undefined") return false;
+      return /^(https?:|data:image|blob:)/i.test(v);
+    }
+
+    function firstUsableImage(...values) {
+      for (const value of values) {
+        if (isUsableImage(value)) return String(value).trim();
+      }
+      return ARYANTA_LOGO;
+    }
+
+    function readProfileObjectFromStorage() {
+      const keys = [
+        PROFILE_KEY,
+        "aryanta_admin_user",
+        "aryanta_current_admin",
+        "aryanta_login_admin",
+        "active_admin",
+        "admin_profile"
+      ];
+      const merged = {};
+      keys.forEach(key => {
+        Object.assign(merged, safeJson(sessionStorage.getItem(key), {}));
+        Object.assign(merged, safeJson(localStorage.getItem(key), {}));
+      });
+      return merged;
+    }
+
+    function resolveMyProfileImage() {
+      const fresh = { ...currentUser, ...readProfileObjectFromStorage() };
+      return firstUsableImage(
+        fresh.profileImage,
+        fresh.profilePic,
+        fresh.profilePhoto,
+        fresh.photoURL,
+        fresh.photoUrl,
+        fresh.photo,
+        fresh.picture,
+        fresh.avatar,
+        fresh.image,
+        fresh.imageUrl,
+        fresh.userImage,
+        fresh.adminImage,
+        fresh.adminPhoto,
+        fresh.logo,
+        fresh.dp,
+        localStorage.getItem("aryanta_admin_profile_image"),
+        sessionStorage.getItem("aryanta_admin_profile_image")
+      );
+    }
+
+    let myImage = resolveMyProfileImage();
+    let adminProfileMap = {};
 
     const DEFAULT_SETTINGS = {
       notify: false,
@@ -547,6 +654,54 @@
     let firstMessageLoadDone = false;
     let lastKnownMessageTs = 0;
     let typingRemoteDisabled = true;
+
+    function getKnownSenderImage(uid, fallbackImage) {
+      const profile = adminProfileMap[safeKey(uid)] || {};
+      return firstUsableImage(
+        fallbackImage,
+        profile.profileImage,
+        profile.image,
+        profile.photo,
+        profile.photoURL,
+        profile.avatar,
+        profile.logo,
+        ARYANTA_LOGO
+      );
+    }
+
+    function getMessageAvatar(msg) {
+      if (!msg) return ARYANTA_LOGO;
+      return getKnownSenderImage(msg.senderUid, msg.senderImage);
+    }
+
+    function getAdminName(uid, fallbackName) {
+      const profile = adminProfileMap[safeKey(uid)] || {};
+      return profile.name || profile.fullName || profile.displayName || fallbackName || "Admin";
+    }
+
+    async function updateMyChatProfile() {
+      myImage = resolveMyProfileImage();
+      const profile = {
+        uid: myUid,
+        name: myName,
+        image: myImage,
+        profileImage: myImage,
+        photoURL: myImage,
+        updatedAt: Date.now()
+      };
+      try {
+        await db.ref(`${ADMIN_PROFILES_PATH}/${myKey}`).update(profile);
+      } catch (err) {
+        // Profile sharing needs Firebase rules. Chat still works without this.
+      }
+    }
+
+    function listenAdminProfiles() {
+      db.ref(ADMIN_PROFILES_PATH).on("value", snap => {
+        adminProfileMap = snap.val() || {};
+        renderMessages();
+      }, () => {});
+    }
 
     function loadAdminSettings() {
       const saved = safeJson(localStorage.getItem(SETTINGS_KEY), {});
@@ -605,24 +760,94 @@
       } catch {}
     }
 
+    function buildChatNotificationBody(msg) {
+      const text = String(msg?.text || "").trim();
+      if (text) return text.length > 130 ? text.slice(0, 127) + "..." : text;
+      if (Array.isArray(msg?.attachments) && msg.attachments.length) {
+        return `${msg.senderName || "Admin"} sent ${describeAttachment(msg.attachments[0])}`;
+      }
+      return "New message received";
+    }
+
     function notifyIncomingMessage(msg) {
       loadAdminSettings();
       if (!appSettings.notify || !msg || msg.senderUid === myUid) return;
-      const title = msg.senderName || "Aryanta Chat";
-      const body = msg.text || (Array.isArray(msg.attachments) && msg.attachments.length ? describeAttachment(msg.attachments[0]) : "New message");
+      const title = "New message";
+      const body = buildChatNotificationBody(msg);
       if (document.visibilityState === "hidden" && "Notification" in window && Notification.permission === "granted") {
         try {
           new Notification(title, {
             body,
-            icon: msg.senderImage || ARYANTA_LOGO,
+            icon: ARYANTA_LOGO,
+            image: ARYANTA_LOGO,
+            badge: ARYANTA_LOGO,
             tag: "aryanta-admin-chat",
             silent: appSettings.audio !== true
           });
         } catch {}
       } else {
-        showToast(`${title}: ${body}`);
+        showToast(`${title}: ${body}`, { force: true });
       }
       playNotifySound();
+    }
+
+    async function sendAdminChatNotification(msg) {
+      const body = buildChatNotificationBody(msg);
+      const now = Date.now();
+      const id = `CHAT-NOTIFY-${now}-${Math.floor(Math.random() * 9999)}`;
+      const common = {
+        id,
+        title: "New message",
+        body,
+        message: body,
+        type: "admin_chat",
+        icon: ARYANTA_LOGO,
+        logo: ARYANTA_LOGO,
+        senderUid: msg.senderUid || myUid,
+        senderName: msg.senderName || myName,
+        senderImage: getKnownSenderImage(msg.senderUid || myUid, msg.senderImage),
+        messageId: msg.id || "",
+        chatPath: CHAT_PATH,
+        url: "x.html",
+        target: "all_admins",
+        createdAt: now,
+        date: new Date(now).toISOString(),
+        readBy: {}
+      };
+
+      const updates = {};
+      updates[`${ADMIN_NOTIFICATION_PATH}/${id}`] = common;
+      updates[`${ADMIN_BROADCAST_PATH}/${id}`] = common;
+      updates[`${ADMIN_APP_MESSAGE_PATH}/${id}`] = {
+        title: common.title,
+        body: common.body,
+        type: common.type,
+        url: "https://aryanta.in/workplace",
+        icon: ARYANTA_LOGO,
+        logo: ARYANTA_LOGO,
+        senderName: common.senderName,
+        senderUid: common.senderUid,
+        messageId: common.messageId,
+        createdAt: common.createdAt
+      };
+
+      await db.ref().update(updates);
+
+      // Optional Worker push support. If the Worker endpoint is not available, the Firebase notification records still save.
+      const pushPayload = { ...common, recipients: "all_admins" };
+      const endpoints = [
+        `${WORKER_API}/admin/push`,
+        `${WORKER_API}/push-admins`,
+        `${WORKER_API}/send-notification`
+      ];
+      endpoints.forEach(url => {
+        fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(pushPayload),
+          keepalive: true
+        }).catch(() => {});
+      });
     }
 
     function getImageRateKey() {
@@ -673,6 +898,8 @@
       applyAdminSettings();
       buildEmojiGrid();
       setupListeners();
+      listenAdminProfiles();
+      updateMyChatProfile();
       listenForMessages();
       setupPresence();
       listenTyping();
@@ -681,6 +908,11 @@
           applyAdminSettings();
           renderMessages();
           handleInputResize();
+        }
+        if (event.key === PROFILE_KEY || event.key === "aryanta_admin_profile_image") {
+          myImage = resolveMyProfileImage();
+          updateMyChatProfile();
+          renderMessages();
         }
       });
       document.addEventListener("visibilitychange", () => {
@@ -1172,31 +1404,43 @@
       if (raw.encrypted && raw.payloadEnc) {
         try {
           const plain = await decryptChatPayload(raw.payloadEnc);
-          return { ...raw, ...plain, decrypted: true };
+          const merged = { ...raw, ...plain, decrypted: true };
+          merged.senderName = getAdminName(merged.senderUid, merged.senderName);
+          merged.senderImage = getKnownSenderImage(merged.senderUid, merged.senderImage);
+          return merged;
         } catch (err) {
           return {
             ...raw,
             text: "🔒 Encrypted message. Chat key mismatch.",
             attachments: [],
-            senderName: raw.senderName || "Encrypted User",
-            senderImage: raw.senderImage || ARYANTA_LOGO,
+            senderName: getAdminName(raw.senderUid, raw.senderName || "Encrypted User"),
+            senderImage: getKnownSenderImage(raw.senderUid, raw.senderImage),
             decryptFailed: true
           };
         }
       }
-      return { ...raw, senderImage: raw.senderImage || ARYANTA_LOGO };
+      return {
+        ...raw,
+        senderName: getAdminName(raw.senderUid, raw.senderName || "Admin"),
+        senderImage: getKnownSenderImage(raw.senderUid, raw.senderImage)
+      };
     }
 
     async function sendMessage() {
       const text = $("chatInput").value.trim();
       if (!text && attachmentsBase64.length === 0) return;
       if (attachmentsBase64.length > MAX_ATTACHMENTS) return showToast(`Maximum ${MAX_ATTACHMENTS} files allowed`);
+
+      myImage = resolveMyProfileImage();
+      updateMyChatProfile();
+
       const msgId = `MSG-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+      const outgoingAttachments = attachmentsBase64.map(att => ({ ...att }));
       const plainPayload = {
         senderName: myName,
         senderImage: myImage,
         text,
-        attachments: attachmentsBase64,
+        attachments: outgoingAttachments,
         replyTo: replyingToId,
         timestamp: Date.now()
       };
@@ -1230,6 +1474,7 @@
       handleInputResize();
       try {
         await db.ref(`${CHAT_PATH}/${msgId}`).set(payload);
+        sendAdminChatNotification({ ...payload, ...plainPayload }).catch(() => {});
         if (!typingRemoteDisabled) await db.ref(`${TYPING_PATH}/${myKey}`).remove().catch(() => { typingRemoteDisabled = true; });
         scrollToBottom();
       } catch {
@@ -1294,14 +1539,15 @@
         }
         const alignClass = isMe ? "out" : "in";
         const isSelected = selectedMsgIds.has(m.id) ? "checked" : "";
-        const avatar = escapeHtml(m.senderImage || ARYANTA_LOGO);
+        const avatar = escapeHtml(getMessageAvatar(m));
+        const avatarFallback = `onerror="this.onerror=null;this.src='${ARYANTA_LOGO}'"`;
         html += `<div class="msg-row ${alignClass} with-avatar" data-id="${escapeHtml(m.id)}" onclick="toggleMsgSelection(event, '${escapeHtml(m.id)}')">`;
         html += `<div class="msg-checkbox ${isSelected}"></div><div class="swipe-reply-icon"><i class="fas fa-reply"></i></div>`;
-        if (!isMe) html += `<img class="msg-avatar" src="${avatar}" alt="${escapeHtml(m.senderName || 'User')}">`;
+        if (!isMe) html += `<img class="msg-avatar" src="${avatar}" ${avatarFallback} alt="${escapeHtml(m.senderName || 'User')}">`;
         html += `<div class="bubble" onclick="handleBubbleClick(event, '${escapeHtml(m.id)}')" ondblclick="quickHeart(event, '${escapeHtml(m.id)}')">`;
         html += renderBubbleInner(m, isMe);
         html += `</div>`;
-        if (isMe) html += `<img class="msg-avatar" src="${avatar}" alt="You">`;
+        if (isMe) html += `<img class="msg-avatar" src="${avatar}" ${avatarFallback} alt="You">`;
         html += `</div>`;
       });
       html += `<div class="typing-pill" id="typingPill"><span id="typingText">Typing</span><span class="typing-dots"><span></span><span></span><span></span></span></div>`;
