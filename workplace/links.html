@@ -39,113 +39,847 @@
       --border: rgba(255, 255, 255, 0.12);
       --soft: rgba(0, 184, 184, 0.14);
       --shadow: 0 18px 45px rgba(0, 0, 0, 0.40);
+      color-scheme: dark;
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    html, body { width: 100%; min-height: 100%; font-family: system-ui, -apple-system, sans-serif; color: var(--text); background: linear-gradient(160deg, #effafa 0%, #ffffff 45%, #e9f7f7 100%); overscroll-behavior: none; }
-    html[data-theme="dark"] body { background: linear-gradient(160deg, #071112 0%, #101c1e 48%, #091718 100%); }
-    button, input, textarea { font: inherit; outline: none; border: none; }
-    button { cursor: pointer; touch-action: manipulation; }
-    img { user-select: none; -webkit-user-drag: none; }
-    .fas, .fa-solid, .fab { display: inline-block !important; line-height: 1 !important; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-    .app { width: 100%; min-height: 100dvh; padding: var(--top-safe) 12px calc(90px + var(--bottom-safe)); overflow-x: hidden; position: relative; isolation: isolate; }
-    .app::before, .app::after { content: ""; position: fixed; border-radius: 999px; pointer-events: none; z-index: -1; }
-    .app::before { width: 180px; height: 180px; top: -62px; right: -72px; background: rgba(0, 128, 128, 0.14); }
-    .app::after { width: 170px; height: 170px; left: -70px; bottom: -60px; background: rgba(0, 184, 184, 0.12); }
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: linear-gradient(160deg, #effafa 0%, #ffffff 45%, #e9f7f7 100%);
+      overscroll-behavior: none;
+    }
 
-    .wrap { width: 100%; max-width: 430px; margin: 0 auto; display: grid; gap: 12px; }
+    html[data-theme="dark"] body {
+      background: linear-gradient(160deg, #071112 0%, #101c1e 48%, #091718 100%);
+    }
 
-    .topbar { min-height: 56px; display: grid; grid-template-columns: 45px minmax(0, 1fr) auto; align-items: center; gap: 9px; }
-    .icon-btn { width: 45px; height: 45px; border-radius: 16px; background: var(--card); border: 1px solid var(--border); color: var(--primary); box-shadow: var(--shadow-soft); display: inline-flex; align-items: center; justify-content: center; font-size: 16px; transition: 0.15s; }
-    .icon-btn:active, .mini-action:active, .wide-action:active, .tab:active { transform: scale(0.96); }
-    .icon-btn.danger { color: var(--danger); background: rgba(239, 68, 68, 0.08); }
-    .icon-btn.success { color: var(--success); background: rgba(22, 163, 74, 0.08); }
+    button,
+    input,
+    textarea {
+      font: inherit;
+      outline: none;
+      border: none;
+    }
 
-    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-    .brand-logo { width: 44px; height: 44px; border-radius: 16px; padding: 4px; background: #ffffff; border: 1px solid var(--border); box-shadow: var(--shadow-soft); }
-    .brand-logo img { width: 100%; height: 100%; border-radius: 12px; object-fit: cover; }
-    .brand h1 { font-size: 17px; font-weight: 950; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .brand p { margin-top: 2px; color: var(--muted); font-size: 10px; font-weight: 900; text-transform: uppercase; }
+    button {
+      cursor: pointer;
+      touch-action: manipulation;
+    }
 
-    .top-actions { display: flex; gap: 7px; }
+    img {
+      user-select: none;
+      -webkit-user-drag: none;
+    }
 
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; box-shadow: var(--shadow-soft); overflow: hidden; }
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
 
-    .hero { padding: 14px; display: grid; grid-template-columns: 58px minmax(0, 1fr); align-items: center; gap: 12px; background: linear-gradient(145deg, var(--primary-dark), var(--primary), var(--primary-light)); color: #ffffff; position: relative; }
-    .hero::after { content: ""; position: absolute; right: -45px; top: -58px; width: 142px; height: 142px; border-radius: 999px; background: rgba(255, 255, 255, 0.13); pointer-events: none; }
-    .hero-mark { width: 58px; height: 58px; border-radius: 20px; background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.20); display: flex; align-items: center; justify-content: center; font-size: 24px; position: relative; z-index: 1; }
-    .hero-copy { min-width: 0; position: relative; z-index: 1; }
-    .hero-copy h2 { font-size: 20px; font-weight: 950; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .hero-copy p { margin-top: 5px; font-size: 12px; font-weight: 760; opacity: 0.92; }
-    .status-pill { width: fit-content; min-height: 27px; margin-top: 9px; padding: 0 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 7px; background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.18); font-size: 10.5px; font-weight: 950; }
+    ::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+      display: none;
+    }
 
-    .panel { padding: 13px; display: grid; gap: 11px; }
-    .panel-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    .panel-title h3 { font-size: 15px; font-weight: 950; display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
-    .panel-title h3 i { color: var(--primary); }
-    .panel-title span { padding: 4px 9px; border-radius: 999px; background: var(--soft); color: var(--primary); font-size: 9.5px; font-weight: 950; white-space: nowrap; }
+    * {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
 
-    .search-box { min-height: 45px; border-radius: 17px; border: 1px solid var(--border); background: var(--card-soft); display: grid; grid-template-columns: 38px minmax(0, 1fr); align-items: center; padding: 0 10px; color: var(--muted); }
-    .search-box input { min-width: 0; border: 0; background: transparent; color: var(--text); font-size: 12px; font-weight: 760; }
+    .fas,
+    .fa-solid,
+    .fab {
+      display: inline-block !important;
+      line-height: 1 !important;
+    }
 
-    .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
-    .tab { min-height: 38px; border-radius: 14px; background: var(--card-soft); border: 1px solid var(--border); color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 800; transition: 0.2s ease;}
-    .tab.active { background: var(--primary); border-color: var(--primary); color: #ffffff; }
+    .app {
+      width: 100%;
+      min-height: 100dvh;
+      padding: var(--top-safe) 12px calc(90px + var(--bottom-safe));
+      overflow-x: hidden;
+      position: relative;
+      isolation: isolate;
+    }
 
-    .link-list { display: grid; gap: 9px; min-height: 90px; }
-    .link-item { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 11px; padding: 10px; border-radius: 20px; border: 1px solid var(--border); background: var(--card-soft); overflow: hidden; }
-    .link-logo { width: 62px; height: 62px; border-radius: 18px; background: var(--soft); border: 1px solid var(--border); color: var(--primary); display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 22px; cursor: pointer; flex: 0 0 auto; }
-    .link-logo img { width: 100%; height: 100%; object-fit: cover; }
+    .app::before,
+    .app::after {
+      content: "";
+      position: fixed;
+      border-radius: 999px;
+      pointer-events: none;
+      z-index: -1;
+    }
 
-    .link-main { min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 8px;}
-    .link-meta strong { display: block; font-size: 13px; font-weight: 950; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .link-meta span { display: block; margin-top: 4px; color: var(--muted); font-size: 10.5px; font-weight: 760; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .link-actions { display: flex; gap: 6px; }
-    .mini-action { flex: 1; min-height: 32px; border-radius: 12px; background: var(--soft); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; gap: 5px; }
-    .mini-action.success { background: rgba(22, 163, 74, 0.10); color: var(--success); }
-    .mini-action.danger { background: rgba(239, 68, 68, 0.08); color: var(--danger); }
+    .app::before {
+      width: 180px;
+      height: 180px;
+      top: -62px;
+      right: -72px;
+      background: rgba(0, 128, 128, 0.14);
+    }
 
-    .empty { min-height: 108px; border-radius: 20px; border: 1px dashed var(--border); background: var(--card-soft); display: grid; place-items: center; text-align: center; padding: 16px; }
-    .empty i { color: var(--primary); font-size: 22px; margin-bottom: 8px; }
-    .empty strong { display: block; font-size: 13px; font-weight: 950; }
-    .empty span { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; }
+    .app::after {
+      width: 170px;
+      height: 170px;
+      left: -70px;
+      bottom: -60px;
+      background: rgba(0, 184, 184, 0.12);
+    }
 
-    .bottom-nav { position: fixed; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 20; height: 66px; border-radius: 24px; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 7px; }
-    .nav-btn { border-radius: 18px; background: transparent; color: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: 0.2s ease; }
-    .nav-btn .mini-mark { width: 26px; height: 26px; border-radius: 10px; font-size: 16px; display: flex; align-items: center; justify-content: center; }
-    .nav-btn .btn-text { font-size: 10px; font-weight: 800; text-transform: uppercase; }
-    .nav-btn.active { background: var(--soft); color: var(--primary); }
+    .wrap {
+      width: 100%;
+      max-width: 430px;
+      margin: 0 auto;
+      display: grid;
+      gap: 12px;
+    }
 
-    .toast-holder { position: fixed; left: 12px; right: 12px; top: calc(10px + env(safe-area-inset-top)); z-index: 9999; pointer-events: none; display: flex; justify-content: center; }
-    .toast { width: min(430px, calc(100vw - 24px)); min-height: 45px; border-radius: 16px; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); padding: 10px 12px; display: flex; align-items: center; gap: 8px; color: var(--text); font-size: 12.5px; font-weight: 850; opacity: 0; transform: translateY(-14px); transition: 0.2s ease; pointer-events: auto; }
-    .toast.show { opacity: 1; transform: translateY(0); }
+    .topbar {
+      min-height: 56px;
+      display: grid;
+      grid-template-columns: 45px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 9px;
+    }
 
-    .modal { position: fixed; inset: 0; z-index: 99999; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(0, 0, 0, 0.58); backdrop-filter: blur(5px); }
-    .modal.show { display: flex; }
-    .modal-card { width: min(430px, 100%); max-height: 86dvh; border-radius: 26px; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; }
-    .modal-head { min-height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid var(--border); flex: 0 0 auto;}
-    .modal-head strong { font-size: 14px; font-weight: 950; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 12px; }
-    .modal-body { padding: 13px; overflow: auto; flex: 1 1 auto; background: var(--bg); }
-    .form-grid { display: grid; gap: 10px; }
-    .form-field { display: grid; gap: 6px; }
-    .form-field label { color: var(--muted); font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.3px; }
-    .form-field input, .form-field textarea { width: 100%; min-height: 44px; border-radius: 15px; border: 1px solid var(--border); background: var(--card-soft); color: var(--text); padding: 0 12px; font-size: 13px; font-weight: 760; }
-    .form-field textarea { min-height: 78px; padding: 12px; resize: vertical; }
-    .wide-action { min-height: 42px; border-radius: 14px; border: 1px solid var(--border); background: var(--soft); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; gap: 8px; flex: 1; }
-    .wide-action.success { background: var(--success); color: white; border-color: var(--success);}
-    .preview-card { display: grid; gap: 12px; }
-    .preview-logo { width: 86px; height: 86px; border-radius: 25px; margin: 0 auto; background: var(--soft); color: var(--primary); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 34px; }
-    .preview-logo img { width: 100%; height: 100%; object-fit: cover; }
-    .preview-title { text-align: center; }
-    .preview-title h3 { font-size: 20px; font-weight: 950; }
-    .preview-title p { margin-top: 6px; color: var(--muted); font-size: 12px; font-weight: 760; word-break: break-word; }
-    .preview-desc { border-radius: 18px; border: 1px solid var(--border); background: var(--card-soft); padding: 12px; color: var(--muted); font-size: 12px; font-weight: 760; line-height: 1.5; }
+    .icon-btn {
+      width: 45px;
+      height: 45px;
+      border-radius: 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      box-shadow: var(--shadow-soft);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: 0.15s;
+      flex: 0 0 auto;
+    }
 
-    .spinner { width: 16px; height: 16px; border-radius: 999px; border: 2px solid rgba(0, 128, 128, 0.18); border-top-color: var(--primary); animation: spin 0.8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .icon-btn:active,
+    .mini-action:active,
+    .wide-action:active,
+    .tab:active,
+    .owner-action:active {
+      transform: scale(0.96);
+    }
 
-    @media (min-width: 520px) { .bottom-nav { width: 430px; left: 50%; right: auto; transform: translateX(-50%); } }
+    .icon-btn.danger,
+    .mini-action.danger,
+    .wide-action.danger {
+      color: var(--danger);
+      background: rgba(239, 68, 68, 0.08);
+    }
+
+    .icon-btn.success,
+    .mini-action.success,
+    .wide-action.success {
+      color: #ffffff;
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 16px;
+      padding: 4px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+      flex: 0 0 auto;
+    }
+
+    .brand-logo img {
+      width: 100%;
+      height: 100%;
+      border-radius: 12px;
+      object-fit: cover;
+    }
+
+    .brand h1 {
+      font-size: 17px;
+      font-weight: 950;
+      color: var(--primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .brand p {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 7px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+
+    .hero {
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr);
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(145deg, var(--primary-dark), var(--primary), var(--primary-light));
+      color: #ffffff;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -45px;
+      top: -58px;
+      width: 142px;
+      height: 142px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.13);
+      pointer-events: none;
+    }
+
+    .hero-mark {
+      width: 58px;
+      height: 58px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.20);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-copy {
+      min-width: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-copy h2 {
+      font-size: 20px;
+      font-weight: 950;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .hero-copy p {
+      margin-top: 5px;
+      font-size: 12px;
+      font-weight: 760;
+      opacity: 0.92;
+    }
+
+    .status-pill {
+      width: fit-content;
+      max-width: 100%;
+      min-height: 27px;
+      margin-top: 9px;
+      padding: 0 10px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      font-size: 10.5px;
+      font-weight: 950;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .panel {
+      padding: 13px;
+      display: grid;
+      gap: 11px;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .panel-title h3 {
+      font-size: 15px;
+      font-weight: 950;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .panel-title h3 i {
+      color: var(--primary);
+    }
+
+    .panel-title span,
+    .owner-pill,
+    .domain-pill {
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: var(--soft);
+      color: var(--primary);
+      font-size: 9.5px;
+      font-weight: 950;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .search-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 45px;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .search-box {
+      min-height: 45px;
+      border-radius: 17px;
+      border: 1px solid var(--border);
+      background: var(--card-soft);
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr);
+      align-items: center;
+      padding: 0 10px;
+      color: var(--muted);
+    }
+
+    .search-box input {
+      min-width: 0;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+    }
+
+    .tab {
+      min-height: 38px;
+      border-radius: 14px;
+      background: var(--card-soft);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 850;
+      transition: 0.2s ease;
+      padding: 0 4px;
+      white-space: nowrap;
+    }
+
+    .tab.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+    }
+
+    .link-list {
+      display: grid;
+      gap: 9px;
+      min-height: 90px;
+    }
+
+    .link-item {
+      display: grid;
+      grid-template-columns: 62px minmax(0, 1fr);
+      gap: 11px;
+      padding: 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--card-soft);
+      overflow: hidden;
+    }
+
+    .link-logo {
+      width: 62px;
+      height: 62px;
+      border-radius: 18px;
+      background: var(--soft);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      font-size: 22px;
+      cursor: pointer;
+      flex: 0 0 auto;
+      position: relative;
+    }
+
+    .link-logo img,
+    .preview-logo img,
+    .live-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .link-main {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .link-meta strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 950;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .link-meta span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 10.5px;
+      font-weight: 760;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .link-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .mini-action {
+      flex: 1 1 auto;
+      min-width: 46px;
+      min-height: 32px;
+      border-radius: 12px;
+      background: var(--soft);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 850;
+      gap: 5px;
+      border: 1px solid transparent;
+    }
+
+    .owner-action {
+      width: 32px;
+      min-width: 32px;
+      flex: 0 0 auto;
+    }
+
+    .empty {
+      min-height: 108px;
+      border-radius: 20px;
+      border: 1px dashed var(--border);
+      background: var(--card-soft);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 16px;
+    }
+
+    .empty i {
+      color: var(--primary);
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    .empty strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 950;
+    }
+
+    .empty span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: calc(10px + env(safe-area-inset-bottom));
+      z-index: 20;
+      height: 66px;
+      border-radius: 24px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      padding: 7px;
+    }
+
+    .nav-btn {
+      border-radius: 18px;
+      background: transparent;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: 0.2s ease;
+    }
+
+    .nav-btn .mini-mark {
+      width: 26px;
+      height: 26px;
+      border-radius: 10px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-btn .btn-text {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .nav-btn.active {
+      background: var(--soft);
+      color: var(--primary);
+    }
+
+    .toast-holder {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      top: calc(10px + env(safe-area-inset-top));
+      z-index: 9999;
+      pointer-events: none;
+      display: flex;
+      justify-content: center;
+    }
+
+    .toast {
+      width: min(430px, calc(100vw - 24px));
+      min-height: 45px;
+      border-radius: 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+      font-size: 12.5px;
+      font-weight: 850;
+      opacity: 0;
+      transform: translateY(-14px);
+      transition: 0.2s ease;
+      pointer-events: auto;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(0, 0, 0, 0.58);
+      backdrop-filter: blur(5px);
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-card {
+      width: min(430px, 100%);
+      max-height: 86dvh;
+      border-radius: 26px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-head {
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      flex: 0 0 auto;
+    }
+
+    .modal-head strong {
+      font-size: 14px;
+      font-weight: 950;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-right: 12px;
+    }
+
+    .modal-body {
+      padding: 13px;
+      overflow: auto;
+      flex: 1 1 auto;
+      background: var(--bg);
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .form-field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .form-field label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .form-field input,
+    .form-field textarea {
+      width: 100%;
+      min-height: 44px;
+      border-radius: 15px;
+      border: 1px solid var(--border);
+      background: var(--card-soft);
+      color: var(--text);
+      padding: 0 12px;
+      font-size: 13px;
+      font-weight: 760;
+    }
+
+    .form-field textarea {
+      min-height: 78px;
+      padding: 12px;
+      resize: vertical;
+    }
+
+    .wide-action {
+      min-height: 42px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--soft);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 850;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .preview-card {
+      display: grid;
+      gap: 12px;
+    }
+
+    .preview-logo,
+    .live-logo {
+      width: 86px;
+      height: 86px;
+      border-radius: 25px;
+      margin: 0 auto;
+      background: var(--soft);
+      color: var(--primary);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      font-size: 34px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .preview-title,
+    .live-preview-copy {
+      text-align: center;
+      min-width: 0;
+    }
+
+    .preview-title h3,
+    .live-preview-copy h3 {
+      font-size: 20px;
+      font-weight: 950;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .preview-title p,
+    .live-preview-copy p {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+      word-break: break-word;
+    }
+
+    .preview-desc {
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: var(--card-soft);
+      padding: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .live-preview {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      background: var(--card-soft);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .live-preview-top {
+      display: flex;
+      justify-content: center;
+    }
+
+    .live-preview-row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .owner-line {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 10.5px;
+      font-weight: 800;
+      margin-top: 5px;
+    }
+
+    .confirm-copy {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      font-weight: 760;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      border: 2px solid rgba(0, 128, 128, 0.18);
+      border-top-color: var(--primary);
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (min-width: 520px) {
+      .bottom-nav {
+        width: 430px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+      }
+    }
+
+    @media (max-width: 380px) {
+      .tabs {
+        gap: 5px;
+      }
+
+      .tab {
+        font-size: 10.5px;
+      }
+
+      .link-actions {
+        gap: 5px;
+      }
+
+      .mini-action span {
+        display: none;
+      }
+    }
   </style>
 </head>
 <body>
@@ -153,27 +887,26 @@
 
   <main class="app">
     <div class="wrap">
-
       <header id="topbar" class="topbar">
-        <button class="icon-btn" onclick="goPage('admin.html')"><i class="fas fa-arrow-left"></i></button>
-        <div class="brand">
+        <button class="icon-btn" type="button" onclick="goBack()" aria-label="Back"><i class="fas fa-arrow-left"></i></button>
+        <div class="brand" id="brandBlock">
           <div class="brand-logo"><img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta" /></div>
           <div>
             <h1>Aryanta Links</h1>
-            <p>Social Link Manager</p>
+            <p>Smart Link Manager</p>
           </div>
         </div>
         <div class="top-actions">
-          <button class="icon-btn success" onclick="openAddModal()"><i class="fas fa-plus"></i></button>
-          <button class="icon-btn" onclick="loadLinks()"><i id="refreshIcon" class="fas fa-rotate"></i></button>
+          <button class="icon-btn success" id="addTopBtn" type="button" onclick="openAddModal()" aria-label="Add link"><i class="fas fa-plus"></i></button>
+          <button class="icon-btn" type="button" onclick="loadLinks()" aria-label="Refresh"><i id="refreshIcon" class="fas fa-rotate"></i></button>
         </div>
       </header>
 
-      <section class="hero card">
+      <section class="hero card" id="heroBlock">
         <div class="hero-mark"><i class="fas fa-link"></i></div>
         <div class="hero-copy">
           <h2 id="pageTitle">Link Directory</h2>
-          <p id="pageSub">Open all social, website and company links added by admin.</p>
+          <p id="pageSub">All users can view links. Only the creator can edit or delete their own link.</p>
           <div class="status-pill"><i class="fas fa-database"></i><span id="dbStatus">Connecting...</span></div>
         </div>
       </section>
@@ -184,18 +917,19 @@
           <span id="listCount">0 ITEMS</span>
         </div>
 
-        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 45px; gap: 8px; margin-bottom: 10px;">
+        <div class="search-row">
           <div class="search-box">
             <i class="fas fa-magnifying-glass"></i>
-            <input id="searchInput" type="search" placeholder="Search links..." oninput="renderLinks()" />
+            <input id="searchInput" type="search" placeholder="Search title, URL, owner..." oninput="renderLinks()" />
           </div>
-          <button class="icon-btn" onclick="loadLinks()"><i class="fas fa-arrows-rotate"></i></button>
+          <button class="icon-btn" type="button" onclick="loadLinks()" aria-label="Reload"><i class="fas fa-arrows-rotate"></i></button>
         </div>
 
         <div class="tabs">
-          <button id="tabAll" class="tab active" onclick="setFilter('all')"><i class="fas fa-border-all"></i> All</button>
-          <button id="tabSocial" class="tab" onclick="setFilter('social')"><i class="fas fa-share-nodes"></i> Social</button>
-          <button id="tabWeb" class="tab" onclick="setFilter('web')"><i class="fas fa-globe"></i> Web</button>
+          <button id="tabAll" class="tab active" type="button" onclick="setFilter('all')"><i class="fas fa-border-all"></i> All</button>
+          <button id="tabSocial" class="tab" type="button" onclick="setFilter('social')"><i class="fas fa-share-nodes"></i> Social</button>
+          <button id="tabWeb" class="tab" type="button" onclick="setFilter('web')"><i class="fas fa-globe"></i> Web</button>
+          <button id="tabMine" class="tab" type="button" onclick="setFilter('mine')"><i class="fas fa-user-pen"></i> Mine</button>
         </div>
 
         <div id="linkList" class="link-list"></div>
@@ -204,13 +938,13 @@
   </main>
 
   <nav class="bottom-nav">
-    <button class="nav-btn" onclick="goPage('admin.html')">
+    <button class="nav-btn" type="button" onclick="goPage('admin.html')">
       <span class="mini-mark"><i class="fa-solid fa-house"></i></span><span class="btn-text">Home</span>
     </button>
-    <button class="nav-btn" onclick="goPage('admin.html#profile')">
+    <button class="nav-btn" type="button" onclick="goPage('admin.html#profile')">
       <span class="mini-mark"><i class="fa-solid fa-user"></i></span><span class="btn-text">Profile</span>
     </button>
-    <button class="nav-btn" onclick="goPage('x.html')">
+    <button class="nav-btn" type="button" onclick="goPage('x.html')">
       <span class="mini-mark"><i class="fa-solid fa-comments"></i></span><span class="btn-text">Chat</span>
     </button>
   </nav>
@@ -219,7 +953,7 @@
     <div class="modal-card">
       <div class="modal-head">
         <strong id="previewHead">Link Details</strong>
-        <button class="icon-btn danger" onclick="closeModal('previewModal')"><i class="fas fa-xmark"></i></button>
+        <button class="icon-btn danger" type="button" onclick="closeModal('previewModal')"><i class="fas fa-xmark"></i></button>
       </div>
       <div class="modal-body">
         <div class="preview-card">
@@ -228,11 +962,15 @@
             <h3 id="previewTitle">Link Title</h3>
             <p id="previewUrl">https://</p>
             <p id="previewDate">Added recently</p>
+            <div class="live-preview-row">
+              <span id="previewDomain" class="domain-pill"><i class="fas fa-globe"></i> Website</span>
+              <span id="previewOwner" class="owner-pill"><i class="fas fa-user"></i> Owner</span>
+            </div>
           </div>
           <div id="previewDesc" class="preview-desc" style="display:none;"></div>
           <div style="display:flex; gap: 8px;">
-            <button id="previewOpenBtn" class="wide-action success"><i class="fas fa-up-right-from-square"></i> Open Link</button>
-            <button id="previewCopyBtn" class="wide-action"><i class="fas fa-copy"></i> Copy</button>
+            <button id="previewOpenBtn" class="wide-action success" type="button"><i class="fas fa-up-right-from-square"></i> Open Link</button>
+            <button id="previewCopyBtn" class="wide-action" type="button"><i class="fas fa-copy"></i> Copy</button>
           </div>
         </div>
       </div>
@@ -242,22 +980,33 @@
   <div id="addModal" class="modal" onclick="closeModalOnBackdrop(event, 'addModal')">
     <div class="modal-card">
       <div class="modal-head">
-        <strong>Add New Link</strong>
-        <button class="icon-btn danger" onclick="closeModal('addModal')"><i class="fas fa-xmark"></i></button>
+        <strong id="formHead">Add New Link</strong>
+        <button class="icon-btn danger" type="button" onclick="closeModal('addModal')"><i class="fas fa-xmark"></i></button>
       </div>
       <div class="modal-body">
         <form class="form-grid" onsubmit="saveLink(event)">
+          <div id="livePreview" class="live-preview">
+            <div class="live-preview-top"><div id="liveLogo" class="live-logo"><i class="fas fa-link"></i></div></div>
+            <div class="live-preview-copy">
+              <h3 id="liveTitle">Paste or type a link</h3>
+              <p id="liveUrl">Example: aryanta.in or instagram.com/official.aryanta</p>
+              <div class="live-preview-row">
+                <span id="liveDomain" class="domain-pill"><i class="fas fa-globe"></i> Auto preview</span>
+              </div>
+            </div>
+          </div>
+
           <div class="form-field">
             <label>Title</label>
-            <input id="linkTitleInput" type="text" placeholder="Instagram, YouTube, Support..." required />
+            <input id="linkTitleInput" type="text" placeholder="Instagram, YouTube, Aryanta Website..." required />
           </div>
           <div class="form-field">
             <label>Link URL</label>
-            <input id="linkUrlInput" type="url" placeholder="https://example.com" required />
+            <input id="linkUrlInput" type="text" placeholder="aryanta.in or https://example.com" autocomplete="off" required />
           </div>
           <div class="form-field">
             <label>Logo URL / Image Link</label>
-            <input id="linkLogoInput" type="text" placeholder="https://... or blank for auto icon" />
+            <input id="linkLogoInput" type="text" placeholder="Optional. Leave blank for auto website logo" autocomplete="off" />
           </div>
           <div class="form-field">
             <label>Description</label>
@@ -269,8 +1018,31 @@
     </div>
   </div>
 
+  <div id="confirmModal" class="modal" onclick="closeModalOnBackdrop(event, 'confirmModal')">
+    <div class="modal-card">
+      <div class="modal-head">
+        <strong>Delete Link</strong>
+        <button class="icon-btn danger" type="button" onclick="closeModal('confirmModal')"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="preview-card">
+          <div class="preview-logo"><i class="fas fa-trash-can"></i></div>
+          <div class="preview-title">
+            <h3 id="deleteTitle">Delete this link?</h3>
+            <p class="confirm-copy">This removes it from the public Aryanta link list. Only the creator can delete their own link.</p>
+          </div>
+          <div style="display:flex; gap: 8px;">
+            <button class="wide-action" type="button" onclick="closeModal('confirmModal')"><i class="fas fa-ban"></i> Cancel</button>
+            <button id="confirmDeleteBtn" class="wide-action danger" type="button"><i class="fas fa-trash"></i> Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const WORKER_URL = "https://rough-field-c679.official-aryanta.workers.dev";
+    const ARYANTA_LOGO = "https://aryanta.in/vurify/aryanta.jpeg";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBwOOlSdVEgGiUdrr4thPRvILNLcLnfqbc",
@@ -287,18 +1059,54 @@
     const db = firebase.database();
 
     const SETTINGS_KEY = "aryanta_admin_settings";
+    const PROFILE_KEY = "aryanta_admin_profile";
     const TOKEN_KEY = "aryanta_admin_worker_token";
     const SESSION_TOKEN_KEY = "aryanta_admin_worker_session";
+    const UID_KEY = "aryanta_admin_saved_uid";
     const LOGIN_PAGE = "index.html";
+    const LINK_NOTIFY_PATH = "link_notifications";
+    const ADMIN_NOTIFICATION_PATH = "admin_notifications";
+    const ADMIN_BROADCAST_PATH = "notifications/admins";
+    const ADMIN_APP_MESSAGE_PATH = "aryanta_admin_app/messages";
     const $ = id => document.getElementById(id);
 
     let allLinks = [];
     let activeFilter = "all";
     let currentToast = null;
     let loading = false;
+    let editingLink = null;
+    let appSettings = {};
+    let currentUser = resolveCurrentUser();
+
+    function safeJson(value, fallback = {}) {
+      try { return JSON.parse(value || "null") || fallback; } catch { return fallback; }
+    }
 
     function getToken() {
       return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(SESSION_TOKEN_KEY) || "";
+    }
+
+    function getStoredUid() {
+      return localStorage.getItem(UID_KEY) || sessionStorage.getItem(UID_KEY) || "";
+    }
+
+    function resolveCurrentUser() {
+      const sources = [
+        safeJson(sessionStorage.getItem(PROFILE_KEY), {}),
+        safeJson(localStorage.getItem(PROFILE_KEY), {}),
+        safeJson(sessionStorage.getItem("aryanta_admin_user"), {}),
+        safeJson(localStorage.getItem("aryanta_admin_user"), {}),
+        safeJson(sessionStorage.getItem("aryanta_current_admin"), {}),
+        safeJson(localStorage.getItem("aryanta_current_admin"), {})
+      ];
+      const merged = Object.assign({}, ...sources);
+      const uid = String(merged.uid || merged.id || merged.adminUid || getStoredUid() || getToken() || "").trim();
+      return {
+        uid,
+        name: merged.name || merged.fullName || merged.displayName || merged.userName || merged.email || "Admin",
+        email: merged.email || merged.mail || "",
+        image: merged.profileImage || merged.photoURL || merged.avatar || merged.image || localStorage.getItem("aryanta_admin_profile_image") || ARYANTA_LOGO
+      };
     }
 
     function authHeaders() {
@@ -307,27 +1115,55 @@
     }
 
     function syncAdminSettings() {
-      if (!getToken()) {
-        window.location.replace(LOGIN_PAGE);
-        return false;
-      }
-
-      try {
-        const savedSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {};
-        const theme = savedSettings.theme || "light";
-        const useDark = theme === "dark" || (theme === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
-        document.documentElement.setAttribute("data-theme", useDark ? "dark" : "light");
-      } catch(e) {}
-
+      currentUser = resolveCurrentUser();
+      appSettings = safeJson(localStorage.getItem(SETTINGS_KEY), {});
+      const theme = appSettings.theme || "light";
+      const useDark = theme === "dark" || (theme === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+      document.documentElement.setAttribute("data-theme", useDark ? "dark" : "light");
+      const showBanner = appSettings.banner !== false;
+      $("heroBlock")?.style.setProperty("display", showBanner ? "grid" : "none");
+      $("brandBlock")?.style.setProperty("visibility", showBanner ? "visible" : "hidden");
+      maybeRequestNotificationPermission();
       return true;
+    }
+
+    function maybeRequestNotificationPermission() {
+      if (!appSettings.notify || !("Notification" in window)) return;
+      if (Notification.permission === "default") Notification.requestPermission().catch(() => {});
+    }
+
+    function requireLoginForWrite() {
+      currentUser = resolveCurrentUser();
+      if (currentUser.uid) return true;
+      showToast("Login first to add, edit, or delete links");
+      setTimeout(() => { window.location.href = LOGIN_PAGE; }, 700);
+      return false;
     }
 
     function goPage(url) {
       window.location.href = url;
     }
 
+    function goBack() {
+      if (document.querySelector(".modal.show")) {
+        closeModal("previewModal");
+        closeModal("addModal");
+        closeModal("confirmModal");
+        return;
+      }
+      window.location.href = "admin.html";
+    }
+
     function escapeHtml(val) {
-      return String(val ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      return String(val ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#039;"}[ch]));
+    }
+
+    function escapeAttr(val) {
+      return escapeHtml(val).replace(/"/g, "&quot;");
+    }
+
+    function escapeJs(val) {
+      return String(val || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, " ").replace(/\r/g, " ");
     }
 
     function setText(id, value) {
@@ -335,14 +1171,32 @@
       if (el) el.textContent = value || "";
     }
 
-    function showToast(message) {
+    function showToast(message, options = {}) {
+      if (!options.force && appSettings.notify === false && options.soft) return;
       if (currentToast) currentToast.remove();
       const toast = document.createElement("div");
       toast.className = "toast show";
       toast.innerHTML = `<i class="fas fa-bell"></i><span>${escapeHtml(message)}</span>`;
       $("toastHolder").appendChild(toast);
       currentToast = toast;
-      setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 220); }, 2600);
+      setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 220); }, Number(options.duration || 2600));
+    }
+
+    function playNotifySound() {
+      if (appSettings.audio === false) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.frequency.value = 720;
+        gain.gain.value = 0.035;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        setTimeout(() => { try { osc.stop(); ctx.close(); } catch {} }, 120);
+      } catch {}
     }
 
     function setBusy(state) {
@@ -354,24 +1208,49 @@
     function normalizeUrl(url) {
       url = String(url || "").trim();
       if (!url) return "";
+      url = url.replace(/\s+/g, "");
       if (/^(https?:|mailto:|tel:|whatsapp:|sms:)/i.test(url)) return url;
+      if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(url)) return "mailto:" + url;
+      if (/^\+?[0-9]{7,15}$/.test(url)) return "tel:" + url;
       return "https://" + url.replace(/^\/+/, "");
     }
 
     function linkUrl(item) {
-      return normalizeUrl(item.url || item.link || item.href || item.website || item.target || "");
+      return normalizeUrl(item?.url || item?.link || item?.href || item?.website || item?.target || "");
     }
 
     function linkTitle(item) {
-      return item.title || item.name || item.label || item.platform || "Untitled Link";
+      return item?.title || item?.name || item?.label || item?.platform || titleFromUrl(linkUrl(item)) || "Untitled Link";
     }
 
     function linkLogo(item) {
-      return item.logo || item.logoUrl || item.image || item.imageUrl || item.iconUrl || "";
+      const manual = item?.logo || item?.logoUrl || item?.image || item?.imageUrl || item?.iconUrl || "";
+      if (manual) return normalizeLogoUrl(manual);
+      return faviconUrl(linkUrl(item));
+    }
+
+    function normalizeLogoUrl(value) {
+      const raw = String(value || "").trim();
+      if (!raw) return "";
+      if (/^(https?:|data:image|blob:)/i.test(raw)) return raw;
+      return normalizeUrl(raw);
     }
 
     function linkDesc(item) {
-      return item.description || item.desc || item.note || "";
+      return item?.description || item?.desc || item?.note || "";
+    }
+
+    function linkOwnerUid(item) {
+      return String(item?.ownerUid || item?.createdByUid || item?.addedByUid || item?.uid || item?.adminUid || "").trim();
+    }
+
+    function linkOwnerName(item) {
+      return item?.ownerName || item?.createdByName || item?.addedByName || item?.adminName || "Unknown Admin";
+    }
+
+    function canEditLink(item) {
+      const owner = linkOwnerUid(item);
+      return Boolean(currentUser.uid && owner && owner === currentUser.uid);
     }
 
     function isVisible(item) {
@@ -384,7 +1263,6 @@
 
     function platformOf(item) {
       const text = (linkTitle(item) + " " + linkUrl(item)).toLowerCase();
-
       if (text.includes("instagram")) return "instagram";
       if (text.includes("youtube") || text.includes("youtu.be")) return "youtube";
       if (text.includes("facebook") || text.includes("fb.com")) return "facebook";
@@ -395,7 +1273,7 @@
       if (text.includes("github")) return "github";
       if (text.includes("snapchat")) return "snapchat";
       if (text.includes("pinterest")) return "pinterest";
-      if (text.includes("mail") || text.includes("mailto:")) return "email";
+      if (text.includes("mailto:") || text.includes("mail")) return "email";
       if (text.includes("tel:") || text.includes("phone") || text.includes("call")) return "phone";
       return "web";
     }
@@ -428,6 +1306,29 @@
       return "WEB LINK";
     }
 
+    function domainOf(url) {
+      try {
+        const u = new URL(normalizeUrl(url));
+        return u.hostname.replace(/^www\./, "");
+      } catch {
+        if (String(url).startsWith("mailto:")) return "Email";
+        if (String(url).startsWith("tel:")) return "Phone";
+        return "Website";
+      }
+    }
+
+    function faviconUrl(url) {
+      const normalized = normalizeUrl(url);
+      if (!normalized || normalized.startsWith("mailto:") || normalized.startsWith("tel:")) return "";
+      return `https://www.google.com/s2/favicons?sz=128&domain_url=${encodeURIComponent(normalized)}`;
+    }
+
+    function titleFromUrl(url) {
+      const domain = domainOf(url);
+      if (!domain || domain === "Website") return "";
+      return domain.split(".")[0].replace(/[-_]+/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    }
+
     function formatDateTime(value) {
       if (!value) return "Added recently";
       const d = new Date(value);
@@ -435,19 +1336,22 @@
       return d.toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
     }
 
+    function dateValue(value) {
+      if (!value) return 0;
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+    }
+
     async function loadLinks() {
       if (loading) return;
+      syncAdminSettings();
       setBusy(true);
-      setText("dbStatus", "Fetching securely...");
+      setText("dbStatus", "Fetching links...");
 
       try {
         const fromDb = await loadLinksFromFirebase();
         let finalLinks = fromDb;
-
-        if (!finalLinks.length) {
-          const fromWorker = await loadLinksFromWorker();
-          finalLinks = fromWorker;
-        }
+        if (!finalLinks.length && getToken()) finalLinks = await loadLinksFromWorker();
 
         allLinks = finalLinks
           .filter(isVisible)
@@ -461,7 +1365,7 @@
         allLinks = [];
         setText("dbStatus", "DB Blocked");
         renderLinks();
-        showToast("Unable to load links");
+        showToast("Unable to load links. Check Firebase rules.", { force: true });
       } finally {
         setBusy(false);
       }
@@ -476,13 +1380,9 @@
           const snap = await db.ref(path).once("value");
           const data = snap.val() || {};
           if (Array.isArray(data)) {
-            data.forEach((item, index) => {
-              if (item) merged.push({ id: String(index), sourcePath: path, ...item });
-            });
+            data.forEach((item, index) => { if (item) merged.push({ id: String(index), sourcePath: path, ...item }); });
           } else {
-            Object.keys(data).forEach(key => {
-              if (data[key]) merged.push({ id: key, sourcePath: path, ...data[key] });
-            });
+            Object.keys(data).forEach(key => { if (data[key]) merged.push({ id: key, sourcePath: path, ...data[key] }); });
           }
         } catch (e) {}
       }
@@ -491,17 +1391,11 @@
     }
 
     async function loadLinksFromWorker() {
-      const token = getToken();
-      if (!token) return [];
-
       try {
-        const res = await fetch(`${WORKER_URL}/admin/links?limit=500`, {
-          headers: authHeaders()
-        });
-
+        const res = await fetch(`${WORKER_URL}/admin/links?limit=500`, { headers: authHeaders() });
         const data = await res.json().catch(() => ({}));
         const rows = data.data || data.items || data.rows || data.links || [];
-        return Array.isArray(rows) ? rows : [];
+        return Array.isArray(rows) ? rows.map(item => ({ sourcePath: "links", ...item })) : [];
       } catch (e) {
         return [];
       }
@@ -510,33 +1404,32 @@
     function uniqueLinks(rows) {
       const seen = new Set();
       const out = [];
-
       rows.forEach(item => {
-        const key = (linkUrl(item) + "|" + linkTitle(item)).toLowerCase();
+        const key = ((item.id || "") + "|" + linkUrl(item) + "|" + linkTitle(item)).toLowerCase();
         if (!key.trim() || seen.has(key)) return;
         seen.add(key);
         out.push(item);
       });
-
       return out;
     }
 
     function setFilter(filter) {
       activeFilter = filter;
-      $("tabAll").classList.toggle("active", filter === "all");
-      $("tabSocial").classList.toggle("active", filter === "social");
-      $("tabWeb").classList.toggle("active", filter === "web");
+      ["All", "Social", "Web", "Mine"].forEach(name => {
+        const btn = $("tab" + name);
+        if (btn) btn.classList.toggle("active", filter === name.toLowerCase());
+      });
       renderLinks();
     }
 
     function filteredLinks() {
       const q = ($("searchInput").value || "").trim().toLowerCase();
-
       return allLinks.filter(item => {
-        const hay = `${linkTitle(item)} ${linkUrl(item)} ${linkDesc(item)} ${typeLabel(item)}`.toLowerCase();
+        const hay = `${linkTitle(item)} ${linkUrl(item)} ${linkDesc(item)} ${typeLabel(item)} ${linkOwnerName(item)} ${linkOwnerUid(item)}`.toLowerCase();
         if (q && !hay.includes(q)) return false;
         if (activeFilter === "social" && !isSocial(item)) return false;
         if (activeFilter === "web" && isSocial(item)) return false;
+        if (activeFilter === "mine" && !canEditLink(item)) return false;
         return true;
       });
     }
@@ -544,7 +1437,6 @@
     function renderLinks() {
       const list = $("linkList");
       const items = filteredLinks();
-
       setText("listCount", `${items.length} ITEM${items.length === 1 ? "" : "S"}`);
 
       if (!items.length) {
@@ -553,7 +1445,7 @@
             <div>
               <i class="fas fa-link"></i>
               <strong>No links found</strong>
-              <span>Links added by admin will appear here.</span>
+              <span>${activeFilter === "mine" ? "Links added by you will appear here." : "Links added by admins will appear here."}</span>
             </div>
           </div>`;
         return;
@@ -565,24 +1457,30 @@
         const logo = linkLogo(item);
         const label = typeLabel(item);
         const date = formatDateTime(item.createdAt || item.updatedAt);
-
+        const mine = canEditLink(item);
+        const owner = linkOwnerName(item);
         const logoHtml = logo
-          ? `<img src="${escapeHtml(logo)}" alt="${escapeHtml(title)}" loading="lazy" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=&quot;${iconFor(item)}&quot;></i>';" />`
+          ? `<img src="${escapeAttr(logo)}" alt="${escapeAttr(title)}" loading="lazy" onerror="this.parentElement.innerHTML='<i class=&quot;${iconFor(item)}&quot;></i>';" />`
           : `<i class="${iconFor(item)}"></i>`;
 
         return `
           <article class="link-item">
-            <button class="link-logo" onclick="openLinkNow(${index})">${logoHtml}</button>
+            <button class="link-logo" type="button" onclick="previewLink(${index})" aria-label="View link preview">${logoHtml}</button>
             <div class="link-main">
               <div class="link-meta">
                 <strong>${escapeHtml(title)}</strong>
                 <span>${escapeHtml(label)} • ${escapeHtml(date)}</span>
                 <span>${escapeHtml(shortUrl(url))}</span>
+                <div class="owner-line">
+                  <span class="owner-pill"><i class="fas fa-user"></i> ${escapeHtml(mine ? "You" : owner)}</span>
+                  ${mine ? `<span class="owner-pill"><i class="fas fa-pen"></i> Owner edit</span>` : ""}
+                </div>
               </div>
               <div class="link-actions">
-                <button class="mini-action" onclick="previewLink(${index})"><i class="fas fa-eye"></i> View</button>
-                <button class="mini-action success" onclick="openLinkNow(${index})"><i class="fas fa-up-right-from-square"></i> Open</button>
-                <button class="mini-action" onclick="copyLink(${index})"><i class="fas fa-copy"></i></button>
+                <button class="mini-action" type="button" onclick="previewLink(${index})"><i class="fas fa-eye"></i><span>View</span></button>
+                <button class="mini-action success" type="button" onclick="openLinkNow(${index})"><i class="fas fa-up-right-from-square"></i><span>Open</span></button>
+                ${mine ? `<button class="mini-action owner-action" type="button" onclick="openEditModal(${index})" aria-label="Edit"><i class="fas fa-pen"></i></button>
+                <button class="mini-action danger owner-action" type="button" onclick="askDeleteLink(${index})" aria-label="Delete"><i class="fas fa-trash"></i></button>` : ""}
               </div>
             </div>
           </article>`;
@@ -596,22 +1494,21 @@
     function previewLink(index) {
       const item = getRenderedItem(index);
       if (!item) return;
-
       const title = linkTitle(item);
       const url = linkUrl(item);
       const logo = linkLogo(item);
       const desc = linkDesc(item);
+      const domain = domainOf(url);
 
       $("previewHead").textContent = title;
       $("previewTitle").textContent = title;
       $("previewUrl").textContent = url;
       $("previewDate").textContent = formatDateTime(item.createdAt || item.updatedAt);
-
-      if (logo) {
-        $("previewLogo").innerHTML = `<img src="${escapeHtml(logo)}" alt="${escapeHtml(title)}" onerror="this.parentElement.innerHTML='<i class=&quot;${iconFor(item)}&quot;></i>';" />`;
-      } else {
-        $("previewLogo").innerHTML = `<i class="${iconFor(item)}"></i>`;
-      }
+      $("previewDomain").innerHTML = `<i class="${iconFor(item)}"></i> ${escapeHtml(domain)}`;
+      $("previewOwner").innerHTML = `<i class="fas fa-user"></i> ${escapeHtml(canEditLink(item) ? "You" : linkOwnerName(item))}`;
+      $("previewLogo").innerHTML = logo
+        ? `<img src="${escapeAttr(logo)}" alt="${escapeAttr(title)}" onerror="this.parentElement.innerHTML='<i class=&quot;${iconFor(item)}&quot;></i>';" />`
+        : `<i class="${iconFor(item)}"></i>`;
 
       if (desc) {
         $("previewDesc").style.display = "block";
@@ -634,20 +1531,14 @@
 
     function openExternal(url) {
       url = normalizeUrl(url);
-      if (!url) return showToast("No link found");
+      if (!url) return showToast("No link found", { force: true });
       window.open(url, "_blank", "noopener,noreferrer");
-    }
-
-    function copyLink(index) {
-      const item = getRenderedItem(index);
-      if (!item) return;
-      copyText(linkUrl(item));
     }
 
     async function copyText(text) {
       try {
         await navigator.clipboard.writeText(text);
-        showToast("Link copied");
+        showToast("Link copied", { force: true });
       } catch (e) {
         const input = document.createElement("input");
         input.value = text;
@@ -655,31 +1546,93 @@
         input.select();
         document.execCommand("copy");
         input.remove();
-        showToast("Link copied");
+        showToast("Link copied", { force: true });
       }
     }
 
     function openAddModal() {
+      if (!requireLoginForWrite()) return;
+      editingLink = null;
+      $("formHead").textContent = "Add New Link";
       $("linkTitleInput").value = "";
       $("linkUrlInput").value = "";
       $("linkLogoInput").value = "";
       $("linkDescInput").value = "";
+      $("saveBtn").innerHTML = `<i class="fas fa-save"></i> Save Link`;
+      updateLivePreview();
       openModal("addModal");
+      setTimeout(() => $("linkUrlInput").focus(), 180);
+    }
+
+    function openEditModal(index) {
+      const item = getRenderedItem(index);
+      if (!item) return;
+      if (!canEditLink(item)) return showToast("You can edit only your own link", { force: true });
+      editingLink = item;
+      $("formHead").textContent = "Edit Link";
+      $("linkTitleInput").value = linkTitle(item);
+      $("linkUrlInput").value = linkUrl(item);
+      $("linkLogoInput").value = (item.logo || item.logoUrl || item.image || item.imageUrl || item.iconUrl || "");
+      $("linkDescInput").value = linkDesc(item);
+      $("saveBtn").innerHTML = `<i class="fas fa-save"></i> Update Link`;
+      updateLivePreview();
+      openModal("addModal");
+    }
+
+    function askDeleteLink(index) {
+      const item = getRenderedItem(index);
+      if (!item) return;
+      if (!canEditLink(item)) return showToast("You can delete only your own link", { force: true });
+      $("deleteTitle").textContent = `Delete ${linkTitle(item)}?`;
+      $("confirmDeleteBtn").onclick = () => deleteLink(item);
+      openModal("confirmModal");
+    }
+
+    async function deleteLink(item) {
+      if (!canEditLink(item)) return showToast("You can delete only your own link", { force: true });
+      const sourcePath = item.sourcePath || "links";
+      const id = item.id;
+      if (!id) return showToast("Missing link id", { force: true });
+      $("confirmDeleteBtn").disabled = true;
+      $("confirmDeleteBtn").innerHTML = `<span class="spinner"></span> Deleting...`;
+      try {
+        await db.ref(`${sourcePath}/${id}`).remove();
+        closeModal("confirmModal");
+        showToast("Link deleted", { force: true });
+        await loadLinks();
+      } catch (err) {
+        console.error(err);
+        showToast("Delete failed. Check Firebase rules.", { force: true });
+      } finally {
+        $("confirmDeleteBtn").disabled = false;
+        $("confirmDeleteBtn").innerHTML = `<i class="fas fa-trash"></i> Delete`;
+      }
     }
 
     async function saveLink(event) {
       event.preventDefault();
-
-      const title = $("linkTitleInput").value.trim();
+      if (!requireLoginForWrite()) return;
+      const title = $("linkTitleInput").value.trim() || titleFromUrl($("linkUrlInput").value) || "Aryanta Link";
       const url = normalizeUrl($("linkUrlInput").value);
-      const logo = $("linkLogoInput").value.trim();
+      const manualLogo = $("linkLogoInput").value.trim();
+      const logo = manualLogo ? normalizeLogoUrl(manualLogo) : faviconUrl(url);
       const description = $("linkDescInput").value.trim();
 
-      if (!title || !url) return showToast("Title and link required");
+      if (!title || !url) return showToast("Title and link required", { force: true });
+      if (!isSafeOpenUrl(url)) return showToast("Only http, https, mail, phone, WhatsApp, and SMS links are allowed", { force: true });
+
+      const now = new Date().toISOString();
+      const id = editingLink?.id || safeId(title + "-" + Date.now());
+      const sourcePath = editingLink?.sourcePath || "links";
+      const existingOwner = editingLink ? linkOwnerUid(editingLink) : currentUser.uid;
+
+      if (editingLink && existingOwner !== currentUser.uid) return showToast("You can update only your own link", { force: true });
 
       const payload = {
-        id: safeId(title + "-" + Date.now()),
+        ...(editingLink || {}),
+        id,
         title,
+        name: title,
         url,
         link: url,
         logo,
@@ -689,53 +1642,108 @@
         visible: true,
         type: isSocial({ title, url }) ? "social" : "web",
         platform: platformOf({ title, url }),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        ownerUid: currentUser.uid,
+        ownerName: currentUser.name || "Admin",
+        ownerEmail: currentUser.email || "",
+        ownerImage: currentUser.image || ARYANTA_LOGO,
+        createdAt: editingLink?.createdAt || now,
+        updatedAt: now
       };
+      delete payload.sourcePath;
 
       $("saveBtn").disabled = true;
       $("saveBtn").innerHTML = `<span class="spinner"></span> Saving...`;
 
       try {
-        let saved = false;
-
-        try {
-          const res = await fetch(`${WORKER_URL}/admin/links`, {
-            method: "POST",
-            headers: authHeaders(),
-            body: JSON.stringify(payload)
-          });
-          const data = await res.json().catch(() => ({}));
-          saved = res.ok && data.success !== false;
-        } catch (e) {}
-
-        if (!saved) {
-          await db.ref("links/" + payload.id).set(payload);
-          saved = true;
-        }
-
+        await db.ref(`${sourcePath}/${id}`).set(payload);
+        if (!editingLink) await sendLinkNotification(payload);
         closeModal("addModal");
-        showToast("Link added");
+        showToast(editingLink ? "Link updated" : "Link added", { force: true });
         await loadLinks();
       } catch (err) {
         console.error(err);
-        showToast("Link save failed");
+        showToast("Link save failed. Check Firebase rules.", { force: true });
       } finally {
         $("saveBtn").disabled = false;
-        $("saveBtn").innerHTML = `<i class="fas fa-save"></i> Save Link`;
+        $("saveBtn").innerHTML = editingLink ? `<i class="fas fa-save"></i> Update Link` : `<i class="fas fa-save"></i> Save Link`;
       }
     }
 
-    function openModal(id) {
-      $(id).classList.add("show");
+    function isSafeOpenUrl(url) {
+      return /^(https?:|mailto:|tel:|whatsapp:|sms:)/i.test(url);
     }
 
-    function closeModal(id) {
-      $(id).classList.remove("show");
+    async function sendLinkNotification(item) {
+      const title = "New link added";
+      const body = `${linkTitle(item)} is added to Aryanta Links. Open it to view.`;
+      const id = `LINK-${Date.now()}-${Math.floor(Math.random() * 9999)}`;
+      const payload = {
+        id,
+        title,
+        body,
+        message: body,
+        type: "link_added",
+        linkId: item.id,
+        linkTitle: linkTitle(item),
+        url: linkUrl(item),
+        logo: linkLogo(item) || ARYANTA_LOGO,
+        icon: linkLogo(item) || ARYANTA_LOGO,
+        target: "all_users",
+        ownerUid: item.ownerUid || currentUser.uid,
+        ownerName: item.ownerName || currentUser.name,
+        createdAt: Date.now(),
+        date: new Date().toISOString(),
+        readBy: {}
+      };
+
+      const updates = {};
+      updates[`${LINK_NOTIFY_PATH}/${id}`] = payload;
+      updates[`${ADMIN_NOTIFICATION_PATH}/${id}`] = payload;
+      updates[`${ADMIN_BROADCAST_PATH}/${id}`] = payload;
+      updates[`${ADMIN_APP_MESSAGE_PATH}/${id}`] = {
+        title,
+        body,
+        type: "link_added",
+        url: "https://aryanta.in/workplace/links.html",
+        icon: payload.icon,
+        logo: payload.logo,
+        createdAt: payload.createdAt
+      };
+
+      try { await db.ref().update(updates); } catch (err) { console.warn("Notification record failed", err); }
+
+      const endpoints = [`${WORKER_URL}/admin/push`, `${WORKER_URL}/push-admins`, `${WORKER_URL}/send-notification`];
+      endpoints.forEach(endpoint => {
+        fetch(endpoint, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({ ...payload, recipients: "all_users" }),
+          keepalive: true
+        }).catch(() => {});
+      });
+
+      if (appSettings.notify && "Notification" in window && Notification.permission === "granted" && document.visibilityState === "hidden") {
+        try { new Notification(title, { body, icon: payload.icon, badge: ARYANTA_LOGO, tag: "aryanta-link-added" }); } catch {}
+      }
+      playNotifySound();
     }
 
-    function closeModalOnBackdrop(e, id) {
-      if (e.target.id === id) closeModal(id);
+    function updateLivePreview() {
+      const rawUrl = $("linkUrlInput")?.value || "";
+      const normalized = normalizeUrl(rawUrl);
+      const manualTitle = $("linkTitleInput")?.value.trim() || "";
+      const title = manualTitle || titleFromUrl(normalized) || "Paste or type a link";
+      const domain = normalized ? domainOf(normalized) : "Auto preview";
+      const logo = normalizeLogoUrl($("linkLogoInput")?.value || "") || faviconUrl(normalized);
+      const item = { title, url: normalized, logo };
+
+      if (!manualTitle && normalized && $("linkTitleInput")) $("linkTitleInput").placeholder = title;
+      $("liveTitle").textContent = title;
+      $("liveUrl").textContent = normalized || "Example: aryanta.in or instagram.com/official.aryanta";
+      $("liveDomain").innerHTML = `<i class="${iconFor(item)}"></i> ${escapeHtml(domain)}`;
+      $("liveLogo").innerHTML = logo
+        ? `<img src="${escapeAttr(logo)}" alt="${escapeAttr(title)}" onerror="this.parentElement.innerHTML='<i class=&quot;${iconFor(item)}&quot;></i>';" />`
+        : `<i class="${iconFor(item)}"></i>`;
     }
 
     function shortUrl(url) {
@@ -747,12 +1755,6 @@
       }
     }
 
-    function dateValue(value) {
-      if (!value) return 0;
-      const d = new Date(value);
-      return Number.isNaN(d.getTime()) ? 0 : d.getTime();
-    }
-
     function safeId(value) {
       return String(value || "")
         .trim()
@@ -762,14 +1764,47 @@
         .slice(0, 80) || ("link-" + Date.now());
     }
 
+    function openModal(id) {
+      $(id)?.classList.add("show");
+      history.pushState({ modal: id }, "");
+    }
+
+    function closeModal(id) {
+      $(id)?.classList.remove("show");
+    }
+
+    function closeModalOnBackdrop(e, id) {
+      if (e.target.id === id) closeModal(id);
+    }
+
     window.addEventListener("keydown", e => {
-      if (e.key === "Escape") {
+      if (e.key === "Escape") goBack();
+    });
+
+    window.addEventListener("popstate", () => {
+      if (document.querySelector(".modal.show")) {
         closeModal("previewModal");
         closeModal("addModal");
+        closeModal("confirmModal");
       }
     });
 
-    if (syncAdminSettings()) loadLinks();
+    window.addEventListener("storage", event => {
+      if ([SETTINGS_KEY, PROFILE_KEY, "aryanta_admin_profile_image"].includes(event.key)) {
+        syncAdminSettings();
+        renderLinks();
+      }
+    });
+
+    ["linkUrlInput", "linkTitleInput", "linkLogoInput"].forEach(id => {
+      window.addEventListener("DOMContentLoaded", () => $(id)?.addEventListener("input", updateLivePreview));
+    });
+
+    window.addEventListener("DOMContentLoaded", () => {
+      syncAdminSettings();
+      updateLivePreview();
+      loadLinks();
+    });
   </script>
 </body>
 </html>
