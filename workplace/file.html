@@ -4,227 +4,225 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Aryanta Files</title>
-  
-  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-  
-  <!-- Firebase Compat SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-storage-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-
   <style>
-    :root {
-      --primary: #008080;
-      --primary-dark: #006b6b;
-      --primary-light: #00b8b8;
-      --bg: #f4fbfb;
-      --card: #ffffff;
-      --card-soft: rgba(255, 255, 255, 0.86);
-      --text: #101828;
-      --muted: #667085;
-      --border: #d9e7e7;
-      --danger: #ef4444;
-      --success: #16a34a;
-      --warning: #f59e0b;
-      --soft: rgba(0, 128, 128, 0.10);
-      --shadow: 0 18px 45px rgba(16, 24, 40, 0.12);
-      --shadow-soft: 0 8px 22px rgba(16, 24, 40, 0.08);
-      --top-safe: max(14px, env(safe-area-inset-top));
-      --bottom-safe: max(12px, env(safe-area-inset-bottom));
+    :root{
+      --primary:#008080;
+      --primary-dark:#006b6b;
+      --primary-light:#00b8b8;
+      --bg:#f4fbfb;
+      --card:#ffffff;
+      --card-soft:rgba(255,255,255,.86);
+      --text:#101828;
+      --muted:#667085;
+      --border:#d9e7e7;
+      --danger:#ef4444;
+      --success:#16a34a;
+      --warning:#f59e0b;
+      --soft:rgba(0,128,128,.10);
+      --shadow:0 18px 45px rgba(16,24,40,.12);
+      --shadow-soft:0 8px 22px rgba(16,24,40,.08);
+      --top-safe:max(14px, env(safe-area-inset-top));
+      --bottom-safe:max(12px, env(safe-area-inset-bottom));
     }
-
-    html[data-theme="dark"] {
-      --bg: #081314;
-      --card: #111d1f;
-      --card-soft: rgba(17, 29, 31, 0.88);
-      --text: #f8fafc;
-      --muted: #98a2b3;
-      --border: rgba(255, 255, 255, 0.12);
-      --soft: rgba(0, 184, 184, 0.14);
-      --shadow: 0 18px 45px rgba(0, 0, 0, 0.40);
+    html[data-theme="dark"]{
+      --bg:#081314;
+      --card:#111d1f;
+      --card-soft:rgba(17,29,31,.88);
+      --text:#f8fafc;
+      --muted:#98a2b3;
+      --border:rgba(255,255,255,.12);
+      --soft:rgba(0,184,184,.14);
+      --shadow:0 18px 45px rgba(0,0,0,.40);
+      --shadow-soft:0 8px 22px rgba(0,0,0,.26);
     }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    html, body { width: 100%; min-height: 100%; font-family: system-ui, -apple-system, sans-serif; color: var(--text); background: linear-gradient(160deg, #effafa 0%, #ffffff 45%, #e9f7f7 100%); overscroll-behavior: none; }
-    html[data-theme="dark"] body { background: linear-gradient(160deg, #071112 0%, #101c1e 48%, #091718 100%); }
-    button, input { font: inherit; outline: none; border: none; }
-    button { cursor: pointer; touch-action: manipulation; }
-    img { user-select: none; -webkit-user-drag: none; }
-
-    .fas, .fa-solid { display: inline-block !important; line-height: 1 !important; font-weight: 900 !important; }
-
-    .app { width: 100%; min-height: 100dvh; padding: var(--top-safe) 12px calc(90px + var(--bottom-safe)); overflow-x: hidden; position: relative; isolation: isolate; }
-    .app::before, .app::after { content: ""; position: fixed; border-radius: 999px; pointer-events: none; z-index: -1; }
-    .app::before { width: 180px; height: 180px; top: -62px; right: -72px; background: rgba(0, 128, 128, 0.14); }
-    .app::after { width: 170px; height: 170px; left: -70px; bottom: -60px; background: rgba(0, 184, 184, 0.12); }
-
-    .wrap { width: 100%; max-width: 430px; margin: 0 auto; display: grid; gap: 12px; }
-
-    /* TOPBAR */
-    .topbar { min-height: 56px; display: grid; grid-template-columns: 45px minmax(0, 1fr) auto; align-items: center; gap: 9px; }
-    .icon-btn { width: 45px; height: 45px; border-radius: 16px; background: var(--card); border: 1px solid var(--border); color: var(--primary); box-shadow: var(--shadow-soft); display: inline-flex; align-items: center; justify-content: center; font-size: 16px; transition: 0.15s; }
-    .icon-btn:active, .mini-action:active { transform: scale(0.96); }
-
-    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-    .brand-logo { width: 44px; height: 44px; border-radius: 16px; padding: 4px; background: #ffffff; border: 1px solid var(--border); box-shadow: var(--shadow-soft); }
-    .brand-logo img { width: 100%; height: 100%; border-radius: 12px; object-fit: cover; }
-    .brand h1 { font-size: 17px; font-weight: 950; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .brand p { margin-top: 2px; color: var(--muted); font-size: 10px; font-weight: 900; text-transform: uppercase; }
-
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; box-shadow: var(--shadow-soft); overflow: hidden; }
-
-    /* HERO */
-    .hero { padding: 14px; display: grid; grid-template-columns: 58px minmax(0, 1fr); align-items: center; gap: 12px; background: linear-gradient(145deg, var(--primary-dark), var(--primary), var(--primary-light)); color: #ffffff; position: relative; }
-    .hero::after { content: ""; position: absolute; right: -45px; top: -58px; width: 142px; height: 142px; border-radius: 999px; background: rgba(255, 255, 255, 0.13); pointer-events: none; }
-    .hero-mark { width: 58px; height: 58px; border-radius: 20px; background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.20); display: flex; align-items: center; justify-content: center; font-size: 24px; position: relative; z-index: 1; }
-    .hero-copy { min-width: 0; position: relative; z-index: 1; }
-    .hero-copy h2 { font-size: 20px; font-weight: 950; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .hero-copy p { margin-top: 5px; font-size: 12px; font-weight: 760; opacity: 0.92; }
-
-    .status-pill { width: fit-content; min-height: 27px; margin-top: 9px; padding: 0 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 7px; background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.18); font-size: 10.5px; font-weight: 950; }
-
-    /* PANEL */
-    .panel { padding: 13px; display: grid; gap: 11px; }
-    .panel-title { display: flex; align-items: center; justify-content: space-between; }
-    .panel-title h3 { font-size: 15px; font-weight: 950; display: inline-flex; align-items: center; gap: 8px; }
-    .panel-title h3 i { color: var(--primary); }
-    .panel-title span { padding: 4px 9px; border-radius: 999px; background: var(--soft); color: var(--primary); font-size: 9.5px; font-weight: 950; }
-
-    .search-box { min-height: 45px; border-radius: 17px; border: 1px solid var(--border); background: var(--card-soft); display: grid; grid-template-columns: 38px minmax(0, 1fr); align-items: center; padding: 0 10px; color: var(--muted); }
-    .search-box input { min-width: 0; border: 0; background: transparent; color: var(--text); font-size: 12px; font-weight: 760; }
-
-    /* TABS */
-    .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
-    .tab { min-height: 38px; border-radius: 14px; background: var(--card-soft); border: 1px solid var(--border); color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 800; transition: 0.2s ease;}
-    .tab.active { background: var(--primary); border-color: var(--primary); color: #ffffff; }
-
-    /* FILE LIST */
-    .file-list { display: grid; gap: 9px; min-height: 90px; }
-    .file-item { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 11px; padding: 10px; border-radius: 20px; border: 1px solid var(--border); background: var(--card-soft); overflow: hidden; }
-    .thumb { width: 62px; height: 62px; border-radius: 18px; background: var(--soft); border: 1px solid var(--border); color: var(--primary); display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 20px; cursor: pointer; flex: 0 0 auto; }
-    .thumb img { width: 100%; height: 100%; object-fit: cover; }
-    
-    .file-main { min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 8px;}
-    .file-meta strong { display: block; font-size: 13px; font-weight: 950; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .file-meta span { display: block; margin-top: 4px; color: var(--muted); font-size: 10.5px; font-weight: 760; }
-    
-    .file-actions { display: flex; gap: 6px; }
-    .mini-action { flex: 1; min-height: 32px; border-radius: 12px; background: var(--soft); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; gap: 5px; }
-    .mini-action.success { background: rgba(22, 163, 74, 0.10); color: var(--success); }
-
-    .empty { min-height: 108px; border-radius: 20px; border: 1px dashed var(--border); background: var(--card-soft); display: grid; place-items: center; text-align: center; padding: 16px; }
-    .empty i { color: var(--primary); font-size: 22px; margin-bottom: 8px; }
-    .empty strong { display: block; font-size: 13px; font-weight: 950; }
-    .empty span { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; }
-
-    /* BOTTOM NAV */
-    .bottom-nav { position: fixed; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 20; height: 66px; border-radius: 24px; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 7px; }
-    .nav-btn { border-radius: 18px; background: transparent; color: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: 0.2s ease; }
-    .nav-btn .mini-mark { width: 26px; height: 26px; border-radius: 10px; font-size: 16px; display: flex; align-items: center; justify-content: center; }
-    .nav-btn .btn-text { font-size: 10px; font-weight: 800; text-transform: uppercase; }
-    .nav-btn.active { background: var(--soft); color: var(--primary); }
-
-    /* TOAST */
-    .toast-holder { position: fixed; left: 12px; right: 12px; top: calc(10px + env(safe-area-inset-top)); z-index: 9999; pointer-events: none; display: flex; justify-content: center; }
-    .toast { width: min(430px, calc(100vw - 24px)); min-height: 45px; border-radius: 16px; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); padding: 10px 12px; display: flex; align-items: center; gap: 8px; color: var(--text); font-size: 12.5px; font-weight: 850; opacity: 0; transform: translateY(-14px); transition: 0.2s ease; pointer-events: auto; }
-    .toast.show { opacity: 1; transform: translateY(0); }
-
-    /* MODAL */
-    .modal { position: fixed; inset: 0; z-index: 99999; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(0, 0, 0, 0.58); backdrop-filter: blur(5px); }
-    .modal.show { display: flex; }
-    .modal-card { width: min(430px, 100%); max-height: 86dvh; border-radius: 26px; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; }
-    .modal-head { min-height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid var(--border); flex: 0 0 auto;}
-    .modal-head strong { font-size: 14px; font-weight: 950; }
-    .modal-body { padding: 13px; overflow: auto; flex: 1 1 auto; display: flex; align-items: center; justify-content: center; background: var(--bg); }
-    
-    .image-preview { width: 100%; max-height: 62dvh; border-radius: 20px; object-fit: contain; background: transparent; }
-    .icon-btn.danger { color: var(--danger); background: rgba(239, 68, 68, 0.08); }
-    
-    .wide-action { min-height: 42px; border-radius: 14px; border: 1px solid var(--border); background: var(--soft); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; gap: 8px; flex: 1; }
-    .wide-action.success { background: var(--success); color: white; border-color: var(--success);}
-
-    .spinner { width: 16px; height: 16px; border-radius: 999px; border: 2px solid rgba(0, 128, 128, 0.18); border-top-color: var(--primary); animation: spin 0.8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-
-    .preview-info { width: 100%; padding: 12px; background: var(--card); border-bottom: 1px solid var(--border); display: grid; gap: 6px; flex: 0 0 auto; }
-    .preview-info strong { font-size: 15px; font-weight: 950; color: var(--text); line-height: 1.35; }
-    .preview-info span { color: var(--muted); font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .gallery-wrap { width: 100%; padding: 12px; display: grid; gap: 12px; align-content: start; }
-    .gallery-card { width: 100%; border: 1px solid var(--border); border-radius: 20px; background: var(--card); overflow: hidden; box-shadow: var(--shadow-soft); }
-    .gallery-card img { width: 100%; max-height: 58dvh; object-fit: contain; display: block; background: var(--bg); }
-    .gallery-actions { padding: 9px; display: flex; gap: 8px; border-top: 1px solid var(--border); }
-    .doc-reader { width: 100%; height: 100%; overflow: auto; padding: 12px; background: var(--bg); color: var(--text); }
-    .doc-reader .doc-page { width: 100%; margin: 0 0 12px; border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: #ffffff; box-shadow: var(--shadow-soft); }
-    html[data-theme="dark"] .doc-reader .doc-page { background: #0f1b1d; }
-    .doc-reader canvas { width: 100%; height: auto; display: block; background: #ffffff; }
-    .doc-text { margin-top: 8px; padding: 11px; border-radius: 16px; border: 1px solid var(--border); background: var(--card); white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.55; font-weight: 650; }
-    .doc-html { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 14px; box-shadow: var(--shadow-soft); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
-    .doc-html img { max-width: 100%; height: auto; border-radius: 12px; }
-    .sheet-title { margin: 12px 0 8px; font-size: 14px; font-weight: 950; color: var(--primary); }
-    .sheet-table-wrap { width: 100%; overflow: auto; border-radius: 16px; border: 1px solid var(--border); background: var(--card); margin-bottom: 12px; }
-    .sheet-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-    .sheet-table th, .sheet-table td { padding: 8px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); text-align: left; vertical-align: top; white-space: nowrap; }
-    .sheet-table th { background: var(--soft); color: var(--primary); font-weight: 950; }
-    .reader-loader { width: 100%; min-height: 180px; display: grid; place-items: center; text-align: center; color: var(--muted); font-size: 12px; font-weight: 850; }
-
-
-    @media (min-width: 520px) { .bottom-nav { width: 430px; left: 50%; right: auto; transform: translateX(-50%); } }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{width:100%;height:100%;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:linear-gradient(160deg,#effafa 0%,#fff 45%,#e9f7f7 100%);overflow:hidden;overscroll-behavior:none}
+    html[data-theme="dark"] body{background:linear-gradient(160deg,#071112 0%,#101c1e 48%,#091718 100%)}
+    button,input,textarea,select{font:inherit;outline:none}
+    button{border:0;cursor:pointer;touch-action:manipulation;color:inherit;background:transparent}
+    button:active{transform:scale(.97)}
+    input,textarea,select{border:0;background:transparent;color:var(--text)}
+    img{user-select:none;-webkit-user-drag:none}
+    ::-webkit-scrollbar{width:0;height:0}
+    *{scrollbar-width:none;-ms-overflow-style:none}
+    .app{width:100%;height:100dvh;overflow:hidden;position:relative;isolation:isolate;padding:var(--top-safe) 12px calc(84px + var(--bottom-safe))}
+    .app::before,.app::after{content:"";position:fixed;border-radius:999px;pointer-events:none;z-index:-1}
+    .app::before{width:180px;height:180px;top:-62px;right:-72px;background:rgba(0,128,128,.14)}
+    .app::after{width:170px;height:170px;left:-70px;bottom:-60px;background:rgba(0,184,184,.12)}
+    .wrap{height:100%;width:100%;max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:11px;min-height:0}
+    .topbar{min-height:56px;display:grid;grid-template-columns:45px minmax(0,1fr) auto;align-items:center;gap:9px;flex:0 0 auto}
+    .icon-btn{width:45px;height:45px;border-radius:16px;background:var(--card);border:1px solid var(--border);color:var(--primary);box-shadow:var(--shadow-soft);display:inline-flex;align-items:center;justify-content:center;font-size:16px;flex:0 0 auto}
+    .icon-btn.danger{color:var(--danger);background:rgba(239,68,68,.08)}
+    .icon-btn.success{color:#fff;background:var(--primary);border-color:var(--primary)}
+    .brand{display:flex;align-items:center;gap:10px;min-width:0}
+    .brand-logo{width:44px;height:44px;border-radius:16px;padding:4px;background:#fff;border:1px solid var(--border);box-shadow:var(--shadow-soft);flex:0 0 auto}
+    .brand-logo img{width:100%;height:100%;border-radius:12px;object-fit:cover;display:block}
+    .brand h1{font-size:17px;font-weight:950;color:var(--primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.05}
+    .brand p{margin-top:2px;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+    .top-actions{display:flex;align-items:center;gap:8px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:24px;box-shadow:var(--shadow-soft);overflow:hidden}
+    .hero{padding:14px;display:grid;grid-template-columns:58px minmax(0,1fr);align-items:center;gap:12px;background:linear-gradient(145deg,var(--primary-dark),var(--primary),var(--primary-light));color:#fff;position:relative;flex:0 0 auto}
+    .hero::after{content:"";position:absolute;right:-45px;top:-58px;width:142px;height:142px;border-radius:999px;background:rgba(255,255,255,.13)}
+    .hero-mark{width:58px;height:58px;border-radius:20px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.22);display:grid;place-items:center;font-size:24px;position:relative;z-index:1}
+    .hero-copy{min-width:0;position:relative;z-index:1}
+    .hero-copy h2{font-size:20px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.05}
+    .hero-copy p{margin-top:5px;font-size:12px;font-weight:760;opacity:.92;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .status-pill{width:fit-content;max-width:100%;min-height:27px;margin-top:9px;padding:0 10px;border-radius:999px;display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.18);font-size:10.5px;font-weight:950;white-space:nowrap}
+    .hero.hidden-by-setting{display:none}
+    .panel{padding:12px;display:flex;flex-direction:column;gap:10px;min-height:0;flex:1 1 auto}
+    .panel-title{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:0 0 auto}
+    .panel-title h3{font-size:15px;font-weight:950;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+    .panel-title h3 i{color:var(--primary)}
+    .panel-title span{padding:5px 9px;border-radius:999px;background:var(--soft);color:var(--primary);font-size:9.5px;font-weight:950;white-space:nowrap}
+    .search-row{display:grid;grid-template-columns:minmax(0,1fr) 45px;gap:8px;flex:0 0 auto}
+    .search-box{min-height:45px;border-radius:17px;border:1px solid var(--border);background:var(--card-soft);display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;padding:0 10px;color:var(--muted)}
+    .search-box input{min-width:0;color:var(--text);font-size:12px;font-weight:760}
+    .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;flex:0 0 auto}
+    .tab{min-height:38px;border-radius:14px;background:var(--card-soft);border:1px solid var(--border);color:var(--muted);display:flex;align-items:center;justify-content:center;gap:5px;font-size:11px;font-weight:900;transition:.2s ease;white-space:nowrap;overflow:hidden}
+    .tab.active{background:var(--primary);border-color:var(--primary);color:#fff}
+    .file-list{display:grid;gap:9px;min-height:0;overflow:auto;padding:1px 0 3px;align-content:start}
+    .file-item{display:grid;grid-template-columns:58px minmax(0,1fr);gap:10px;padding:10px;border-radius:20px;border:1px solid var(--border);background:var(--card-soft);overflow:hidden}
+    .thumb{width:58px;height:58px;border-radius:18px;background:linear-gradient(145deg,var(--soft),rgba(0,184,184,.05));border:1px solid var(--border);color:var(--primary);display:grid;place-items:center;overflow:hidden;font-size:22px;position:relative;flex:0 0 auto}
+    .thumb small{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font-size:7px;font-weight:950;color:var(--primary);background:var(--card);border:1px solid var(--border);padding:1px 5px;border-radius:999px;max-width:50px;overflow:hidden;text-overflow:ellipsis}
+    .file-main{min-width:0;display:grid;gap:8px}
+    .file-meta strong{display:block;font-size:13.5px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+    .file-meta span{display:block;margin-top:4px;color:var(--muted);font-size:10.5px;font-weight:780;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .owner-line{margin-top:5px;display:flex;align-items:center;gap:6px;color:var(--muted);font-size:10.5px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .owner-line img{width:18px;height:18px;border-radius:50%;object-fit:cover;border:1px solid var(--border);background:var(--card);flex:0 0 auto}
+    .file-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+    .mini-action{min-height:32px;border-radius:12px;background:var(--soft);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;gap:5px;overflow:hidden;white-space:nowrap}
+    .mini-action.success{background:rgba(22,163,74,.10);color:var(--success)}
+    .mini-action.danger{background:rgba(239,68,68,.10);color:var(--danger)}
+    .mini-action.locked{background:rgba(102,112,133,.10);color:var(--muted)}
+    .empty{min-height:160px;border-radius:20px;border:1px dashed var(--border);background:var(--card-soft);display:grid;place-items:center;text-align:center;padding:18px}
+    .empty i{color:var(--primary);font-size:26px;margin-bottom:10px}
+    .empty strong{display:block;font-size:14px;font-weight:950}
+    .empty span{display:block;margin-top:6px;color:var(--muted);font-size:11.5px;font-weight:760}
+    .bottom-nav{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:20;height:66px;border-radius:24px;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow);display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:7px}
+    .nav-btn{border-radius:18px;background:transparent;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+    .nav-btn .mini-mark{width:26px;height:26px;border-radius:10px;font-size:15px;display:grid;place-items:center}
+    .nav-btn .btn-text{font-size:10px;font-weight:900;text-transform:uppercase}
+    .nav-btn.active{background:var(--soft);color:var(--primary)}
+    .toast-holder{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top));z-index:999999;pointer-events:none;display:flex;justify-content:center}
+    .toast{width:min(430px,calc(100vw - 24px));min-height:45px;border-radius:16px;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow);padding:10px 12px;display:flex;align-items:center;gap:8px;color:var(--text);font-size:12.5px;font-weight:850;opacity:0;transform:translateY(-14px);transition:.2s ease;pointer-events:auto}
+    .toast.show{opacity:1;transform:translateY(0)}
+    .toast i{color:var(--primary)}
+    .modal{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(0,0,0,.58);backdrop-filter:blur(5px)}
+    .modal.show{display:flex}
+    .modal-card{width:min(460px,100%);max-height:88dvh;border-radius:26px;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+    .modal-card.tall{height:88dvh}
+    .modal-head{min-height:58px;display:flex;align-items:center;justify-content:space-between;gap:9px;padding:10px 12px;border-bottom:1px solid var(--border);flex:0 0 auto}
+    .modal-head strong{font-size:14px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .head-actions{display:flex;gap:8px;align-items:center}
+    .preview-info{width:100%;padding:12px;background:var(--card);border-bottom:1px solid var(--border);display:grid;gap:6px;flex:0 0 auto}
+    .preview-info strong{font-size:15px;font-weight:950;color:var(--text);line-height:1.35;word-break:break-word}
+    .preview-info span{color:var(--muted);font-size:11px;font-weight:800;display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .modal-body{padding:13px;overflow:auto;flex:1 1 auto;background:var(--bg)}
+    .modal-foot{padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;flex:0 0 auto;background:var(--card)}
+    .wide-action{min-height:42px;border-radius:14px;border:1px solid var(--border);background:var(--soft);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;gap:8px;flex:1;white-space:nowrap}
+    .wide-action.success{background:var(--success);color:#fff;border-color:var(--success)}
+    .wide-action.danger{background:rgba(239,68,68,.1);color:var(--danger)}
+    .wide-action[disabled],.icon-btn[disabled],.mini-action[disabled]{opacity:.45;filter:grayscale(.4);pointer-events:none}
+    .gallery-wrap{width:100%;display:grid;gap:12px;align-content:start}
+    .gallery-card{width:100%;border:1px solid var(--border);border-radius:20px;background:var(--card);overflow:hidden;box-shadow:var(--shadow-soft)}
+    .gallery-card img{width:100%;max-height:62dvh;object-fit:contain;display:block;background:var(--bg)}
+    .gallery-caption{padding:9px;border-top:1px solid var(--border);font-size:11px;font-weight:850;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+    .doc-reader{width:100%;height:100%;overflow:auto;padding:12px;background:var(--bg);color:var(--text)}
+    .doc-reader .doc-page{width:100%;margin:0 0 12px;border:1px solid var(--border);border-radius:18px;overflow:hidden;background:#fff;box-shadow:var(--shadow-soft)}
+    html[data-theme="dark"] .doc-reader .doc-page{background:#0f1b1d}
+    .doc-reader canvas{width:100%;height:auto;display:block;background:#fff}
+    .doc-html{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px;box-shadow:var(--shadow-soft);font-size:13px;line-height:1.65;overflow-wrap:anywhere;white-space:normal}
+    .doc-html img{max-width:100%;height:auto;border-radius:12px;display:block;margin:10px 0}
+    .doc-html table{width:100%;border-collapse:collapse;margin:10px 0;overflow:auto;display:block}
+    .doc-html td,.doc-html th{border:1px solid var(--border);padding:8px;vertical-align:top}
+    .doc-text{padding:12px;border-radius:16px;border:1px solid var(--border);background:var(--card);white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.6;font-weight:650;tab-size:4}
+    .sheet-title{margin:12px 0 8px;font-size:14px;font-weight:950;color:var(--primary)}
+    .sheet-table-wrap{width:100%;overflow:auto;border-radius:16px;border:1px solid var(--border);background:var(--card);margin-bottom:12px}
+    .sheet-table{width:max-content;min-width:100%;border-collapse:collapse;font-size:11px}
+    .sheet-table th,.sheet-table td{padding:8px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);text-align:left;vertical-align:top;white-space:pre-wrap;min-width:64px;max-width:260px}
+    .sheet-table th{background:var(--soft);color:var(--primary);font-weight:950;position:sticky;top:0;z-index:1}
+    .reader-loader{width:100%;min-height:220px;display:grid;place-items:center;text-align:center;color:var(--muted);font-size:12px;font-weight:850}
+    .spinner{width:18px;height:18px;border-radius:999px;border:2px solid rgba(0,128,128,.18);border-top-color:var(--primary);animation:spin .8s linear infinite;display:inline-block}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .form-grid{display:grid;gap:11px}
+    .form-grid label{display:grid;gap:6px;font-size:11px;font-weight:950;color:var(--muted);text-transform:uppercase;letter-spacing:.35px}
+    .input-card{min-height:46px;border-radius:16px;border:1px solid var(--border);background:var(--card-soft);padding:0 12px;color:var(--text);font-size:13px;font-weight:760;width:100%}
+    textarea.input-card{min-height:82px;padding:12px;resize:none;line-height:1.45}
+    .file-pick-card{border:1px dashed var(--border);border-radius:18px;background:var(--card-soft);padding:12px;display:grid;gap:10px}
+    .file-pick-line{display:grid;grid-template-columns:45px minmax(0,1fr);gap:10px;align-items:center}
+    .file-pick-line i{width:45px;height:45px;border-radius:16px;background:var(--soft);color:var(--primary);display:grid;place-items:center;font-size:18px}
+    .file-pick-line strong{display:block;font-size:13px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .file-pick-line span{display:block;margin-top:3px;color:var(--muted);font-size:11px;font-weight:760;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .owner-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:var(--soft);color:var(--primary);font-size:10px;font-weight:950;width:fit-content;max-width:100%}
+    .danger-note{border-radius:16px;border:1px solid rgba(239,68,68,.18);background:rgba(239,68,68,.08);padding:10px;color:var(--danger);font-size:12px;font-weight:800;line-height:1.45}
+    .confirm-box{display:grid;gap:10px;text-align:center}
+    .confirm-icon{width:58px;height:58px;border-radius:20px;margin:0 auto;background:rgba(239,68,68,.1);color:var(--danger);display:grid;place-items:center;font-size:23px}
+    .confirm-box strong{font-size:16px;font-weight:950}
+    .confirm-box p{color:var(--muted);font-size:12px;font-weight:750;line-height:1.5}
+    .float-jump{position:fixed;right:18px;bottom:calc(90px + env(safe-area-inset-bottom));z-index:18;display:grid;gap:8px}
+    .jump-btn{width:42px;height:42px;border-radius:16px;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow-soft);color:var(--primary);display:grid;place-items:center}
+    input[type=file]{display:none}
+    @media(min-width:520px){.bottom-nav{width:430px;left:50%;right:auto;transform:translateX(-50%)}}
+    @media(max-width:380px){.tabs{gap:5px}.tab{font-size:10px}.file-actions{grid-template-columns:repeat(2,1fr)}.mini-action.more-edit{grid-column:1/-1}.hero-copy h2{font-size:18px}}
+    @media(max-height:690px){.hero{display:none}.panel{gap:8px}.tabs .tab span{display:none}}
   </style>
 </head>
 <body>
   <div id="toastHolder" class="toast-holder"></div>
+  <input id="hiddenFileInput" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.json,.png,.jpg,.jpeg,.webp,.gif,.ppt,.pptx,image/*,application/pdf,text/*" />
 
   <main class="app">
     <div class="wrap">
-      
-      <!-- Topbar -->
-      <header id="topbar" class="topbar">
-        <button class="icon-btn" onclick="goPage('admin.html')"><i class="fas fa-arrow-left"></i></button>
+      <header class="topbar">
+        <button class="icon-btn" onclick="handleBack()" aria-label="Back"><i class="fas fa-arrow-left"></i></button>
         <div class="brand">
           <div class="brand-logo"><img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta" /></div>
           <div>
             <h1>Aryanta Files</h1>
-            <p>Database Viewer</p>
+            <p id="topSub">Fast DB Manager</p>
           </div>
         </div>
         <div class="top-actions">
-          <button class="icon-btn" onclick="loadFiles()"><i id="refreshIcon" class="fas fa-rotate"></i></button>
+          <button class="icon-btn success" onclick="openAddFileModal()" aria-label="Add file"><i class="fas fa-plus"></i></button>
+          <button class="icon-btn" onclick="reloadFiles()" aria-label="Refresh"><i id="refreshIcon" class="fas fa-rotate"></i></button>
         </div>
       </header>
 
-      <!-- Hero -->
-      <section class="hero card">
+      <section id="heroCard" class="hero card">
         <div class="hero-mark"><i class="fas fa-folder-open"></i></div>
         <div class="hero-copy">
           <h2 id="pageTitle">File Directory</h2>
-          <p id="pageSub">View, open, download and preview files securely fetched from the database.</p>
+          <p id="pageSub">Only file details are loaded first. Full file data opens only after you tap View, Open or Download.</p>
           <div class="status-pill"><i class="fas fa-database"></i><span id="dbStatus">Connecting SDK...</span></div>
         </div>
       </section>
 
-      <!-- Main File Panel -->
       <section class="panel card">
         <div class="panel-title">
           <h3><i class="fas fa-list-check"></i> DB Files</h3>
           <span id="listCount">0 ITEMS</span>
         </div>
 
-        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 45px; gap: 8px; margin-bottom: 10px;">
+        <div class="search-row">
           <div class="search-box">
             <i class="fas fa-magnifying-glass"></i>
-            <input id="searchInput" type="search" placeholder="Search files..." oninput="renderFiles()" />
+            <input id="searchInput" type="search" placeholder="Search files, owner, UID..." oninput="renderFiles()" />
           </div>
-          <button class="icon-btn" onclick="loadFiles()"><i class="fas fa-arrows-rotate"></i></button>
+          <button class="icon-btn" onclick="reloadFiles()" aria-label="Reload"><i class="fas fa-arrows-rotate"></i></button>
         </div>
 
         <div class="tabs">
-          <button id="tabAll" class="tab active" onclick="setFilter('all')"><i class="fas fa-border-all"></i> All</button>
-          <button id="tabDocs" class="tab" onclick="setFilter('document')"><i class="fas fa-file-lines"></i> Documents</button>
-          <button id="tabImages" class="tab" onclick="setFilter('image')"><i class="fas fa-image"></i> Pictures</button>
+          <button id="tabAll" class="tab active" onclick="setFilter('all')"><i class="fas fa-border-all"></i><span>All</span></button>
+          <button id="tabMine" class="tab" onclick="setFilter('mine')"><i class="fas fa-user"></i><span>Mine</span></button>
+          <button id="tabDocs" class="tab" onclick="setFilter('document')"><i class="fas fa-file-lines"></i><span>Docs</span></button>
+          <button id="tabImages" class="tab" onclick="setFilter('image')"><i class="fas fa-image"></i><span>Pic</span></button>
         </div>
 
         <div id="fileList" class="file-list"></div>
@@ -232,651 +230,1024 @@
     </div>
   </main>
 
-  <!-- BOTTOM NAVIGATION -->
   <nav class="bottom-nav">
-    <button class="nav-btn" onclick="goPage('admin.html')">
-      <span class="mini-mark"><i class="fa-solid fa-house"></i></span><span class="btn-text">Home</span>
-    </button>
-    <button class="nav-btn" onclick="goPage('admin.html#profile')">
-      <span class="mini-mark"><i class="fa-solid fa-user"></i></span><span class="btn-text">Profile</span>
-    </button>
-    <button class="nav-btn" onclick="goPage('x.html')">
-      <span class="mini-mark"><i class="fa-solid fa-comments"></i></span><span class="btn-text">Chat</span>
-    </button>
+    <button class="nav-btn" onclick="goPage('admin.html')"><span class="mini-mark"><i class="fa-solid fa-house"></i></span><span class="btn-text">Home</span></button>
+    <button class="nav-btn" onclick="goPage('admin.html#profile')"><span class="mini-mark"><i class="fa-solid fa-user"></i></span><span class="btn-text">Profile</span></button>
+    <button class="nav-btn" onclick="goPage('x.html')"><span class="mini-mark"><i class="fa-solid fa-comments"></i></span><span class="btn-text">Chat</span></button>
   </nav>
 
-  <!-- IMAGE VIEWER MODAL -->
-  <div id="imageModal" class="modal" onclick="closeModalOnBackdrop(event, 'imageModal')">
-    <div class="modal-card" style="height: 86dvh;">
+  <div class="float-jump">
+    <button class="jump-btn" onclick="scrollListTop()" title="Go top"><i class="fas fa-arrow-up"></i></button>
+    <button class="jump-btn" onclick="scrollListBottom()" title="Go bottom"><i class="fas fa-arrow-down"></i></button>
+  </div>
+
+  <div id="imageModal" class="modal" onclick="closeModalOnBackdrop(event,'imageModal')">
+    <div class="modal-card tall">
       <div class="modal-head">
         <strong id="imageModalTitle">Image Preview</strong>
-        <button class="icon-btn danger" onclick="closeModal('imageModal')"><i class="fas fa-xmark"></i></button>
+        <div class="head-actions">
+          <button class="icon-btn" onclick="downloadCurrentPreview()" aria-label="Download"><i class="fas fa-download"></i></button>
+          <button class="icon-btn danger" onclick="closeModal('imageModal')" aria-label="Close"><i class="fas fa-xmark"></i></button>
+        </div>
       </div>
       <div class="preview-info">
         <strong id="imageInfoTitle">Image</strong>
-        <span id="imageInfoMeta"><i class="fas fa-clock"></i> Recently added</span>
+        <span id="imageInfoMeta"><i class="fas fa-clock"></i> Ready</span>
       </div>
-      <div class="modal-body" style="padding: 0; background: var(--bg); display: block;">
-        <div id="imageGallery" class="gallery-wrap"></div>
+      <div class="modal-body"><div id="imageGallery" class="gallery-wrap"></div></div>
+    </div>
+  </div>
+
+  <div id="docModal" class="modal" onclick="closeModalOnBackdrop(event,'docModal')">
+    <div class="modal-card tall">
+      <div class="modal-head">
+        <strong id="docModalTitle">Document Preview</strong>
+        <div class="head-actions">
+          <button class="icon-btn" onclick="openCurrentPreview()" aria-label="Open"><i class="fas fa-up-right-from-square"></i></button>
+          <button class="icon-btn success" onclick="downloadCurrentPreview()" aria-label="Download"><i class="fas fa-download"></i></button>
+          <button class="icon-btn danger" onclick="closeModal('docModal')" aria-label="Close"><i class="fas fa-xmark"></i></button>
+        </div>
       </div>
-      <div style="padding: 12px; border-top: 1px solid var(--border); display: flex; gap: 8px;">
-        <button class="wide-action success" id="imgBtnDownloadAll"><i class="fas fa-download"></i> Download All Images</button>
+      <div class="preview-info">
+        <strong id="docInfoTitle">Document</strong>
+        <span id="docInfoMeta"><i class="fas fa-clock"></i> Ready</span>
+      </div>
+      <div class="modal-body" style="padding:0;display:flex;flex-direction:column">
+        <iframe id="docIframe" style="width:100%;height:100%;border:0;display:none;background:#fff"></iframe>
+        <div id="docReader" class="doc-reader" style="display:none"></div>
+        <div id="docUnsupported" class="empty" style="display:none;border:0;height:100%;align-content:center;width:100%"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="wide-action" onclick="openCurrentPreview()"><i class="fas fa-up-right-from-square"></i> Open</button>
+        <button class="wide-action success" onclick="downloadCurrentPreview()"><i class="fas fa-download"></i> Download</button>
       </div>
     </div>
   </div>
 
-  <!-- DOCUMENT VIEWER MODAL -->
-  <div id="docModal" class="modal" onclick="closeModalOnBackdrop(event, 'docModal')">
-    <div class="modal-card" style="height: 86dvh;">
+  <div id="editModal" class="modal" onclick="closeModalOnBackdrop(event,'editModal')">
+    <div class="modal-card">
       <div class="modal-head">
-        <strong id="docModalTitle">Document Preview</strong>
-        <button class="icon-btn danger" onclick="closeModal('docModal')"><i class="fas fa-xmark"></i></button>
+        <strong id="editModalTitle">Add File</strong>
+        <button class="icon-btn danger" onclick="closeEditModal()" aria-label="Close"><i class="fas fa-xmark"></i></button>
       </div>
-      <div class="preview-info">
-        <strong id="docInfoTitle">Document</strong>
-        <span id="docInfoMeta"><i class="fas fa-clock"></i> Recently added</span>
-      </div>
-      <div class="modal-body" style="padding: 0; display: flex; flex-direction: column;">
-        <iframe id="docIframe" style="width: 100%; height: 100%; border: none; display: none; background: #fff;"></iframe>
-        <div id="docReader" class="doc-reader" style="display: none;"></div>
-        <div id="docUnsupported" class="empty" style="display: none; border: none; height: 100%; align-content: center; width: 100%;">
-          <div>
-            <i class="fas fa-file-word" style="font-size: 38px; margin-bottom: 12px;"></i>
-            <strong>Read Mode Not Available</strong>
-            <span>This file link cannot be read inside the app because browser access is blocked. Use Download below.</span>
+      <div class="modal-body">
+        <div class="form-grid" style="width:100%">
+          <span class="owner-badge"><i class="fas fa-user-lock"></i><span id="ownerBadgeText">Owner: You</span></span>
+          <label>File title<input id="fileTitleInput" class="input-card" type="text" placeholder="Example: Price Sheet May" maxlength="90" /></label>
+          <label>Description<textarea id="fileDescInput" class="input-card" placeholder="Optional short details"></textarea></label>
+          <label>File URL<input id="fileUrlInput" class="input-card" type="url" placeholder="Paste Drive / PDF / image / document link" /></label>
+          <div class="file-pick-card">
+            <div class="file-pick-line">
+              <i class="fas fa-cloud-arrow-up"></i>
+              <div><strong id="pickedFileName">No local file selected</strong><span id="pickedFileHint">Tap Choose File to upload to Firebase Storage, or paste a URL above.</span></div>
+            </div>
+            <button class="wide-action" onclick="pickLocalFile()"><i class="fas fa-folder-open"></i> Choose File</button>
           </div>
+          <label>Visibility<select id="fileVisibilityInput" class="input-card"><option value="all">Visible to all admins</option><option value="mine">Only me</option></select></label>
+          <div id="editLockNote" class="danger-note" style="display:none">Only the user who added this file can edit or delete it.</div>
         </div>
       </div>
-      <div style="padding: 12px; border-top: 1px solid var(--border); display: flex; gap: 8px;">
-        <button class="wide-action" id="docBtnOpen"><i class="fas fa-up-right-from-square"></i> Open</button>
-        <button class="wide-action success" id="docBtnDownload"><i class="fas fa-download"></i> Download</button>
+      <div class="modal-foot">
+        <button class="wide-action" onclick="closeEditModal()"><i class="fas fa-ban"></i> Cancel</button>
+        <button id="saveFileBtn" class="wide-action success" onclick="saveFileRecord()"><i class="fas fa-floppy-disk"></i> Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="deleteModal" class="modal" onclick="closeModalOnBackdrop(event,'deleteModal')">
+    <div class="modal-card">
+      <div class="modal-head">
+        <strong>Delete File</strong>
+        <button class="icon-btn danger" onclick="closeModal('deleteModal')"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="confirm-box">
+          <div class="confirm-icon"><i class="fas fa-trash-can"></i></div>
+          <strong id="deleteTitle">Delete this file?</strong>
+          <p>This action removes the file record. Only the owner can delete their own file.</p>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="wide-action" onclick="closeModal('deleteModal')"><i class="fas fa-ban"></i> Cancel</button>
+        <button class="wide-action danger" onclick="confirmDeleteFile()"><i class="fas fa-trash"></i> Delete</button>
       </div>
     </div>
   </div>
 
   <script>
-    // --- FIREBASE SDK CONFIGURATION ---
-    const firebaseConfig = {
-      apiKey: "AIzaSyBwOOlSdVEgGiUdrr4thPRvILNLcLnfqbc",
-      authDomain: "aryanta.firebaseapp.com",
-      databaseURL: "https://aryanta-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "aryanta",
-      storageBucket: "aryanta.firebasestorage.app",
-      messagingSenderId: "1072021816522",
-      appId: "1:1072021816522:web:8f831cf4d61a7b0f8de033",
-      measurementId: "G-XD01NH45VR"
+    const firebaseConfig={
+      apiKey:"AIzaSyBwOOlSdVEgGiUdrr4thPRvILNLcLnfqbc",
+      authDomain:"aryanta.firebaseapp.com",
+      databaseURL:"https://aryanta-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId:"aryanta",
+      storageBucket:"aryanta.firebasestorage.app",
+      messagingSenderId:"1072021816522",
+      appId:"1:1072021816522:web:8f831cf4d61a7b0f8de033",
+      measurementId:"G-XD01NH45VR"
     };
+    if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db=firebase.database();
+    const storage=firebase.storage ? firebase.storage() : null;
 
-    // Initialize Firebase SDK
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
+    const SETTINGS_KEY="aryanta_admin_settings";
+    const PROFILE_KEY="aryanta_admin_profile";
+    const TOKEN_KEY="aryanta_admin_worker_token";
+    const SESSION_TOKEN_KEY="aryanta_admin_worker_session";
+    const UID_KEY="aryanta_admin_saved_uid";
+    const LOGIN_PAGE="index.html";
+    const WORKER_API="https://rough-field-c679.official-aryanta.workers.dev";
+    const FILE_PROXY_URL=WORKER_API+"/file-proxy?url=";
+    const ARYANTA_LOGO="https://aryanta.in/vurify/aryanta.jpeg";
+    const FILES_PATH="files";
+    const FILES_META_PATH="files_meta";
+    const ADMIN_NOTIFICATION_PATH="admin_notifications";
+    const ADMIN_BROADCAST_PATH="notifications/admins";
+    const ADMIN_APP_MESSAGE_PATH="aryanta_admin_app/messages";
+    const MAX_UPLOAD_SIZE=15*1024*1024;
+    const $=id=>document.getElementById(id);
+
+    let allFiles=[];
+    let activeFilter="all";
+    let loading=false;
+    let currentToast=null;
+    let appSettings={};
+    let currentPreview=null;
+    let editModeId=null;
+    let pickedLocalFile=null;
+    let deleteTargetId=null;
+    let useMetaSource=true;
+    let childListenersStarted=false;
+    let notificationReady=false;
+    let notifiedKeys=new Set();
+
+    if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+    function safeJson(value,fallback={}){try{return JSON.parse(value||"null")||fallback}catch{return fallback}}
+    function escapeHtml(val){return String(val??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]))}
+    function escapeAttr(val){return escapeHtml(val).replace(/"/g,"&quot;")}
+    function escapeJs(val){return String(val||"").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/\n/g," ").replace(/\r/g," ")}
+    function safeKey(value){return String(value||"guest").replace(/[.#$\/[\]]/g,"_")}
+    function getToken(){return localStorage.getItem(TOKEN_KEY)||sessionStorage.getItem(SESSION_TOKEN_KEY)||localStorage.getItem(UID_KEY)||""}
+    function goPage(url){window.location.href=url}
+
+    function readStoredProfile(){
+      const keys=[PROFILE_KEY,"aryanta_admin_user","aryanta_current_admin","aryanta_login_admin","active_admin","admin_profile"];
+      const merged={};
+      keys.forEach(k=>{Object.assign(merged,safeJson(sessionStorage.getItem(k),{}));Object.assign(merged,safeJson(localStorage.getItem(k),{}))});
+      return merged;
     }
-    const db = firebase.database();
 
-    const SETTINGS_KEY = "aryanta_admin_settings";
-    const TOKEN_KEY = "aryanta_admin_worker_token";
-    const SESSION_TOKEN_KEY = "aryanta_admin_worker_session";
-    const LOGIN_PAGE = "index.html";
-    const WORKER_API = "https://rough-field-c679.official-aryanta.workers.dev";
-    const FILE_PROXY_URL = WORKER_API + "/file-proxy?url=";
-    const $ = id => document.getElementById(id);
+    function firstUsableImage(...values){
+      for(const value of values){
+        const v=String(value||"").trim();
+        if(v && v!=="<na>" && v!=="null" && v!=="undefined" && /^(https?:|data:image|blob:)/i.test(v)) return v;
+      }
+      return ARYANTA_LOGO;
+    }
 
-    let allFiles = [];
-    let activeFilter = "all";
-    let currentToast = null;
-    let loading = false;
+    const storedProfile=readStoredProfile();
+    const myUid=String(storedProfile.uid||storedProfile.id||storedProfile.email||getToken()||"");
+    const myKey=safeKey(myUid||"local");
+    const myName=storedProfile.name||storedProfile.fullName||storedProfile.displayName||storedProfile.email||"Admin";
+    const myImage=firstUsableImage(storedProfile.profileImage,storedProfile.profilePic,storedProfile.photoURL,storedProfile.avatar,storedProfile.image,localStorage.getItem("aryanta_admin_profile_image"),sessionStorage.getItem("aryanta_admin_profile_image"));
 
-    // --- SECURE BOOT & SETTINGS ---
-    function getToken() { return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(SESSION_TOKEN_KEY) || ""; }
-    
-    function syncAdminSettings() {
-      if(!getToken()) { window.location.replace(LOGIN_PAGE); return false; }
-      try {
-        const savedSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {};
-        const theme = savedSettings.theme || "light";
-        const useDark = theme === "dark" || (theme === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
-        document.documentElement.setAttribute("data-theme", useDark ? "dark" : "light");
-      } catch(e) {}
+    function syncAdminSettings(){
+      if(!getToken()){
+        window.location.replace(LOGIN_PAGE);
+        return false;
+      }
+      appSettings={notify:false,banner:true,files:true,audio:true,theme:"light",...safeJson(localStorage.getItem(SETTINGS_KEY),{})};
+      const theme=appSettings.theme||"light";
+      const useDark=theme==="dark"||(theme==="system"&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);
+      document.documentElement.setAttribute("data-theme",useDark?"dark":"light");
+      $("heroCard")?.classList.toggle("hidden-by-setting",appSettings.banner===false);
+      if(appSettings.notify&&"Notification" in window&&Notification.permission==="default") Notification.requestPermission().catch(()=>{});
       return true;
     }
 
-    function goPage(url) { window.location.href = url; }
-    function escapeHtml(val) { return String(val ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-    function setText(id, value) { const el = $(id); if (el) el.textContent = value || ""; }
+    function settingEnabled(key){
+      syncAdminSettings();
+      return appSettings[key]===true;
+    }
 
-    function showToast(message) {
+    function canUseFiles(action="file access"){
+      if(!settingEnabled("files")){
+        showToast(`Please enable File Sharing in Admin Settings to use ${action}.`,true,3400);
+        return false;
+      }
+      return true;
+    }
+
+    function showToast(message,force=false,duration=2600){
+      syncAdminSettings();
+      if(!force&&appSettings.notify!==true) return;
       if(currentToast) currentToast.remove();
-      const toast = document.createElement("div");
-      toast.className = "toast show";
-      toast.innerHTML = `<i class="fas fa-bell"></i><span>${escapeHtml(message)}</span>`;
+      const toast=document.createElement("div");
+      toast.className="toast show";
+      toast.innerHTML=`<i class="fas fa-bell"></i><span>${escapeHtml(message)}</span>`;
       $("toastHolder").appendChild(toast);
-      currentToast = toast;
-      setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 220); }, 2600);
+      currentToast=toast;
+      setTimeout(()=>{toast.classList.remove("show");setTimeout(()=>toast.remove(),220)},duration);
     }
 
-    function setBusy(state) {
-      loading = state;
-      const icon = $("refreshIcon");
-      if (icon) icon.className = state ? "spinner" : "fas fa-rotate";
+    function playNotifySound(){
+      syncAdminSettings();
+      if(appSettings.audio!==true) return;
+      try{
+        const AudioContext=window.AudioContext||window.webkitAudioContext;
+        if(!AudioContext) return;
+        const ctx=new AudioContext();
+        const osc=ctx.createOscillator();
+        const gain=ctx.createGain();
+        osc.frequency.value=880;
+        gain.gain.value=.035;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        setTimeout(()=>{try{osc.stop();ctx.close()}catch{}},130);
+      }catch{}
     }
 
-    // --- SMART IDENTIFICATION ENGINE ---
-    if (window.pdfjsLib) {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    function setBusy(state){
+      loading=state;
+      const icon=$("refreshIcon");
+      if(icon) icon.className=state?"spinner":"fas fa-rotate";
     }
 
-    function fileTitle(item) { return item.title || item.name || item.fileName || item.filename || "Untitled File"; }
-    function addedValue(item) { return item.createdAt || item.addedAt || item.uploadedAt || item.timestamp || item.time || item.date || item.updatedAt || ""; }
-    function fileUrl(item) { const entries = collectFileEntries(item); return entries.length ? entries[0].url : ""; }
+    function setText(id,value){
+      const el=$(id);
+      if(el) el.textContent=value||"";
+    }
 
-    function collectFileEntries(item) {
-      const entries = [];
-      const push = (value, label = "") => {
-        if (!value) return;
-        if (typeof value === "string") {
-          const url = value.trim();
-          if (url) entries.push({ url, title: label || fileTitle(item), type: guessTypeFromUrl(url) });
+    function fileTitle(item){return item.title||item.name||item.fileName||item.filename||"Untitled File"}
+    function addedValue(item){return item.createdAt||item.addedAt||item.uploadedAt||item.timestamp||item.time||item.date||item.updatedAt||""}
+    function fileOwnerUid(item){return String(item.ownerUid||item.createdByUid||item.uid||item.adminUid||"")}
+    function fileOwnerName(item){return item.ownerName||item.createdByName||item.adminName||item.userName||"Admin"}
+    function fileOwnerImage(item){return firstUsableImage(item.ownerImage,item.createdByImage,item.adminImage,item.profileImage,item.photoURL,ARYANTA_LOGO)}
+    function isOwner(item){return !!myUid && fileOwnerUid(item)===myUid}
+    function isVisibleToMe(item){return item.visibility!=="mine" || isOwner(item)}
+
+    function collectFileEntries(item){
+      const entries=[];
+      const push=(value,label="")=>{
+        if(!value) return;
+        if(typeof value==="string"){
+          const url=value.trim();
+          if(url) entries.push({url,title:label||fileTitle(item),type:guessTypeFromUrl(url),name:label||fileTitle(item),storagePath:item.storagePath||""});
           return;
         }
-        if (Array.isArray(value)) { value.forEach((v, i) => push(v, `${label || fileTitle(item)} ${i + 1}`)); return; }
-        if (typeof value === "object") {
-          const url = value.url || value.fileUrl || value.downloadUrl || value.link || value.src || value.image || value.imageUrl || value.data || "";
-          if (url) entries.push({ url: String(url).trim(), title: value.title || value.name || value.fileName || label || fileTitle(item), type: value.type || value.mimeType || value.contentType || guessTypeFromUrl(url) });
-          ["files", "images", "imageUrls", "attachments", "documents", "urls"].forEach(k => { if (value[k]) push(value[k], label); });
+        if(Array.isArray(value)){value.forEach((v,i)=>push(v,`${label||fileTitle(item)} ${i+1}`));return}
+        if(typeof value==="object"){
+          const url=value.url||value.fileUrl||value.downloadUrl||value.link||value.src||value.image||value.imageUrl||value.data||"";
+          if(url) entries.push({url:String(url).trim(),title:value.title||value.name||value.fileName||label||fileTitle(item),type:value.type||value.mimeType||value.contentType||guessTypeFromUrl(url),name:value.name||value.fileName||label||fileTitle(item),storagePath:value.storagePath||item.storagePath||""});
+          ["files","images","imageUrls","attachments","documents","urls"].forEach(k=>{if(value[k]) push(value[k],label)});
         }
       };
-
-      push(item.url, fileTitle(item));
-      push(item.fileUrl, fileTitle(item));
-      push(item.downloadUrl, fileTitle(item));
-      push(item.link, fileTitle(item));
-      push(item.src, fileTitle(item));
-      push(item.image, fileTitle(item));
-      push(item.imageUrl, fileTitle(item));
-      push(item.thumbnail, fileTitle(item));
-      push(item.file, fileTitle(item));
-      push(item.files, fileTitle(item));
-      push(item.images, fileTitle(item));
-      push(item.imageUrls, fileTitle(item));
-      push(item.attachments, fileTitle(item));
-      push(item.documents, fileTitle(item));
-      push(item.urls, fileTitle(item));
-
-      const seen = new Set();
-      return entries.filter(e => {
-        if (!e.url || seen.has(e.url)) return false;
-        seen.add(e.url);
-        return true;
-      });
+      ["url","fileUrl","downloadUrl","link","src","image","imageUrl","thumbnail","file","files","images","imageUrls","attachments","documents","urls"].forEach(k=>push(item[k],fileTitle(item)));
+      const seen=new Set();
+      return entries.filter(e=>{if(!e.url||seen.has(e.url)) return false;seen.add(e.url);return true});
     }
 
-    function collectImageEntries(item) { return collectFileEntries(item).filter(e => isImageUrl(e.url, e.type)); }
-    function collectDocumentEntries(item) { return collectFileEntries(item).filter(e => !isImageUrl(e.url, e.type)); }
-
-    function guessTypeFromUrl(url) {
-      const u = String(url || "").toLowerCase();
-      if (u.startsWith("data:image/")) return "image";
-      if (u.startsWith("data:application/pdf")) return "pdf";
-      if (u.startsWith("data:text/")) return "text";
-      const ext = getExt(u);
-      if (["png", "jpg", "jpeg", "gif", "webp", "svg", "avif"].includes(ext)) return "image";
-      if (["pdf", "doc", "docx", "xls", "xlsx", "csv", "txt", "ppt", "pptx"].includes(ext)) return ext;
+    function collectImageEntries(item){return collectFileEntries(item).filter(e=>isImageUrl(e.url,e.type))}
+    function collectDocumentEntries(item){return collectFileEntries(item).filter(e=>!isImageUrl(e.url,e.type))}
+    function getExt(url){
+      const clean=String(url||"").split("?")[0].split("#")[0].toLowerCase();
+      const last=clean.split(".").pop();
+      return last&&last.length<=6?last:"";
+    }
+    function guessTypeFromUrl(url){
+      const u=String(url||"").toLowerCase();
+      if(u.startsWith("data:image/")) return "image";
+      if(u.startsWith("data:application/pdf")) return "pdf";
+      if(u.startsWith("data:text/")) return "text";
+      const ext=getExt(u);
+      if(["png","jpg","jpeg","gif","webp","svg","avif"].includes(ext)) return "image";
+      if(["pdf","doc","docx","xls","xlsx","csv","txt","ppt","pptx","json"].includes(ext)) return ext;
       return "file";
     }
-
-    function getExt(url) {
-      const clean = String(url || "").split("?")[0].split("#")[0].toLowerCase();
-      const last = clean.split(".").pop();
-      return last && last.length <= 5 ? last : "";
+    function isImageUrl(url,type=""){
+      const t=String(type||"").toLowerCase();
+      if(t.includes("image")) return true;
+      const u=String(url||"");
+      if(u.startsWith("data:image/")) return true;
+      if(u.length>700&&!u.startsWith("http")&&!u.startsWith("data:")) return false;
+      return ["png","jpg","jpeg","gif","webp","svg","avif"].includes(getExt(u));
     }
-
-    function isImageUrl(url, type = "") {
-      const t = String(type || "").toLowerCase();
-      if (t.includes("image")) return true;
-      const u = String(url || "");
-      if (u.startsWith("data:image/")) return true;
-      if (u.length > 700 && !u.startsWith("http") && !u.startsWith("data:")) return false;
-      return ["png", "jpg", "jpeg", "gif", "webp", "svg", "avif"].includes(getExt(u));
+    function isImage(item){
+      const t=String(item.type||item.mimeType||item.contentType||"").toLowerCase();
+      return t.includes("image")||collectImageEntries(item).length>0;
     }
-
-    function isImage(item) {
-      const t = String(item.type || item.mimeType || item.contentType || "").toLowerCase();
-      return t.includes("image") || collectImageEntries(item).length > 0;
+    function isDocument(item){
+      const t=String(item.type||item.mimeType||item.contentType||"").toLowerCase();
+      if(t.includes("document")||t.includes("pdf")||t.includes("text")||t.includes("sheet")||t.includes("word")||t.includes("excel")) return true;
+      return collectDocumentEntries(item).length>0;
     }
-
-    function isDocument(item) {
-      const t = String(item.type || item.mimeType || item.contentType || "").toLowerCase();
-      if (t.includes("document") || t.includes("pdf") || t.includes("text") || t.includes("sheet") || t.includes("word") || t.includes("excel")) return true;
-      return collectDocumentEntries(item).length > 0;
-    }
-
-    function fileIcon(item) {
-      if (isImage(item) && !collectDocumentEntries(item).length) return "fa-image";
-      const url = fileUrl(item).toLowerCase();
-      const type = String(item.type || item.mimeType || item.contentType || "").toLowerCase();
-      if (url.includes("pdf") || type.includes("pdf")) return "fa-file-pdf";
-      if (url.includes("sheet") || url.includes("excel") || type.includes("spreadsheet") || ["xls", "xlsx", "csv"].includes(getExt(url))) return "fa-file-excel";
-      if (url.includes("word") || ["doc", "docx"].includes(getExt(url))) return "fa-file-word";
+    function fileIcon(item){
+      if(isImage(item)&&!collectDocumentEntries(item).length) return "fa-image";
+      const entry=collectFileEntries(item)[0]||{};
+      const url=String(entry.url||"").toLowerCase();
+      const type=String(item.type||entry.type||item.mimeType||item.contentType||"").toLowerCase();
+      if(url.includes("pdf")||type.includes("pdf")||getExt(url)==="pdf") return "fa-file-pdf";
+      if(url.includes("sheet")||url.includes("excel")||type.includes("spreadsheet")||["xls","xlsx","csv"].includes(getExt(url))) return "fa-file-excel";
+      if(url.includes("word")||["doc","docx"].includes(getExt(url))) return "fa-file-word";
+      if(url.includes("ppt")||["ppt","pptx"].includes(getExt(url))) return "fa-file-powerpoint";
       return "fa-file-lines";
     }
-
-    function formatDate(value) {
-      if (!value) return "Recently added";
-      const d = new Date(value);
-      if (Number.isNaN(d.getTime())) return "Recently added";
-      return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    function typeLabel(item){
+      if(isImage(item)&&!collectDocumentEntries(item).length) return "IMAGE";
+      const entry=collectFileEntries(item)[0]||{};
+      const ext=getDocExt(entry.url,entry.type||item.type);
+      return (ext||item.type||"FILE").toString().toUpperCase();
+    }
+    function formatDate(value){
+      if(!value) return "Recently added";
+      const d=new Date(value);
+      if(Number.isNaN(d.getTime())) return "Recently added";
+      return d.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
+    }
+    function formatDateTime(value){
+      if(!value) return "Recently added";
+      const d=new Date(value);
+      if(Number.isNaN(d.getTime())) return "Recently added";
+      return d.toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+    }
+    function formatSize(bytes){
+      const n=Number(bytes||0);
+      if(!n) return "";
+      if(n<1024) return `${n} B`;
+      if(n<1024*1024) return `${(n/1024).toFixed(1)} KB`;
+      return `${(n/1024/1024).toFixed(1)} MB`;
     }
 
-    function formatDateTime(value) {
-      if (!value) return "Recently added";
-      const d = new Date(value);
-      if (Number.isNaN(d.getTime())) return "Recently added";
-      return d.toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
-    }
-
-    // --- FIREBASE SDK DATA FETCHING ---
-    async function loadFiles() {
-      if (loading) return;
+    async function reloadFiles(){
+      if(loading) return;
       setBusy(true);
-      setText("dbStatus", "Fetching securely...");
-      
-      try {
-        const snapshot = await db.ref('files').once('value');
-        const data = snapshot.val() || {};
-        
-        allFiles = [];
-        for (let key in data) { 
-          allFiles.push({ id: key, ...data[key] }); 
-        }
-        
-        allFiles.sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-
-        setText("dbStatus", "DB Connected");
+      setText("dbStatus","Fetching file list...");
+      try{
+        await loadFileIndex();
+        setText("dbStatus",`${useMetaSource?"Fast index":"Legacy DB"} connected`);
         renderFiles();
-      } catch (err) {
+        startChildListeners();
+      }catch(err){
         console.error(err);
-        allFiles = [];
-        setText("dbStatus", "DB Blocked");
+        allFiles=[];
+        setText("dbStatus","DB Blocked");
         renderFiles();
-        showToast("Error: Please check Firebase rules");
-      } finally {
+        showToast("Error: Please check Firebase rules",true);
+      }finally{
         setBusy(false);
       }
     }
 
-    function setFilter(filter) {
-      activeFilter = filter;
-      $("tabAll").classList.toggle("active", filter === "all");
-      $("tabImages").classList.toggle("active", filter === "image");
-      $("tabDocs").classList.toggle("active", filter === "document");
-      renderFiles();
+    async function loadFileIndex(){
+      let snap=await db.ref(FILES_META_PATH).once("value");
+      let data=snap.val()||{};
+      useMetaSource=Object.keys(data).length>0;
+      const metaData=data;
+      const legacySnap=await db.ref(FILES_PATH).once("value");
+      const legacyData=legacySnap.val()||{};
+      data={...legacyData,...metaData};
+      allFiles=Object.keys(data).map(key=>normalizeFileRecord(key,data[key]||{})).filter(isVisibleToMe);
+      allFiles.sort((a,b)=>new Date(addedValue(b)||0)-new Date(addedValue(a)||0));
     }
 
-    function filteredFiles() {
-      const q = ($("searchInput").value || "").trim().toLowerCase();
-      return allFiles.filter(item => {
-        const title = fileTitle(item).toLowerCase();
-        if (q && !title.includes(q)) return false;
-        if (activeFilter === "image" && !isImage(item)) return false;
-        if (activeFilter === "document" && !isDocument(item)) return false;
+    function normalizeFileRecord(id,item){
+      const entries=collectFileEntries(item);
+      const first=entries[0]||{};
+      return {
+        id:item.id||id,
+        title:fileTitle(item),
+        description:item.description||item.desc||"",
+        type:item.type||first.type||guessTypeFromUrl(first.url||""),
+        url:item.url||item.fileUrl||first.url||"",
+        fileUrl:item.fileUrl||item.url||first.url||"",
+        urls:item.urls||item.files||item.attachments||[],
+        fileName:item.fileName||item.filename||first.name||fileTitle(item),
+        fileSize:item.fileSize||item.size||0,
+        storagePath:item.storagePath||first.storagePath||"",
+        ownerUid:fileOwnerUid(item),
+        ownerName:fileOwnerName(item),
+        ownerImage:fileOwnerImage(item),
+        visibility:item.visibility||"all",
+        createdAt:item.createdAt||item.addedAt||item.uploadedAt||Date.now(),
+        updatedAt:item.updatedAt||item.createdAt||Date.now(),
+        raw:item
+      };
+    }
+
+    function startChildListeners(){
+      if(childListenersStarted) return;
+      childListenersStarted=true;
+      setTimeout(()=>notificationReady=true,1500);
+      [FILES_META_PATH,FILES_PATH].forEach(path=>{
+        db.ref(path).limitToLast(1).on("child_added",snap=>{
+          if(!notificationReady) return;
+          const key=`${path}:${snap.key}`;
+          if(notifiedKeys.has(key)) return;
+          notifiedKeys.add(key);
+          const item=normalizeFileRecord(snap.key,snap.val()||{});
+          if(item.ownerUid===myUid) return;
+          notifyNewFile(item);
+          reloadFiles();
+        },()=>{});
+      });
+      window.addEventListener("storage",e=>{
+        if(e.key===SETTINGS_KEY){syncAdminSettings();renderFiles()}
+      });
+    }
+
+    function filteredFiles(){
+      const q=($("searchInput").value||"").trim().toLowerCase();
+      return allFiles.filter(item=>{
+        if(!isVisibleToMe(item)) return false;
+        const hay=[fileTitle(item),item.description,typeLabel(item),fileOwnerUid(item),fileOwnerName(item)].join(" ").toLowerCase();
+        if(q&&!hay.includes(q)) return false;
+        if(activeFilter==="mine"&&!isOwner(item)) return false;
+        if(activeFilter==="image"&&!isImage(item)) return false;
+        if(activeFilter==="document"&&!isDocument(item)) return false;
         return true;
       });
     }
 
-    function renderFiles() {
-      const list = $("fileList");
-      const items = filteredFiles();
-      setText("listCount", `${items.length} ITEM${items.length === 1 ? "" : "S"}`);
+    function setFilter(filter){
+      activeFilter=filter;
+      ["All","Mine","Docs","Images"].forEach(name=>{
+        const id="tab"+name;
+        if($(id)) $(id).classList.toggle("active",filter===({All:"all",Mine:"mine",Docs:"document",Images:"image"}[name]));
+      });
+      renderFiles();
+    }
 
-      if (!items.length) {
-        list.innerHTML = `
-          <div class="empty">
-            <div>
-              <i class="fas fa-folder-open"></i>
-              <strong>No files found</strong>
-              <span>Files added by the admin will appear here.</span>
-            </div>
-          </div>`;
+    function renderFiles(){
+      const list=$("fileList");
+      const items=filteredFiles();
+      setText("listCount",`${items.length} ITEM${items.length===1?"":"S"}`);
+      if(!items.length){
+        list.innerHTML=`<div class="empty"><div><i class="fas fa-folder-open"></i><strong>No files found</strong><span>Add a file or change your search/filter.</span></div></div>`;
         return;
       }
-
-      list.innerHTML = items.map((item, index) => {
-        const title = fileTitle(item);
-        const date = formatDate(addedValue(item));
-        const imageEntries = collectImageEntries(item);
-        const docEntries = collectDocumentEntries(item);
-        const typeLabel = item.type || (imageEntries.length && !docEntries.length ? "image" : "document");
-        let thumbHtml = `<i class="fas ${fileIcon(item)}"></i>`;
-
-        if (imageEntries.length) {
-          thumbHtml = `<img src="${escapeAttr(imageEntries[0].url)}" alt="IMG" loading="lazy" />`;
-        }
-
-        const countText = imageEntries.length > 1 ? ` • ${imageEntries.length} IMAGES` : docEntries.length > 1 ? ` • ${docEntries.length} FILES` : "";
-
+      list.innerHTML=items.map((item,index)=>{
+        const owner=isOwner(item);
+        const entryCount=collectFileEntries(item).length;
+        const countText=entryCount>1?` • ${entryCount} files`:"";
+        const sizeText=formatSize(item.fileSize);
+        const ownerText=owner?"You":`${fileOwnerName(item)}${item.ownerUid?" • "+item.ownerUid:""}`;
+        const canEdit=owner;
         return `
           <article class="file-item">
-            <button class="thumb" onclick="previewThumb(${index})">${thumbHtml}</button>
+            <button class="thumb" onclick="previewFile(${index})" aria-label="View ${escapeAttr(fileTitle(item))}">
+              <i class="fas ${fileIcon(item)}"></i>
+              <small>${escapeHtml(typeLabel(item))}</small>
+            </button>
             <div class="file-main">
               <div class="file-meta">
-                <strong>${escapeHtml(title)}</strong>
-                <span>${escapeHtml(String(typeLabel).toUpperCase())}${countText} • ${escapeHtml(date)}</span>
+                <strong>${escapeHtml(fileTitle(item))}</strong>
+                <span>${escapeHtml(typeLabel(item))}${countText}${sizeText?" • "+escapeHtml(sizeText):""} • ${escapeHtml(formatDate(addedValue(item)))}</span>
+                <div class="owner-line"><img src="${escapeAttr(fileOwnerImage(item))}" alt=""><span>${escapeHtml(ownerText)}</span></div>
               </div>
               <div class="file-actions">
                 <button class="mini-action" onclick="previewFile(${index})"><i class="fas fa-eye"></i> View</button>
-                <button class="mini-action success" onclick="downloadFile(${index})"><i class="fas fa-download"></i> Download</button>
+                <button class="mini-action success" onclick="downloadFile(${index})"><i class="fas fa-download"></i> Down</button>
+                ${canEdit?`<button class="mini-action" onclick="openEditFileModal('${escapeJs(item.id)}')"><i class="fas fa-pen"></i> Edit</button><button class="mini-action danger" onclick="openDeleteModal('${escapeJs(item.id)}')"><i class="fas fa-trash"></i> Del</button>`:`<button class="mini-action locked more-edit" onclick="ownerOnlyNotice()"><i class="fas fa-lock"></i> Owner</button>`}
               </div>
             </div>
           </article>`;
       }).join("");
     }
 
-    function getRenderedItem(index) { return filteredFiles()[index]; }
+    function ownerOnlyNotice(){showToast("Only the user who added this file can edit or delete it.",true)}
+    function getRenderedItem(index){return filteredFiles()[index]}
 
-    function escapeAttr(val) { return escapeHtml(val).replace(/"/g, "&quot;"); }
+    function scrollListTop(){$("fileList").scrollTo({top:0,behavior:"smooth"})}
+    function scrollListBottom(){const el=$("fileList");el.scrollTo({top:el.scrollHeight,behavior:"smooth"})}
 
-    function downloadFile(index) {
-      const item = getRenderedItem(index);
-      if (!item) return;
-      const images = collectImageEntries(item);
-      const docs = collectDocumentEntries(item);
-      if (images.length > 1 && !docs.length) return downloadAllImages(index);
-      const entry = docs[0] || images[0] || collectFileEntries(item)[0];
-      if (!entry || !entry.url) return showToast("No download link");
-      downloadUrl(entry.url, entry.title || fileTitle(item));
+    function previewFile(index){
+      if(!canUseFiles("view file")) return;
+      const item=getRenderedItem(index);
+      if(!item) return showToast("No file found",true);
+      const docs=collectDocumentEntries(item);
+      const images=collectImageEntries(item);
+      if(docs.length) return openDocumentViewer(item,docs[0]);
+      if(images.length) return openImageViewer(item,images);
+      showToast("No readable file link found",true);
     }
 
-    function downloadUrl(url, title) {
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = safeDownloadName(title || "Aryanta File", url);
-      if (!url.startsWith("data:")) a.target = "_blank";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      showToast("Download started");
-    }
-
-    function downloadAllImages(index) {
-      const item = getRenderedItem(index);
-      const images = collectImageEntries(item);
-      if (!images.length) return showToast("No images found");
-      images.forEach((img, i) => setTimeout(() => downloadUrl(img.url, `${fileTitle(item)}-${i + 1}`), i * 260));
-    }
-
-    function safeDownloadName(name, url) {
-      const clean = String(name || "Aryanta File").replace(/[\\/:*?"<>|]+/g, "-").slice(0, 80);
-      const ext = getExt(url);
-      return ext && !clean.toLowerCase().endsWith(`.${ext}`) ? `${clean}.${ext}` : clean;
-    }
-
-    // --- PREVIEW ENGINE ---
-    function previewThumb(index) {
-      const item = getRenderedItem(index);
-      if (!item) return showToast("No file found");
-      const images = collectImageEntries(item);
-      if (images.length) return openImageViewer(item, index);
-      previewFile(index);
-    }
-
-    function previewFile(index) {
-      const item = getRenderedItem(index);
-      if (!item) return showToast("No file found");
-      const docs = collectDocumentEntries(item);
-      const images = collectImageEntries(item);
-
-      if (docs.length) return openDocumentViewer(item, index);
-      if (images.length) return openImageViewer(item, index);
-
-      showToast("No file link found");
-    }
-
-    function openImageViewer(item, index) {
-      const images = collectImageEntries(item);
-      const title = fileTitle(item);
-      if (!images.length) return showToast("No image found");
-      $("imageModalTitle").textContent = images.length > 1 ? `${title} (${images.length})` : title;
-      $("imageInfoTitle").textContent = title;
-      $("imageInfoMeta").innerHTML = `<i class="fas fa-clock"></i> Added: ${escapeHtml(formatDateTime(addedValue(item)))}${images.length > 1 ? ` • ${images.length} images` : ""}`;
-      $("imageGallery").innerHTML = images.map((img, i) => `
+    function openImageViewer(item,images){
+      const title=fileTitle(item);
+      currentPreview={item,entry:images[0],entries:images,kind:"image"};
+      $("imageModalTitle").textContent=images.length>1?`${title} (${images.length})`:title;
+      $("imageInfoTitle").textContent=title;
+      $("imageInfoMeta").innerHTML=`<i class="fas fa-clock"></i> Added: ${escapeHtml(formatDateTime(addedValue(item)))}${images.length>1?` • ${images.length} images`:""}`;
+      $("imageGallery").innerHTML=images.map((img,i)=>`
         <div class="gallery-card">
-          <img src="${escapeAttr(img.url)}" alt="${escapeAttr(img.title || title)}" loading="lazy" onclick="window.open('${escapeJs(img.url)}', '_blank')" />
-          <div class="gallery-actions">
-            <button class="wide-action success" onclick="downloadUrl('${escapeJs(img.url)}', '${escapeJs(img.title || title + '-' + (i + 1))}')"><i class="fas fa-download"></i> Download This Image</button>
-          </div>
+          <img src="${escapeAttr(img.url)}" alt="${escapeAttr(img.title||title)}" loading="lazy" />
+          <div class="gallery-caption"><span>${escapeHtml(img.title||title)}</span><button onclick="downloadUrl('${escapeJs(img.url)}','${escapeJs(img.title||title+"-"+(i+1))}')"><i class="fas fa-download"></i></button></div>
         </div>`).join("");
-      $("imgBtnDownloadAll").onclick = () => downloadAllImages(index);
-      $("imgBtnDownloadAll").style.display = images.length > 1 ? "flex" : "none";
       openModal("imageModal");
     }
 
-    async function openDocumentViewer(item, index) {
-      const docs = collectDocumentEntries(item);
-      const entry = docs[0] || collectFileEntries(item)[0];
-      if (!entry || !entry.url) return showToast("No document found");
-
-      const originalUrl = entry.url;
-      const directUrl = directDownloadUrl(originalUrl);
-      const title = entry.title || fileTitle(item);
-      $("docModalTitle").textContent = title;
-      $("docInfoTitle").textContent = title;
-      $("docInfoMeta").innerHTML = `<i class="fas fa-clock"></i> Added: ${escapeHtml(formatDateTime(addedValue(item)))} • Read mode`;
-      $("docBtnDownload").onclick = () => downloadUrl(directUrl || originalUrl, title);
-      $("docBtnOpen").onclick = () => window.open(cloudPreviewUrl(originalUrl) || originalUrl, "_blank");
-
-      const iframe = $("docIframe");
-      const reader = $("docReader");
-      const fallback = $("docUnsupported");
-      iframe.style.display = "none";
-      reader.style.display = "block";
-      fallback.style.display = "none";
-      iframe.src = "about:blank";
-      reader.innerHTML = `<div class="reader-loader"><div><div class="spinner" style="margin:0 auto 10px;"></div>Fetching into RAM and opening read mode...</div></div>`;
+    async function openDocumentViewer(item,entry){
+      const originalUrl=entry.url;
+      const directUrl=directDownloadUrl(originalUrl);
+      const title=entry.title||fileTitle(item);
+      currentPreview={item,entry:{...entry,url:directUrl||originalUrl,title},entries:[entry],kind:"document"};
+      $("docModalTitle").textContent=title;
+      $("docInfoTitle").textContent=title;
+      $("docInfoMeta").innerHTML=`<i class="fas fa-clock"></i> Added: ${escapeHtml(formatDateTime(addedValue(item)))} • Read mode`;
+      const iframe=$("docIframe");
+      const reader=$("docReader");
+      const fallback=$("docUnsupported");
+      iframe.style.display="none";
+      reader.style.display="block";
+      fallback.style.display="none";
+      iframe.src="about:blank";
+      reader.innerHTML=`<div class="reader-loader"><div><div class="spinner" style="margin:0 auto 10px"></div>Reading file now. Nothing was downloaded on page open.</div></div>`;
       openModal("docModal");
-
-      const ext = getDocExt(originalUrl, entry.type);
-      try {
-        if (ext === "pdf") return await renderPdf(directUrl, reader);
-        if (ext === "docx") return await renderDocx(directUrl, reader);
-        if (["xlsx", "xls"].includes(ext)) return await renderSheet(directUrl, reader);
-        if (["txt", "csv", "json"].includes(ext) || String(originalUrl).startsWith("data:text/")) return await renderText(directUrl, reader);
-        return renderByIframeOrOffice(originalUrl, reader, iframe, fallback);
-      } catch (err) {
-        console.warn("RAM read failed, trying online preview", err);
-        renderByIframeOrOffice(originalUrl, reader, iframe, fallback);
+      const ext=getDocExt(originalUrl,entry.type||item.type);
+      try{
+        if(ext==="pdf") return await renderPdf(directUrl,reader);
+        if(ext==="docx") return await renderDocx(directUrl,reader);
+        if(["xlsx","xls"].includes(ext)) return await renderSheet(directUrl,reader);
+        if(["csv"].includes(ext)) return await renderCsv(directUrl,reader);
+        if(["txt","json"].includes(ext)||String(originalUrl).startsWith("data:text/")) return await renderText(directUrl,reader);
+        return renderByIframeOrOffice(originalUrl,reader,iframe,fallback);
+      }catch(err){
+        console.warn("Read mode failed",err);
+        renderByIframeOrOffice(originalUrl,reader,iframe,fallback);
       }
     }
 
-    function getDocExt(url, type = "") {
-      const t = String(type || "").toLowerCase();
-      const u = String(url || "").toLowerCase();
-      if (t.includes("pdf") || u.includes("application/pdf")) return "pdf";
-      if (t.includes("word") || t.includes("document") || u.includes("wordprocessingml")) return "docx";
-      if (t.includes("spreadsheet") || t.includes("excel") || u.includes("spreadsheetml")) return "xlsx";
-      if (t.includes("powerpoint") || t.includes("presentation")) return "pptx";
-      if (t.includes("text")) return "txt";
-      if (String(url).startsWith("data:application/pdf")) return "pdf";
-      if (String(url).startsWith("data:text/")) return "txt";
-      if (u.includes("docs.google.com/document/")) return "docx";
-      if (u.includes("docs.google.com/spreadsheets/")) return "xlsx";
-      if (u.includes("docs.google.com/presentation/")) return "pptx";
+    function getDocExt(url,type=""){
+      const t=String(type||"").toLowerCase();
+      const u=String(url||"").toLowerCase();
+      if(t.includes("pdf")||u.includes("application/pdf")) return "pdf";
+      if(t.includes("word")||t.includes("document")||u.includes("wordprocessingml")) return "docx";
+      if(t.includes("spreadsheet")||t.includes("excel")||u.includes("spreadsheetml")) return "xlsx";
+      if(t.includes("powerpoint")||t.includes("presentation")) return "pptx";
+      if(t.includes("text")) return "txt";
+      if(String(url).startsWith("data:application/pdf")) return "pdf";
+      if(String(url).startsWith("data:text/csv")) return "csv";
+      if(String(url).startsWith("data:text/")) return "txt";
+      if(u.includes("docs.google.com/document/")) return "docx";
+      if(u.includes("docs.google.com/spreadsheets/")) return "xlsx";
+      if(u.includes("docs.google.com/presentation/")) return "pptx";
       return getExt(url);
     }
 
-    async function renderPdf(url, reader) {
-      if (!window.pdfjsLib) throw new Error("PDF reader missing");
-      const data = await readArrayBuffer(url);
-      const pdf = await pdfjsLib.getDocument({ data }).promise;
-      reader.innerHTML = "";
-      for (let n = 1; n <= pdf.numPages; n++) {
-        const page = await pdf.getPage(n);
-        const viewport = page.getViewport({ scale: Math.min(1.45, Math.max(1.05, (reader.clientWidth || 380) / page.getViewport({ scale: 1 }).width)) });
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        const wrap = document.createElement("div");
-        wrap.className = "doc-page";
+    async function renderPdf(url,reader){
+      if(!window.pdfjsLib) throw new Error("PDF reader missing");
+      const data=await readArrayBuffer(url);
+      const pdf=await pdfjsLib.getDocument({data}).promise;
+      reader.innerHTML="";
+      for(let n=1;n<=pdf.numPages;n++){
+        const page=await pdf.getPage(n);
+        const base=page.getViewport({scale:1});
+        const scale=Math.min(1.65,Math.max(1.05,(reader.clientWidth||390)/base.width));
+        const viewport=page.getViewport({scale});
+        const canvas=document.createElement("canvas");
+        const ctx=canvas.getContext("2d");
+        canvas.width=viewport.width;
+        canvas.height=viewport.height;
+        const wrap=document.createElement("div");
+        wrap.className="doc-page";
         wrap.appendChild(canvas);
         reader.appendChild(wrap);
-        await page.render({ canvasContext: ctx, viewport }).promise;
+        await page.render({canvasContext:ctx,viewport}).promise;
       }
     }
 
-    async function renderDocx(url, reader) {
-      if (!window.mammoth) throw new Error("DOCX reader missing");
-      const arrayBuffer = await readArrayBuffer(url);
-      const result = await mammoth.convertToHtml({ arrayBuffer });
-      reader.innerHTML = `<div class="doc-html">${result.value || "<p>No readable text found.</p>"}</div>`;
+    async function renderDocx(url,reader){
+      if(!window.mammoth) throw new Error("DOCX reader missing");
+      const arrayBuffer=await readArrayBuffer(url);
+      const result=await mammoth.convertToHtml({arrayBuffer},{
+        convertImage:mammoth.images.imgElement(image=>image.read("base64").then(data=>({src:`data:${image.contentType};base64,${data}`})))
+      });
+      reader.innerHTML=`<div class="doc-html">${result.value||"<p>No readable text found.</p>"}</div>`;
     }
 
-    async function renderSheet(url, reader) {
-      if (!window.XLSX) throw new Error("Sheet reader missing");
-      const arrayBuffer = await readArrayBuffer(url);
-      const workbook = XLSX.read(arrayBuffer, { type: "array" });
-      reader.innerHTML = workbook.SheetNames.map(name => {
-        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[name], { header: 1, defval: "" });
-        if (!rows.length) return `<h4 class="sheet-title">${escapeHtml(name)}</h4><div class="doc-html">Empty sheet</div>`;
-        const htmlRows = rows.map((row, ri) => `<tr>${row.map(cell => `${ri === 0 ? "<th>" : "<td>"}${escapeHtml(cell)}${ri === 0 ? "</th>" : "</td>"}`).join("")}</tr>`).join("");
-        return `<h4 class="sheet-title">${escapeHtml(name)}</h4><div class="sheet-table-wrap"><table class="sheet-table">${htmlRows}</table></div>`;
+    async function renderSheet(url,reader){
+      if(!window.XLSX) throw new Error("Sheet reader missing");
+      const arrayBuffer=await readArrayBuffer(url);
+      const workbook=XLSX.read(arrayBuffer,{type:"array",cellStyles:true});
+      reader.innerHTML=workbook.SheetNames.map(name=>{
+        const rows=XLSX.utils.sheet_to_json(workbook.Sheets[name],{header:1,defval:""});
+        if(!rows.length) return `<h4 class="sheet-title">${escapeHtml(name)}</h4><div class="doc-html">Empty sheet</div>`;
+        const maxCols=Math.max(...rows.map(row=>row.length));
+        const header=`<tr><th>X/Y</th>${Array.from({length:maxCols},(_,i)=>`<th>X${i+1}</th>`).join("")}</tr>`;
+        const body=rows.map((row,ri)=>`<tr><th>Y${ri+1}</th>${Array.from({length:maxCols},(_,ci)=>`<td>${escapeHtml(row[ci]??"")}</td>`).join("")}</tr>`).join("");
+        return `<h4 class="sheet-title">${escapeHtml(name)}</h4><div class="sheet-table-wrap"><table class="sheet-table">${header}${body}</table></div>`;
       }).join("");
     }
 
-    async function renderText(url, reader) {
-      const text = await readText(url);
-      reader.innerHTML = `<div class="doc-text">${escapeHtml(text || "No readable text found.")}</div>`;
-    }
-
-    function renderByIframeOrOffice(url, reader, iframe, fallback) {
-      reader.style.display = "none";
-      if (String(url).startsWith("http")) {
-        const preview = cloudPreviewUrl(url);
-        iframe.src = preview || url;
-        iframe.style.display = "block";
-        fallback.style.display = "none";
+    async function renderCsv(url,reader){
+      const text=await readText(url);
+      if(!window.XLSX){
+        reader.innerHTML=`<div class="doc-text">${escapeHtml(text||"No readable text found.")}</div>`;
         return;
       }
-      iframe.style.display = "none";
-      fallback.style.display = "flex";
-      fallback.innerHTML = `<div><i class="fas fa-file-word" style="font-size:38px;margin-bottom:12px;"></i><strong>Read Mode Not Available</strong><span>This file is not a readable link. Use Download below.</span></div>`;
+      const workbook=XLSX.read(text,{type:"string"});
+      reader.innerHTML=workbook.SheetNames.map(name=>{
+        const rows=XLSX.utils.sheet_to_json(workbook.Sheets[name],{header:1,defval:""});
+        const maxCols=Math.max(1,...rows.map(row=>row.length));
+        const header=`<tr><th>X/Y</th>${Array.from({length:maxCols},(_,i)=>`<th>X${i+1}</th>`).join("")}</tr>`;
+        const body=rows.map((row,ri)=>`<tr><th>Y${ri+1}</th>${Array.from({length:maxCols},(_,ci)=>`<td>${escapeHtml(row[ci]??"")}</td>`).join("")}</tr>`).join("");
+        return `<h4 class="sheet-title">${escapeHtml(name)}</h4><div class="sheet-table-wrap"><table class="sheet-table">${header}${body}</table></div>`;
+      }).join("");
     }
 
-    function cloudPreviewUrl(url) {
-      url = String(url || "");
-      const driveFile = url.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
-      if (driveFile) return `https://drive.google.com/file/d/${driveFile[1]}/preview`;
-      const driveOpen = url.match(/[?&]id=([^&]+)/i);
-      if (url.includes("drive.google.com") && driveOpen) return `https://drive.google.com/file/d/${driveOpen[1]}/preview`;
-      if (url.includes("docs.google.com/document/") || url.includes("docs.google.com/spreadsheets/") || url.includes("docs.google.com/presentation/")) return url.replace("/edit", "/preview").replace(/\?.*$/, "") + "?embedded=true";
-      const ext = getExt(url);
-      if (["doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(ext) || url.includes("1drv.ms") || url.includes("sharepoint.com") || url.includes("onedrive.live.com")) return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
-      if (["pdf", "txt", "csv"].includes(ext)) return url;
+    async function renderText(url,reader){
+      const text=await readText(url);
+      const pretty=tryPrettyJson(text);
+      reader.innerHTML=`<div class="doc-text">${escapeHtml(pretty||"No readable text found.")}</div>`;
+    }
+
+    function tryPrettyJson(text){
+      try{return JSON.stringify(JSON.parse(text),null,2)}catch{return text}
+    }
+
+    function renderByIframeOrOffice(url,reader,iframe,fallback){
+      reader.style.display="none";
+      if(String(url).startsWith("http")){
+        iframe.src=cloudPreviewUrl(url)||url;
+        iframe.style.display="block";
+        fallback.style.display="none";
+        return;
+      }
+      iframe.style.display="none";
+      fallback.style.display="grid";
+      fallback.innerHTML=`<div><i class="fas fa-file-lines" style="font-size:38px;margin-bottom:12px;color:var(--primary)"></i><strong>Read Mode Not Available</strong><span>This file is not a readable link. Use Open or Download.</span></div>`;
+    }
+
+    function cloudPreviewUrl(url){
+      url=String(url||"");
+      const driveFile=url.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
+      if(driveFile) return `https://drive.google.com/file/d/${driveFile[1]}/preview`;
+      const driveOpen=url.match(/[?&]id=([^&]+)/i);
+      if(url.includes("drive.google.com")&&driveOpen) return `https://drive.google.com/file/d/${driveOpen[1]}/preview`;
+      if(url.includes("docs.google.com/document/")||url.includes("docs.google.com/spreadsheets/")||url.includes("docs.google.com/presentation/")) return url.replace("/edit","/preview").replace(/\?.*$/,"")+"?embedded=true";
+      const ext=getExt(url);
+      if(["doc","docx","xls","xlsx","ppt","pptx"].includes(ext)||url.includes("1drv.ms")||url.includes("sharepoint.com")||url.includes("onedrive.live.com")) return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
+      if(["pdf","txt","csv"].includes(ext)) return url;
       return `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(url)}`;
     }
 
-    function directDownloadUrl(url) {
-      url = String(url || "").trim();
-      if (!url || url.startsWith("data:")) return url;
-      const driveFile = url.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
-      if (driveFile) return `https://drive.google.com/uc?export=download&id=${driveFile[1]}`;
-      const driveOpen = url.match(/[?&]id=([^&]+)/i);
-      if (url.includes("drive.google.com") && driveOpen) return `https://drive.google.com/uc?export=download&id=${driveOpen[1]}`;
-      const docId = url.match(/docs\.google\.com\/document\/d\/([^/]+)/i);
-      if (docId) return `https://docs.google.com/document/d/${docId[1]}/export?format=docx`;
-      const sheetId = url.match(/docs\.google\.com\/spreadsheets\/d\/([^/]+)/i);
-      if (sheetId) return `https://docs.google.com/spreadsheets/d/${sheetId[1]}/export?format=xlsx`;
-      const slideId = url.match(/docs\.google\.com\/presentation\/d\/([^/]+)/i);
-      if (slideId) return `https://docs.google.com/presentation/d/${slideId[1]}/export/pptx`;
-      if (url.includes("dropbox.com")) return url.replace("www.dropbox.com", "dl.dropboxusercontent.com").replace(/[?&]dl=0/, "");
+    function directDownloadUrl(url){
+      url=String(url||"").trim();
+      if(!url||url.startsWith("data:")) return url;
+      const driveFile=url.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
+      if(driveFile) return `https://drive.google.com/uc?export=download&id=${driveFile[1]}`;
+      const driveOpen=url.match(/[?&]id=([^&]+)/i);
+      if(url.includes("drive.google.com")&&driveOpen) return `https://drive.google.com/uc?export=download&id=${driveOpen[1]}`;
+      const docId=url.match(/docs\.google\.com\/document\/d\/([^/]+)/i);
+      if(docId) return `https://docs.google.com/document/d/${docId[1]}/export?format=docx`;
+      const sheetId=url.match(/docs\.google\.com\/spreadsheets\/d\/([^/]+)/i);
+      if(sheetId) return `https://docs.google.com/spreadsheets/d/${sheetId[1]}/export?format=xlsx`;
+      const slideId=url.match(/docs\.google\.com\/presentation\/d\/([^/]+)/i);
+      if(slideId) return `https://docs.google.com/presentation/d/${slideId[1]}/export/pptx`;
+      if(url.includes("dropbox.com")) return url.replace("www.dropbox.com","dl.dropboxusercontent.com").replace(/[?&]dl=0/,"");
       return url;
     }
 
-    function proxyReadUrl(url) {
-      return FILE_PROXY_URL + encodeURIComponent(url);
-    }
-
-    async function fetchFileCandidate(candidate) {
-      const options = { cache: "no-store" };
-      if (String(candidate).startsWith(FILE_PROXY_URL)) {
-        const token = getToken();
-        if (token) options.headers = { Authorization: `Bearer ${token}` };
+    function proxyReadUrl(url){return FILE_PROXY_URL+encodeURIComponent(url)}
+    async function fetchFileCandidate(candidate){
+      const options={cache:"no-store"};
+      if(String(candidate).startsWith(FILE_PROXY_URL)){
+        const token=getToken();
+        if(token) options.headers={Authorization:`Bearer ${token}`};
       }
-      return fetch(candidate, options);
+      return fetch(candidate,options);
     }
-
-    async function readArrayBuffer(url) {
-      if (String(url).startsWith("data:")) return dataUrlToArrayBuffer(url);
-      const candidates = [...new Set([url, directDownloadUrl(url), proxyReadUrl(url), proxyReadUrl(directDownloadUrl(url))].filter(Boolean))];
-      let lastErr = null;
-      for (const candidate of candidates) {
-        try {
-          const res = await fetchFileCandidate(candidate);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const type = (res.headers.get("content-type") || "").toLowerCase();
-          const buf = await res.arrayBuffer();
-          if (!buf.byteLength) throw new Error("Empty file");
-          if (type.includes("text/html") && !String(candidate).includes("docs.google.com")) throw new Error("HTML page, not file bytes");
+    async function readArrayBuffer(url){
+      if(String(url).startsWith("data:")) return dataUrlToArrayBuffer(url);
+      const direct=directDownloadUrl(url);
+      const candidates=[...new Set([direct,url,proxyReadUrl(url),proxyReadUrl(direct)].filter(Boolean))];
+      let lastErr=null;
+      for(const candidate of candidates){
+        try{
+          const res=await fetchFileCandidate(candidate);
+          if(!res.ok) throw new Error(`HTTP ${res.status}`);
+          const type=(res.headers.get("content-type")||"").toLowerCase();
+          const buf=await res.arrayBuffer();
+          if(!buf.byteLength) throw new Error("Empty file");
+          if(type.includes("text/html")&&!String(candidate).includes("docs.google.com")) throw new Error("HTML page, not file bytes");
           return buf;
-        } catch (err) {
-          lastErr = err;
-        }
+        }catch(err){lastErr=err}
       }
-      throw lastErr || new Error("Cannot read file bytes");
+      throw lastErr||new Error("Cannot read file bytes");
     }
-
-    async function readText(url) {
-      if (String(url).startsWith("data:")) {
-        const comma = url.indexOf(",");
-        const meta = url.slice(0, comma);
-        const raw = url.slice(comma + 1);
-        return meta.includes(";base64") ? new TextDecoder().decode(dataUrlToArrayBuffer(url)) : decodeURIComponent(raw);
+    async function readText(url){
+      if(String(url).startsWith("data:")){
+        const comma=url.indexOf(",");
+        const meta=url.slice(0,comma);
+        const raw=url.slice(comma+1);
+        return meta.includes(";base64")?new TextDecoder().decode(dataUrlToArrayBuffer(url)):decodeURIComponent(raw);
       }
-      const candidates = [...new Set([url, directDownloadUrl(url), proxyReadUrl(url), proxyReadUrl(directDownloadUrl(url))].filter(Boolean))];
-      let lastErr = null;
-      for (const candidate of candidates) {
-        try {
-          const res = await fetchFileCandidate(candidate);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const direct=directDownloadUrl(url);
+      const candidates=[...new Set([direct,url,proxyReadUrl(url),proxyReadUrl(direct)].filter(Boolean))];
+      let lastErr=null;
+      for(const candidate of candidates){
+        try{
+          const res=await fetchFileCandidate(candidate);
+          if(!res.ok) throw new Error(`HTTP ${res.status}`);
           return await res.text();
-        } catch (err) {
-          lastErr = err;
-        }
+        }catch(err){lastErr=err}
       }
-      throw lastErr || new Error("Cannot read text file");
+      throw lastErr||new Error("Cannot read text file");
     }
-
-    function dataUrlToArrayBuffer(dataUrl) {
-      const comma = dataUrl.indexOf(",");
-      const meta = dataUrl.slice(0, comma);
-      const data = dataUrl.slice(comma + 1);
-      const binary = meta.includes(";base64") ? atob(data) : decodeURIComponent(data);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    function dataUrlToArrayBuffer(dataUrl){
+      const comma=dataUrl.indexOf(",");
+      const meta=dataUrl.slice(0,comma);
+      const data=dataUrl.slice(comma+1);
+      const binary=meta.includes(";base64")?atob(data):decodeURIComponent(data);
+      const bytes=new Uint8Array(binary.length);
+      for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
       return bytes.buffer;
     }
 
-    function escapeJs(val) {
-      return String(val || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, " ").replace(/\r/g, " ");
+    function downloadFile(index){
+      if(!canUseFiles("download")) return;
+      const item=getRenderedItem(index);
+      if(!item) return;
+      const entry=collectDocumentEntries(item)[0]||collectImageEntries(item)[0]||collectFileEntries(item)[0];
+      if(!entry||!entry.url) return showToast("No download link",true);
+      downloadUrl(directDownloadUrl(entry.url)||entry.url,entry.title||fileTitle(item));
+    }
+    function downloadCurrentPreview(){
+      if(!currentPreview) return;
+      if(!canUseFiles("download")) return;
+      const entry=currentPreview.entry||{};
+      downloadUrl(directDownloadUrl(entry.url)||entry.url,entry.title||fileTitle(currentPreview.item));
+    }
+    function openCurrentPreview(){
+      if(!currentPreview) return;
+      const entry=currentPreview.entry||{};
+      window.open(cloudPreviewUrl(entry.url)||entry.url,"_blank");
+    }
+    function downloadUrl(url,title){
+      const a=document.createElement("a");
+      a.href=url;
+      a.download=safeDownloadName(title||"Aryanta File",url);
+      if(!String(url).startsWith("data:")) a.target="_blank";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showToast("Download started",true);
+    }
+    function safeDownloadName(name,url){
+      const clean=String(name||"Aryanta File").replace(/[\\/:*?"<>|]+/g,"-").slice(0,80);
+      const ext=getExt(url);
+      return ext&&!clean.toLowerCase().endsWith(`.${ext}`)?`${clean}.${ext}`:clean;
     }
 
-    // --- MODAL UTILS ---
-    function openModal(id) { $(id).classList.add("show"); }
-    function closeModal(id) { 
-      $(id).classList.remove("show"); 
-      if(id === 'docModal') {
-        $("docIframe").src = "about:blank";
-        $("docReader").innerHTML = "";
+    function openAddFileModal(){
+      if(!canUseFiles("add file")) return;
+      editModeId=null;
+      pickedLocalFile=null;
+      $("editModalTitle").textContent="Add File";
+      $("fileTitleInput").value="";
+      $("fileDescInput").value="";
+      $("fileUrlInput").value="";
+      $("fileVisibilityInput").value="all";
+      $("pickedFileName").textContent="No local file selected";
+      $("pickedFileHint").textContent="Tap Choose File to upload to Firebase Storage, or paste a URL above.";
+      $("editLockNote").style.display="none";
+      $("ownerBadgeText").textContent=`Owner: ${myName} (${myUid||"session"})`;
+      openModal("editModal");
+    }
+
+    function openEditFileModal(id){
+      const item=allFiles.find(f=>f.id===id);
+      if(!item) return showToast("File not found",true);
+      if(!isOwner(item)) return ownerOnlyNotice();
+      if(!canUseFiles("edit file")) return;
+      editModeId=id;
+      pickedLocalFile=null;
+      $("editModalTitle").textContent="Edit My File";
+      $("fileTitleInput").value=fileTitle(item);
+      $("fileDescInput").value=item.description||"";
+      $("fileUrlInput").value=collectFileEntries(item)[0]?.url||item.fileUrl||item.url||"";
+      $("fileVisibilityInput").value=item.visibility||"all";
+      $("pickedFileName").textContent="No replacement file selected";
+      $("pickedFileHint").textContent="Choose a new file only if you want to replace the existing link.";
+      $("editLockNote").style.display="block";
+      $("ownerBadgeText").textContent=`Owner: You (${myUid})`;
+      openModal("editModal");
+    }
+
+    function closeEditModal(){
+      closeModal("editModal");
+      editModeId=null;
+      pickedLocalFile=null;
+      $("hiddenFileInput").value="";
+    }
+
+    function pickLocalFile(){
+      if(!canUseFiles("upload")) return;
+      const input=$("hiddenFileInput");
+      input.value="";
+      input.click();
+    }
+
+    $("hiddenFileInput").addEventListener("change",e=>{
+      const file=e.target.files&&e.target.files[0];
+      if(!file) return;
+      if(file.size>MAX_UPLOAD_SIZE){
+        showToast("File too large. Maximum 15MB.",true);
+        e.target.value="";
+        return;
       }
-      if(id === 'imageModal') $("imageGallery").innerHTML = "";
-    }
-    function closeModalOnBackdrop(e, id) { if(e.target.id === id) closeModal(id); }
-
-    window.addEventListener("keydown", e => {
-      if (e.key === "Escape") { closeModal("imageModal"); closeModal("docModal"); }
+      pickedLocalFile=file;
+      $("pickedFileName").textContent=file.name;
+      $("pickedFileHint").textContent=`${file.type||"file"} • ${formatSize(file.size)} • Will upload when you tap Save.`;
+      if(!$("fileTitleInput").value.trim()) $("fileTitleInput").value=file.name.replace(/\.[^.]+$/,"");
     });
 
-    // Boot
-    if (syncAdminSettings()) loadFiles();
+    async function uploadPickedFile(){
+      if(!pickedLocalFile) return null;
+      if(!storage) throw new Error("Firebase Storage SDK not available");
+      const safeName=pickedLocalFile.name.replace(/[^\w.\-]+/g,"_").slice(0,90);
+      const storagePath=`admin_files/${myKey}/${Date.now()}_${safeName}`;
+      const ref=storage.ref(storagePath);
+      const task=await ref.put(pickedLocalFile,{contentType:pickedLocalFile.type||"application/octet-stream",customMetadata:{ownerUid:myUid,ownerName:myName}});
+      const url=await task.ref.getDownloadURL();
+      return {url,storagePath,fileName:pickedLocalFile.name,fileSize:pickedLocalFile.size,type:pickedLocalFile.type||guessTypeFromUrl(pickedLocalFile.name)};
+    }
+
+    async function saveFileRecord(){
+      if(!canUseFiles("save file")) return;
+      const title=$("fileTitleInput").value.trim();
+      const description=$("fileDescInput").value.trim();
+      const manualUrl=$("fileUrlInput").value.trim();
+      const visibility=$("fileVisibilityInput").value;
+      if(!title) return showToast("Please enter file title",true);
+      if(!manualUrl&&!pickedLocalFile) return showToast("Paste a file URL or choose a file",true);
+      const btn=$("saveFileBtn");
+      btn.disabled=true;
+      btn.innerHTML=`<span class="spinner"></span> Saving`;
+      try{
+        const wasEdit=!!editModeId;
+        let uploadData=null;
+        if(pickedLocalFile) uploadData=await uploadPickedFile();
+        const url=uploadData?.url||manualUrl;
+        const existing=editModeId?allFiles.find(f=>f.id===editModeId):null;
+        if(editModeId&&existing&&!isOwner(existing)) throw new Error("Owner only");
+        const id=editModeId||db.ref(FILES_PATH).push().key;
+        const now=Date.now();
+        const record={
+          id,
+          title,
+          description,
+          url,
+          fileUrl:url,
+          fileName:uploadData?.fileName||existing?.fileName||safeDownloadName(title,url),
+          fileSize:uploadData?.fileSize||existing?.fileSize||0,
+          storagePath:uploadData?.storagePath||existing?.storagePath||"",
+          type:uploadData?.type||guessTypeFromUrl(url),
+          visibility,
+          ownerUid:editModeId?(existing.ownerUid||myUid):myUid,
+          ownerName:editModeId?(existing.ownerName||myName):myName,
+          ownerImage:editModeId?(existing.ownerImage||myImage):myImage,
+          createdAt:editModeId?(existing.createdAt||now):now,
+          updatedAt:now
+        };
+        const meta={...record, raw:null};
+        const updates={};
+        updates[`${FILES_PATH}/${id}`]=record;
+        updates[`${FILES_META_PATH}/${id}`]=meta;
+        await db.ref().update(updates);
+        closeEditModal();
+        showToast(wasEdit?"File updated":"File added",true);
+        if(!wasEdit) await sendNewFileNotification(record);
+        await reloadFiles();
+      }catch(err){
+        console.error(err);
+        showToast("Save failed. Check Firebase Storage/Database rules.",true,3800);
+      }finally{
+        btn.disabled=false;
+        btn.innerHTML=`<i class="fas fa-floppy-disk"></i> Save`;
+      }
+    }
+
+    function openDeleteModal(id){
+      const item=allFiles.find(f=>f.id===id);
+      if(!item) return showToast("File not found",true);
+      if(!isOwner(item)) return ownerOnlyNotice();
+      deleteTargetId=id;
+      $("deleteTitle").textContent=`Delete "${fileTitle(item)}"?`;
+      openModal("deleteModal");
+    }
+
+    async function confirmDeleteFile(){
+      const item=allFiles.find(f=>f.id===deleteTargetId);
+      if(!item) return closeModal("deleteModal");
+      if(!isOwner(item)) return ownerOnlyNotice();
+      try{
+        const updates={};
+        updates[`${FILES_PATH}/${item.id}`]=null;
+        updates[`${FILES_META_PATH}/${item.id}`]=null;
+        await db.ref().update(updates);
+        if(item.storagePath&&storage){
+          storage.ref(item.storagePath).delete().catch(()=>{});
+        }
+        closeModal("deleteModal");
+        showToast("File deleted",true);
+        await reloadFiles();
+      }catch(err){
+        console.error(err);
+        showToast("Delete failed. Check Firebase rules.",true);
+      }
+    }
+
+    function notifyNewFile(item){
+      const title="New file added";
+      const body=`${fileTitle(item)} is added to Aryanta Files. Open it to view.`;
+      syncAdminSettings();
+      if(appSettings.notify===true){
+        if(document.visibilityState==="hidden"&&"Notification" in window&&Notification.permission==="granted"){
+          try{new Notification(title,{body,icon:ARYANTA_LOGO,badge:ARYANTA_LOGO,tag:"aryanta-file-update",data:{url:"file.html"}})}catch{}
+        }else{
+          showToast(`${title}: ${body}`,true,3600);
+        }
+        playNotifySound();
+      }
+      sendNewFileNotification(item).catch(()=>{});
+    }
+
+    async function sendNewFileNotification(item){
+      const now=Date.now();
+      const id=`FILE-NOTIFY-${item.id||now}`;
+      const body=`${fileTitle(item)} is added to Aryanta Files. Open it to view.`;
+      const common={
+        id,
+        title:"New file added",
+        body,
+        message:body,
+        type:"admin_file",
+        icon:ARYANTA_LOGO,
+        logo:ARYANTA_LOGO,
+        fileId:item.id||"",
+        fileName:fileTitle(item),
+        senderUid:item.ownerUid||myUid,
+        senderName:item.ownerName||myName,
+        url:"file.html",
+        target:"all_admins",
+        createdAt:now,
+        date:new Date(now).toISOString(),
+        readBy:{}
+      };
+      const updates={};
+      updates[`${ADMIN_NOTIFICATION_PATH}/${id}`]=common;
+      updates[`${ADMIN_BROADCAST_PATH}/${id}`]=common;
+      updates[`${ADMIN_APP_MESSAGE_PATH}/${id}`]={title:common.title,body:common.body,type:common.type,url:"https://aryanta.in/workplace",icon:ARYANTA_LOGO,logo:ARYANTA_LOGO,fileId:common.fileId,fileName:common.fileName,createdAt:common.createdAt};
+      try{await db.ref().update(updates)}catch{}
+      [`${WORKER_API}/admin/push`,`${WORKER_API}/push-admins`,`${WORKER_API}/send-notification`].forEach(url=>{
+        fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...common,recipients:"all_admins"}),keepalive:true}).catch(()=>{});
+      });
+    }
+
+    function openModal(id){$(id)?.classList.add("show")}
+    function closeModal(id){
+      $(id)?.classList.remove("show");
+      if(id==="docModal"){
+        $("docIframe").src="about:blank";
+        $("docReader").innerHTML="";
+        currentPreview=null;
+      }
+      if(id==="imageModal"){
+        $("imageGallery").innerHTML="";
+        currentPreview=null;
+      }
+      if(id==="deleteModal") deleteTargetId=null;
+    }
+    function closeModalOnBackdrop(e,id){if(e.target.id===id) closeModal(id)}
+    function anyModalOpen(){return ["imageModal","docModal","editModal","deleteModal"].some(id=>$(id)?.classList.contains("show"))}
+    function handleBack(){
+      if($("imageModal").classList.contains("show")) return closeModal("imageModal");
+      if($("docModal").classList.contains("show")) return closeModal("docModal");
+      if($("editModal").classList.contains("show")) return closeEditModal();
+      if($("deleteModal").classList.contains("show")) return closeModal("deleteModal");
+      goPage("admin.html");
+    }
+    window.addEventListener("keydown",e=>{if(e.key==="Escape") handleBack()});
+    history.pushState({page:"file"},"");
+    window.addEventListener("popstate",e=>{
+      if(anyModalOpen()){
+        handleBack();
+        history.pushState({page:"file"},"");
+      }else{
+        goPage("admin.html");
+      }
+    });
+
+    document.addEventListener("contextmenu",e=>e.preventDefault());
+    document.addEventListener("copy",e=>{
+      const inReader=e.target.closest&&e.target.closest(".doc-reader");
+      if(!inReader) e.preventDefault();
+    });
+
+    if(syncAdminSettings()){
+      reloadFiles();
+    }
   </script>
 </body>
 </html>
