@@ -11,6 +11,9 @@
   <!-- Firebase Compat SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-database-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 
   <style>
     :root {
@@ -146,6 +149,29 @@
     .spinner { width: 16px; height: 16px; border-radius: 999px; border: 2px solid rgba(0, 128, 128, 0.18); border-top-color: var(--primary); animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+
+    .preview-info { width: 100%; padding: 12px; background: var(--card); border-bottom: 1px solid var(--border); display: grid; gap: 6px; flex: 0 0 auto; }
+    .preview-info strong { font-size: 15px; font-weight: 950; color: var(--text); line-height: 1.35; }
+    .preview-info span { color: var(--muted); font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .gallery-wrap { width: 100%; padding: 12px; display: grid; gap: 12px; align-content: start; }
+    .gallery-card { width: 100%; border: 1px solid var(--border); border-radius: 20px; background: var(--card); overflow: hidden; box-shadow: var(--shadow-soft); }
+    .gallery-card img { width: 100%; max-height: 58dvh; object-fit: contain; display: block; background: var(--bg); }
+    .gallery-actions { padding: 9px; display: flex; gap: 8px; border-top: 1px solid var(--border); }
+    .doc-reader { width: 100%; height: 100%; overflow: auto; padding: 12px; background: var(--bg); color: var(--text); }
+    .doc-reader .doc-page { width: 100%; margin: 0 0 12px; border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: #ffffff; box-shadow: var(--shadow-soft); }
+    html[data-theme="dark"] .doc-reader .doc-page { background: #0f1b1d; }
+    .doc-reader canvas { width: 100%; height: auto; display: block; background: #ffffff; }
+    .doc-text { margin-top: 8px; padding: 11px; border-radius: 16px; border: 1px solid var(--border); background: var(--card); white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.55; font-weight: 650; }
+    .doc-html { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 14px; box-shadow: var(--shadow-soft); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+    .doc-html img { max-width: 100%; height: auto; border-radius: 12px; }
+    .sheet-title { margin: 12px 0 8px; font-size: 14px; font-weight: 950; color: var(--primary); }
+    .sheet-table-wrap { width: 100%; overflow: auto; border-radius: 16px; border: 1px solid var(--border); background: var(--card); margin-bottom: 12px; }
+    .sheet-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .sheet-table th, .sheet-table td { padding: 8px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); text-align: left; vertical-align: top; white-space: nowrap; }
+    .sheet-table th { background: var(--soft); color: var(--primary); font-weight: 950; }
+    .reader-loader { width: 100%; min-height: 180px; display: grid; place-items: center; text-align: center; color: var(--muted); font-size: 12px; font-weight: 850; }
+
+
     @media (min-width: 520px) { .bottom-nav { width: 430px; left: 50%; right: auto; transform: translateX(-50%); } }
   </style>
 </head>
@@ -221,39 +247,49 @@
 
   <!-- IMAGE VIEWER MODAL -->
   <div id="imageModal" class="modal" onclick="closeModalOnBackdrop(event, 'imageModal')">
-    <div class="modal-card">
+    <div class="modal-card" style="height: 86dvh;">
       <div class="modal-head">
         <strong id="imageModalTitle">Image Preview</strong>
         <button class="icon-btn danger" onclick="closeModal('imageModal')"><i class="fas fa-xmark"></i></button>
       </div>
-      <div class="modal-body" style="padding: 0; background: var(--bg);">
-        <img id="imageModalImg" class="image-preview" src="" alt="Preview" />
+      <div class="preview-info">
+        <strong id="imageInfoTitle">Image</strong>
+        <span id="imageInfoMeta"><i class="fas fa-clock"></i> Recently added</span>
+      </div>
+      <div class="modal-body" style="padding: 0; background: var(--bg); display: block;">
+        <div id="imageGallery" class="gallery-wrap"></div>
       </div>
       <div style="padding: 12px; border-top: 1px solid var(--border); display: flex; gap: 8px;">
-        <button class="wide-action success" id="imgBtnDownload"><i class="fas fa-download"></i> Download Image</button>
+        <button class="wide-action success" id="imgBtnDownloadAll"><i class="fas fa-download"></i> Download All Images</button>
       </div>
     </div>
   </div>
 
   <!-- DOCUMENT VIEWER MODAL -->
   <div id="docModal" class="modal" onclick="closeModalOnBackdrop(event, 'docModal')">
-    <div class="modal-card" style="height: 85dvh;">
+    <div class="modal-card" style="height: 86dvh;">
       <div class="modal-head">
         <strong id="docModalTitle">Document Preview</strong>
         <button class="icon-btn danger" onclick="closeModal('docModal')"><i class="fas fa-xmark"></i></button>
       </div>
+      <div class="preview-info">
+        <strong id="docInfoTitle">Document</strong>
+        <span id="docInfoMeta"><i class="fas fa-clock"></i> Recently added</span>
+      </div>
       <div class="modal-body" style="padding: 0; display: flex; flex-direction: column;">
-        <iframe id="docIframe" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+        <iframe id="docIframe" style="width: 100%; height: 100%; border: none; display: none; background: #fff;"></iframe>
+        <div id="docReader" class="doc-reader" style="display: none;"></div>
         <div id="docUnsupported" class="empty" style="display: none; border: none; height: 100%; align-content: center; width: 100%;">
           <div>
             <i class="fas fa-file-word" style="font-size: 38px; margin-bottom: 12px;"></i>
-            <strong>No In-App Preview Available</strong>
-            <span>This format cannot be previewed inside the app. Please click Download below.</span>
+            <strong>Read Mode Not Available</strong>
+            <span>This file link cannot be read inside the app because browser access is blocked. Use Download below.</span>
           </div>
         </div>
       </div>
       <div style="padding: 12px; border-top: 1px solid var(--border); display: flex; gap: 8px;">
-        <button class="wide-action success" id="docBtnDownload"><i class="fas fa-download"></i> Download Document</button>
+        <button class="wide-action" id="docBtnOpen"><i class="fas fa-up-right-from-square"></i> Open</button>
+        <button class="wide-action success" id="docBtnDownload"><i class="fas fa-download"></i> Download</button>
       </div>
     </div>
   </div>
@@ -281,6 +317,8 @@
     const TOKEN_KEY = "aryanta_admin_worker_token";
     const SESSION_TOKEN_KEY = "aryanta_admin_worker_session";
     const LOGIN_PAGE = "index.html";
+    const WORKER_API = "https://rough-field-c679.official-aryanta.workers.dev";
+    const FILE_PROXY_URL = WORKER_API + "/file-proxy?url=";
     const $ = id => document.getElementById(id);
 
     let allFiles = [];
@@ -292,13 +330,14 @@
     function getToken() { return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(SESSION_TOKEN_KEY) || ""; }
     
     function syncAdminSettings() {
-      if(!getToken()) { window.location.replace(LOGIN_PAGE); return; }
+      if(!getToken()) { window.location.replace(LOGIN_PAGE); return false; }
       try {
         const savedSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {};
         const theme = savedSettings.theme || "light";
         const useDark = theme === "dark" || (theme === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
         document.documentElement.setAttribute("data-theme", useDark ? "dark" : "light");
       } catch(e) {}
+      return true;
     }
 
     function goPage(url) { window.location.href = url; }
@@ -322,33 +361,103 @@
     }
 
     // --- SMART IDENTIFICATION ENGINE ---
-    function fileUrl(item) { return item.url || item.fileUrl || item.link || ""; }
-    function fileTitle(item) { return item.title || item.name || "Untitled File"; }
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    }
+
+    function fileTitle(item) { return item.title || item.name || item.fileName || item.filename || "Untitled File"; }
+    function addedValue(item) { return item.createdAt || item.addedAt || item.uploadedAt || item.timestamp || item.time || item.date || item.updatedAt || ""; }
+    function fileUrl(item) { const entries = collectFileEntries(item); return entries.length ? entries[0].url : ""; }
+
+    function collectFileEntries(item) {
+      const entries = [];
+      const push = (value, label = "") => {
+        if (!value) return;
+        if (typeof value === "string") {
+          const url = value.trim();
+          if (url) entries.push({ url, title: label || fileTitle(item), type: guessTypeFromUrl(url) });
+          return;
+        }
+        if (Array.isArray(value)) { value.forEach((v, i) => push(v, `${label || fileTitle(item)} ${i + 1}`)); return; }
+        if (typeof value === "object") {
+          const url = value.url || value.fileUrl || value.downloadUrl || value.link || value.src || value.image || value.imageUrl || value.data || "";
+          if (url) entries.push({ url: String(url).trim(), title: value.title || value.name || value.fileName || label || fileTitle(item), type: value.type || value.mimeType || value.contentType || guessTypeFromUrl(url) });
+          ["files", "images", "imageUrls", "attachments", "documents", "urls"].forEach(k => { if (value[k]) push(value[k], label); });
+        }
+      };
+
+      push(item.url, fileTitle(item));
+      push(item.fileUrl, fileTitle(item));
+      push(item.downloadUrl, fileTitle(item));
+      push(item.link, fileTitle(item));
+      push(item.src, fileTitle(item));
+      push(item.image, fileTitle(item));
+      push(item.imageUrl, fileTitle(item));
+      push(item.thumbnail, fileTitle(item));
+      push(item.file, fileTitle(item));
+      push(item.files, fileTitle(item));
+      push(item.images, fileTitle(item));
+      push(item.imageUrls, fileTitle(item));
+      push(item.attachments, fileTitle(item));
+      push(item.documents, fileTitle(item));
+      push(item.urls, fileTitle(item));
+
+      const seen = new Set();
+      return entries.filter(e => {
+        if (!e.url || seen.has(e.url)) return false;
+        seen.add(e.url);
+        return true;
+      });
+    }
+
+    function collectImageEntries(item) { return collectFileEntries(item).filter(e => isImageUrl(e.url, e.type)); }
+    function collectDocumentEntries(item) { return collectFileEntries(item).filter(e => !isImageUrl(e.url, e.type)); }
+
+    function guessTypeFromUrl(url) {
+      const u = String(url || "").toLowerCase();
+      if (u.startsWith("data:image/")) return "image";
+      if (u.startsWith("data:application/pdf")) return "pdf";
+      if (u.startsWith("data:text/")) return "text";
+      const ext = getExt(u);
+      if (["png", "jpg", "jpeg", "gif", "webp", "svg", "avif"].includes(ext)) return "image";
+      if (["pdf", "doc", "docx", "xls", "xlsx", "csv", "txt", "ppt", "pptx"].includes(ext)) return ext;
+      return "file";
+    }
+
+    function getExt(url) {
+      const clean = String(url || "").split("?")[0].split("#")[0].toLowerCase();
+      const last = clean.split(".").pop();
+      return last && last.length <= 5 ? last : "";
+    }
+
+    function isImageUrl(url, type = "") {
+      const t = String(type || "").toLowerCase();
+      if (t.includes("image")) return true;
+      const u = String(url || "");
+      if (u.startsWith("data:image/")) return true;
+      if (u.length > 700 && !u.startsWith("http") && !u.startsWith("data:")) return false;
+      return ["png", "jpg", "jpeg", "gif", "webp", "svg", "avif"].includes(getExt(u));
+    }
 
     function isImage(item) {
-      if (item.type === 'image') return true;
-      const url = fileUrl(item);
-      if (url.startsWith('data:image/')) return true;
-      if (url.length > 500 && !url.startsWith('http')) return false; // Prevent heavy regex on huge base64 docs
-      const urlLower = url.toLowerCase().split("?")[0];
-      return /\.(png|jpe?g|gif|webp|svg|avif)$/i.test(urlLower);
+      const t = String(item.type || item.mimeType || item.contentType || "").toLowerCase();
+      return t.includes("image") || collectImageEntries(item).length > 0;
     }
 
     function isDocument(item) {
-      if (item.type === 'document') return true;
-      const url = fileUrl(item);
-      if (url.startsWith('data:application/') || url.startsWith('data:text/')) return true;
-      if (url.length > 500 && !url.startsWith('http')) return false; 
-      const urlLower = url.toLowerCase().split("?")[0];
-      return /\.(pdf|docx?|xlsx?|pptx?|txt|csv)$/i.test(urlLower);
+      const t = String(item.type || item.mimeType || item.contentType || "").toLowerCase();
+      if (t.includes("document") || t.includes("pdf") || t.includes("text") || t.includes("sheet") || t.includes("word") || t.includes("excel")) return true;
+      return collectDocumentEntries(item).length > 0;
     }
 
     function fileIcon(item) {
-      if (isImage(item)) return "fa-image";
+      if (isImage(item) && !collectDocumentEntries(item).length) return "fa-image";
       const url = fileUrl(item).toLowerCase();
-      if (url.includes("pdf") || url.includes("application/pdf")) return "fa-file-pdf";
-      if (url.includes("sheet") || url.includes("excel") || /\.(xlsx?|csv)$/.test(url)) return "fa-file-excel";
-      return "fa-file-lines"; 
+      const type = String(item.type || item.mimeType || item.contentType || "").toLowerCase();
+      if (url.includes("pdf") || type.includes("pdf")) return "fa-file-pdf";
+      if (url.includes("sheet") || url.includes("excel") || type.includes("spreadsheet") || ["xls", "xlsx", "csv"].includes(getExt(url))) return "fa-file-excel";
+      if (url.includes("word") || ["doc", "docx"].includes(getExt(url))) return "fa-file-word";
+      return "fa-file-lines";
     }
 
     function formatDate(value) {
@@ -356,6 +465,13 @@
       const d = new Date(value);
       if (Number.isNaN(d.getTime())) return "Recently added";
       return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    }
+
+    function formatDateTime(value) {
+      if (!value) return "Recently added";
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return "Recently added";
+      return d.toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
     }
 
     // --- FIREBASE SDK DATA FETCHING ---
@@ -425,28 +541,30 @@
       }
 
       list.innerHTML = items.map((item, index) => {
-        const url = fileUrl(item);
         const title = fileTitle(item);
-        const date = formatDate(item.createdAt);
-        const typeLabel = (item.type || (isImage(item) ? "image" : "document")).toUpperCase();
-        
-        // Handle thumbnails safely
+        const date = formatDate(addedValue(item));
+        const imageEntries = collectImageEntries(item);
+        const docEntries = collectDocumentEntries(item);
+        const typeLabel = item.type || (imageEntries.length && !docEntries.length ? "image" : "document");
         let thumbHtml = `<i class="fas ${fileIcon(item)}"></i>`;
-        if (isImage(item) && url) {
-           thumbHtml = `<img src="${url}" alt="IMG" loading="lazy" />`;
+
+        if (imageEntries.length) {
+          thumbHtml = `<img src="${escapeAttr(imageEntries[0].url)}" alt="IMG" loading="lazy" />`;
         }
-        
+
+        const countText = imageEntries.length > 1 ? ` • ${imageEntries.length} IMAGES` : docEntries.length > 1 ? ` • ${docEntries.length} FILES` : "";
+
         return `
           <article class="file-item">
-            <button class="thumb" onclick="previewFile(${index})">${thumbHtml}</button>
+            <button class="thumb" onclick="previewThumb(${index})">${thumbHtml}</button>
             <div class="file-main">
               <div class="file-meta">
                 <strong>${escapeHtml(title)}</strong>
-                <span>${escapeHtml(typeLabel)} • ${escapeHtml(date)}</span>
+                <span>${escapeHtml(String(typeLabel).toUpperCase())}${countText} • ${escapeHtml(date)}</span>
               </div>
               <div class="file-actions">
                 <button class="mini-action" onclick="previewFile(${index})"><i class="fas fa-eye"></i> View</button>
-                <button class="mini-action success" onclick="downloadFile(${index})"><i class="fas fa-download"></i> Dowload</button>
+                <button class="mini-action success" onclick="downloadFile(${index})"><i class="fas fa-download"></i> Download</button>
               </div>
             </div>
           </article>`;
@@ -455,79 +573,301 @@
 
     function getRenderedItem(index) { return filteredFiles()[index]; }
 
+    function escapeAttr(val) { return escapeHtml(val).replace(/"/g, "&quot;"); }
+
     function downloadFile(index) {
       const item = getRenderedItem(index);
-      const url = fileUrl(item);
-      const title = fileTitle(item);
-      if (!url) return showToast("No download link");
-      
+      if (!item) return;
+      const images = collectImageEntries(item);
+      const docs = collectDocumentEntries(item);
+      if (images.length > 1 && !docs.length) return downloadAllImages(index);
+      const entry = docs[0] || images[0] || collectFileEntries(item)[0];
+      if (!entry || !entry.url) return showToast("No download link");
+      downloadUrl(entry.url, entry.title || fileTitle(item));
+    }
+
+    function downloadUrl(url, title) {
       const a = document.createElement("a");
       a.href = url;
-      a.download = title;
-      
-      // If base64, click works instantly. If external URL, open in new tab.
-      if (!url.startsWith('data:')) a.target = "_blank"; 
-      
+      a.download = safeDownloadName(title || "Aryanta File", url);
+      if (!url.startsWith("data:")) a.target = "_blank";
       document.body.appendChild(a);
       a.click();
       a.remove();
       showToast("Download started");
     }
 
+    function downloadAllImages(index) {
+      const item = getRenderedItem(index);
+      const images = collectImageEntries(item);
+      if (!images.length) return showToast("No images found");
+      images.forEach((img, i) => setTimeout(() => downloadUrl(img.url, `${fileTitle(item)}-${i + 1}`), i * 260));
+    }
+
+    function safeDownloadName(name, url) {
+      const clean = String(name || "Aryanta File").replace(/[\\/:*?"<>|]+/g, "-").slice(0, 80);
+      const ext = getExt(url);
+      return ext && !clean.toLowerCase().endsWith(`.${ext}`) ? `${clean}.${ext}` : clean;
+    }
+
     // --- PREVIEW ENGINE ---
+    function previewThumb(index) {
+      const item = getRenderedItem(index);
+      if (!item) return showToast("No file found");
+      const images = collectImageEntries(item);
+      if (images.length) return openImageViewer(item, index);
+      previewFile(index);
+    }
+
     function previewFile(index) {
       const item = getRenderedItem(index);
-      const url = fileUrl(item);
-      const title = fileTitle(item);
-      
-      if (!url) return showToast("No file found to preview");
-      
-      if (isImage(item)) {
-        return openImageViewer(url, title, index);
-      }
-      openDocumentViewer(item, index);
+      if (!item) return showToast("No file found");
+      const docs = collectDocumentEntries(item);
+      const images = collectImageEntries(item);
+
+      if (docs.length) return openDocumentViewer(item, index);
+      if (images.length) return openImageViewer(item, index);
+
+      showToast("No file link found");
     }
 
-    function openDocumentViewer(item, index) {
-      const url = fileUrl(item);
+    function openImageViewer(item, index) {
+      const images = collectImageEntries(item);
       const title = fileTitle(item);
-      
-      $("docModalTitle").textContent = title;
-      
-      const iframe = $("docIframe");
-      const fallback = $("docUnsupported");
-
-      iframe.style.display = "none";
-      fallback.style.display = "none";
-
-      // If it's a base64 PDF/Text OR a direct link to PDF/Text, we can iframe it.
-      const isBase64Doc = url.startsWith('data:application/pdf') || url.startsWith('data:text/');
-      const ext = url.split('.').pop().toLowerCase().split('?')[0];
-      const isRenderableLink = url.startsWith('http') && ['pdf', 'txt', 'csv'].includes(ext);
-
-      if (isBase64Doc || isRenderableLink) {
-        iframe.src = url;
-        iframe.style.display = "block";
-      } else {
-        fallback.style.display = "flex";
-      }
-
-      $("docBtnDownload").onclick = () => { downloadFile(index); };
-      openModal("docModal");
-    }
-
-    function openImageViewer(src, title, index) {
-      $("imageModalImg").src = src;
-      $("imageModalTitle").textContent = title || "Image";
-      $("imgBtnDownload").onclick = () => { downloadFile(index); };
+      if (!images.length) return showToast("No image found");
+      $("imageModalTitle").textContent = images.length > 1 ? `${title} (${images.length})` : title;
+      $("imageInfoTitle").textContent = title;
+      $("imageInfoMeta").innerHTML = `<i class="fas fa-clock"></i> Added: ${escapeHtml(formatDateTime(addedValue(item)))}${images.length > 1 ? ` • ${images.length} images` : ""}`;
+      $("imageGallery").innerHTML = images.map((img, i) => `
+        <div class="gallery-card">
+          <img src="${escapeAttr(img.url)}" alt="${escapeAttr(img.title || title)}" loading="lazy" onclick="window.open('${escapeJs(img.url)}', '_blank')" />
+          <div class="gallery-actions">
+            <button class="wide-action success" onclick="downloadUrl('${escapeJs(img.url)}', '${escapeJs(img.title || title + '-' + (i + 1))}')"><i class="fas fa-download"></i> Download This Image</button>
+          </div>
+        </div>`).join("");
+      $("imgBtnDownloadAll").onclick = () => downloadAllImages(index);
+      $("imgBtnDownloadAll").style.display = images.length > 1 ? "flex" : "none";
       openModal("imageModal");
+    }
+
+    async function openDocumentViewer(item, index) {
+      const docs = collectDocumentEntries(item);
+      const entry = docs[0] || collectFileEntries(item)[0];
+      if (!entry || !entry.url) return showToast("No document found");
+
+      const originalUrl = entry.url;
+      const directUrl = directDownloadUrl(originalUrl);
+      const title = entry.title || fileTitle(item);
+      $("docModalTitle").textContent = title;
+      $("docInfoTitle").textContent = title;
+      $("docInfoMeta").innerHTML = `<i class="fas fa-clock"></i> Added: ${escapeHtml(formatDateTime(addedValue(item)))} • Read mode`;
+      $("docBtnDownload").onclick = () => downloadUrl(directUrl || originalUrl, title);
+      $("docBtnOpen").onclick = () => window.open(cloudPreviewUrl(originalUrl) || originalUrl, "_blank");
+
+      const iframe = $("docIframe");
+      const reader = $("docReader");
+      const fallback = $("docUnsupported");
+      iframe.style.display = "none";
+      reader.style.display = "block";
+      fallback.style.display = "none";
+      iframe.src = "about:blank";
+      reader.innerHTML = `<div class="reader-loader"><div><div class="spinner" style="margin:0 auto 10px;"></div>Fetching into RAM and opening read mode...</div></div>`;
+      openModal("docModal");
+
+      const ext = getDocExt(originalUrl, entry.type);
+      try {
+        if (ext === "pdf") return await renderPdf(directUrl, reader);
+        if (ext === "docx") return await renderDocx(directUrl, reader);
+        if (["xlsx", "xls"].includes(ext)) return await renderSheet(directUrl, reader);
+        if (["txt", "csv", "json"].includes(ext) || String(originalUrl).startsWith("data:text/")) return await renderText(directUrl, reader);
+        return renderByIframeOrOffice(originalUrl, reader, iframe, fallback);
+      } catch (err) {
+        console.warn("RAM read failed, trying online preview", err);
+        renderByIframeOrOffice(originalUrl, reader, iframe, fallback);
+      }
+    }
+
+    function getDocExt(url, type = "") {
+      const t = String(type || "").toLowerCase();
+      const u = String(url || "").toLowerCase();
+      if (t.includes("pdf") || u.includes("application/pdf")) return "pdf";
+      if (t.includes("word") || t.includes("document") || u.includes("wordprocessingml")) return "docx";
+      if (t.includes("spreadsheet") || t.includes("excel") || u.includes("spreadsheetml")) return "xlsx";
+      if (t.includes("powerpoint") || t.includes("presentation")) return "pptx";
+      if (t.includes("text")) return "txt";
+      if (String(url).startsWith("data:application/pdf")) return "pdf";
+      if (String(url).startsWith("data:text/")) return "txt";
+      if (u.includes("docs.google.com/document/")) return "docx";
+      if (u.includes("docs.google.com/spreadsheets/")) return "xlsx";
+      if (u.includes("docs.google.com/presentation/")) return "pptx";
+      return getExt(url);
+    }
+
+    async function renderPdf(url, reader) {
+      if (!window.pdfjsLib) throw new Error("PDF reader missing");
+      const data = await readArrayBuffer(url);
+      const pdf = await pdfjsLib.getDocument({ data }).promise;
+      reader.innerHTML = "";
+      for (let n = 1; n <= pdf.numPages; n++) {
+        const page = await pdf.getPage(n);
+        const viewport = page.getViewport({ scale: Math.min(1.45, Math.max(1.05, (reader.clientWidth || 380) / page.getViewport({ scale: 1 }).width)) });
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const wrap = document.createElement("div");
+        wrap.className = "doc-page";
+        wrap.appendChild(canvas);
+        reader.appendChild(wrap);
+        await page.render({ canvasContext: ctx, viewport }).promise;
+      }
+    }
+
+    async function renderDocx(url, reader) {
+      if (!window.mammoth) throw new Error("DOCX reader missing");
+      const arrayBuffer = await readArrayBuffer(url);
+      const result = await mammoth.convertToHtml({ arrayBuffer });
+      reader.innerHTML = `<div class="doc-html">${result.value || "<p>No readable text found.</p>"}</div>`;
+    }
+
+    async function renderSheet(url, reader) {
+      if (!window.XLSX) throw new Error("Sheet reader missing");
+      const arrayBuffer = await readArrayBuffer(url);
+      const workbook = XLSX.read(arrayBuffer, { type: "array" });
+      reader.innerHTML = workbook.SheetNames.map(name => {
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[name], { header: 1, defval: "" });
+        if (!rows.length) return `<h4 class="sheet-title">${escapeHtml(name)}</h4><div class="doc-html">Empty sheet</div>`;
+        const htmlRows = rows.map((row, ri) => `<tr>${row.map(cell => `${ri === 0 ? "<th>" : "<td>"}${escapeHtml(cell)}${ri === 0 ? "</th>" : "</td>"}`).join("")}</tr>`).join("");
+        return `<h4 class="sheet-title">${escapeHtml(name)}</h4><div class="sheet-table-wrap"><table class="sheet-table">${htmlRows}</table></div>`;
+      }).join("");
+    }
+
+    async function renderText(url, reader) {
+      const text = await readText(url);
+      reader.innerHTML = `<div class="doc-text">${escapeHtml(text || "No readable text found.")}</div>`;
+    }
+
+    function renderByIframeOrOffice(url, reader, iframe, fallback) {
+      reader.style.display = "none";
+      if (String(url).startsWith("http")) {
+        const preview = cloudPreviewUrl(url);
+        iframe.src = preview || url;
+        iframe.style.display = "block";
+        fallback.style.display = "none";
+        return;
+      }
+      iframe.style.display = "none";
+      fallback.style.display = "flex";
+      fallback.innerHTML = `<div><i class="fas fa-file-word" style="font-size:38px;margin-bottom:12px;"></i><strong>Read Mode Not Available</strong><span>This file is not a readable link. Use Download below.</span></div>`;
+    }
+
+    function cloudPreviewUrl(url) {
+      url = String(url || "");
+      const driveFile = url.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
+      if (driveFile) return `https://drive.google.com/file/d/${driveFile[1]}/preview`;
+      const driveOpen = url.match(/[?&]id=([^&]+)/i);
+      if (url.includes("drive.google.com") && driveOpen) return `https://drive.google.com/file/d/${driveOpen[1]}/preview`;
+      if (url.includes("docs.google.com/document/") || url.includes("docs.google.com/spreadsheets/") || url.includes("docs.google.com/presentation/")) return url.replace("/edit", "/preview").replace(/\?.*$/, "") + "?embedded=true";
+      const ext = getExt(url);
+      if (["doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(ext) || url.includes("1drv.ms") || url.includes("sharepoint.com") || url.includes("onedrive.live.com")) return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
+      if (["pdf", "txt", "csv"].includes(ext)) return url;
+      return `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(url)}`;
+    }
+
+    function directDownloadUrl(url) {
+      url = String(url || "").trim();
+      if (!url || url.startsWith("data:")) return url;
+      const driveFile = url.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
+      if (driveFile) return `https://drive.google.com/uc?export=download&id=${driveFile[1]}`;
+      const driveOpen = url.match(/[?&]id=([^&]+)/i);
+      if (url.includes("drive.google.com") && driveOpen) return `https://drive.google.com/uc?export=download&id=${driveOpen[1]}`;
+      const docId = url.match(/docs\.google\.com\/document\/d\/([^/]+)/i);
+      if (docId) return `https://docs.google.com/document/d/${docId[1]}/export?format=docx`;
+      const sheetId = url.match(/docs\.google\.com\/spreadsheets\/d\/([^/]+)/i);
+      if (sheetId) return `https://docs.google.com/spreadsheets/d/${sheetId[1]}/export?format=xlsx`;
+      const slideId = url.match(/docs\.google\.com\/presentation\/d\/([^/]+)/i);
+      if (slideId) return `https://docs.google.com/presentation/d/${slideId[1]}/export/pptx`;
+      if (url.includes("dropbox.com")) return url.replace("www.dropbox.com", "dl.dropboxusercontent.com").replace(/[?&]dl=0/, "");
+      return url;
+    }
+
+    function proxyReadUrl(url) {
+      return FILE_PROXY_URL + encodeURIComponent(url);
+    }
+
+    async function fetchFileCandidate(candidate) {
+      const options = { cache: "no-store" };
+      if (String(candidate).startsWith(FILE_PROXY_URL)) {
+        const token = getToken();
+        if (token) options.headers = { Authorization: `Bearer ${token}` };
+      }
+      return fetch(candidate, options);
+    }
+
+    async function readArrayBuffer(url) {
+      if (String(url).startsWith("data:")) return dataUrlToArrayBuffer(url);
+      const candidates = [...new Set([url, directDownloadUrl(url), proxyReadUrl(url), proxyReadUrl(directDownloadUrl(url))].filter(Boolean))];
+      let lastErr = null;
+      for (const candidate of candidates) {
+        try {
+          const res = await fetchFileCandidate(candidate);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const type = (res.headers.get("content-type") || "").toLowerCase();
+          const buf = await res.arrayBuffer();
+          if (!buf.byteLength) throw new Error("Empty file");
+          if (type.includes("text/html") && !String(candidate).includes("docs.google.com")) throw new Error("HTML page, not file bytes");
+          return buf;
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      throw lastErr || new Error("Cannot read file bytes");
+    }
+
+    async function readText(url) {
+      if (String(url).startsWith("data:")) {
+        const comma = url.indexOf(",");
+        const meta = url.slice(0, comma);
+        const raw = url.slice(comma + 1);
+        return meta.includes(";base64") ? new TextDecoder().decode(dataUrlToArrayBuffer(url)) : decodeURIComponent(raw);
+      }
+      const candidates = [...new Set([url, directDownloadUrl(url), proxyReadUrl(url), proxyReadUrl(directDownloadUrl(url))].filter(Boolean))];
+      let lastErr = null;
+      for (const candidate of candidates) {
+        try {
+          const res = await fetchFileCandidate(candidate);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return await res.text();
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      throw lastErr || new Error("Cannot read text file");
+    }
+
+    function dataUrlToArrayBuffer(dataUrl) {
+      const comma = dataUrl.indexOf(",");
+      const meta = dataUrl.slice(0, comma);
+      const data = dataUrl.slice(comma + 1);
+      const binary = meta.includes(";base64") ? atob(data) : decodeURIComponent(data);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return bytes.buffer;
+    }
+
+    function escapeJs(val) {
+      return String(val || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, " ").replace(/\r/g, " ");
     }
 
     // --- MODAL UTILS ---
     function openModal(id) { $(id).classList.add("show"); }
     function closeModal(id) { 
       $(id).classList.remove("show"); 
-      if(id === 'docModal') $("docIframe").src = "about:blank"; // free memory
+      if(id === 'docModal') {
+        $("docIframe").src = "about:blank";
+        $("docReader").innerHTML = "";
+      }
+      if(id === 'imageModal') $("imageGallery").innerHTML = "";
     }
     function closeModalOnBackdrop(e, id) { if(e.target.id === id) closeModal(id); }
 
@@ -536,8 +876,7 @@
     });
 
     // Boot
-    syncAdminSettings();
-    loadFiles();
+    if (syncAdminSettings()) loadFiles();
   </script>
 </body>
 </html>
