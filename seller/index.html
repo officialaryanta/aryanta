@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Aryanta Seller Panel | Enterprise Hub</title>
+    <title>Aryanta Seller Panel | Premium Enterprise Hub</title>
     <meta name="description" content="Login to Aryanta Seller Panel. Manage products, orders, B2B items and grow your business with Aryanta.">
     <meta name="keywords" content="Aryanta seller panel, Aryanta seller login, Aryanta dashboard, Aryanta B2B">
     <link rel="canonical" href="https://aryanta.in/seller">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Premium Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    <!-- External SDKs -->
+    <!-- Firebase & Dependencies -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -23,86 +23,322 @@
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
     <style>
+        /* ===== Premium Settings Design ===== */
+
+.settings-hero{
+    background:linear-gradient(135deg, #0f172a, #020617);
+    color:white;
+    padding:24px;
+    border-radius:24px;
+    margin-bottom:22px;
+    box-shadow:0 18px 40px rgba(15,23,42,0.22);
+    position:relative;
+    overflow:hidden;
+}
+
+.settings-hero::after{
+    content:"";
+    position:absolute;
+    right:-40px;
+    top:-40px;
+    width:160px;
+    height:160px;
+    background:rgba(255,255,255,0.08);
+    border-radius:50%;
+}
+
+.settings-hero h2{
+    margin:0;
+    font-size:24px;
+    font-weight:900;
+    letter-spacing:-0.5px;
+}
+
+.settings-hero p{
+    margin-top:7px;
+    color:#cbd5e1;
+    font-size:13px;
+    font-weight:600;
+}
+
+.settings-grid-premium{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));
+    gap:16px;
+}
+
+.setting-card-premium{
+    background:var(--white);
+    border:1px solid var(--border-color);
+    border-radius:18px;
+    padding:18px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    box-shadow:var(--shadow-sm);
+    transition:0.25s ease;
+}
+
+.setting-card-premium:hover{
+    transform:translateY(-3px);
+    box-shadow:var(--shadow-md);
+    border-color:var(--primary);
+}
+
+.setting-left{
+    display:flex;
+    align-items:center;
+    gap:13px;
+}
+
+.setting-icon{
+    width:44px;
+    height:44px;
+    border-radius:14px;
+    background:var(--surface-2);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--primary);
+    font-size:18px;
+}
+
+.setting-title{
+    font-size:14px;
+    font-weight:900;
+    color:var(--text-main);
+}
+
+.setting-sub{
+    font-size:11px;
+    color:var(--text-light);
+    font-weight:700;
+    margin-top:3px;
+    line-height:1.4;
+}
+
+.premium-switch{
+    position:relative;
+    width:54px;
+    height:30px;
+    flex-shrink:0;
+}
+
+.premium-switch input{
+    opacity:0;
+    width:0;
+    height:0;
+}
+
+.switch-slider{
+    position:absolute;
+    cursor:pointer;
+    inset:0;
+    background:#cbd5e1;
+    transition:0.25s;
+    border-radius:100px;
+}
+
+.switch-slider::before{
+    content:"";
+    position:absolute;
+    height:24px;
+    width:24px;
+    left:3px;
+    top:3px;
+    background:white;
+    transition:0.25s;
+    border-radius:50%;
+    box-shadow:0 4px 10px rgba(0,0,0,0.18);
+}
+
+.premium-switch input:checked + .switch-slider{
+    background:linear-gradient(135deg, var(--primary), var(--primary-hover));
+}
+
+.premium-switch input:checked + .switch-slider::before{
+    transform:translateX(24px);
+}
+
+.version-box{
+    margin-top:20px;
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+    gap:14px;
+}
+
+.version-card{
+    background:var(--surface-2);
+    border:1px solid var(--border-color);
+    border-radius:16px;
+    padding:16px;
+}
+
+.version-card span{
+    font-size:11px;
+    color:var(--text-light);
+    font-weight:900;
+    text-transform:uppercase;
+}
+
+.version-card strong{
+    display:block;
+    margin-top:5px;
+    font-size:16px;
+    color:var(--primary);
+    font-weight:900;
+    font-family:var(--font-mono);
+}
+        .select-wrap{
+    position:relative;
+    width:100%;
+    margin:8px 0 20px;
+}
+
+.select-wrap select{
+    width:100%;
+    padding:14px 45px 14px 18px;
+    border:1px solid var(--border-color);
+    border-radius:12px;
+    background:var(--surface-2);
+    color:var(--text-main);
+    font-size:14px;
+    font-weight:600;
+    outline:none;
+    appearance:none;
+    -webkit-appearance:none;
+    -moz-appearance:none;
+    cursor:pointer;
+}
+
+.select-wrap select:focus{
+    border-color:var(--primary);
+    background:var(--white);
+    box-shadow:0 0 0 4px rgba(10,10,10,0.1);
+}
+
+.select-wrap::after{
+    content:"\f107";
+    font-family:"Font Awesome 6 Free";
+    font-weight:900;
+    position:absolute;
+    right:16px;
+    top:50%;
+    transform:translateY(-50%);
+    color:var(--text-light);
+    pointer-events:none;
+}
         :root {
-            --primary: #059669; --secondary: #3b82f6; --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
-            --bg-body: #f8fafc; --sidebar-bg: #064e3b; --sidebar-hover: #047857; --text-main: #0f172a; --text-light: #475569;
-            --white: #ffffff; --shadow-sm: 0 2px 4px rgba(0,0,0,0.05); --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
-            --shadow-lg: 0 15px 25px -5px rgba(0,0,0,0.1); --radius: 16px; --border-color: #e2e8f0; --surface-2: #f1f5f9;
+            --primary: #0a0a0a; --primary-hover: #262626; --accent: #0f172a; 
+            --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+            --bg-body: #f8fafc; --sidebar-bg: #ffffff; --sidebar-hover: #f1f5f9; 
+            --text-main: #0f172a; --text-light: #64748b; --white: #ffffff; 
+            --shadow-sm: 0 4px 6px -1px rgba(0,0,0,0.05); 
+            --shadow-md: 0 10px 25px -5px rgba(0,0,0,0.08); 
+            --shadow-lg: 0 25px 50px -12px rgba(0,0,0,0.15);
+            --radius: 16px; --border-color: #e2e8f0; --surface-2: #f1f5f9;
+            --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            --font-main: 'Plus Jakarta Sans', sans-serif; --font-mono: 'Space Mono', monospace;
         }
 
         body.dark-theme {
             --bg-body: #0f172a; --white: #1e293b; --text-main: #f8fafc; --text-light: #94a3b8;
-            --border-color: #334155; --sidebar-bg: #022c22; --surface-2: #0f172a;
+            --border-color: #334155; --sidebar-bg: #0f172a; --sidebar-hover: #1e293b; --surface-2: #1e293b;
         }
+        .btn-shiprocket{
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #ffffff;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+    transition: all 0.25s ease;
+    white-space: nowrap;
+}
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+.btn-shiprocket:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.28);
+    background: linear-gradient(135deg, #111827 0%, #000000 100%);
+}
+
+.btn-shiprocket:active{
+    transform: scale(0.96);
+}
+
+.btn-shiprocket i{
+    font-size: 14px;
+    color: #ffffff;
+}
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-main); -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg-body); color: var(--text-main); display: flex; font-size: 14px; min-height: 100vh; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
 
-        #mobileSidebarOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1005; backdrop-filter: blur(2px); transition: 0.3s; }
-
-        /* Premium Loader & Animations */
-        #pageLoader { position: fixed; inset: 0; background: #000000; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease; }
-        .video-loader-wrapper { position: relative; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
-        .pulse-ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--primary); animation: pulseAnim 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
-        .pulse-ring:nth-child(2) { animation-delay: 0.5s; }
-        .loader-logo { width: 60px; height: 60px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 900; z-index: 10; box-shadow: 0 0 30px var(--primary); animation: floatAnim 2s ease-in-out infinite; }
-        @keyframes pulseAnim { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
-        @keyframes floatAnim { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        /* Premium Loader */
+        .loader-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.98); backdrop-filter: blur(10px); z-index: 100000; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 1; transition: opacity 0.5s ease; }
+        .loader-overlay.hidden { opacity: 0; pointer-events: none; }
+        .spinner { width: 50px; height: 50px; border: 4px solid rgba(0,0,0,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        /* Auth Screen */
-        #loginOverlay { position: fixed; inset: 0; background: linear-gradient(135deg, #064e3b 0%, #059669 100%); z-index: 10000; display: flex; align-items: center; justify-content: center; flex-direction: column; }
-        .login-box { background: var(--white); padding: 40px; border-radius: 24px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); animation: scaleIn 0.4s ease; }
+        /* Login Screen */
+        #loginOverlay { position: fixed; inset: 0; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); z-index: 10000; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        .login-box { background: var(--white); padding: 40px; border-radius: 24px; width: 90%; max-width: 420px; text-align: center; box-shadow: var(--shadow-lg); animation: scaleIn 0.4s ease; }
         .login-box h2 { color: var(--primary); font-size: 26px; font-weight: 800; margin-bottom: 25px; letter-spacing: -0.5px; }
 
         .seller-container { display: none; width: 100%; min-height: 100vh; position: relative; flex-direction: column; }
         
-        /* Sidebar Navigation */
-        .sidebar { width: 280px; background: var(--sidebar-bg); color: white; padding: 25px 15px; position: fixed; left: 0; top: 0; bottom: 0; overflow-y: auto; z-index: 2000; box-shadow: 4px 0 15px rgba(0,0,0,0.1); transition: transform 0.3s ease; }
+        /* Sidebar Styling */
+        .sidebar { width: 280px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); padding: 25px 15px; position: fixed; left: 0; top: 0; bottom: 0; overflow-y: auto; z-index: 2000; transition: transform 0.3s ease; }
         .sidebar::-webkit-scrollbar { width: 4px; }
-        .sidebar::-webkit-scrollbar-thumb { background: #047857; border-radius: 10px; }
-        .sidebar h2 { padding: 0 15px; margin-bottom: 25px; color: #a7f3d0; font-size: 22px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+        .sidebar h2 { padding: 0 15px; margin-bottom: 25px; color: var(--primary); font-size: 22px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
 
-        .nav-item { padding: 14px 20px; margin-bottom: 5px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 15px; color: #d1fae5; transition: 0.2s; font-weight: 600; font-size: 14px; }
-        .nav-item:hover, .nav-item.active { background: var(--sidebar-hover); color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .nav-item { padding: 14px 20px; margin-bottom: 5px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 15px; color: var(--text-light); transition: 0.2s; font-weight: 600; font-size: 14px; }
+        .nav-item:hover, .nav-item.active { background: var(--sidebar-hover); color: var(--primary); font-weight: 800; box-shadow: var(--shadow-sm); }
         .nav-item i { font-size: 18px; width: 22px; text-align: center; }
         .nav-badge { margin-left: auto; background: var(--danger); color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 800; display: none; }
 
-        .scan-btn-premium { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white !important; border: none; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); font-weight: 800; border-radius: 12px; margin: 15px 5px !important; animation: pulseGlow 2s infinite; }
+        .scan-btn-premium { background: linear-gradient(135deg, #0a0a0a 0%, #262626 100%); color: white !important; border: none; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); font-weight: 800; border-radius: 12px; margin: 15px 5px !important; animation: pulseGlow 2s infinite; }
         .scan-btn-premium i { color: white !important; }
-        .scan-btn-premium:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6); background: linear-gradient(135deg, #059669 0%, #047857 100%); }
-        @keyframes pulseGlow { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+        .scan-btn-premium:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); }
+        @keyframes pulseGlow { 0% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.1); } 70% { box-shadow: 0 0 0 10px rgba(0, 0, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); } }
 
-        /* Main Layout & Sticky Header */
         .main-content { margin-left: 280px; width: calc(100% - 280px); transition: margin-left 0.3s, width 0.3s; position: relative; display: flex; flex-direction: column; min-height: 100vh; }
-        .global-header-wrapper { position: sticky; top: 0; left: 280px; right: 0; z-index: 1010; background: var(--bg-body); transition: left 0.3s; border-bottom: 1px solid var(--border-color); }
-        .marquee-wrap { background: var(--primary); color: white; padding: 12px 20px; font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; display: flex; align-items: center; }
-        .marquee-inner { display: inline-block; padding-left: 100%; animation: marqueeAnim 25s linear infinite; }
-        @keyframes marqueeAnim { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-
-        #accountStatusBanner { display: none; background: #991b1b; color: white; padding: 14px 20px; text-align: center; font-weight: 700; font-size: 14px; box-shadow: var(--shadow-sm); z-index: 1009; position: relative; letter-spacing: 0.5px; }
-        #kycAlertBanner { display: none; background: #ef4444; color: white; padding: 14px 20px; text-align: center; font-weight: 700; font-size: 14px; box-shadow: var(--shadow-sm); z-index: 1009; position: relative; cursor: pointer; transition: 0.2s; }
-        #kycAlertBanner:hover { background: #dc2626; }
-
-        .top-bar-container { padding: 15px 35px; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; background: var(--white); padding: 15px 25px; border-radius: var(--radius); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); }
+        
+        .top-bar-container { position: sticky; top: 0; z-index: 1010; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-color); padding: 15px 35px; display: flex; justify-content: space-between; align-items: center; }
+        body.dark-theme .top-bar-container { background: rgba(15, 23, 42, 0.95); }
+        
         .content-padding { padding: 30px 35px 80px 35px; flex-grow: 1; overflow-x: hidden; }
         .mobile-toggle { display: none; font-size: 24px; color: var(--primary); cursor: pointer; }
 
-        /* Search Bar & Dropdowns */
+        /* QC Filter Pills */
+        .category-scroll-wrapper { width: 100%; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; margin-bottom: 20px; }
+        .category-scroll-wrapper::-webkit-scrollbar { display: none; }
+        .category-filters { display: flex; gap: 12px; width: max-content; }
+        .cat-pill { padding: 10px 22px; border-radius: 100px; background: var(--surface-2); border: 1px solid var(--border-color); font-weight: 600; font-size: 14px; cursor: pointer; transition: var(--transition); display: flex; align-items: center; gap: 8px; color: var(--text-main);}
+        .cat-pill.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: var(--shadow-sm); transform: translateY(-2px); }
+        .cat-pill:hover:not(.active) { background: var(--border-color); transform: translateY(-3px); }
+
+        #accountStatusBanner, #kycAlertBanner { display: none; background: var(--danger); color: white; padding: 14px 20px; text-align: center; font-weight: 700; font-size: 14px; box-shadow: var(--shadow-sm); z-index: 1009; position: relative; cursor: pointer; transition: 0.2s; }
+        #kycAlertBanner:hover { opacity: 0.9; }
+
         .search-container { position: relative; display: flex; align-items: center; background: var(--surface-2); border-radius: 12px; width: 400px; border: 1px solid var(--border-color); transition: 0.2s; }
-        .search-container:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1); background: var(--white); }
+        .search-container:focus-within { border-color: var(--primary); background: var(--white); box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.1); }
         .search-container input { border: none; background: transparent; outline: none; padding: 12px 15px; width: 100%; font-size: 14px; color: var(--text-main); font-weight: 500; }
         .search-container i { padding: 0 15px; color: var(--text-light); }
-        .suggestions-box { display: none; position: absolute; top: 110%; left: 0; right: 0; background: var(--white); border: 1px solid var(--border-color); box-shadow: var(--shadow-lg); border-radius: 12px; z-index: 2000; max-height: 300px; overflow-y: auto; }
-        .suggestion-item { padding: 12px 15px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; flex-direction: column; gap: 4px; transition: 0.2s; color: var(--text-main); }
-        .suggestion-item:hover { background: var(--surface-2); }
 
-        .badge { padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 800; display: inline-block; }
+        .badge-ui { padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 800; display: inline-block; }
 
-        /* Sections & Grids */
-        .data-section { display: none; animation: fadeIn 0.4s ease; }
+        .data-section { display: none; animation: scaleIn 0.4s ease; }
         .data-section.active { display: block; }
 
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 25px; }
@@ -110,20 +346,10 @@
         .stat-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); border-color: var(--primary); }
         .stat-card h3 { font-size: 2.2rem; color: var(--text-main); margin-bottom: 5px; font-weight: 800; letter-spacing: -1px; }
         .stat-card p { color: var(--text-light); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-        .smart-badge { position:absolute; top:15px; right:15px; background:linear-gradient(45deg, #059669, #10b981); color:white; font-size:10px; padding:4px 10px; border-radius:20px; font-weight:bold; letter-spacing:0.5px;}
-        .panel-box { background: var(--white); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 25px; box-shadow: var(--shadow-sm); margin-bottom: 20px; }
+        .smart-badge { position:absolute; top:15px; right:15px; background:var(--primary); color:white; font-size:10px; padding:4px 10px; border-radius:20px; font-weight:bold; letter-spacing:0.5px;}
 
-        /* Custom Support Dropdown CSS */
-        .custom-select-wrapper { position: relative; width: 100%; margin: 8px 0 20px; }
-        .custom-select-trigger { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-main); transition: 0.2s; }
-        .custom-select-trigger:hover { border-color: var(--primary); background: var(--white); box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.1); }
-        .custom-select-options { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--white); border: 1px solid var(--border-color); border-radius: 10px; box-shadow: var(--shadow-lg); z-index: 2000; margin-top: 5px; max-height: 250px; overflow-y: auto; }
-        .custom-select-options.open { display: block; animation: scaleIn 0.2s ease; }
-        .custom-option { padding: 12px 18px; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-main); border-bottom: 1px solid var(--surface-2); transition: 0.2s; }
-        .custom-option:last-child { border-bottom: none; }
-        .custom-option:hover { background: var(--primary); color: white; }
+        .panel-box { background: var(--white); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 25px; box-shadow: var(--shadow-sm); margin-bottom: 20px; transition: 0.3s;}
 
-        /* Tables */
         .table-container { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; border: 1px solid var(--border-color); margin-bottom: 25px; }
         .admin-table { width: 100%; border-collapse: collapse; }
         .admin-table th { background: var(--surface-2); padding: 18px 20px; text-align: left; font-size: 12px; color: var(--text-light); text-transform: uppercase; font-weight: 800; border-bottom: 2px solid var(--border-color); letter-spacing: 0.5px; }
@@ -131,788 +357,1383 @@
         .clickable-row { cursor: pointer; transition: 0.2s; }
         .clickable-row:hover { background: var(--surface-2); }
 
-        /* Buttons */
-        .btn-prime { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; font-size: 14px; letter-spacing: 0.3px; }
-        .btn-prime:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3); }
+        .btn-prime { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: var(--transition); font-size: 14px; }
+        .btn-prime:hover { background: var(--primary-hover); transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
+        .btn-outline { background: transparent; color: var(--text-main); border: 1px solid var(--border-color); padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; font-size: 14px; }
+        .btn-outline:hover { background: var(--surface-2); }
         .btn-sm { padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer; font-size: 12px; font-weight: 700; transition: 0.2s; margin-right: 5px; color: white;}
         .btn-sm:hover { opacity: 0.8; transform: scale(1.05); }
-        .btn-sm.edit { background: var(--secondary); }
+        .btn-sm.edit { background: var(--accent); }
         .btn-sm.delete { background: var(--danger); }
         
-        .btn-shiprocket { background: #8b5cf6; color: white; border: none; padding: 10px 16px; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 13px; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; justify-content: center; box-shadow: 0 2px 5px rgba(139, 92, 246, 0.2); }
-        .btn-shiprocket:hover { background: #7c3aed; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4); transform: translateY(-2px); }
-        .btn-pdf { background: #3b82f6; color: white; border: none; padding: 10px 16px; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 13px; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; justify-content: center; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.2); }
-        .btn-pdf:hover { background: #2563eb; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); transform: translateY(-2px); }
-
-        .input-field { width: 100%; padding: 14px 18px; margin: 8px 0 20px; border: 1px solid var(--border-color); border-radius: 10px; font-size: 14px; font-weight: 500; outline: none; background: var(--surface-2); color: var(--text-main); transition: 0.2s; }
-        .input-field:focus { border-color: var(--primary); background: var(--white); box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.1); }
+        .input-field { width: 100%; padding: 14px 18px; margin: 8px 0 20px; border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; font-weight: 500; outline: none; background: var(--surface-2); color: var(--text-main); transition: 0.2s; }
+        .input-field:focus { border-color: var(--primary); background: var(--white); box-shadow: 0 0 0 4px rgba(10, 10, 10, 0.1); }
         label { font-size: 13px; font-weight: 700; color: var(--text-main); display: block; margin-bottom: 5px; }
-        .custom-cb { width: 20px; height: 20px; cursor: pointer; accent-color: var(--primary); }
 
-        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: var(--surface-2); padding: 25px; border-radius: 16px; border: 1px solid var(--border-color); margin-bottom: 20px;}
-        .detail-box span { display: block; font-size: 11px; color: var(--text-light); text-transform: uppercase; font-weight: 800; margin-bottom: 6px; letter-spacing: 0.5px; }
-        .detail-box strong { font-size: 15px; color: var(--text-main); display: block; font-weight: 700; word-wrap: break-word; word-break: break-all; }
+        /* Image Upload Box Styles */
+        .img-upload-box { border: 2px dashed var(--border-color); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: 0.3s; background: var(--surface-2); }
+        .img-upload-box:hover { border-color: var(--primary); background: rgba(10, 10, 10, 0.05); }
+        .uploaded-img-wrapper { position: relative; display: inline-block; margin: 5px; }
+        .uploaded-img-wrapper img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color); }
+        .remove-img-btn { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); }
 
-        /* Notification Dropdown */
-        #notifDropdown { display:none; position:absolute; top:70px; right:35px; width:380px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); border-radius: 16px; z-index: 2000; max-height: 450px; overflow-y: auto; transition: 0.3s ease; animation: scaleIn 0.2s ease; }
-        body.dark-theme #notifDropdown { background: rgba(30, 41, 59, 0.95); border-color: #334155; }
-        .notif-header-box { padding: 20px; border-bottom: 1px solid var(--border-color); font-weight: 800; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: inherit; z-index: 10; font-size: 16px; }
-        .notif-item-row { padding: 15px 20px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: 0.2s; display: flex; align-items: flex-start; gap: 15px; }
-        .notif-item-row:hover { background: var(--surface-2); }
-        .notif-dot { width: 10px; height: 10px; background: var(--primary); border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
-
-        /* B2B Grid */
-        .b2b-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; margin-bottom: 25px; }
-        .b2b-card { background: var(--white); border: 1px solid var(--border-color); border-radius: var(--radius); overflow: hidden; transition: 0.3s; display: flex; flex-direction: column; cursor: pointer; box-shadow: var(--shadow-sm); position: relative; }
-        .b2b-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); border-color: var(--primary); }
-        .b2b-img-box { width: 100%; height: 220px; background: var(--surface-2); position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; border-bottom: 1px solid var(--border-color); }
-        .b2b-img-box img { width: 100%; height: 100%; object-fit: contain; transition: 0.3s; cursor: zoom-in; }
-        .b2b-content { padding: 15px; display: flex; flex-direction: column; flex-grow: 1; }
-
-        /* Settings Toggle */
-        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #cbd5e1; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--primary); }
-        input:checked + .slider:before { transform: translateX(24px); }
-
-        /* Subscriptions */
-        .plan-card { border: 2px solid var(--border-color); border-radius: 20px; padding: 30px; background: var(--white); transition: 0.3s; display: flex; flex-direction: column; position: relative; overflow: hidden; }
-        .plan-card.pro { border-color: var(--secondary); box-shadow: 0 10px 30px rgba(59, 130, 246, 0.15); }
-        .plan-badge { position: absolute; top: 0; right: 0; background: var(--secondary); color: white; font-size: 12px; font-weight: 800; padding: 6px 15px; border-bottom-left-radius: 16px; text-transform: uppercase; }
-        .plan-price { font-size: 40px; font-weight: 900; color: var(--text-main); margin: 15px 0; }
-        .plan-features { list-style: none; margin: 20px 0; flex-grow: 1; }
-        .plan-features li { margin-bottom: 12px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; }
-
-        /* MODALS */
-        .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); z-index: 20000; align-items: center; justify-content: center; padding: 20px; }
-        .modal-content { background: var(--white); padding: 35px; border-radius: 24px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); margin-bottom: 30px; }
+        /* Modals */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px); z-index: 20000; align-items: center; justify-content: center; padding: 20px; opacity: 0; transition: opacity 0.3s ease;}
+        .modal.show { display: flex; opacity: 1; }
+        .modal-content { background: var(--white); padding: 35px; border-radius: 24px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: var(--shadow-lg); transform: translateY(20px); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); margin-bottom: 30px; }
+        .modal.show .modal-content { transform: translateY(0); }
         .close-modal { position: absolute; top: 20px; right: 20px; font-size: 22px; cursor: pointer; color: var(--text-light); transition: 0.2s; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--surface-2); }
         .close-modal:hover { background: #fee2e2; color: #ef4444; transform: rotate(90deg); }
 
-        #imageViewerModal { z-index: 100000; background: rgba(0,0,0,0.92); }
-        #imageViewerModal img { max-width: 90%; max-height: 90vh; object-fit: contain; border-radius: 12px; }
-        .viewer-close { position: absolute; top: 30px; right: 40px; color: white; font-size: 40px; cursor: pointer; transition: 0.2s; }
-        .viewer-close:hover { color: var(--danger); transform: scale(1.1); }
+        /* Plan Cards */
+        .plan-card { border: 2px solid var(--border-color); border-radius: 20px; padding: 30px; background: var(--white); transition: 0.3s; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+        .plan-card.pro { border-color: var(--primary); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); }
+        .plan-badge { position: absolute; top: 0; right: 0; background: var(--primary); color: white; font-size: 12px; font-weight: 800; padding: 6px 15px; border-bottom-left-radius: 16px; text-transform: uppercase; }
 
-        #toastContainer { position: fixed; bottom: 30px; right: 30px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;}
-        .toast { background: #1e293b; color: white; padding: 16px 24px; border-radius: 12px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); animation: fadeIn 0.4s ease; min-width: 280px; border-left: 4px solid var(--primary); }
+        /* Scan Steps */
+        .scan-step { display: none; animation: scaleIn 0.3s ease; text-align: center; }
+        .scan-step.active { display: block; }
+        .scanner-box { width: 100%; height: 250px; background: var(--primary); border-radius: 16px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-bottom: 20px; overflow: hidden;}
 
-        /* QR Scanner */
-        .scanner-placeholder { height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--surface-2); border-radius: 16px; margin-bottom: 20px; border: 2px dashed #cbd5e1; color: var(--text-light); }
-        #qr-reader { width: 100%; border: none !important; border-radius: 16px; overflow: hidden; margin-bottom: 20px; box-shadow: inset 0 4px 6px rgba(0,0,0,0.1); background: #000; display:none; }
-        #qr-reader__scan_region { background: #000; display:flex; align-items:center; justify-content:center; }
-        #qr-reader__dashboard_section_csr span, #qr-reader button { color: var(--primary) !important; font-family: 'Plus Jakarta Sans', sans-serif !important; font-weight:bold; }
-        #qr-reader__dashboard_section_swaplink { display: none !important; }
-
-        /* --- SPECIFIC PRINT MEDIA QUERY INTEGRATION FROM index.html --- */
-        #printArea { display: none; }
-        @media print {
-            body * { visibility: hidden !important; }
-            #printArea, #printArea * { visibility: visible !important; }
-            #printArea { display: block !important; position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; z-index: 9999; }
-            .print-page { page-break-after: always; padding: 20px; font-family: sans-serif; box-sizing: border-box; width: 100%; display: block; }
-            .seller-container, .modal, #toastContainer, #mobileSidebar { display: none !important; }
-            @page { margin: 0; size: auto; }
-        }
-
-        /* MOBILE FIX */
+        /* Responsive */
         @media (max-width: 900px) {
             .sidebar { transform: translateX(-100%); }
             .sidebar.open { transform: translateX(0); }
             .main-content { margin-left: 0; width: 100%; }
-            .global-header-wrapper { left: 0; }
-            .top-bar-container { padding: 10px 15px; }
-            .content-padding { padding: 30px 15px 100px 15px; } 
             .mobile-toggle { display: block; }
-            .top-bar { flex-wrap: wrap; justify-content: space-between; padding: 10px 15px; gap: 10px; }
-            .search-container { width: 100%; order: 3; }
-            .mobile-hide { display: block !important; }
-            #notifDropdown { width: 90%; right: 5%; left: 5%; top: 60px; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
-            .stat-card { padding: 15px; }
-            .stat-card h3 { font-size: 1.5rem; }
-            .b2b-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            .table-container { box-shadow: none; border: none; background: transparent; overflow-x: hidden; margin-bottom: 20px;}
+            .top-bar-container { padding: 15px; }
+            .search-container { display: none; } 
+            .modal-content { border-radius: 24px 24px 0 0; margin-bottom: 0; align-self: flex-end; max-height: 85vh; }
+            
+            .table-container { box-shadow: none; border: none; background: transparent; }
             .admin-table, .admin-table tbody, .admin-table tr, .admin-table td { display: block; width: 100%; }
             .admin-table thead { display: none; }
             .admin-table tr { background: var(--white); border-radius: 12px; margin-bottom: 15px; padding: 15px; box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); }
             .admin-table td { padding: 10px 0; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; text-align: right; }
-            .admin-table td::before { content: attr(data-label); font-weight: 800; font-size: 12px; color: var(--text-light); text-transform: uppercase; float: left; text-align: left; padding-right: 15px; flex-shrink: 0; }
+            .admin-table td::before { content: attr(data-label); font-weight: 800; font-size: 12px; color: var(--text-light); text-transform: uppercase; float: left; text-align: left; padding-right: 15px; }
             .admin-table td:last-child { border-bottom: none; }
         }
-    </style>
+
+        #toastContainer { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 99999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;}
+        .toast { background: var(--primary); color: white; padding: 14px 24px; border-radius: 100px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow-lg); animation: scaleIn 0.4s ease; min-width: 280px; }
+    .category-filters .cat-pill{
+    min-height:42px;
+    box-shadow:0 4px 12px rgba(15,23,42,0.05);
+}
+
+.category-filters .cat-pill.active{
+    background:linear-gradient(135deg, var(--primary), var(--primary-hover));
+    color:#fff;
+    box-shadow:0 8px 20px rgba(15,23,42,0.18);
+}
+
+.category-filters .cat-pill.active i{
+    color:#fff !important;
+}
+#printArea{
+    display:none;
+}
+
+@media print{
+    body *{
+        visibility:hidden !important;
+    }
+
+    #printArea,
+    #printArea *{
+        visibility:visible !important;
+    }
+
+    #printArea{
+        display:block !important;
+        position:absolute !important;
+        left:0 !important;
+        top:0 !important;
+        width:100% !important;
+        margin:0 !important;
+        padding:0 !important;
+        background:white !important;
+        z-index:999999 !important;
+    }
+
+    .print-page{
+        page-break-after:always;
+        width:100%;
+        box-sizing:border-box;
+        display:block !important;
+    }
+
+    .seller-container,
+    .modal,
+    #toastContainer,
+    #mobileSidebar,
+    #mobileSidebarOverlay,
+    #pageLoader{
+        display:none !important;
+    }
+
+    @page{
+        margin:0;
+        size:auto;
+    }
+}
+/* ===== Aryanta Premium Scanner Modal Fix ===== */
+
+#scanModal .modal-content{
+    width:min(94vw, 560px) !important;
+    max-width:560px !important;
+    max-height:92vh !important;
+    overflow-y:auto !important;
+    padding:26px !important;
+    border-radius:26px !important;
+    text-align:center !important;
+}
+
+#scannerBox{
+    width:100% !important;
+    max-width:370px !important;
+    height:370px !important;
+    min-height:370px !important;
+    margin:18px auto 18px !important;
+    padding:12px !important;
+    background:linear-gradient(135deg, #0f172a, #020617) !important;
+    border:1px solid rgba(255,255,255,0.12) !important;
+    border-radius:24px !important;
+    overflow:hidden !important;
+    box-shadow:0 18px 40px rgba(15,23,42,0.28) !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    position:relative !important;
+}
+
+#qr-reader{
+    width:100% !important;
+    min-height:330px !important;
+    height:330px !important;
+    border:none !important;
+    background:#020617 !important;
+    border-radius:18px !important;
+    overflow:hidden !important;
+    color:white !important;
+}
+
+#qr-reader video,
+#qr-reader__scan_region video{
+    width:100% !important;
+    height:100% !important;
+    object-fit:cover !important;
+    border-radius:18px !important;
+}
+
+#qr-reader__scan_region{
+    width:100% !important;
+    min-height:260px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    border-radius:18px !important;
+    overflow:hidden !important;
+}
+
+#qr-reader img{
+    max-width:100% !important;
+}
+
+#qr-reader button,
+#qr-reader select,
+#qr-reader input[type="file"]{
+    border:none !important;
+    outline:none !important;
+    border-radius:12px !important;
+    padding:11px 14px !important;
+    margin:6px auto !important;
+    font-size:13px !important;
+    font-weight:800 !important;
+    cursor:pointer !important;
+    font-family:var(--font-main) !important;
+}
+
+#qr-reader button{
+    background:linear-gradient(135deg, var(--primary), var(--primary-hover)) !important;
+    color:#fff !important;
+    box-shadow:0 8px 18px rgba(0,0,0,0.22) !important;
+}
+
+#qr-reader button:hover{
+    transform:translateY(-2px) !important;
+}
+
+#qr-reader select{
+    width:90% !important;
+    background:#fff !important;
+    color:#0f172a !important;
+    border:1px solid #e2e8f0 !important;
+}
+
+#scannerPlaceholder{
+    width:100% !important;
+    height:100% !important;
+    color:#fff !important;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    font-weight:800;
+    letter-spacing:0.3px;
+}
+
+#scanStatus{
+    margin:12px auto 0 !important;
+    padding:12px 14px !important;
+    border-radius:14px !important;
+    background:var(--surface-2) !important;
+    border:1px solid var(--border-color) !important;
+    font-size:13px !important;
+    font-weight:800 !important;
+    line-height:1.5 !important;
+}
+
+#scanModal .scan-step{
+    padding:14px 16px !important;
+    border:1px solid var(--border-color) !important;
+    border-radius:16px !important;
+    background:var(--surface-2) !important;
+    margin-top:12px !important;
+}
+
+#scanModal .scan-step h4{
+    margin:0 !important;
+    font-size:16px !important;
+}
+
+#scanModal .scan-step p{
+    font-size:12px !important;
+    line-height:1.5 !important;
+}
+
+#skipScanBtn{
+    width:100% !important;
+    min-height:46px !important;
+    border-radius:14px !important;
+    background:#fff5f5 !important;
+    color:var(--danger) !important;
+    border:1px solid #fecaca !important;
+    font-size:13px !important;
+    font-weight:900 !important;
+    justify-content:center !important;
+    margin-top:16px !important;
+}
+
+#skipScanBtn:hover{
+    background:#fee2e2 !important;
+    color:#991b1b !important;
+    transform:translateY(-2px) !important;
+}
+
+@media(max-width:600px){
+    #scanModal .modal-content{
+        width:96vw !important;
+        padding:20px !important;
+        max-height:88vh !important;
+    }
+
+    #scannerBox{
+        max-width:310px !important;
+        height:310px !important;
+        min-height:310px !important;
+        padding:10px !important;
+    }
+
+    #qr-reader{
+        min-height:280px !important;
+        height:280px !important;
+    }
+
+    #qr-reader__scan_region{
+        min-height:220px !important;
+    }
+}
+    
+
+/* ===== Aryanta final mobile/UI fixes ===== */
+.global-header-wrapper{position:sticky;top:0;z-index:1010;background:var(--bg-body);border-bottom:1px solid var(--border-color);transition:0.25s ease;}
+.marquee-wrap{background:linear-gradient(135deg,var(--primary),var(--primary-hover));color:#fff;padding:10px 16px;font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;display:flex;align-items:center;box-shadow:var(--shadow-sm);}
+.marquee-inner{display:inline-block;padding-left:100%;animation:marqueeAnim 24s linear infinite;}
+@keyframes marqueeAnim{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
+.global-header-wrapper .top-bar-container{position:relative;top:auto;z-index:auto;background:transparent!important;backdrop-filter:none!important;border-bottom:0!important;padding:14px 28px;display:block;}
+.top-bar{display:flex;align-items:center;justify-content:space-between;gap:18px;background:var(--white);border:1px solid var(--border-color);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:14px 18px;}
+.topbar-left{display:flex;align-items:center;gap:16px;min-width:0;}
+.topbar-title{font-weight:900;font-size:18px;color:var(--text-main);white-space:nowrap;}
+.topbar-actions{display:flex;align-items:center;gap:14px;min-width:0;}
+.topbar-icon-btn{position:relative;border:0;background:var(--surface-2);color:var(--text-light);width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;flex-shrink:0;}
+.topbar-icon-btn:hover{transform:translateY(-2px);color:var(--primary);box-shadow:var(--shadow-sm);}
+#notifDropdown{display:none;position:absolute;right:28px;top:76px;width:min(390px,calc(100vw - 28px));background:var(--white);border:1px solid var(--border-color);box-shadow:var(--shadow-lg);border-radius:20px;overflow:hidden;z-index:3000;}
+#notifDropdown.show{display:block;}
+.notif-header-box{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid var(--border-color);font-weight:900;color:var(--text-main);}
+#notifList{max-height:360px;overflow-y:auto;padding:10px;}
+.suggestions-box,.search-container #searchSuggestions{display:none;position:absolute;top:112%;left:0;right:0;background:var(--white);border:1px solid var(--border-color);border-radius:16px;box-shadow:var(--shadow-lg);z-index:3001;max-height:340px;overflow-y:auto;padding:8px;}
+.suggestion-item{padding:12px;border-radius:12px;cursor:pointer;display:block;border:1px solid transparent;}
+.suggestion-item:hover{background:var(--surface-2);border-color:var(--border-color);}
+.suggestion-item strong{display:block;color:var(--text-main);font-size:13px;margin-bottom:4px;}
+.suggestion-item span{display:block;color:var(--text-light);font-size:12px;font-weight:700;}
+.login-actions-grid{display:grid!important;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px!important;}
+.login-actions-grid .btn-outline,.login-actions-grid .btn-prime{min-height:46px;display:flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;width:100%;}
+.password-shell{position:relative;width:100%;}
+.password-shell .input-field{padding-right:48px!important;}
+.pass-eye-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:34px;height:34px;border:0;border-radius:10px;background:var(--surface-2);color:var(--text-light);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.pass-eye-btn:hover{color:var(--primary);}
+.category-scroll-wrapper{overflow-x:auto;overflow-y:hidden;padding-bottom:6px;margin-bottom:16px;-webkit-overflow-scrolling:touch;}
+.category-filters{display:flex;gap:10px;min-width:max-content;align-items:center;}
+#oldTicketsListContainer > div:first-child{position:sticky;top:0;background:var(--bg-body);z-index:2;border-radius:16px;}
+#scanModal{padding:0!important;background:#020617!important;}
+#scanModal .modal-content{width:100vw!important;max-width:100vw!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;margin:0!important;padding:18px!important;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;background:linear-gradient(180deg,#0f172a,#020617)!important;color:white!important;}
+#scanModal .close-modal{position:fixed!important;top:14px!important;right:14px!important;z-index:5;background:rgba(255,255,255,.12)!important;color:white!important;}
+#scanModal h3,#scanModal p{color:white!important;}
+#scannerBox{flex:1!important;width:min(100%,560px)!important;max-width:560px!important;height:auto!important;min-height:320px!important;margin:12px auto!important;border-radius:26px!important;background:#000!important;}
+#qr-reader{height:100%!important;min-height:320px!important;background:#000!important;}
+.scan-flow-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:min(100%,760px);margin-top:8px;}
+#scanModal .scan-step{display:none!important;margin:0!important;background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.12)!important;color:white!important;}
+#scanModal .scan-step.active{display:block!important;box-shadow:0 0 0 2px rgba(255,255,255,.14) inset;}
+#scanStatus{width:min(100%,760px)!important;background:rgba(255,255,255,.10)!important;border:1px solid rgba(255,255,255,.16)!important;color:white!important;}
+#skipScanBtn{width:min(100%,760px)!important;display:none;}
+.short-link-chip{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:6px 9px;border-radius:999px;background:var(--surface-2);color:var(--text-light);font-size:11px;font-weight:900;margin-top:6px;}
+@media(max-width:900px){.global-header-wrapper .top-bar-container{padding:12px}.top-bar{gap:10px;padding:12px}.topbar-title{font-size:15px}.mobile-hide{display:none!important}.search-container{display:flex!important;width:100%!important;min-width:0}.topbar-actions{flex:1}.topbar-actions .search-container{flex:1}#notifDropdown{right:12px;top:108px}.login-actions-grid{grid-template-columns:1fr}.scan-flow-grid{grid-template-columns:1fr}.content-padding{padding:20px 14px 90px!important}.settings-grid-premium{grid-template-columns:1fr!important}.admin-table td{text-align:left!important}.topbar-icon-btn{width:40px;height:40px}}
+
+    
+/* ===== Aryanta V3 patches: top settings, files, tabs, dark readability ===== */
+.topbar-icon-btn[title="Settings"]{background:linear-gradient(135deg,var(--primary),var(--primary-hover));color:#fff;box-shadow:0 10px 22px rgba(15,23,42,.18)}
+.hidden-file-input{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;}
+.pretty-file-btn{width:100%;border:1px dashed var(--primary);background:linear-gradient(135deg,rgba(15,23,42,.04),rgba(15,23,42,.08));color:var(--text-main);border-radius:16px;padding:14px 16px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;margin-bottom:8px;transition:.2s;}
+.pretty-file-btn:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm);background:var(--surface-2)}
+.chosen-file-name{font-size:12px;color:var(--text-light);font-weight:800;margin-bottom:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.plan-card{background:var(--white);border:1px solid var(--border-color);border-radius:22px;padding:24px;box-shadow:var(--shadow-sm);position:relative;display:flex;flex-direction:column;gap:12px;min-height:100%;}
+.plan-card.ultra{background:linear-gradient(180deg,#fff,#f8fafc);border-color:#11182733;}
+.plan-price{font-size:38px;font-weight:950;color:var(--primary);margin:10px 0;}
+.plan-price span span,.plan-price>span:last-child{font-size:15px;color:var(--text-light);font-weight:700;}
+.plan-features{list-style:none;margin:8px 0 12px;padding:0;line-height:1.9;font-weight:750;color:var(--text-main);}
+.plan-features i{color:var(--success);margin-right:8px;}
+body.dark-theme .panel-box,body.dark-theme .plan-card,body.dark-theme .setting-card-premium,body.dark-theme .modal-content,body.dark-theme .top-bar{color:var(--text-main);background:var(--white);}
+body.dark-theme .admin-table td,body.dark-theme .admin-table th,body.dark-theme .qna-card,body.dark-theme .setting-title,body.dark-theme label,body.dark-theme strong{color:var(--text-main)!important;}
+body.dark-theme .setting-sub,body.dark-theme .chosen-file-name,body.dark-theme .admin-table td span,body.dark-theme .plan-price>span:last-child{color:var(--text-light)!important;}
+body.dark-theme .panel-box[style*="background:#eff6ff"],body.dark-theme .panel-box[style*="background:#fffbeb"]{background:var(--surface-2)!important;border-color:var(--border-color)!important;}
+body.dark-theme .panel-box[style*="background:#eff6ff"] p,body.dark-theme .panel-box[style*="background:#fffbeb"] p{color:var(--text-main)!important;}
+.admin-table .copy-link-btn{background:var(--primary);color:white;border:0;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:900;cursor:pointer;display:inline-flex;gap:6px;align-items:center;}
+.admin-table .disabled-link-btn{background:var(--surface-2);color:var(--text-light);border:1px solid var(--border-color);border-radius:10px;padding:8px 10px;font-size:12px;font-weight:900;display:inline-flex;gap:6px;align-items:center;}
+@media(max-width:768px){.pretty-file-btn{padding:13px}.plan-price{font-size:32px}.topbar-left{gap:10px}.topbar-actions{width:100%}.search-container{width:100%;}}
+
+</style>
 </head>
 <body>
 
-    <!-- PRE-LOADER -->
-    <div id="pageLoader">
-        <div class="video-loader-wrapper">
-            <div class="pulse-ring"></div>
-            <div class="pulse-ring"></div>
-            <div class="loader-logo">A</div>
-        </div>
-        <div id="loadPercent" style="font-size:32px; font-weight:900; color:var(--primary); margin-top:10px; letter-spacing:1px;">0%</div>
-        <h2 id="loaderMessage" style="margin-top:10px; color:#ffffff; font-weight:600; font-size: 14px; letter-spacing: 2px; text-transform: uppercase;">SYNCING LIVE DB...</h2>
+    <!-- Full Screen Loader -->
+    <div class="loader-overlay" id="pageLoader">
+        <div class="spinner"></div>
+        <h4 style="font-weight: 800; color: var(--primary); font-size: 18px; letter-spacing: 2px;">ARYANTA</h4>
+        <p style="font-size: 13px; color: var(--text-light); margin-top: 8px; font-weight: 600;" id="loaderMessage">Syncing Secure Enterprise DB...</p>
+        <div id="loadPercent" style="font-size:24px; font-weight:900; color:var(--primary); margin-top:10px;">0%</div>
     </div>
 
-    <!-- AUTHENTICATION LAYER -->
+    <!-- Login Overlay & 2FA -->
     <div id="loginOverlay" style="display:none;">
         <div class="login-box" id="loginBox">
-            <h2>Aryanta Partners</h2>
-            <p style="color: var(--text-light); font-size: 14px; margin-bottom: 30px; font-weight:500;">Secure Seller Hub Login</p>
-            
-            <input type="text" id="loginId" class="input-field" placeholder="Registered Email or Phone Number" aria-label="Registered Email or Phone Number">
-            <input type="password" id="loginPass" class="input-field" placeholder="Account Password" aria-label="Account Password">
-            
-            <button class="btn-prime w-100" id="loginBtn" onclick="handleLogin()" style="font-size: 16px; padding: 14px; margin-top: 10px;">Login to Dashboard <i class="fas fa-arrow-right"></i></button>
-            
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="btn-prime" style="flex: 1; background: var(--secondary); font-size: 13px; padding: 12px;" onclick="openForgotPass()"><i class="fas fa-lock"></i> Forgot Pass</button>
-                <button class="btn-prime" style="flex: 1; background: #f59e0b; font-size: 13px; padding: 12px;" onclick="window.location.href='https://aryanta.in/vurify/'"><i class="fas fa-user-plus"></i> Apply to Join</button>
+            <h2>Aryanta Enterprise</h2>
+            <div id="loginStep1">
+                <p style="color: var(--text-light); font-size: 14px; margin-bottom: 30px; font-weight:500;">Secure Seller Hub Login</p>
+                <input type="text" id="loginId" class="input-field" placeholder="Registered Email or Phone Number">
+                <div class="password-shell"><input type="password" id="loginPass" class="input-field" placeholder="Account Password"><button type="button" class="pass-eye-btn" onclick="togglePasswordVisibility('loginPass', this)" aria-label="Show password"><i class="fas fa-eye"></i></button></div>
+                
+                <button class="btn-prime w-100" id="loginBtn" onclick="handleLogin()"style="font-size: 16px; padding: 14px; margin-top: 10px;">Login to Dashboard <i class="fas fa-arrow-right"></i></button>
+                
+                <div class="login-actions-grid">
+                    <button class="btn-outline" style="font-size: 13px; padding: 12px;" onclick="openForgotPass()"><i class="fas fa-lock"></i> Forgot Pass</button>
+                    <button class="btn-outline" style="font-size: 13px; padding: 12px;" onclick="window.location.href='https://aryanta.in/vurify/'"><i class="fas fa-user-plus"></i> Join Network</button>
+                </div>
+            </div>
+
+            <div id="loginStep2" style="display:none;">
+                <p style="color: var(--text-light); font-size: 14px; margin-bottom: 20px;">Two-Factor Authentication is enabled. Enter OTP sent to your email.</p>
+                <input type="text" id="login2faOtp" class="input-field" placeholder="• • • •" maxlength="4" style="text-align:center; font-size: 24px; letter-spacing: 10px; font-weight: 800;">
+                <button class="btn-prime w-100" id="verify2faBtn" onclick="verifyLogin2FA()" style="font-size: 16px; padding: 14px;">Verify & Login <i class="fas fa-check-circle"></i></button>
+                <button class="btn-outline w-100" style="margin-top:10px;" onclick="cancel2FA()">Cancel</button>
             </div>
         </div>
     </div>
 
-    <!-- MOBILE OVERLAY -->
-    <div id="mobileSidebarOverlay" onclick="toggleSidebar()"></div>
+    <div id="mobileSidebarOverlay" onclick="toggleSidebar()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1999;"></div>
 
-    <!-- MAIN APP WRAPPER -->
-    <div class="seller-container">
+    <div class="seller-container" id="mainAppContainer">
         
-        <!-- Persistent Banner for Blocked/Suspended Accounts -->
-        <div id="accountStatusBanner">Your account is restricted. You are forced into Offline Mode. Contact Support.</div>
-        
-        <!-- Dynamic KYC Alert Banner -->
+        <div id="accountStatusBanner">Your account is restricted. Forced into Offline Mode.</div>
         <div id="kycAlertBanner" onclick="showSection('profile'); openKycModal();">
-            <i class="fas fa-exclamation-triangle"></i> Admin requested you to upload fresh KYC/GST documents. Click here to upload!
+            <i class="fas fa-exclamation-triangle"></i> Action Required: Upload your KYC/GST documents to unlock features.
         </div>
 
-        <!-- SIDEBAR -->
         <aside class="sidebar" id="mobileSidebar">
-            <h2><i class="fas fa-store"></i> Aryanta <span id="verifiedBadge" style="display:none; color:#10b981; font-size:14px; margin-left:5px;" title="Verified Prime Seller"><i class="fas fa-check-circle"></i></span></h2>
+            <h2><img src="https://aryanta.in/vurify/aryanta.jpeg" style="width:30px; border-radius:8px;"> Aryanta <span id="verifiedBadge" style="display:none; color:var(--success); font-size:14px; margin-left:5px;"><i class="fas fa-check-circle"></i></span></h2>
             
             <div class="nav-item active" onclick="showSection('home')"><i class="fas fa-chart-pie"></i> Dashboard</div>
             <div class="nav-item" onclick="showSection('profile')"><i class="fas fa-user-circle"></i> Profile Info</div>
-            <div class="nav-item" onclick="showSection('notifications')"><i class="fas fa-bell"></i> All Notifications</div>
+            <div class="nav-item" onclick="showSection('notifications')"><i class="fas fa-bell"></i> Notifications <span id="notifBadge" class="nav-badge">0</span></div>
             
-            <div style="border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 20px;"></div>
+            <div style="border-top: 1px solid var(--border-color); margin: 15px 20px;"></div>
             
             <div class="nav-item" onclick="showSection('inventory')"><i class="fas fa-box-open"></i> My Inventory</div>
-            <div class="nav-item" onclick="showSection('newOrders')"><i class="fas fa-bell" style="color: #fbbf24;"></i> New Orders <span id="badge-new-orders" class="nav-badge" style="background:#f59e0b;">0</span></div>
+            <div class="nav-item" onclick="showSection('newOrders')"><i class="fas fa-bell" style="color: var(--warning);"></i> New Orders <span id="badge-new-orders" class="nav-badge" style="background:var(--warning);">0</span></div>
             <div class="nav-item" onclick="showSection('acceptedOrders')"><i class="fas fa-check-square" style="color: #60a5fa;"></i> Accepted Orders <span id="badge-accepted" class="nav-badge" style="background:#3b82f6;">0</span></div>
-            <div class="nav-item" onclick="showSection('completedScan')"><i class="fas fa-clipboard-check" style="color: #10b981;"></i> Completed Scanning</div>
-            <div class="nav-item" onclick="showSection('shippedOrders')"><i class="fas fa-truck-fast" style="color: #34d399;"></i> Shipped Orders</div>
-            <div class="nav-item" onclick="showSection('deliveredOrders')"><i class="fas fa-check-circle" style="color: #10b981;"></i> Delivered Orders</div>
+            <div class="nav-item" onclick="showSection('completedScan')"><i class="fas fa-clipboard-check" style="color: var(--success);"></i> Completed Scan</div>
+            <div class="nav-item" onclick="showSection('shippedOrders')"><i class="fas fa-truck-fast" style="color: var(--success);"></i> Shipped Orders</div>
+            <div class="nav-item" onclick="showSection('deliveredOrders')"><i class="fas fa-check-circle" style="color: var(--success);"></i> Delivered Orders</div>
             
-            <div style="border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 20px;"></div>
+            <div style="border-top: 1px solid var(--border-color); margin: 15px 20px;"></div>
             
-            <div class="nav-item scan-btn-premium" onclick="openGlobalScanModal()"><i class="fas fa-qrcode"></i> Scan & Ship Orders</div>
+            <div class="nav-item scan-btn-premium" onclick="openGlobalScanModal()"><i class="fas fa-qrcode"></i> Scan & Dispatch</div>
             
             <div class="nav-item" onclick="showSection('history')" style="margin-top:15px;"><i class="fas fa-history"></i> Order History</div>
-            <div class="nav-item" onclick="showSection('returns')"><i class="fas fa-undo" style="color: #f87171;"></i> Returns / Cancels</div>
+            <div class="nav-item" onclick="showSection('returns')"><i class="fas fa-undo" style="color: var(--danger);"></i> Returns/Cancels</div>
             
-            <div style="border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 20px;"></div>
+            <div style="border-top: 1px solid var(--border-color); margin: 15px 20px;"></div>
             
-            <div class="nav-item" onclick="showSection('warranty')"><i class="fas fa-shield-alt" style="color: #a7f3d0;"></i> Warranty Claims <span id="badge-warranty" class="nav-badge" style="background:#10b981;">0</span></div>
-            <div class="nav-item" onclick="showSection('payments')"><i class="fas fa-wallet" style="color: #34d399;"></i> Payments Ledger</div>
+            <div class="nav-item" onclick="showSection('warranty')"><i class="fas fa-shield-alt" style="color: var(--success);"></i> Warranty Claims <span id="badge-warranty" class="nav-badge" style="background:var(--success);">0</span></div>
+            <div class="nav-item" onclick="showSection('payments')"><i class="fas fa-wallet" style="color: var(--success);"></i> Payments Ledger</div>
             <div class="nav-item" onclick="showSection('ads')"><i class="fas fa-bullhorn" style="color: #f472b6;"></i> Sponsored Ads</div>
-            <div class="nav-item" onclick="showSection('subscription')"><i class="fas fa-crown" style="color: #fbbf24;"></i> Subscriptions</div>
+            <div class="nav-item" onclick="showSection('subscription')"><i class="fas fa-crown" style="color: var(--warning);"></i> Subscriptions</div>
             
-            <div style="border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 20px;"></div>
+            <div style="border-top: 1px solid var(--border-color); margin: 15px 20px;"></div>
             
-            <div class="nav-item" onclick="showSection('tutorial')"><i class="fas fa-video" style="color: #c026d3;"></i> How to Sell</div>
+            <div class="nav-item" onclick="openHowToSellPage()"><i class="fas fa-video" style="color: #c026d3;"></i> How to Sell</div>
             <div class="nav-item" onclick="showSection('qna')"><i class="fas fa-comments" style="color: #60a5fa;"></i> Customer Q&A</div>
-            <div class="nav-item" onclick="showSection('buyB2b')"><i class="fas fa-shopping-bag" style="color: #34d399;"></i> Buy B2B Supplies</div>
-            <div class="nav-item" onclick="showSection('support')"><i class="fas fa-headset" style="color: #fbbf24;"></i> Admin Support</div>
-            <div class="nav-item" onclick="showSection('settings')"><i class="fas fa-cog" style="color: #cbd5e1;"></i> Settings</div>
+            <div class="nav-item" onclick="showSection('buyB2b')"><i class="fas fa-shopping-bag" style="color: var(--success);"></i> Buy B2B Supplies</div>
+            <div class="nav-item" onclick="showSection('support')"><i class="fas fa-headset" style="color: var(--warning);"></i> Admin Support</div>
             
-            <div class="nav-item" onclick="handleLogout()" style="color: #f87171; margin-top:30px;"><i class="fas fa-sign-out-alt"></i> Secure Logout</div>
+            <div class="nav-item" onclick="handleLogout()" style="color: var(--danger); margin-top:30px;"><i class="fas fa-sign-out-alt"></i> Secure Logout</div>
         </aside>
 
-        <!-- MAIN VIEW -->
         <main class="main-content">
-            
-            <!-- STICKY TOP BAR -->
             <div class="global-header-wrapper">
                 <div class="marquee-wrap">
                     <div class="marquee-inner" id="sellerMarquee">We help to make your business no. 1. Thanks for choosing us! Keep growing with Aryanta Prime Seller Network.</div>
                 </div>
-                
                 <div class="top-bar-container">
                     <header class="top-bar">
-                        <i class="fas fa-bars mobile-toggle" onclick="toggleSidebar()"></i>
-                        
-                        <div style="display:flex; align-items:center; gap:20px;">
-                            <div class="mobile-hide" style="font-weight: 800; font-size: 18px; white-space:nowrap; color:var(--text-main);">Hub <span id="sellerGreeting" style="color: var(--primary); font-size: 14px; font-weight:600;"></span></div>
-                            
-                            <div style="position:relative; cursor:pointer;" onclick="toggleNotifications()">
-                                <i class="fas fa-bell" style="font-size:22px; color:var(--text-light); transition:0.2s;"></i>
-                                <span id="notifBadge" style="position:absolute; top:-6px; right:-8px; background:var(--danger); color:white; font-size:10px; font-weight:bold; padding:2px 6px; border-radius:10px; display:none;">0</span>
-                            </div>
+                        <div class="topbar-left">
+                            <i class="fas fa-bars mobile-toggle" onclick="toggleSidebar()"></i>
+                            <div class="topbar-title mobile-hide">Hub <span id="sellerGreeting" style="color: var(--primary); font-size: 14px; font-weight:700;"></span></div>
+                            <button type="button" class="topbar-icon-btn" onclick="showSection('settings')" aria-label="Settings" title="Settings">
+                                <i class="fas fa-cog"></i>
+                            </button>
                         </div>
-
-                        <!-- Redesigned Notification Dropdown -->
-                        <div id="notifDropdown">
-                            <div class="notif-header-box">
-                                <span><i class="fas fa-bell text-primary"></i> Live Notifications</span>
-                                <i class="fas fa-times" style="cursor:pointer;" onclick="toggleNotifications()"></i>
+                        <div class="topbar-actions">
+                            <div class="search-container">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="globalSearchInput" placeholder="Search orders, inventory, SKUs." aria-label="Search" oninput="handleGlobalSearch()">
+                                <div id="searchSuggestions" class="suggestions-box"></div>
                             </div>
-                            <div id="notifList">
-                                <div style="text-align:center; padding:30px; color:var(--text-light); font-size:14px;"><i class="fas fa-box-open" style="font-size: 30px; margin-bottom: 10px;"></i><br>No new messages.</div>
-                            </div>
-                        </div>
-                        
-                        <div class="search-container">
-                            <i class="fas fa-search"></i>
-                            <input type="text" id="globalSearchInput" placeholder="Search orders, inventory, SKUs..." aria-label="Search" oninput="handleGlobalSearch()">
-                            <div id="searchSuggestions" class="suggestions-box"></div>
                         </div>
                     </header>
+                    <div id="notifDropdown">
+                        <div class="notif-header-box">
+                            <span><i class="fas fa-bell"></i> Live Notifications</span>
+                            <i class="fas fa-times" style="cursor:pointer;" onclick="toggleNotifications()"></i>
+                        </div>
+                        <div id="notifList"><div style="text-align:center; padding:30px; color:var(--text-light); font-size:14px;"><i class="fas fa-box-open" style="font-size:30px; margin-bottom:10px;"></i><br>No new messages.</div></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- CONTENT SECTIONS -->
             <div class="content-padding">
 
+                <!-- DASHBOARD SECTION -->
                 <section id="homeSection" class="data-section active">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px;">
-                        <h3 style="font-size:22px; font-weight:800;">Performance Overview</h3>
-                        <div style="font-weight: 800; color: var(--warning); background:#fffbeb; padding:10px 20px; border-radius:30px; border:2px solid #fcd34d; font-size:15px; box-shadow:0 4px 6px rgba(245, 158, 11, 0.2);">
-                            <i class="fas fa-star"></i> Rating: <span id="topShopRating">N/A</span>
-                        </div>
-                    </div>
-
-                    <div class="stats-grid" style="margin-bottom: 25px;">
-                        <div class="stat-card" style="background:#fdf4ff; border-color:#f5d0fe;">
-                            <div class="smart-badge" style="background:linear-gradient(45deg, #c026d3, #db2777);">INSIGHTS</div>
-                            <h3 id="smartDailyOrders" style="color:#c026d3; font-size:22px; margin-top:15px; letter-spacing:0;">0 Orders</h3>
-                            <p style="color:#9d174d;">Today's Orders <span id="smartDailyPct"></span></p>
-                        </div>
-                        <div class="stat-card" style="background:#eff6ff; border-color:#bfdbfe;">
-                            <div class="smart-badge" style="background:linear-gradient(45deg, #2563eb, #3b82f6);">MONTHLY</div>
-                            <h3 id="smartMonthlyOrders" style="color:#2563eb; font-size:22px; margin-top:15px;">0 Orders</h3>
-                            <p style="color:#1e3a8a;">This Month's Total</p>
-                        </div>
-                        <div class="stat-card" style="background:#fff7ed; border-color:#fecdd3;">
-                            <div class="smart-badge" style="background:linear-gradient(45deg, #e11d48, #f43f5e);">INVENTORY</div>
-                            <h3 id="stat-total-inventory" style="color:#e11d48; font-size:26px; margin-top:15px;">0</h3>
-                            <p style="color:#9f1239;">Total Listed Items <span id="smartRestock" style="color:var(--danger); font-weight:bold; margin-left:5px;"></span></p>
+                        <h3 style="font-size:24px; font-weight:800;">Business Overview</h3>
+                        <div style="font-weight: 800; color: var(--warning); background:#fffbeb; padding:10px 20px; border-radius:30px; border:1px solid #fcd34d; font-size:14px;">
+                            <i class="fas fa-star"></i> Store Rating: <span id="topShopRating">N/A</span>
                         </div>
                     </div>
 
                     <div class="stats-grid">
-                        <div class="stat-card" style="background: var(--surface-2); border-color: var(--border-color);"><h3 id="stat-orders" style="color:var(--text-main);">0</h3><p>Total Orders</p></div>
-                        <div class="stat-card"><h3 id="stat-pending-orders" style="color:#f59e0b;">0</h3><p>Pending Orders</p></div>
-                        <div class="stat-card" style="background: #ecfdf5; border-color: #a7f3d0;"><h3 id="stat-total-pay" style="color:#059669;">₹0</h3><p>Total Payment</p></div>
-                        <div class="stat-card"><h3 id="stat-pending-pay" style="color:#3b82f6;">₹0</h3><p>Pending Payment</p></div>
-                    </div>
-                    <div class="panel-box">
-                        <h4 style="margin-bottom: 20px; font-size:18px; font-weight:800;">7-Day Revenue Trend</h4>
-                        <div style="position: relative; height: 250px; width: 100%;">
-                            <canvas id="salesChart"></canvas>
+                        <div class="stat-card" style="background:#fdf4ff; border-color:#f5d0fe;">
+                            <div class="smart-badge" style="background:var(--primary);">TODAY</div>
+                            <h3 id="smartDailyOrders" style="color:var(--text-main);">0</h3>
+                            <p style="color:var(--text-light);">Orders Today <span id="smartDailyPct"></span></p>
                         </div>
+                        <div class="stat-card" style="background:#eff6ff; border-color:#bfdbfe;">
+                            <div class="smart-badge" style="background:var(--primary);">MONTHLY</div>
+                            <h3 id="smartMonthlyOrders" style="color:var(--text-main);">0</h3>
+                            <p style="color:var(--text-light);">Orders This Month</p>
+                        </div>
+                        <div class="stat-card" style="background:#fff7ed; border-color:#fecdd3;">
+                            <div class="smart-badge" style="background:var(--danger);">INVENTORY</div>
+                            <h3 id="stat-total-inventory" style="color:var(--danger);">0</h3>
+                            <p style="color:var(--text-light);">Live SKUs <span id="smartRestock" style="color:var(--danger); font-weight:bold; margin-left:5px;"></span></p>
+                        </div>
+                        <div class="stat-card" style="background:#f0fdfa; border-color:#a7f3d0;">
+                            <div class="smart-badge" style="background:var(--success);">AUDIENCE</div>
+                            <h3 id="stat-followers" style="color:var(--success);">0</h3>
+                            <p style="color:var(--text-light);">Store Total Followers</p>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid mt-20">
+                        <div class="stat-card"><h3 id="stat-total-pay" style="color:var(--success);">₹0</h3><p>Total Revenue (Delivered)</p></div>
+                        <div class="stat-card"><h3 id="stat-pending-pay" style="color:#3b82f6;">₹0</h3><p>Upcoming Payouts</p></div>
+                    </div>
+                    
+                    <div class="panel-box mt-20">
+                        <h4 style="margin-bottom: 20px; font-size:18px; font-weight:800;">7-Day Sales Trend</h4>
+                        <div style="position: relative; height: 250px; width: 100%;"><canvas id="salesChart"></canvas></div>
                     </div>
                 </section>
 
+                <!-- PROFILE SECTION -->
                 <section id="profileSection" class="data-section">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                        <h3 style="font-size:22px;"><i class="fas fa-user-circle"></i> Profile Details</h3>
-                        <button class="btn-prime" style="background:#3b82f6;" onclick="openSubHistoryModal()"><i class="fas fa-history"></i> Sub History</button>
-                    </div>
+                    <h3 style="font-size:24px; font-weight:800; margin-bottom:20px;">Profile & KYC</h3>
                     <div class="panel-box">
-                        <h4 style="margin-bottom:15px; color:var(--primary);"><i class="fas fa-crown"></i> Active Subscription</h4>
-                        <div class="detail-grid" id="profSubGrid" style="margin-bottom:25px; background:#eff6ff; border-color:#bfdbfe;">Loading...</div>
-
-                        <h4 style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">Personal Info</h4>
-                        <div class="detail-grid" id="profPersonalGrid">Loading...</div>
+                        <div id="profPersonalGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:25px;">Loading...</div>
                         
-                        <h4 style="margin-top:20px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">Bank Settings</h4>
-                        <div id="profBankGrid" style="margin-top:15px; max-width:500px;">
-                            <div style="margin-bottom:15px;">
-                                <label>Bank IFSC Code</label>
-                                <input type="text" id="profIfsc" class="input-field" placeholder="Enter IFSC Code" style="margin-bottom:5px;">
-                            </div>
-                            <div style="margin-bottom:15px;">
-                                <label>Bank Account Number</label>
-                                <input type="text" id="profAcc" class="input-field" placeholder="Enter Account No" style="margin-bottom:5px;">
-                            </div>
-                            <button class="btn-prime" onclick="updateBankDetails()"><i class="fas fa-save"></i> Update Bank Info</button>
+                        <h4 style="font-size:18px; font-weight:800; margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">Bank Settlement Details</h4>
+                        <div style="max-width:400px; margin-bottom:30px;">
+                            <label>IFSC Code</label><input type="text" id="profIfsc" class="input-field" placeholder="Enter IFSC">
+                            <label>Account Number</label><input type="text" id="profAcc" class="input-field" placeholder="Enter Account No">
+                            <button class="btn-prime" onclick="updateBankDetails()"><i class="fas fa-save"></i> Save Bank Info</button>
                         </div>
 
-                        <h4 style="margin-top:30px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">KYC & GST Documents</h4>
-                        <div id="kycStatusBoxWrapper">
-                            <div id="kycStatusBox" style="margin-top:15px; padding:25px; background:var(--surface-2); border-radius:12px; text-align:center; border: 2px dashed #cbd5e1;">
-                                <p style="margin-bottom:10px; font-weight:600; font-size:15px;">Upload your GST and KYC documents to unlock verified features and seamless payouts.</p>
-                                <div id="kycStatusIndicator" style="margin-bottom:15px;"></div>
-                                <button class="btn-prime" onclick="openKycModal()"><i class="fas fa-upload"></i> Upload KYC Documents</button>
-                            </div>
+                        <div id="kycStatusBoxWrapper" style="display:none; padding:20px; border:2px dashed var(--danger); border-radius:12px; background:#fef2f2; text-align:center;">
+                            <h4 style="color:var(--danger); font-size:18px; margin-bottom:10px;"><i class="fas fa-exclamation-triangle"></i> KYC Upload Required</h4>
+                            <p style="margin-bottom:15px; font-weight:600;">Admin requires fresh Aadhaar/PAN/GST docs to approve payouts.</p>
+                            <button class="btn-prime" style="background:var(--danger);" onclick="openKycModal()"><i class="fas fa-upload"></i> Upload Documents</button>
                         </div>
                     </div>
                 </section>
-                
+
+                <!-- NOTIFICATIONS SECTION -->
                 <section id="notificationsSection" class="data-section">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-                        <h3 style="font-size:22px; margin:0;"><i class="fas fa-bell"></i> All Notifications</h3>
-                    </div>
-                    <div id="fullNotifList" class="panel-box" style="padding: 10px;">Loading...</div>
+                    <h3 style="font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-bell"></i> System Notifications</h3>
+                    <div id="fullNotifList" class="panel-box">Loading...</div>
                 </section>
 
+                <!-- INVENTORY SECTION -->
                 <section id="inventorySection" class="data-section">
-                    <div class="flex-between" style="display:flex; justify-content:space-between; margin-bottom:20px;">
-                        <h3 style="font-size:22px;"><i class="fas fa-box-open"></i> My Inventory</h3>
-                        <button class="btn-prime" onclick="openItemModal()"><i class="fas fa-plus"></i> Add Product</button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+                        <h3 style="font-size:24px; font-weight:800;"><i class="fas fa-box-open"></i> My Inventory</h3>
+                        <button class="btn-prime" onclick="openItemModal()"><i class="fas fa-plus"></i> Add New Product</button>
                     </div>
-                    <div class="table-container"><table class="admin-table"><thead><tr><th>SKU & Images</th><th>Product Title</th><th>Category/Warranty</th><th>Stock</th><th>MRP / Price</th><th>Actions</th></tr></thead><tbody id="inventoryList"></tbody></table></div>
+                    
+                    <!-- QC Filters -->
+                    <div class="category-scroll-wrapper">
+                        <div class="category-filters">
+                            <button class="cat-pill active" id="qc-all" onclick="filterInventory('All')">All Items</button>
+                            <button class="cat-pill" id="qc-pass" onclick="filterInventory('Approved')"><i class="fas fa-check-circle" style="color:var(--success);"></i> QC Pass / Live</button>
+                            <button class="cat-pill" id="qc-pending" onclick="filterInventory('Pending')"><i class="fas fa-clock" style="color:var(--warning);"></i> QC Pending</button>
+                            <button class="cat-pill" id="qc-cancel" onclick="filterInventory('Rejected')"><i class="fas fa-times-circle" style="color:var(--danger);"></i> QC Cancelled</button>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead><tr><th>SKU & Images</th><th>Product Title</th><th>Category & Status</th><th>Stock</th><th>Price Info</th><th>Actions</th></tr></thead>
+                            <tbody id="inventoryList"></tbody>
+                        </table>
+                    </div>
                 </section>
 
+                <!-- NEW ORDERS -->
                 <section id="newOrdersSection" class="data-section">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
-                        <h3 style="color: #f59e0b; margin: 0; font-size:22px;"><i class="fas fa-bell"></i> New Orders</h3>
-                        <button class="btn-prime" style="background:#10b981;" onclick="bulkAcceptNewOrders()"><i class="fas fa-check-double"></i> Accept Selected</button>
+                        <h3 style="color: var(--warning); font-size:24px; font-weight:800;"><i class="fas fa-bell"></i> New Orders Control</h3>
+                        <button class="btn-prime" style="background:var(--success);" onclick="bulkAcceptNewOrders()"><i class="fas fa-check-double"></i> Accept Selected</button>
                     </div>
-                    <div class="panel-box" style="background:#fffbeb; border:1px solid #fcd34d;">
-                        <p style="font-size: 14px; color: #b45309; margin: 0; font-weight:600;"><strong>Action Required:</strong> Please accept new orders within 48h to avoid SLA fines.</p>
+                    <div class="category-scroll-wrapper" style="margin-bottom:15px;">
+                        <div class="category-filters">
+                            <button class="cat-pill active" id="order-filter-new" onclick="filterNewOrders('new')"><i class="fas fa-bell"></i> New Orders</button>
+                            <button class="cat-pill" id="order-filter-breached" onclick="filterNewOrders('breached')"><i class="fas fa-triangle-exclamation"></i> Breached</button>
+                            <button class="cat-pill" id="order-filter-cancelled" onclick="filterNewOrders('cancelled')"><i class="fas fa-ban"></i> Cancelled</button>
+                        </div>
                     </div>
-                    <div class="panel-box" style="background:var(--surface-2); padding:15px; margin-bottom: 15px; display:flex; align-items:center;">
-                        <input type="checkbox" id="selectAllNew" class="custom-cb" aria-label="Select All New" onclick="toggleSelectAllNew(this)"> 
-                        <label for="selectAllNew" style="margin:0 0 0 10px; font-size:14px; cursor:pointer; font-weight:bold;">Select All Pending Orders</label>
+                    <div class="panel-box" style="padding:15px; margin-bottom: 15px; display:flex; align-items:center;">
+                        <input type="checkbox" id="selectAllNew" class="custom-cb"onclick="toggleSelectAllNew(this)"> 
+                        <label for="selectAllNew" style="margin:0 0 0 10px; font-size:14px; cursor:pointer; font-weight:bold;">Select All Visible Orders</label>
                     </div>
                     <div class="table-container"><table class="admin-table"><thead><tr><th style="width: 50px;">Select</th><th>Order Date</th><th>Order Ref</th><th>Item Details</th><th>Amount</th><th>SLA Status</th><th>Action</th></tr></thead><tbody id="newOrdersList"></tbody></table></div>
                 </section>
 
+                <!-- ACCEPTED ORDERS -->
                 <section id="acceptedOrdersSection" class="data-section">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
-                        <h3 style="color: #3b82f6; font-size:22px; margin:0;"><i class="fas fa-check-square"></i> Accepted Orders</h3>
+                        <h3 style="color: #3b82f6; font-size:24px; font-weight:800;"><i class="fas fa-check-square"></i> Accepted Orders (To Print)</h3>
                     </div>
-                    
-                    <div class="panel-box" style="background:var(--surface-2); padding:15px; margin-bottom: 15px; display:flex; align-items:center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                    <div class="panel-box" style="padding:15px; margin-bottom: 15px; display:flex; align-items:center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
                         <div style="display:flex; align-items:center;">
-                            <input type="checkbox" id="selectAllAcc" class="custom-cb" aria-label="Select All Accepted" onclick="toggleSelectAllAcc(this)"> 
-                            <label for="selectAllAcc" style="margin:0 0 0 10px; font-size:14px; cursor:pointer; font-weight: bold;">Select All Orders</label>
+                            <input type="checkbox" id="selectAllAcc" class="custom-cb" onclick="toggleSelectAll('.cb-acc', this)"> 
+                            <label for="selectAllAcc" style="margin:0 0 0 10px; font-size:14px; cursor:pointer; font-weight: bold;">Select All</label>
                         </div>
-                        <!-- SIDE BY SIDE PRINT BUTTONS -->
-                        <div style="display:flex; gap: 15px; flex-wrap: wrap;">
-                            <button class="btn-pdf" onclick="processSlips('print')"><i class="fas fa-print"></i> Print Slips</button>
-                            <button class="btn-shiprocket" onclick="downloadShippingInvoice('bulk')"><i class="fas fa-print"></i> Print Shiprocket</button>
+                        <div style="display:flex; gap: 15px;">
+                            <button class="btn-prime" style="background:#3b82f6;" onclick="processSlips('print')"><i class="fas fa-print"></i> Print Standard Slips</button>
+                            <button class="btn-prime" style="background:#8b5cf6;" onclick="downloadShippingInvoice('bulk')"><i class="fas fa-rocket"></i> Generate Shiprocket</button>
                         </div>
                     </div>
-                    
                     <div class="table-container"><table class="admin-table"><thead><tr><th style="width: 50px;">Select</th><th>Order Date</th><th>Order Ref</th><th>Item Details</th><th>Action</th></tr></thead><tbody id="acceptedOrdersList"></tbody></table></div>
                 </section>
 
+                <!-- COMPLETED SCAN -->
                 <section id="completedScanSection" class="data-section">
-                    <h3 style="color: #10b981; margin-bottom: 20px; font-size:22px;"><i class="fas fa-clipboard-check"></i> Completed Scanning</h3>
+                    <h3 style="color: var(--success); font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-clipboard-check"></i> Scanned & Ready to Ship</h3>
                     <div class="table-container"><table class="admin-table"><thead><tr><th>Scan Date</th><th>Order Ref</th><th>Item Details</th><th>Status</th><th>Action</th></tr></thead><tbody id="completedScanList"></tbody></table></div>
                 </section>
 
+                <!-- SHIPPED / DELIVERED / HISTORY / RETURNS (Tables) -->
                 <section id="shippedOrdersSection" class="data-section">
-                    <h3 style="color: #10b981; margin-bottom: 20px; font-size:22px;"><i class="fas fa-truck-fast"></i> Shipped Orders</h3>
+                    <h3 style="color: var(--success); font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-truck-fast"></i> Shipped Orders</h3>
                     <div class="table-container"><table class="admin-table"><thead><tr><th>Shipped Date</th><th>Order Ref</th><th>Item Details</th><th>Status</th></tr></thead><tbody id="shippedOrdersList"></tbody></table></div>
                 </section>
-
                 <section id="deliveredOrdersSection" class="data-section">
-                    <h3 style="color: #10b981; margin-bottom: 20px; font-size:22px;"><i class="fas fa-check-circle"></i> Delivered Orders</h3>
-                    <div class="panel-box" style="background:#ecfdf5; border:1px solid #a7f3d0;">
-                        <p style="font-size: 14px; color: #064e3b; margin: 0; font-weight:600;">These orders have been successfully marked delivered by the admin. Payments will reflect in your ledger.</p>
-                    </div>
+                    <h3 style="color: var(--success); font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-check-circle"></i> Delivered Orders</h3>
                     <div class="table-container"><table class="admin-table"><thead><tr><th>Delivered Date</th><th>Order Ref</th><th>Item Details</th><th>Amount</th><th>Status</th></tr></thead><tbody id="deliveredOrdersList"></tbody></table></div>
                 </section>
-
                 <section id="historySection" class="data-section">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
-                        <h3 style="font-size:22px; margin:0;"><i class="fas fa-history"></i> Order History</h3>
-                        <button class="btn-prime" style="background:#10b981;" onclick="exportHistoryCSV()"><i class="fas fa-file-csv"></i> Export to Excel</button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h3 style="font-size:24px; font-weight:800;"><i class="fas fa-history"></i> Full Order History</h3>
+                        <button class="btn-prime" style="background:var(--success);" onclick="exportHistoryCSV()"><i class="fas fa-file-csv"></i> Export CSV</button>
                     </div>
                     <div class="table-container"><table class="admin-table"><thead><tr><th>Date</th><th>Order Ref</th><th>Item Details</th><th>Amount</th><th>Status</th></tr></thead><tbody id="historyList"></tbody></table></div>
                 </section>
-
                 <section id="returnsSection" class="data-section">
-                    <h3 style="margin-bottom: 20px; color:var(--danger); font-size:22px;"><i class="fas fa-undo"></i> Returns & Cancellations</h3>
+                    <h3 style="color: var(--danger); font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-undo"></i> Returns & Cancellations</h3>
                     <div class="table-container"><table class="admin-table"><thead><tr><th>Date</th><th>Order Ref</th><th>Item Returned</th><th>Reason</th></tr></thead><tbody id="returnsList"></tbody></table></div>
                 </section>
 
+                <!-- WARRANTY CLAIMS -->
                 <section id="warrantySection" class="data-section">
-                    <h3 style="margin-bottom: 20px; color:#10b981; font-size:22px;"><i class="fas fa-shield-alt"></i> Warranty Claim Requests</h3>
-                    <div class="panel-box" style="background:#fffbeb; border:1px solid #fcd34d;">
-                        <p style="font-size: 14px; color: #b45309; margin: 0; font-weight:600;"><strong>Action Required:</strong> Warranty claims accepted by admin arrive here. You must accept within 48 Hrs or face a ₹199 Fine. Cancelling a claim deducts a ₹300 Fine.</p>
+                    <h3 style="color: var(--success); font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-shield-alt"></i> Warranty Claim Requests</h3>
+                    <div class="panel-box" style="background:#fffbeb; border-color:#fcd34d;">
+                        <p style="font-size: 14px; color: #b45309; font-weight:600; margin:0;">Accept valid claims within 48 Hrs to avoid ₹199 SLA fine. Cancelling incurs ₹300 fine. Approved warranties deduct zero amount.</p>
                     </div>
-                    <div class="table-container"><table class="admin-table"><thead><tr><th>Claim Date</th><th>Product & Serial</th><th>Customer Issue</th><th>SLA Timer</th><th>Action</th></tr></thead><tbody id="warrantyList"></tbody></table></div>
+                    <div class="category-scroll-wrapper" style="margin:15px 0;">
+                        <div class="category-filters">
+                            <button class="cat-pill active" id="warranty-tab-requests" onclick="filterWarrantyPanel('requests')"><i class="fas fa-inbox"></i> Warranty Requests</button>
+                            <button class="cat-pill" id="warranty-tab-running" onclick="filterWarrantyPanel('running')"><i class="fas fa-spinner"></i> Running Warranty</button>
+                            <button class="cat-pill" id="warranty-tab-inventory" onclick="filterWarrantyPanel('inventory')"><i class="fas fa-boxes-stacked"></i> Inventory Warranty</button>
+                        </div>
+                    </div>
+                    <div class="table-container"><table class="admin-table"><thead><tr><th>Date</th><th>Product & Serial</th><th>Customer / Warranty Info</th><th>Status / SLA</th><th>Action</th></tr></thead><tbody id="warrantyList"></tbody></table></div>
                 </section>
 
+                <!-- PAYMENTS LEDGER -->
                 <section id="paymentsSection" class="data-section">
-                    <h3 style="margin-bottom: 20px; font-size:22px;"><i class="fas fa-wallet"></i> Payments Ledger</h3>
+                    <h3 style="font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-wallet"></i> Payments Ledger</h3>
                     <div style="display:flex; gap:10px; margin-bottom: 25px; flex-wrap:wrap;">
                         <button class="btn-prime" style="background:#f59e0b; flex:1;" onclick="togglePaymentTab('progress')">In Progress (7 Days)</button>
                         <button class="btn-prime" style="background:#3b82f6; flex:1;" onclick="togglePaymentTab('upcoming')">Upcoming Transfers</button>
-                        <button class="btn-prime" style="background:#10b981; flex:1;" onclick="togglePaymentTab('completed')">Completed</button>
-                        <button class="btn-prime" style="background:#ef4444; flex:1;" onclick="togglePaymentTab('fines')">Fines History</button>
+                        <button class="btn-prime" style="background:var(--success); flex:1;" onclick="togglePaymentTab('completed')">Completed</button>
+                        <button class="btn-prime" style="background:var(--danger); flex:1;" onclick="togglePaymentTab('fines')">Fines History</button>
                     </div>
 
                     <div id="tabProgress" class="payment-tab">
-                        <div class="panel-box" style="background:#fffbeb; border:1px solid #fcd34d;"><p style="font-size: 14px; color: #b45309; margin: 0; font-weight:600;">Orders recently delivered. Held securely for the standard 7-day return window.</p></div>
                         <div class="table-container"><table class="admin-table"><thead><tr><th>Delivered Date</th><th>Release Date</th><th>Order Ref</th><th>Amount</th></tr></thead><tbody id="payProgressList"></tbody></table></div>
                     </div>
-                    
                     <div id="tabUpcoming" class="payment-tab" style="display:none;">
-                        <div class="panel-box" style="background:#eff6ff; border:1px solid #bfdbfe; margin-bottom:20px; font-size:15px; line-height:1.6;" id="upcomingAlertBox"></div>
+                        <div class="panel-box" style="background:#eff6ff; border-color:#bfdbfe; font-size:15px; font-weight:700;" id="upcomingAlertBox"></div>
                         <div class="table-container"><table class="admin-table"><thead><tr><th>Transfer Date</th><th>Order Ref</th><th>Status</th><th>Gross Amount</th></tr></thead><tbody id="payUpcomingList"></tbody></table></div>
                     </div>
-                    
                     <div id="tabCompleted" class="payment-tab" style="display:none;"><div class="table-container"><table class="admin-table"><thead><tr><th>Settled Date</th><th>Slip Ref ID</th><th>Final Amount</th></tr></thead><tbody id="payCompletedList"></tbody></table></div></div>
                     <div id="tabFines" class="payment-tab" style="display:none;"><div class="table-container"><table class="admin-table"><thead><tr><th>Date</th><th>Reason</th><th>Amount Deducted</th></tr></thead><tbody id="payFinesList"></tbody></table></div></div>
                 </section>
 
+                <!-- ADS -->
                 <section id="adsSection" class="data-section">
-                    <h3 style="color: #ec4899; margin-bottom:20px; font-size:22px;"><i class="fas fa-bullhorn"></i> Sponsored Ads</h3>
+                    <h3 style="color: #ec4899; font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-bullhorn"></i> Sponsored Ads</h3>
                     <div class="table-container"><table class="admin-table"><thead><tr><th>Product</th><th>Price</th><th>Ad Status</th><th>Action</th></tr></thead><tbody id="adsList"></tbody></table></div>
                 </section>
 
+                <!-- SUBSCRIPTIONS -->
                 <section id="subscriptionSection" class="data-section">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px;">
-                        <h3 style="font-size:22px; color: #fbbf24;"><i class="fas fa-crown"></i> Aryanta Seller Subscriptions</h3>
-                        <div style="background:var(--surface-2); padding:5px; border-radius:12px; display:flex; gap:5px; border:1px solid var(--border-color);">
-                            <button id="btnPlanMonth" class="btn-sm" style="background:var(--primary); color:white; padding:10px 20px;" onclick="togglePlanDuration('month')">Monthly</button>
-                            <button id="btnPlanYear" class="btn-sm" style="background:transparent; color:var(--text-light); padding:10px 20px;" onclick="togglePlanDuration('year')">Annually (Save 20%)</button>
-                        </div>
+                    <h3 style="color: var(--warning); font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-crown"></i> Aryanta Store Subscriptions</h3>
+                    <div class="panel-box" style="margin-bottom:18px; background:var(--surface-2);">
+                        <strong>Current plan:</strong> <span id="currentPlanBadge" class="badge-ui">Basic / Free</span>
+                        <p style="margin-top:8px; color:var(--text-light); font-weight:700;">Payment records are saved to Firestore payment ledger. Sponsored and subscription payout deductions are also recorded.</p>
                     </div>
-                    
-                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:25px;">
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:22px;">
                         <div class="plan-card">
-                            <h3 style="font-size:24px; color:var(--primary);">Go Plan</h3>
-                            <p class="plan-price">₹<span id="priceGo">499</span> <span>/ <span class="txtDuration">month</span></span></p>
+                            <div class="plan-badge" style="background:var(--surface-2); color:var(--text-main);">Free</div>
+                            <h3 style="font-size:24px; font-weight:900;">Basic Plan</h3>
+                            <p class="plan-price">₹<span>0</span> <span>/ forever</span></p>
                             <ul class="plan-features">
-                                <li><i class="fas fa-check-circle"></i> Aryanta Verified Seller Badge</li>
-                                <li><i class="fas fa-check-circle"></i> 3 Free Sponsored Ads / month</li>
-                                <li><i class="fas fa-check-circle"></i> 10% Flat Delivery Charge</li>
-                                <li><i class="fas fa-check-circle"></i> 4% Commission per Product</li>
-                                <li><i class="fas fa-check-circle"></i> Priority Email Support</li>
-                                <li><i class="fas fa-check-circle"></i> Access to Basic Analytics</li>
+                                <li><i class="fas fa-check-circle"></i> Seller dashboard access</li>
+                                <li><i class="fas fa-check-circle"></i> QC product submission</li>
+                                <li><i class="fas fa-check-circle"></i> 1 logo + 1 banner update/month</li>
+                                <li><i class="fas fa-check-circle"></i> 7.5% commission logic</li>
                             </ul>
-                            <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
-                                <button class="btn-prime w-100" style="padding:15px; font-size:16px;" onclick="processSubscription('Go', 'online')">Pay Now (Online)</button>
-                                <button class="btn-prime w-100" id="btnSubPayoutGo" style="padding:15px; font-size:16px; background:var(--surface-2); color:var(--primary); border:2px solid var(--primary);" onclick="processSubscription('Go', 'payout')">Pay from Payout</button>
-                            </div>
+                            <button class="btn-outline w-100" onclick="processSubscription('Basic','free')">Use Basic</button>
                         </div>
-
+                        <div class="plan-card">
+                            <h3 style="font-size:24px; font-weight:900;">Go Plan</h3>
+                            <p class="plan-price">₹<span id="priceGo">199</span> <span>/ <span class="txtDuration">month</span></span></p>
+                            <ul class="plan-features">
+                                <li><i class="fas fa-check-circle"></i> Verified Seller Badge</li>
+                                <li><i class="fas fa-check-circle"></i> 1 logo + 3 banner updates/month</li>
+                                <li><i class="fas fa-check-circle"></i> Sponsored ad support</li>
+                                <li><i class="fas fa-check-circle"></i> Priority review visibility</li>
+                            </ul>
+                            <button class="btn-prime w-100" onclick="processSubscription('Go','online')">Pay Now</button>
+                            <button class="btn-outline w-100" id="btnSubPayoutGo" onclick="processSubscription('Go','payout')">Pay from Payout</button>
+                        </div>
                         <div class="plan-card pro">
-                            <div class="plan-badge">Most Popular</div>
-                            <h3 style="font-size:24px; color:var(--secondary);">Pro Plan</h3>
-                            <p class="plan-price">₹<span id="pricePro">799</span> <span>/ <span class="txtDuration">month</span></span></p>
+                            <div class="plan-badge">Popular</div>
+                            <h3 style="font-size:24px; font-weight:900; color:var(--primary);">Pro Plan</h3>
+                            <p class="plan-price">₹<span id="pricePro">499</span> <span>/ <span class="txtDuration">month</span></span></p>
                             <ul class="plan-features">
-                                <li><i class="fas fa-check-circle" style="color:var(--secondary);"></i> Aryanta Verified Seller Badge</li>
-                                <li><i class="fas fa-check-circle" style="color:var(--secondary);"></i> 5 Free Sponsored Ads / month</li>
-                                <li><i class="fas fa-check-circle" style="color:var(--secondary);"></i> 5% Flat Delivery Charge</li>
-                                <li><i class="fas fa-check-circle" style="color:var(--secondary);"></i> 3% Commission per Product</li>
-                                <li><i class="fas fa-check-circle" style="color:var(--secondary);"></i> First-in-line Callback Support</li>
-                                <li><i class="fas fa-check-circle" style="color:var(--secondary);"></i> Advanced AI Insights & Trends</li>
-                                <li><i class="fas fa-check-circle" style="color:var(--secondary);"></i> Lower SLA Penalties</li>
-                                <li><i class="fas fa-check-circle" style="color:var(--secondary);"></i> Custom Store URL</li>
+                                <li><i class="fas fa-check-circle"></i> Premium Seller Badge</li>
+                                <li><i class="fas fa-check-circle"></i> 3 logo + 6 banner updates/month</li>
+                                <li><i class="fas fa-check-circle"></i> Faster seller support</li>
+                                <li><i class="fas fa-check-circle"></i> Pro sponsored handling</li>
                             </ul>
-                            <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
-                                <button class="btn-prime w-100" style="background:var(--secondary); padding:15px; font-size:16px;" onclick="processSubscription('Pro', 'online')">Pay Now (Online)</button>
-                                <button class="btn-prime w-100" id="btnSubPayoutPro" style="padding:15px; font-size:16px; background:var(--surface-2); color:var(--secondary); border:2px solid var(--secondary);" onclick="processSubscription('Pro', 'payout')">Pay from Payout</button>
-                            </div>
+                            <button class="btn-prime w-100" onclick="processSubscription('Pro','online')">Pay Now</button>
+                            <button class="btn-outline w-100" id="btnSubPayoutPro" onclick="processSubscription('Pro','payout')">Pay from Payout</button>
+                        </div>
+                        <div class="plan-card ultra">
+                            <div class="plan-badge" style="background:#111827; color:white;">Ultra</div>
+                            <h3 style="font-size:24px; font-weight:900; color:#111827;">Ultra Plan</h3>
+                            <p class="plan-price">₹<span id="priceUltra">999</span> <span>/ <span class="txtDuration">month</span></span></p>
+                            <ul class="plan-features">
+                                <li><i class="fas fa-check-circle"></i> Highest brand limits</li>
+                                <li><i class="fas fa-check-circle"></i> Premium sponsored workflow</li>
+                                <li><i class="fas fa-check-circle"></i> Advanced warranty support</li>
+                                <li><i class="fas fa-check-circle"></i> Top support routing</li>
+                            </ul>
+                            <button class="btn-prime w-100" onclick="processSubscription('Ultra','online')">Pay Now</button>
+                            <button class="btn-outline w-100" id="btnSubPayoutUltra" onclick="processSubscription('Ultra','payout')">Pay from Payout</button>
                         </div>
                     </div>
                 </section>
 
+                <!-- TUTORIAL / HOW TO SELL -->
                 <section id="tutorialSection" class="data-section">
-                    <h3 style="margin-bottom: 20px; color: #c026d3; font-size:22px;"><i class="fas fa-video"></i> How to Sell on Aryanta</h3>
-                    <div id="tutorialContentList" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px;">
-                        <div style="text-align:center; padding:40px; color:var(--text-light); grid-column: 1 / -1;"><i class="fas fa-spinner fa-spin"></i> Fetching guides from Admin...</div>
+                    <h3 style="color: #c026d3; font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-video"></i> Guide & Resources</h3>
+                    <div id="tutorialContentList" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:20px;">
+                        <div style="text-align:center; padding:40px; color:var(--text-light); grid-column: 1 / -1;"><i class="fas fa-spinner fa-spin"></i> Fetching rich guides & videos from Admin...</div>
                     </div>
                 </section>
 
+                <!-- Q&A SECTION -->
                 <section id="qnaSection" class="data-section">
-                    <h3 style="margin-bottom: 20px; color: #3b82f6; font-size:22px;"><i class="fas fa-comments"></i> Customer Q&A</h3>
-                    <div class="table-container"><table class="admin-table"><thead><tr><th>Product</th><th>Question & Answer</th><th>Status</th><th>Action</th></tr></thead><tbody id="qnaList"></tbody></table></div>
+                    <h3 style="color: #3b82f6; font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-comments"></i> Customer Q&A</h3>
+                    <div class="panel-box" style="background:#eff6ff; border-color:#bfdbfe;">
+                        <p style="font-size: 14px; color: #1e3a8a; font-weight:600; margin:0;">Any questions asked by customers on your product page will appear here for you to answer publicly.</p>
+                    </div>
+                    <div class="table-container"><table class="admin-table"><thead><tr><th>Product</th><th>Customer Question & Your Answer</th><th>Status</th><th>Action</th></tr></thead><tbody id="qnaList"></tbody></table></div>
                 </section>
 
+                <!-- BUY B2B -->
+                <section id="buyB2bSection" class="data-section">
+                    <h3 style="color: var(--success); font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-shopping-bag"></i> Buy Wholesale Supplies</h3>
+                    <div class="stats-grid" id="b2bProductsGrid"></div>
+                </section>
+
+                <!-- ADMIN SUPPORT -->
                 <section id="supportSection" class="data-section">
-                    <h3 style="margin-bottom: 20px; color: #f59e0b; font-size:22px;"><i class="fas fa-headset"></i> Contact Admin Support</h3>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                        <h3 style="color: var(--warning); font-size:24px; font-weight:800;"><i class="fas fa-headset"></i> Help & Support Tickets</h3>
+                        <button class="btn-outline" onclick="showSection('oldTickets')"><i class="fas fa-history"></i> View My Tickets</button>
+                    </div>
                     <div class="panel-box" style="max-width: 600px;">
                         <form onsubmit="event.preventDefault(); submitSupportTicket();">
                             <label>Issue Category</label>
-                            <div class="custom-select-wrapper" id="supCategoryWrapper">
-                                <div class="custom-select-trigger" onclick="toggleCustomSelect()">
-                                    <span id="supCategorySelected">-- Select Issue Type --</span>
-                                    <i class="fas fa-chevron-down"></i>
-                                </div>
-                                <div class="custom-select-options">
-                                    <div class="custom-option" onclick="selectOption('Payment/Payout Issue')">Payment/Payout Issue</div>
-                                    <div class="custom-option" onclick="selectOption('Order Cancellation Dispute')">Order Cancellation Dispute</div>
-                                    <div class="custom-option" onclick="selectOption('SLA Fine Dispute')">SLA Fine Dispute</div>
-                                    <div class="custom-option" onclick="selectOption('Product Listing Error')">Product Listing Error</div>
-                                    <div class="custom-option" onclick="selectOption('B2B Wholesale Issue')">B2B Wholesale Issue</div>
-                                    <div class="custom-option" onclick="selectOption('Shipping Partner Delay')">Shipping Partner Delay</div>
-                                    <div class="custom-option" onclick="selectOption('Customer Fraud/Return Dispute')">Customer Fraud/Return Dispute</div>
-                                    <div class="custom-option" onclick="selectOption('Technical Bug')">Technical Bug</div>
-                                    <div class="custom-option" onclick="selectOption('Profile/Bank Update')">Profile/Bank Update</div>
-                                    <div class="custom-option" onclick="selectOption('Other / General Query')">Other / General Query</div>
-                                </div>
-                            </div>
-                            <input type="hidden" id="supCategory">
-
-                            <label>Callback Phone Number</label><input type="text" id="supPhone" class="input-field" required aria-label="Support Phone">
-                            <label>Detailed Issue Description</label><textarea id="supDesc" class="input-field" style="height: 120px;" required aria-label="Issue Description"></textarea>
-                            <button type="submit" class="btn-prime w-100" style="background:#f59e0b; font-size:16px; padding:15px;">Submit Ticket</button>
+                            <select id="supCategory" class="input-field" required>
+                                <option value="">-- Select Issue Type --</option>
+                                <option value="Payment/Payout Issue">Payment/Payout Issue</option>
+                                <option value="Order Cancellation Dispute">Order Cancellation Dispute</option>
+                                <option value="Product Listing Error">Product Listing Error</option>
+                                <option value="Shipping Partner Delay">Shipping Partner Delay</option>
+                                <option value="Customer Fraud">Customer Fraud / Dispute</option>
+                                <option value="Other">Other / General Query</option>
+                            </select>
+                            <label>Callback Phone Number</label><input type="text" id="supPhone" class="input-field" required>
+                            <label>Detailed Issue Description</label><textarea id="supDesc" class="input-field" style="height: 120px;" required></textarea>
+                            <button type="submit" class="btn-prime w-100" style="background:var(--warning); font-size:16px; padding:15px;">Raise Ticket securely</button>
                         </form>
-                        
-                        <div style="border-top:1px solid var(--border-color); margin-top:20px; padding-top:20px; text-align:center;">
-                            <button class="btn-prime" style="background:#3b82f6;" onclick="showSection('oldTickets')"><i class="fas fa-history"></i> See My Old Tickets</button>
-                        </div>
                     </div>
                 </section>
 
                 <section id="oldTicketsSection" class="data-section">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-                        <h3 style="color: #3b82f6; margin:0; font-size:22px;"><i class="fas fa-history"></i> My Support Tickets</h3>
-                        <button class="btn-sm" style="background:var(--text-light); padding:10px 15px;" onclick="showSection('support')"><i class="fas fa-arrow-left"></i> Back to Support</button>
+                        <h3 style="color: #3b82f6; font-size:24px; font-weight:800;"><i class="fas fa-history"></i> My Support Tickets</h3>
+                        <button class="btn-outline" onclick="showSection('support')"><i class="fas fa-arrow-left"></i> Back to Support</button>
                     </div>
                     <div id="oldTicketsListContainer">Loading...</div>
                 </section>
 
-                <section id="buyB2bSection" class="data-section">
-                    <h3 style="margin-bottom: 20px; color: #10b981; font-size:22px;"><i class="fas fa-shopping-bag"></i> Buy Wholesale Supplies (B2B)</h3>
-                    <div class="b2b-grid" id="b2bProductsGrid"></div>
-                </section>
-
+                <!-- SETTINGS SECTION -->
                 <section id="settingsSection" class="data-section">
-                    <h3 style="margin-bottom: 20px; color: #cbd5e1; font-size:22px;"><i class="fas fa-cog"></i> Hub Settings</h3>
-                    
-                    <div class="detail-grid" style="grid-template-columns: 1fr;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding: 15px; border-bottom:1px solid var(--border-color);">
-                            <div>
-                                <strong style="font-size:16px;">Go Offline Mode</strong>
-                                <span style="font-size:12px; color:var(--text-light); text-transform:none;">Hide all products and stop receiving orders.</span>
-                            </div>
-                            <label class="switch"><input type="checkbox" id="settingOffline" onchange="toggleSetting('offline')" aria-label="Go Offline"><span class="slider"></span></label>
+
+    <div class="settings-hero">
+        <h2><i class="fas fa-cog"></i> Hub Configuration</h2>
+        <p>Manage store branding, seller workflow, dashboard security, theme and Aryanta version details.</p>
+    </div>
+
+    <div class="panel-box" style="padding:0; overflow:hidden;">
+
+        <!-- Store Branding -->
+        <div style="padding:25px; border-bottom:1px solid var(--border-color); background:var(--surface-2);">
+            <h4 style="font-size:18px; font-weight:800; margin-bottom:20px;">
+                <i class="fas fa-store"></i> Store Branding
+            </h4>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px;">
+
+                <div style="background:var(--white); padding:20px; border-radius:16px; border:1px solid var(--border-color); box-shadow:var(--shadow-sm);">
+                    <strong style="font-size:16px; display:block; margin-bottom:5px;">
+                        Store Logo
+                    </strong>
+
+                    <span style="font-size:12px; color:var(--text-light); display:block; margin-bottom:15px;" id="logoLimitText">
+                        Limit: 1 upload/month (Free Plan)
+                    </span>
+
+                    <input type="file" id="storeLogoInput" accept="image/*" class="hidden-file-input" onchange="updateChosenFileLabel('storeLogoInput','storeLogoFileName')">
+                    <button type="button" class="pretty-file-btn" onclick="document.getElementById('storeLogoInput').click()"><i class="fas fa-image"></i> Choose Logo Image</button>
+                    <div class="chosen-file-name" id="storeLogoFileName">No logo selected</div>
+
+                    <button class="btn-outline w-100" onclick="uploadStoreBranding('logo')">
+                        <i class="fas fa-upload"></i> Upload Logo
+                    </button>
+                </div>
+
+                <div style="background:var(--white); padding:20px; border-radius:16px; border:1px solid var(--border-color); box-shadow:var(--shadow-sm);">
+                    <strong style="font-size:16px; display:block; margin-bottom:5px;">
+                        Store Banner
+                    </strong>
+
+                    <span style="font-size:12px; color:var(--text-light); display:block; margin-bottom:15px;" id="bannerLimitText">
+                        Limit: 1 upload/month (Free Plan)
+                    </span>
+
+                    <input type="file" id="storeBannerInput" accept="image/*" class="hidden-file-input" onchange="updateChosenFileLabel('storeBannerInput','storeBannerFileName')">
+                    <button type="button" class="pretty-file-btn" onclick="document.getElementById('storeBannerInput').click()"><i class="fas fa-panorama"></i> Choose Banner Image</button>
+                    <div class="chosen-file-name" id="storeBannerFileName">No banner selected</div>
+
+                    <button class="btn-outline w-100" onclick="uploadStoreBranding('banner')">
+                        <i class="fas fa-upload"></i> Upload Banner
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Seller Controls -->
+        <div style="padding:25px;">
+            <h4 style="font-size:18px; font-weight:800; margin-bottom:20px;">
+                <i class="fas fa-sliders-h"></i> Seller Controls
+            </h4>
+
+            <div class="settings-grid-premium">
+
+                <div class="setting-card-premium">
+                    <div class="setting-left">
+                        <div class="setting-icon">
+                            <i class="fas fa-store-slash"></i>
                         </div>
 
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding: 15px; border-bottom:1px solid var(--border-color);">
-                            <div>
-                                <strong style="font-size:16px;">Dark Theme</strong>
-                                <span style="font-size:12px; color:var(--text-light); text-transform:none;">Enable low-light mode for the dashboard. Saves to Chrome.</span>
-                            </div>
-                            <label class="switch"><input type="checkbox" id="settingTheme" onchange="toggleSetting('theme')" aria-label="Dark Theme"><span class="slider"></span></label>
-                        </div>
-
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding: 15px; border-bottom:1px solid var(--border-color);">
-                            <div>
-                                <strong style="font-size:16px;">Auto-Accept Orders (SLA Safe)</strong>
-                                <span style="font-size:12px; color:var(--text-light); text-transform:none;">Automatically accept orders to prevent SLA fines.</span>
-                            </div>
-                            <label class="switch"><input type="checkbox" id="settingAutoAcc" onchange="toggleSetting('autoAcc')" aria-label="Auto Accept Orders"><span class="slider"></span></label>
-                        </div>
-
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding: 15px; border-bottom:1px solid var(--border-color);">
-                            <div>
-                                <strong style="font-size:16px;">Vacation Mode</strong>
-                                <span style="font-size:12px; color:var(--text-light); text-transform:none;">Increases estimated delivery time by +5 days.</span>
-                            </div>
-                            <label class="switch"><input type="checkbox" id="settingVacation" onchange="toggleSetting('vacation')" aria-label="Vacation Mode"><span class="slider"></span></label>
-                        </div>
-
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding: 15px; border-bottom:1px solid var(--border-color);">
-                            <div>
-                                <strong style="font-size:16px;">SMS Notifications</strong>
-                                <span style="font-size:12px; color:var(--text-light); text-transform:none;">Receive SMS alerts for new orders.</span>
-                            </div>
-                            <label class="switch"><input type="checkbox" id="settingSms" onchange="toggleSetting('sms')" aria-label="SMS Notifications"><span class="slider"></span></label>
-                        </div>
-
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding: 15px;">
-                            <div>
-                                <strong style="font-size:16px;">Two-Factor Authentication (2FA)</strong>
-                                <span style="font-size:12px; color:var(--text-light); text-transform:none;">Require OTP when logging into Hub.</span>
-                            </div>
-                            <label class="switch"><input type="checkbox" id="setting2fa" onchange="toggleSetting('2fa')" aria-label="Two Factor Auth"><span class="slider"></span></label>
+                        <div>
+                            <div class="setting-title">Offline Mode</div>
+                            <div class="setting-sub">Hide your live products temporarily.</div>
                         </div>
                     </div>
-                </section>
+
+                    <label class="premium-switch">
+                        <input type="checkbox" id="settingOffline" onchange="toggleSetting('offline')">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-card-premium">
+                    <div class="setting-left">
+                        <div class="setting-icon">
+                            <i class="fas fa-moon"></i>
+                        </div>
+
+                        <div>
+                            <div class="setting-title">Dark Theme</div>
+                            <div class="setting-sub">Switch dashboard to dark mode.</div>
+                        </div>
+                    </div>
+
+                    <label class="premium-switch">
+                        <input type="checkbox" id="settingTheme" onchange="toggleSetting('theme')">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-card-premium">
+                    <div class="setting-left">
+                        <div class="setting-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+
+                        <div>
+                            <div class="setting-title">Auto Accept Orders</div>
+                            <div class="setting-sub">Automatically accept eligible new orders.</div>
+                        </div>
+                    </div>
+
+                    <label class="premium-switch">
+                        <input type="checkbox" id="settingAutoAcc" onchange="toggleSetting('autoAcc')">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-card-premium">
+                    <div class="setting-left">
+                        <div class="setting-icon">
+                            <i class="fas fa-umbrella-beach"></i>
+                        </div>
+
+                        <div>
+                            <div class="setting-title">Vacation Mode</div>
+                            <div class="setting-sub">Mark seller account as temporarily away.</div>
+                        </div>
+                    </div>
+
+                    <label class="premium-switch">
+                        <input type="checkbox" id="settingVacation" onchange="toggleSetting('vacation')">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-card-premium">
+                    <div class="setting-left">
+                        <div class="setting-icon">
+                            <i class="fas fa-sms"></i>
+                        </div>
+
+                        <div>
+                            <div class="setting-title">SMS Alerts</div>
+                            <div class="setting-sub">Receive important order and support alerts.</div>
+                        </div>
+                    </div>
+
+                    <label class="premium-switch">
+                        <input type="checkbox" id="settingSms" onchange="toggleSetting('sms')">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-card-premium">
+                    <div class="setting-left">
+                        <div class="setting-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+
+                        <div>
+                            <div class="setting-title">2FA Security</div>
+                            <div class="setting-sub">Add OTP verification during login.</div>
+                        </div>
+                    </div>
+
+                    <label class="premium-switch">
+                        <input type="checkbox" id="setting2fa" onchange="toggleSetting('2fa')">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+
+            
+                <div class="setting-card-premium">
+                    <div class="setting-left">
+                        <div class="setting-icon"><i class="fas fa-magnifying-glass-chart"></i></div>
+                        <div>
+                            <div class="setting-title">Show Search Suggestions</div>
+                            <div class="setting-sub">Enable or disable dropdown suggestions in the top search bar.</div>
+                        </div>
+                    </div>
+                    <label class="premium-switch">
+                        <input type="checkbox" id="settingSearchSuggestions" onchange="toggleSetting('searchSuggestions')">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+</div>
+        </div>
+
+        <!-- Version Info -->
+        <div style="padding:25px; border-top:1px solid var(--border-color); background:var(--surface-2);">
+            <h4 style="font-size:18px; font-weight:800; margin-bottom:18px;">
+                <i class="fas fa-code-branch"></i> Version Information
+            </h4>
+
+            <div class="version-box">
+
+                <div class="version-card">
+                    <span>App Version</span>
+                    <strong>Aryanta Seller App v1.0.0</strong>
+                </div>
+
+                <div class="version-card">
+                    <span>Web Version</span>
+                    <strong>Web Build v2026.05.12</strong>
+                </div>
+
+                <div class="version-card">
+                    <span>Panel Type</span>
+                    <strong>Enterprise Seller Hub</strong>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</section>
             </div>
         </main>
     </div>
 
-    <!-- Modals -->
-    <div class="modal" id="notificationDetailModal">
-        <div class="modal-content" style="width: 500px;">
-            <span class="close-modal" onclick="closeModal('notificationDetailModal')"><i class="fas fa-times"></i></span>
-            <h3 style="color: var(--primary); margin-bottom: 15px; font-size:20px;"><i class="fas fa-bell"></i> Notification Detail</h3>
-            <div id="notifDetailContent"></div>
+    <!-- MODALS -->
+
+    <!-- Add/Edit Product Modal -->
+    <div class="modal" id="itemModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="close-modal" onclick="closeModal('itemModal')"><i class="fas fa-times"></i></span>
+            <h3 id="modalTitle" style="margin-bottom:20px; font-size:24px; font-weight:800;">Add / Edit Product</h3>
+            <form id="itemForm" onsubmit="event.preventDefault(); submitItemForm();">
+                <input type="hidden" id="editId">
+                
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap:15px;">
+                    <div><label>Product Title</label><input type="text" id="itemName" class="input-field" required></div>
+                    <div><label>Unique SKU</label><input type="text" id="itemSku" class="input-field" placeholder="Leave blank to auto-generate"></div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap:15px;">
+                    <div>
+                        <div>
+    <label>Product Category</label>
+
+    <div class="select-wrap">
+        <select id="itemCat" required>
+            <option value="">Select Product Category</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Mobiles & Accessories">Mobiles & Accessories</option>
+            <option value="Fashion">Fashion</option>
+            <option value="Footwear">Footwear</option>
+            <option value="Beauty & Personal Care">Beauty & Personal Care</option>
+            <option value="Home & Kitchen">Home & Kitchen</option>
+            <option value="Furniture">Furniture</option>
+            <option value="Grocery">Grocery</option>
+            <option value="Health & Wellness">Health & Wellness</option>
+            <option value="Sports & Fitness">Sports & Fitness</option>
+            <option value="Toys & Baby Products">Toys & Baby Products</option>
+            <option value="Books & Stationery">Books & Stationery</option>
+            <option value="Automotive Accessories">Automotive Accessories</option>
+            <option value="Tools & Hardware">Tools & Hardware</option>
+            <option value="Pet Supplies">Pet Supplies</option>
+            <option value="Bags & Luggage">Bags & Luggage</option>
+            <option value="Jewellery & Accessories">Jewellery & Accessories</option>
+            <option value="Appliances">Appliances</option>
+            <option value="Computer Accessories">Computer Accessories</option>
+            <option value="Other Products">Other Products</option>
+        </select>
+    </div>
+</div>
+                    </div>
+                    <div><label>Total Stock</label><input type="number" id="itemStock" class="input-field" required></div>
+                    <div><label>MRP (₹)</label><input type="number" id="itemMrp" class="input-field" required></div>
+                    <div><label>Selling Price (₹)</label><input type="number" id="itemPrice" class="input-field" required></div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+
+    <div>
+        <label>Warranty Status</label>
+
+        <div class="select-wrap">
+            <select id="itemWarranty" onchange="toggleCustomWarranty()" required>
+                <option value="No Warranty">No Warranty</option>
+                <option value="3 Month Warranty">3 Month Warranty</option>
+                <option value="6 Month Warranty">6 Month Warranty</option>
+                <option value="1 Year Warranty">1 Year Warranty</option>
+                <option value="2 Year Warranty">2 Year Warranty</option>
+                <option value="3 Year Warranty">3 Year Warranty</option>
+                <option value="5 Year Warranty">5 Year Warranty</option>
+                <option value="Yes">Custom Warranty Text</option>
+            </select>
         </div>
+
+        <input 
+            type="text" 
+            id="itemWarrantyCustom" 
+            class="input-field" 
+            placeholder="Example: Warranty valid only for manufacturing defects." 
+            style="display:none; margin-top:-10px;"
+        >
     </div>
 
-    <div class="modal" id="payoutSlipModal">
-        <div class="modal-content" style="width: 700px; max-width: 95%;">
-            <span class="close-modal" onclick="closeModal('payoutSlipModal')"><i class="fas fa-times"></i></span>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="color: var(--primary); margin:0; font-size:22px;"><i class="fas fa-receipt"></i> Payment Settlement Slip</h3>
+   <div>
+    <label>Secure Tx Status</label>
+
+    <div class="select-wrap">
+        <select id="itemSecureTx" required>
+            <option value="Standard">Standard Secure Tx</option>
+            <option value="High Value">High Value Verified — Admin Approval</option>
+        </select>
+    </div>
+</div>
+
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+    <div>
+        <label>Core Description</label>
+        <textarea 
+            id="itemDesc" 
+            class="input-field" 
+            style="height:100px;" 
+            required
+        ></textarea>
+    </div>
+
+    <div>
+        <label>Product Highlights (Bullet Points)</label>
+        <textarea 
+            id="itemHighlights" 
+            class="input-field" 
+            style="height:100px;" 
+            placeholder="- Premium Build&#10;- Fast Setup"
+        ></textarea>
+    </div>
+</div>
+
+<div style="background:var(--surface-2); padding:15px; border-radius:12px; margin-bottom:15px; border:1px solid var(--border-color);">
+
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
+        <label style="margin:0;">External Product Links</label>
+
+        <button 
+            type="button" 
+            class="btn-sm" 
+            style="background:var(--accent); color:white; display:flex; align-items:center; gap:6px;" 
+            onclick="addLinkField()"
+        >
+            <i class="fas fa-plus"></i> Add Link
+        </button>
+    </div>
+
+    <p style="font-size:12px; color:var(--text-light); margin-bottom:12px; font-weight:600;">
+        You can add maximum 5 product reference links.
+    </p>
+
+    <div id="productLinksContainer"></div>
+
+</div>
+
+<div>
+    <label>Product Images</label>
+
+    <div class="img-upload-box" onclick="document.getElementById('itemImgFiles').click()">
+        <i class="fas fa-camera" style="font-size:30px; color:var(--text-light); margin-bottom:10px;"></i>
+        <p style="font-weight:600; color:var(--text-main);">Click to select images</p>
+        <p style="font-size:12px; color:var(--text-light); margin-top:5px;">
+            Uploading new images will NOT delete old ones. Use 'X' to manually remove.
+        </p>
+    </div>
+
+   <input 
+    type="file" 
+    id="itemImgFiles" 
+    multiple 
+    accept="image/*" 
+    style="display:none;"
+>
+
+    <div 
+        id="imagePreviewContainer" 
+        style="display:flex; gap:10px; margin-top:15px; flex-wrap:wrap;"
+    ></div>
+</div>
+
+<button 
+    type="submit" 
+    class="btn-prime w-100" 
+    id="saveProductBtn" 
+    style="font-size:16px; padding:15px; margin-top:20px;"
+>
+    Save Product (Send to QC)
+</button>
+
+</form>
+</div>
+</div>
+
+    <!-- Scan to Dispatch Modal -->
+    <div class="modal" id="scanModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('scanModal')"><i class="fas fa-times"></i></span>
+            <h3 style="font-size:24px; font-weight:900; margin-bottom:6px;"><i class="fas fa-qrcode"></i> Scan & Dispatch</h3>
+            <p style="font-weight:700; margin-bottom:10px;">Invoice → Warranty QR if required → 16 digit product barcode.</p>
+            <input type="hidden" id="scanOrderId">
+            <div class="scanner-box" id="scannerBox">
+                <div id="qr-reader" style="width:100%; height:100%; display:none;"></div>
+                <div id="scannerPlaceholder"><i class="fas fa-spinner fa-spin" style="font-size:30px; margin-bottom:10px;"></i><br>Opening full screen camera...</div>
             </div>
-            <div id="payoutSlipContent" style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;"></div>
+            <div id="scanStatus">Step 1: Scan Invoice / Order ID QR Code</div>
+            <div class="scan-flow-grid">
+                <div id="scanStep1" class="scan-step active"><h4>1. Invoice</h4><p>Scan the order/invoice QR first.</p></div>
+                <div id="scanStep2" class="scan-step"><h4>2. Warranty QR</h4><p>Only required when admin warranty QR exists.</p></div>
+                <div id="scanStep3" class="scan-step"><h4>3. Product Barcode</h4><p>Scan the final 16 digit barcode.</p></div>
+            </div>
+            <button class="btn-outline" id="skipScanBtn" onclick="skipAndShip()"><i class="fas fa-forward"></i> Skip Warranty QR (₹20 Fine)</button>
         </div>
     </div>
 
+    <!-- Order Details Modal (Masked Info) -->
+    <div class="modal" id="orderDetailsModal">
+        <div class="modal-content" style="width: 650px;">
+            <span class="close-modal" onclick="closeModal('orderDetailsModal')"><i class="fas fa-times"></i></span>
+            <h3 style="font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-receipt"></i> Order Details</h3>
+            <div id="orderDetailsContent" style="display:flex; flex-direction:column; gap:15px;"></div>
+        </div>
+    </div>
+
+    <!-- B2B Order Modal -->
+    <div class="modal" id="buyB2bModal">
+        <div class="modal-content" style="width: 600px;">
+            <span class="close-modal" onclick="closeModal('buyB2bModal')"><i class="fas fa-times"></i></span>
+            <div id="b2bStep1">
+                <h3 style="font-size:24px; font-weight:800; margin-bottom:15px;">Wholesale Purchase Details</h3>
+                <input type="hidden" id="b2bBuyId">
+                <div id="b2bProductInfo"></div>
+                <div style="background:var(--surface-2); padding:15px; border-radius:12px; margin: 20px 0;">
+                    <p style="margin-bottom:8px; font-size:14px;"><strong>Sold By:</strong> Aryanta Enterprise Admin <i class="fas fa-check-circle" style="color:var(--success);"></i></p>
+                    <p style="margin-bottom:0; font-size:14px;"><strong>Delivery Speed:</strong> Dispatch & Delivery within 7 Days</p>
+                </div>
+                <button class="btn-prime w-100" style="padding:15px; font-size: 16px;" onclick="goToB2bStep2()">Proceed to Shipping <i class="fas fa-arrow-right"></i></button>
+            </div>
+            <div id="b2bStep2" style="display:none;">
+                <h3 style="font-size:24px; font-weight:800; margin-bottom:15px;">Shipping & Payment</h3>
+                <button class="btn-outline" style="margin-bottom:15px; padding:8px 12px;" onclick="goToB2bStep1()"><i class="fas fa-arrow-left"></i> Back</button>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div><label>Order Qty (MOQ: <span id="b2bMoqLabel"></span>)</label><input type="number" id="b2bBuyQty" class="input-field" required></div>
+                    <div><label>Total Price (+₹70 Ship)</label><input type="text" id="b2bBuyTotal" class="input-field" disabled style="font-weight:bold; color:var(--primary);"></div>
+                </div>
+                <label>Full Shipping Address</label><input type="text" id="b2bBuyAddress" class="input-field" required>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div><label>City</label><input type="text" id="b2bBuyCity" class="input-field" required></div>
+                    <div><label>Pincode</label><input type="text" id="b2bBuyPin" class="input-field" required></div>
+                </div>
+                <button class="btn-prime w-100" style="background:var(--success); margin-bottom:10px; padding:15px;" onclick="processB2bBuy('online')">Pay Online (Razorpay)</button>
+                <button class="btn-prime w-100" style="background:var(--primary); padding:15px;" id="b2bPayoutBtn" onclick="processB2bBuy('payout')">Pay via Upcoming Payout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payout Slip Modal -->
+    <div class="modal" id="payoutSlipModal">
+        <div class="modal-content" style="width: 700px;">
+            <span class="close-modal" onclick="closeModal('payoutSlipModal')"><i class="fas fa-times"></i></span>
+            <h3 style="font-size:24px; font-weight:800; margin-bottom:20px;">Settlement Receipt</h3>
+            <div id="payoutSlipContent" style="border: 1px solid var(--border-color); border-radius: 12px; padding: 20px;"></div>
+            <button class="btn-prime w-100" style="margin-top:20px; display:none;" onclick="window.print()">Print Slip</button>
+        </div>
+    </div>
+
+    <!-- KYC Modal -->
     <div class="modal" id="kycModal">
         <div class="modal-content" style="width: 500px; text-align: center;">
             <span class="close-modal" onclick="closeModal('kycModal')"><i class="fas fa-times"></i></span>
-            <h3 style="color: var(--primary); margin-bottom: 15px; font-size:22px;"><i class="fas fa-file-invoice-dollar"></i> Upload KYC & GST</h3>
-            <p id="kycStatusText" style="font-size:14px; color:var(--text-light); margin-bottom:20px;"></p>
-            
-            <div style="text-align:left; margin-bottom:15px;">
-                <label>Aadhar Card Image</label>
-                <input type="file" id="kycAadhar" class="input-field" accept="image/*">
-            </div>
-            <div style="text-align:left; margin-bottom:15px;">
-                <label>PAN Card Image</label>
-                <input type="file" id="kycPan" class="input-field" accept="image/*">
-            </div>
-            <div style="text-align:left; margin-bottom:15px;">
-                <label>GST Certificate (Max 2 Pages/Images)</label>
-                <input type="file" id="kycGst" class="input-field" accept="image/*" multiple>
-            </div>
-
-            <button class="btn-prime w-100" style="padding:15px;" onclick="saveKycDocs()"><i class="fas fa-cloud-upload-alt"></i> Securely Submit to Admin</button>
+            <h3 style="font-size:24px; font-weight:800; margin-bottom:15px;">Upload KYC & GST</h3>
+            <p id="kycStatusText" style="font-size:14px; color:var(--text-light); margin-bottom:20px; font-weight:600;"></p>
+            <div style="text-align:left; margin-bottom:15px;"><label>Aadhar Card Image</label><input type="file" id="kycAadhar" class="input-field" accept="image/*"></div>
+            <div style="text-align:left; margin-bottom:15px;"><label>PAN Card Image</label><input type="file" id="kycPan" class="input-field" accept="image/*"></div>
+            <div style="text-align:left; margin-bottom:15px;"><label>GST Certificate (Max 2 Pages)</label><input type="file" id="kycGst" class="input-field" accept="image/*" multiple></div>
+            <button class="btn-prime w-100" style="padding:15px;" onclick="saveKycDocs()">Securely Submit to Admin</button>
         </div>
     </div>
 
+    <!-- Ticket Modal -->
     <div class="modal" id="ticketDetailModal">
         <div class="modal-content" style="width: 550px;">
             <span class="close-modal" onclick="closeModal('ticketDetailModal')"><i class="fas fa-times"></i></span>
-            <h3 style="color: var(--primary); margin-bottom: 15px; font-size:20px;"><i class="fas fa-ticket-alt"></i> Ticket Details</h3>
+            <h3 style="font-size:24px; font-weight:800; margin-bottom:20px;">Ticket Details</h3>
             <div id="ticketDetailContent"></div>
         </div>
     </div>
 
-    <div class="modal" id="imageViewerModal" onclick="closeModal('imageViewerModal')">
-        <span class="viewer-close"><i class="fas fa-times"></i></span>
-        <img id="fullscreenImg" src="" onclick="event.stopPropagation()">
+    <!-- Notification Full Modal -->
+    <div class="modal" id="notificationDetailModal">
+        <div class="modal-content" style="width: 500px;">
+            <span class="close-modal" onclick="closeModal('notificationDetailModal')"><i class="fas fa-times"></i></span>
+            <h3 style="font-size:24px; font-weight:800; margin-bottom:20px;">System Notice</h3>
+            <div id="notifDetailContent"></div>
+        </div>
     </div>
 
-    <div class="modal" id="subExpiryModal">
+    <!-- Q&A Answer Modal -->
+    <div class="modal" id="qnaModal">
+        <div class="modal-content" style="width: 500px;">
+            <span class="close-modal" onclick="closeModal('qnaModal')"><i class="fas fa-times"></i></span>
+            <h3 style="font-size:24px; font-weight:800; margin-bottom:20px;">Answer Customer</h3>
+            <input type="hidden" id="qnaProdId"><input type="hidden" id="qnaQid">
+            <div id="qnaTextDisplay" style="background:var(--surface-2); padding:20px; border-radius:12px; margin-bottom:20px; font-size:15px; font-weight:700; border:1px solid var(--border-color);"></div>
+            <label>Your Official Response</label>
+            <textarea id="qnaAnsText" class="input-field" style="height:120px;" required></textarea>
+            <button class="btn-prime w-100" style="padding:15px; font-size:16px;" onclick="submitQnaAnswer()">Publish Answer</button>
+        </div>
+    </div>
+
+    <!-- Ad Payment Modal -->
+    <div class="modal" id="adPaymentModal">
         <div class="modal-content" style="width: 400px; text-align: center;">
-            <span class="close-modal" onclick="closeModal('subExpiryModal')"><i class="fas fa-times"></i></span>
-            <i class="fas fa-exclamation-triangle" style="font-size:50px; color:#f59e0b; margin-bottom:15px;"></i>
-            <h3 style="color: #f59e0b; margin-bottom: 10px;">Subscription Alert!</h3>
-            <p id="subExpiryMsg" style="font-size:15px; margin-bottom:20px; font-weight:600;"></p>
-            <button class="btn-prime w-100" style="background:#f59e0b; padding:15px; margin-top:10px;" onclick="closeModal('subExpiryModal'); showSection('subscription');">Renew Plan Now</button>
+            <span class="close-modal" onclick="closeModal('adPaymentModal')"><i class="fas fa-times"></i></span>
+            <h3 style="font-size:24px; font-weight:800; margin-bottom:15px;">Start Sponsored Ad</h3>
+            <input type="hidden" id="adProdId">
+            <p style="font-size:16px; margin-bottom:25px; font-weight:600;">Cost: <strong id="adCostDisplay" style="color:var(--primary);">₹70</strong> for 24 Hours</p>
+            <button class="btn-prime w-100" style="background:var(--success); margin-bottom:10px; padding:15px;" onclick="payAdOnline()">Pay Now (Online)</button>
+            <button class="btn-prime w-100" style="background:var(--primary); padding:15px;" id="btnAdPayout" onclick="payAdUpcoming()">Pay via Upcoming Payout</button>
         </div>
     </div>
 
-    <div class="modal" id="subHistoryModal">
-        <div class="modal-content" style="width: 700px; max-width:95%;">
-            <span class="close-modal" onclick="closeModal('subHistoryModal')"><i class="fas fa-times"></i></span>
-            <h3 style="margin-bottom: 20px; font-size:22px; color:var(--primary);"><i class="fas fa-history"></i> Subscription History</h3>
-            <div class="table-container">
-                <table class="admin-table">
-                    <thead><tr><th>Activated On</th><th>Plan Name</th><th>Payment Mode</th><th>Cost</th><th>Valid Until</th></tr></thead>
-                    <tbody id="subHistoryList"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="itemModal">
-        <div class="modal-content" style="width: 750px; max-width:95%;">
-            <span class="close-modal" onclick="closeModal('itemModal')"><i class="fas fa-times"></i></span>
-            <h3 id="modalTitle" style="margin-bottom:20px; color:var(--primary); font-size:22px;">Add / Edit Product</h3>
-            <form id="itemForm" onsubmit="event.preventDefault(); submitItemForm(); return false;">
-                <input type="hidden" id="editId">
-                <div style="display: grid; grid-template-columns: 2fr 1fr; gap:15px;">
-                    <div><label>Product Title</label><input type="text" id="itemName" class="input-field" required aria-label="Product Name"></div>
-                    <div><label>Unique SKU (Code)</label><input type="text" id="itemSku" class="input-field" placeholder="Auto-generated if blank" style="font-family: monospace; font-weight: bold;" aria-label="SKU"></div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap:15px;">
-                    <div>
-                        <label>Category</label>
-                        <select id="itemCat" class="input-field" aria-label="Category">
-                            <option value="Electronics">Electronics</option><option value="Gift-Card">Gift-Card</option><option value="Clothes">Clothes</option><option value="Grocery">Grocery</option><option value="Home Items">Home Items</option><option value="Footwear">Footwear</option><option value="Books">Books</option><option value="Toys">Toys</option><option value="Beauty">Beauty</option><option value="Health">Health</option><option value="Sports">Sports</option><option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div><label>Total Stock</label><input type="number" id="itemStock" class="input-field" required aria-label="Total Stock"></div>
-                    <div>
-                        <label>Warranty</label>
-                        <select id="itemWarranty" class="input-field" onchange="toggleCustomWarranty()" aria-label="Warranty">
-                            <option value="No Warranty">No Warranty</option>
-                            <option value="3 Months">3 Months</option>
-                            <option value="6 Months">6 Months</option>
-                            <option value="1 Year">1 Year</option>
-                            <option value="Custom">Custom</option>
-                        </select>
-                        <input type="text" id="itemWarrantyCustom" class="input-field" placeholder="e.g. 2 Years" style="display:none; margin-top:-10px;">
-                    </div>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap:15px;">
-                    <div><label>MRP (₹)</label><input type="number" id="itemMrp" class="input-field" required aria-label="MRP"></div>
-                    <div><label>Your Selling Price (₹)</label><input type="number" id="itemPrice" class="input-field" oninput="calculateListedPrice()" required aria-label="Selling Price"></div>
-                    <div><label>Listed Price (Inc. Comm)</label><input type="text" id="itemListedPrice" class="input-field readonly" disabled style="font-weight:bold; color:var(--primary);" aria-label="Listed Price"></div>
-                </div>
-                
-                <label>Full Description</label><textarea id="itemDesc" class="input-field" style="height: 100px;" required aria-label="Description"></textarea>
-                <label>Upload Images</label><input type="file" id="itemImgFiles" class="input-field" multiple accept="image/*" aria-label="Upload Images">
-                <div id="imagePreviewContainer" style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;"></div>
-                <button type="submit" class="btn-prime w-100" id="saveProductBtn" style="font-size:16px; padding:15px; margin-top:10px;"><i class="fas fa-save"></i> Save Product</button>
-            </form>
-        </div>
-    </div>
-
-    <div class="modal" id="scanModal"><div class="modal-content" style="width: 500px; text-align: center;"><span class="close-modal" onclick="closeModal('scanModal')"><i class="fas fa-times"></i></span><h3 style="color: #3b82f6; margin-bottom: 15px; font-size:22px;"><i class="fas fa-qrcode"></i> Scan to Dispatch</h3>
-        <p id="scanInstructions" style="font-size:13px; color:var(--text-light); margin-bottom:20px; font-weight:600;">Step 1: Scan Order Invoice.<br>Step 2: Scan Shipping Label QR.<br>Step 3: Scan 16-Digit Product Barcode.</p>
-        <input type="hidden" id="scanOrderId">
-        <div class="scanner-placeholder" id="scannerPlaceholder"><i class="fas fa-spinner fa-spin"></i><p style="margin-top:10px; font-weight:bold;">Loading Camera...</p></div>
-        <div id="qr-reader"></div>
-        <div id="scanStatus" style="font-size:16px; font-weight:800; color:var(--primary); margin:20px 0;">Please Wait...</div>
-        <button class="btn-prime w-100" id="skipScanBtn" style="background:#ef4444; margin-top:10px; display:none;" onclick="skipAndShip()"><i class="fas fa-forward"></i> Skip Scan Process (Pay ₹7 Fine)</button></div></div>
-
-    <div class="modal" id="adPaymentModal"><div class="modal-content" style="width: 400px; text-align: center;"><span class="close-modal" onclick="closeModal('adPaymentModal')"><i class="fas fa-times"></i></span><h3 style="color: #ec4899; margin-bottom: 15px; font-size:22px;"><i class="fas fa-bullhorn"></i> Start Sponsored Ad</h3><input type="hidden" id="adProdId"><p style="font-size:16px; margin-bottom:25px;">Cost: <strong id="adCostDisplay">₹70</strong> <strong>for 24 Hours</strong></p><button class="btn-prime w-100" style="background:#10b981; margin-bottom:15px; padding:15px;" onclick="payAdOnline()"><i class="fas fa-credit-card"></i> Pay Now (Online Razorpay)</button><button class="btn-prime w-100" id="btnAdPayout" style="background:#3b82f6; padding:15px;" onclick="payAdUpcoming()"><i class="fas fa-wallet"></i> Pay via Upcoming Payout</button></div></div>
-
-    <div class="modal" id="buyB2bModal"><div class="modal-content" style="width: 600px; max-width: 95%;"><span class="close-modal" onclick="closeModal('buyB2bModal')"><i class="fas fa-times"></i></span>
-        <div id="b2bStep1"><h3 style="color: var(--primary); margin-bottom: 15px;"><i class="fas fa-shopping-bag"></i> Wholesale Details</h3><input type="hidden" id="b2bBuyId"><div id="b2bProductInfo"></div><div style="background:var(--surface-2); padding:15px; border-radius:12px; margin-bottom: 20px;"><p style="margin-bottom:8px; font-size:14px;"><strong>Sold By:</strong> Aryanta Enterprise Admin <i class="fas fa-check-circle" style="color:var(--primary);"></i></p><p style="margin-bottom:8px; font-size:14px;"><strong>Delivery Speed:</strong> Dispatch & Delivery within 7 Days</p><p style="margin-bottom:0; font-size:14px;"><strong>Warranty Status:</strong> <span id="b2bWarrText" style="color:var(--secondary); font-weight:bold;"></span></p></div><button class="btn-prime w-100" style="padding:15px; font-size: 16px; margin-top:10px;" onclick="goToB2bStep2()">Order Now <i class="fas fa-arrow-right"></i></button></div>
-        <div id="b2bStep2" style="display:none;"><h3 style="color: var(--primary); margin-bottom: 15px;"><i class="fas fa-truck"></i> Shipping & Payment</h3><button class="btn-sm" style="background:var(--text-light); margin-bottom:15px;" onclick="goToB2bStep1()"><i class="fas fa-arrow-left"></i> Back</button><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div><label>Order Quantity (MOQ: <span id="b2bMoqLabel"></span>)</label><input type="number" id="b2bBuyQty" class="input-field" oninput="calcB2bTotal()" required aria-label="B2B Quantity"></div><div><label>Total Price (+₹70 Shipping)</label><input type="text" id="b2bBuyTotal" class="input-field readonly" disabled style="font-weight:bold; color:var(--primary);" aria-label="B2B Total"></div></div><label>Full Shipping Address</label><input type="text" id="b2bBuyAddress" class="input-field" required aria-label="Address"><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div><label>City</label><input type="text" id="b2bBuyCity" class="input-field" required aria-label="City"></div><div><label>Pincode</label><input type="text" id="b2bBuyPin" class="input-field" required aria-label="Pincode"></div></div><button class="btn-prime w-100" style="background:#10b981; margin-bottom:15px; padding:15px; margin-top:10px;" onclick="processB2bBuy('online')"><i class="fas fa-credit-card"></i> Pay Online (Razorpay)</button><button class="btn-prime w-100" style="background:#3b82f6; padding:15px;" id="b2bPayoutBtn" onclick="processB2bBuy('payout')"><i class="fas fa-wallet"></i> Pay via Upcoming Payout</button></div></div></div>
-
-    <div class="modal" id="qnaModal"><div class="modal-content" style="width: 500px;"><span class="close-modal" onclick="closeModal('qnaModal')"><i class="fas fa-times"></i></span><h3 style="color: #3b82f6; margin-bottom: 20px; font-size:22px;"><i class="fas fa-reply"></i> Answer Customer</h3><input type="hidden" id="qnaProdId"><input type="hidden" id="qnaQid"><div id="qnaTextDisplay" style="background:#eff6ff; padding:20px; border-radius:12px; margin-bottom:20px; font-size:15px; font-weight:700; color:#1e3a8a; border:1px solid var(--border-color);"></div><label>Your Official Response</label><textarea id="qnaAnsText" class="input-field" style="height:120px;" required aria-label="QnA Answer"></textarea><button class="btn-prime w-100" style="padding:15px; font-size:16px; margin-top:10px;" onclick="submitQnaAnswer()"><i class="fas fa-paper-plane"></i> Publish Answer</button></div></div>
-
-    <div class="modal" id="orderDetailsModal"><div class="modal-content" style="width: 650px;"><span class="close-modal" onclick="closeModal('orderDetailsModal')"><i class="fas fa-times"></i></span><h3 style="margin-bottom: 20px; color:var(--primary); font-size:22px;"><i class="fas fa-receipt"></i> Complete Order Details</h3><div id="orderDetailsContent" class="detail-grid" style="grid-template-columns: 1fr;"></div></div></div>
-
+    <!-- Forgot Password Modal -->
     <div class="modal" id="forgotPassModal">
         <div class="modal-content" style="width: 400px; text-align: center;">
             <span class="close-modal" onclick="closeModal('forgotPassModal')"><i class="fas fa-times"></i></span>
-            <h3 style="color: var(--primary); margin-bottom: 15px; font-size:22px;"><i class="fas fa-lock"></i> Reset Password</h3>
-            
+            <h3 style="font-size:24px; font-weight:800; margin-bottom:15px;">Reset Password</h3>
             <div id="stepEmail">
-                <p style="font-size: 14px; color: var(--text-light); margin-bottom: 15px;">Enter your registered Email OR Phone Number.</p>
-                <input type="text" id="fpIdentifier" class="input-field" placeholder="Email or Phone Number" aria-label="Email or Phone Number">
-                <button class="btn-prime w-100" id="fpNextBtn" style="margin-top:10px;" onclick="checkAccountAndSendOTP()"><i class="fas fa-arrow-right"></i> Next</button>
-                
-                <div id="fpNoAccountMsg" style="display:none; margin-top:15px; padding:12px; border-radius:8px; background:#fee2e2; border:1px solid #fca5a5;">
-                    <span style="font-size:14px; color:var(--danger); font-weight:700;">No account found with this detail.</span><br>
-                    <span style="font-size:13px; color:var(--text-main); font-weight:600; display:inline-block; margin-top:5px;">Want to join Aryanta?</span> 
-                    <a href="https://aryanta.in/seller" style="color:var(--secondary); font-weight:800; text-decoration:underline;">Click to Join</a>
-                </div>
+                <p style="font-size: 14px; color: var(--text-light); margin-bottom: 15px; font-weight:600;">Enter your registered Email OR Phone Number.</p>
+                <input type="text" id="fpIdentifier" class="input-field" placeholder="Email or Phone Number">
+                <button class="btn-prime w-100" id="fpNextBtn" style="margin-top:10px;" onclick="checkAccountAndSendOTP()">Next</button><div id="fpNoAccountMsg" style="display:none; margin-top:10px; color:var(--danger); font-weight:800; font-size:13px;">No account found. Please contact admin support@aryanta.in 641 405 4676</div>
             </div>
-            
             <div id="stepOTP" style="display:none;">
-                <p style="font-size: 14px; color: var(--text-light); margin-bottom: 15px;">Enter the 4-digit OTP sent to your email.</p>
-                <input type="text" id="fpOTP" class="input-field" placeholder="• • • •" maxlength="4" style="text-align:center; font-size: 24px; letter-spacing: 10px; font-weight: 800;" aria-label="Enter OTP">
-                <button class="btn-prime w-100" style="margin-top:10px;" onclick="verifyOTP()"><i class="fas fa-check-circle"></i> Verify OTP</button>
+                <p style="font-size: 14px; color: var(--text-light); margin-bottom: 15px; font-weight:600;">Enter the 4-digit OTP sent to your email.</p>
+                <input type="text" id="fpOTP" class="input-field" placeholder="• • • •" maxlength="4" style="text-align:center; font-size: 24px; letter-spacing: 10px; font-weight: 800;">
+                <button class="btn-prime w-100" style="margin-top:10px;" onclick="verifyOTP()">Verify OTP</button>
             </div>
-
             <div id="stepReset" style="display:none;">
-                <p style="font-size: 14px; color: var(--text-light); margin-bottom: 15px;">Create a new secure password.</p>
-                <input type="password" id="fpNewPass" class="input-field" placeholder="New Password (Min 6 chars)" aria-label="New Password">
-                <input type="password" id="fpConfirmPass" class="input-field" placeholder="Confirm New Password" aria-label="Confirm Password">
-                <button class="btn-prime w-100" style="margin-top:10px;" onclick="resetPassword()"><i class="fas fa-save"></i> Save & Login</button>
+                <p style="font-size: 14px; color: var(--text-light); margin-bottom: 15px; font-weight:600;">Create a new secure password.</p>
+                <div class="password-shell"><input type="password" id="fpNewPass" class="input-field" placeholder="New Password (Min 6 chars)"><button type="button" class="pass-eye-btn" onclick="togglePasswordVisibility('fpNewPass', this)" aria-label="Show new password"><i class="fas fa-eye"></i></button></div>
+                <div class="password-shell"><input type="password" id="fpConfirmPass" class="input-field" placeholder="Confirm New Password"><button type="button" class="pass-eye-btn" onclick="togglePasswordVisibility('fpConfirmPass', this)" aria-label="Show confirm password"><i class="fas fa-eye"></i></button></div>
+                <button class="btn-prime w-100" style="margin-top:10px;" onclick="resetPassword()">Save & Login</button>
             </div>
         </div>
     </div>
 
-    <!-- Hidden Print Area (CSS Handles Display during Printing) -->
+    <div class="modal" id="imageViewerModal" onclick="closeModal('imageViewerModal')" style="background:rgba(0,0,0,0.9);">
+        <span style="position:absolute; top:30px; right:40px; color:white; font-size:40px; cursor:pointer;" onclick="closeModal('imageViewerModal')"><i class="fas fa-times"></i></span>
+        <img id="fullscreenImg" src="" style="max-width:90%; max-height:90vh; object-fit:contain; border-radius:12px;" onclick="event.stopPropagation()">
+    </div>
+
+    <!-- Hidden Print Area -->
     <div id="printArea" style="display:none;"></div>
+
     <div id="toastContainer"></div>
 
     <script src="seller.js"></script>
+    <script>
+        // Tiny HTML helpers only. Main business/auth logic lives in seller.js.
+        window.updateChosenFileLabel = function(inputId, labelId){
+            var input=document.getElementById(inputId), label=document.getElementById(labelId);
+            if(label) label.textContent = input && input.files && input.files[0] ? input.files[0].name : 'No file selected';
+        };
+        window.openHowToSellPage = function(){ window.open('https://aryanta.in/getdetails','_blank','noopener'); };
+        window.addEventListener('DOMContentLoaded', function(){
+            if (typeof applyAryantaUiFixes === 'function') applyAryantaUiFixes();
+        });
+    </script>
 </body>
 </html>
