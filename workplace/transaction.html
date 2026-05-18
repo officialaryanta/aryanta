@@ -263,8 +263,16 @@
 
       <section class="card" id="txSection">
         <div class="panel-title">
-          <h3 id="txTitleText"><i class="fas fa-money-bill-wave"></i> Transactions</h3>
-          <button id="addMoneyBtn" onclick="openModal('addMoneyModal')"><i class="fas fa-plus"></i> Add Money</button>
+          <h3 id="txTitleText" style="flex:1; display:flex; align-items:center; gap:8px;"><i class="fas fa-money-bill-wave"></i> Transactions</h3>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <select id="timeFilter" onchange="renderTransactions(); updateHeroStats();" style="display:none; background: var(--soft); color: var(--primary); padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; border: none; outline: none; cursor: pointer;">
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+            </select>
+            <button id="addMoneyBtn" onclick="openModal('addMoneyModal')"><i class="fas fa-plus"></i> Add Money</button>
+          </div>
         </div>
         <div class="list" id="txList">
           <div style="text-align: center; color: var(--muted); font-size: 12px; padding: 20px;">Fetching records...</div>
@@ -302,8 +310,22 @@
         </div>
         <div class="field">
           <label>Amount (₹)</label>
-          <input type="number" id="addMoneyAmount" min="1" step="1" inputmode="decimal" placeholder="Enter amount to add" oninput="updateAmountPreview('addMoneyAmount', 'addMoneyPreview')" />
-          <div id="addMoneyPreview" class="amount-preview"><span>Payable in Razorpay</span><span>₹0</span></div>
+          <input type="number" id="addMoneyAmount" min="1" step="1" inputmode="decimal" placeholder="Enter amount to pay" oninput="updateAddMoneyPreview()" />
+          
+          <div id="addMoneyPreview" style="margin-top: 7px; padding: 12px; border-radius: 12px; background: var(--soft); font-size: 12px; font-weight: 900; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display:flex; justify-content:space-between; color:var(--text);">
+              <span>Payable in Razorpay:</span>
+              <span id="addMoneyPreviewPayable">₹0</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; color:var(--primary); border-top:1px dashed var(--border); padding-top:8px;">
+              <span>Will be added to Vault (-3% fee):</span>
+              <span id="addMoneyPreviewAdded">₹0</span>
+            </div>
+          </div>
+          
+          <div style="font-size:10px; color:var(--danger); margin-top:4px; line-height: 1.4; font-weight:800; text-align:center;">
+             <i class="fas fa-circle-exclamation"></i> Sorry for the inconvenience. Due to Razorpay rules, a 3% transaction fee is deducted from the vault entry.
+          </div>
         </div>
         <button class="btn-submit" onclick="submitAddMoney()"><i class="fas fa-shield-halved"></i> Pay via Razorpay</button>
       </div>
@@ -322,6 +344,9 @@
           <div id="detTitle" style="color: var(--muted); font-size: 14px; font-weight: 800;">Description</div>
         </div>
         <div class="loan-details" style="background: var(--bg); padding: 16px; border-radius: 16px;">
+          <div style="grid-column: 1 / -1; display:none; border-bottom: 1px dashed var(--border); padding-bottom: 8px; margin-bottom: 8px;" id="detOriginalBox">
+            Total Paid / Order Total: <strong id="detOriginalAmount" style="color: var(--primary);">₹0</strong>
+          </div>
           <div style="grid-column: 1 / -1;">Tx ID: <strong id="detTxId" style="word-break: break-all; font-family: monospace;">---</strong></div>
           <div style="grid-column: 1 / -1;">Date: <strong id="detDate">---</strong></div>
           <div style="grid-column: 1 / -1;">Name: <strong id="detName">---</strong></div>
@@ -340,7 +365,7 @@
       </div>
       <div class="modal-body">
         <div style="background: rgba(245, 158, 11, 0.1); color: var(--warning); padding: 10px; border-radius: 12px; font-size: 11px; font-weight: 800;">
-          <i class="fas fa-circle-info"></i> Approved loans accrue +3% interest every week until fully cleared.
+          <i class="fas fa-circle-info"></i> Approved loans accrue a flat +₹10 interest fee until fully cleared.
         </div>
         <div class="field">
           <label>Amount Required (₹)</label>
@@ -439,8 +464,6 @@
     let currentUser = safeJson(sessionStorage.getItem(PROFILE_KEY), safeJson(localStorage.getItem(PROFILE_KEY), {}));
     let userUid = currentUser.uid || currentUser.id || currentUser.adminId || getToken() || "";
     let userName = currentUser.name || currentUser.fullName || currentUser.displayName || currentUser.username || "Admin";
-    let userEmail = currentUser.email || currentUser.mail || "";
-    let userPhone = String(currentUser.phone || currentUser.mobile || currentUser.contact || "").replace(/\D/g, "").slice(-10);
 
     const $ = id => document.getElementById(id);
 
@@ -506,6 +529,14 @@
       const amount = normalizeAmount($(inputId)?.value);
       const valueNode = preview.querySelector("span:last-child");
       if (valueNode) valueNode.textContent = formatMoney(amount);
+    }
+
+    // New 3% calculation preview for add money
+    function updateAddMoneyPreview() {
+      const amount = normalizeAmount($("addMoneyAmount")?.value);
+      const added = Math.round(amount * 0.97 * 100) / 100;
+      if($("addMoneyPreviewPayable")) $("addMoneyPreviewPayable").textContent = formatMoney(amount);
+      if($("addMoneyPreviewAdded")) $("addMoneyPreviewAdded").textContent = formatMoney(added);
     }
 
     function loadSettingsFromAdminStorage() {
@@ -581,11 +612,24 @@
       return !!userUid;
     }
 
+    // Toggle Time Filter Helper
+    function isWithinTimeFilter(dateStr, filter) {
+        if (!filter || filter === "all") return true;
+        const d = new Date(dateStr);
+        const now = new Date();
+        if (filter === "today") return d.toDateString() === now.toDateString();
+        if (filter === "week") return (now - d) <= (7 * 24 * 60 * 60 * 1000);
+        if (filter === "month") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        return true;
+    }
+
     function setTab(tab) {
       activeTab = tab;
       $("tabAll")?.classList.toggle("active", tab === "all");
       $("tabMy")?.classList.toggle("active", tab === "my");
       $("tabLoan")?.classList.toggle("active", tab === "loan");
+      
+      $("timeFilter").style.display = tab === "my" ? "inline-block" : "none";
 
       if (tab === "loan") {
         $("txSection").style.display = "none";
@@ -674,6 +718,7 @@
         id: String(t.id || t.key || t.paymentId || ("TX-" + Date.now())),
         type,
         amount: normalizeAmount(t.amount || t.total || t.totalAmount || t.value),
+        originalAmount: normalizeAmount(t.originalAmount || t.amount || t.total || t.value),
         title: t.title || t.description || (type === "in" ? "Money Added" : "Money Minus"),
         userUid: t.userUid || t.uid || t.userId || t.adminUid || t.adminId || "N/A",
         userName: t.userName || t.name || t.adminName || t.customerName || "Admin",
@@ -682,20 +727,26 @@
       };
     }
 
+    // NEW 4% VAULT CALCULATION ON CUSTOMER ORDERS
     function mapOrdersToTransactions() {
       return rawOrders
         .filter(o => ["paid", "completed", "processing", "success"].includes(lower(o.paymentStatus || o.status || o.orderStatus)))
-        .map(o => normalizeTransaction({
-          id: "ORDER_" + o.id,
-          type: "in",
-          amount: normalizeAmount(o.total || o.totalAmount || o.grandTotal || o.amount || o.payableAmount),
-          title: "Shop Order",
-          userName: o.customerName || o.userName || o.name || "Customer",
-          userUid: o.userId || o.uid || o.customerId || "N/A",
-          date: o.createdAt || o.date || o.orderDate || new Date().toISOString(),
-          deliveryCharge: normalizeAmount(o.deliveryCharge || o.shippingFee || o.delivery || 0),
-          source: "cart.html"
-        }));
+        .map(o => {
+          const originalAmount = normalizeAmount(o.total || o.totalAmount || o.grandTotal || o.amount || o.payableAmount);
+          const vaultAdd = Math.round(originalAmount * 0.04 * 100) / 100;
+          return normalizeTransaction({
+            id: "ORDER_" + o.id,
+            type: "in",
+            amount: vaultAdd,
+            originalAmount: originalAmount,
+            title: "Customer Order (4% Added)",
+            userName: o.customerName || o.userName || o.name || "Customer",
+            userUid: o.userId || o.uid || o.customerId || "N/A",
+            date: o.createdAt || o.date || o.orderDate || new Date().toISOString(),
+            deliveryCharge: normalizeAmount(o.deliveryCharge || o.shippingFee || o.delivery || 0),
+            source: "cart.html"
+          });
+        });
     }
 
     function mapRefundsToTransactions() {
@@ -759,15 +810,21 @@
       return sameId(tx.userUid, userUid) || lower(tx.userName) === lower(userName);
     }
 
+    // Totals logic respects the time filter
     function calculateTotals(scope = "all") {
-      const transactions = scope === "my" ? allTransactions.filter(txBelongsToMe) : allTransactions;
+      const timeFilter = activeTab === "my" ? $("timeFilter")?.value || "all" : "all";
+      let transactions = scope === "my" ? allTransactions.filter(txBelongsToMe) : allTransactions;
+      transactions = transactions.filter(t => isWithinTimeFilter(t.date, timeFilter));
+
       const loans = scope === "my" ? myLoans : globalLoans;
       let add = 0, minus = 0;
       transactions.forEach(t => {
         if (t.type === "out") minus += normalizeAmount(t.amount);
         else add += normalizeAmount(t.amount);
       });
-      const loanOut = getLoanOutflow(loans);
+      
+      const loansInTime = loans.filter(l => isWithinTimeFilter(l.createdAt || l.date, timeFilter));
+      const loanOut = getLoanOutflow(loansInTime);
       minus += loanOut;
       return { in: add, out: minus, net: add - minus, loanOut };
     }
@@ -785,7 +842,10 @@
     }
 
     function renderTransactions() {
-      const list = activeTab === "my" ? allTransactions.filter(txBelongsToMe) : allTransactions;
+      const timeFilter = activeTab === "my" ? $("timeFilter")?.value || "all" : "all";
+      let list = activeTab === "my" ? allTransactions.filter(txBelongsToMe) : allTransactions;
+      list = list.filter(t => isWithinTimeFilter(t.date, timeFilter));
+
       if (!list.length) {
         $("txList").innerHTML = `<div class="empty-state">No transactions found</div>`;
         return;
@@ -818,6 +878,14 @@
       $("detAmount").textContent = (isAdd ? "+" : "-") + formatMoney(tx.amount);
       $("detAmount").style.color = isAdd ? "var(--success)" : "var(--danger)";
       $("detTitle").textContent = tx.title || tx.description || "Transaction Record";
+      
+      if (tx.originalAmount && tx.originalAmount !== tx.amount) {
+         $("detOriginalBox").style.display = "block";
+         $("detOriginalAmount").textContent = formatMoney(tx.originalAmount);
+      } else {
+         $("detOriginalBox").style.display = "none";
+      }
+
       $("detTxId").textContent = tx.id || "N/A";
       $("detDate").textContent = formatDateTime(tx.date);
       $("detName").textContent = tx.userName || "Admin";
@@ -871,30 +939,36 @@
       if ("Notification" in window && Notification.permission === "default") Notification.requestPermission().catch(() => {});
     }
 
+    // NEW ADD MONEY 3% VAULT DEDUCTION OVERHAUL
     function submitAddMoney() {
-      const amount = normalizeAmount($("addMoneyAmount").value);
+      const amountPaid = normalizeAmount($("addMoneyAmount").value);
       const title = $("addMoneyTitle").value.trim() || "Wallet Top-Up";
-      if (!amount || amount <= 0) return showToast("Enter a valid amount", "error", true);
+      if (!amountPaid || amountPaid <= 0) return showToast("Enter a valid amount", "error", true);
+      
       closeModal("addMoneyModal");
-      processRazorpayPayment(amount, title, async (paymentId, meta = {}) => {
+      
+      processRazorpayPayment(amountPaid, title, async (paymentId, meta = {}) => {
+        const addedAmount = Math.round(amountPaid * 0.97 * 100) / 100; // -3% vault calculation
         const now = new Date().toISOString();
         const tx = {
-          type: "in", amount, amountPaise: meta.amountPaise || amountToPaise(amount),
+          type: "in", amount: addedAmount, originalAmount: amountPaid, amountPaise: meta.amountPaise || amountToPaise(amountPaid),
           title, userUid, userName, date: now, createdAt: now,
           method: "Razorpay UPI/Checkout", status: "success", paymentVerified: meta.verified === true,
           paymentId, razorpayPaymentId: paymentId, razorpayOrderId: meta.orderId || "",
           source: "transaction.html", description: title
         };
+        
         await saveTransaction(tx);
         await pushAdminNotification({
-          title: `${userName} added ${formatMoney(amount)}`,
-          body: `${userName} added ${formatMoney(amount)} in Aryanta Vault.`,
+          title: `${userName} added ${formatMoney(addedAmount)}`,
+          body: `${userName} added ${formatMoney(addedAmount)} (Paid ${formatMoney(amountPaid)}) in Aryanta Vault.`,
           type: "money_added",
-          data: { amount, userUid, userName, paymentId }
+          data: { amount: addedAmount, originalAmount: amountPaid, userUid, userName, paymentId }
         });
+        
         $("addMoneyAmount").value = "";
         $("addMoneyTitle").value = "Wallet Top-Up";
-        updateAmountPreview("addMoneyAmount", "addMoneyPreview");
+        updateAddMoneyPreview();
         setLoad(false);
       });
     }
@@ -928,6 +1002,7 @@
       } catch (e) { setLoad(false); showToast(e.message || "Request failed", "error", true); }
     }
 
+    // Flat +10 Interest Logic
     function calculateLoanDetails(loan) {
       const principal = normalizeAmount(loan.amount);
       let totalPaid = 0, historyHtml = "";
@@ -937,12 +1012,17 @@
         totalPaid += paid;
         historyHtml += `<div class="loan-history-item"><span>${formatDate(p.date || p.createdAt)}</span><span>${formatMoney(paid)} Paid</span></div>`;
       });
+      
       let interest = 0;
       const approvedAt = loan.approvedAt || loan.createdAt;
+      
       if (["approved", "cleared"].includes(lower(loan.status)) && approvedAt) {
-        const weeksElapsed = Math.max(0, Math.floor((Date.now() - new Date(approvedAt).getTime()) / (7 * 24 * 60 * 60 * 1000)));
-        interest = Math.round(principal * 0.03 * weeksElapsed * 100) / 100;
+          const tempRemaining = principal - totalPaid;
+          if(tempRemaining > 0 || totalPaid > 0) {
+             interest = 10;
+          }
       }
+      
       const totalDue = principal + interest;
       const remaining = totalDue - totalPaid;
       return { principal, interest, totalPaid, totalDue, remaining, historyHtml };
@@ -1043,7 +1123,7 @@
       if (!Number.isInteger(amountPaise) || amountPaise < 100) throw new Error("Invalid amount");
       const receipt = "ARY-" + Date.now();
       const payload = {
-        amount: amountRupees,                 // rupees for your Worker, fixes ₹1 becoming ₹100
+        amount: amountRupees,
         amountRupees,
         amount_rupees: amountRupees,
         amountPaise,
@@ -1101,31 +1181,6 @@
       return { ...verifyData, success: true, verified: true };
     }
 
-    function buildRazorpayUpiFirstConfig() {
-      return {
-        display: {
-          blocks: {
-            upi_block: {
-              name: "Pay via UPI",
-              instruments: [{ method: "upi" }]
-            },
-            other_block: {
-              name: "Other Payment Options",
-              instruments: [
-                { method: "card" },
-                { method: "netbanking" },
-                { method: "wallet" }
-              ]
-            }
-          },
-          sequence: ["block.upi_block", "block.other_block"],
-          preferences: {
-            show_default_blocks: true
-          }
-        }
-      };
-    }
-
     function openRazorpayCheckout(options) {
       if (typeof Razorpay === "undefined") throw new Error("Razorpay script not loaded. Check internet connection.");
       const rz = new Razorpay(options);
@@ -1156,24 +1211,23 @@
         setLoad(false);
         const options = {
           key,
-          amount: requestedPaise,              // Razorpay needs paise; ₹1 = 100 paise, not ₹100
+          amount: requestedPaise,
           currency: "INR",
           name: "Aryanta",
           description: `${description} • ${formatMoney(amountRupees)}`,
-          image: "https://aryanta.in/vurify/aryanta.jpeg",
-          method: {
-            upi: true,
-            card: true,
-            netbanking: true,
-            wallet: true
+          prefill: { name: userName },
+          notes: { userUid, userName, source: "transaction.html", description },
+          // ANDROID UPI GATEWAY FIX (Forces explicit block options)
+          config: {
+             display: {
+                blocks: {
+                   upi: { name: "Pay via UPI", instruments: [{ method: "upi" }] },
+                   other: { name: "Other Payment Modes", instruments: [{ method: "card" }, { method: "netbanking" }, { method: "wallet" }] }
+                },
+                sequence: ["block.upi", "block.other"],
+                preferences: { show_default_blocks: true }
+             }
           },
-          config: buildRazorpayUpiFirstConfig(),
-          prefill: {
-            name: userName,
-            email: userEmail || undefined,
-            contact: userPhone || undefined
-          },
-          notes: { userUid, userName, userEmail, userPhone, source: "transaction.html", description, preferredMethod: "upi" },
           handler: async function(response) {
             setLoad(true, meta.orderId ? "Verifying payment..." : "Saving payment...");
             try {
@@ -1194,15 +1248,14 @@
             } catch (e) { setLoad(false); showToast(e.message || "Save failed", "error", true); }
           },
           theme: { color: "#008080" },
-          retry: { enabled: true, max_count: 3 },
-          remember_customer: false,
-          modal: { ondismiss: () => { setLoad(false); showToast("Payment cancelled. If UPI is missing, enable UPI in Razorpay Dashboard and test again.", "error", true); } }
+          modal: { ondismiss: () => { setLoad(false); showToast("Payment cancelled", "error", true); } }
         };
         if (meta.orderId) options.order_id = meta.orderId;
         openRazorpayCheckout(options);
       } catch (e) { setLoad(false); showToast(e.message || "Payment failed", "error", true); }
     }
 
+    // REMOVED LOAN SUBTRACTION FROM MINUS ARRAY
     function getAdminStats() {
       const map = new Map();
       function ensure(uid, name, admin = {}) {
@@ -1233,7 +1286,7 @@
         const admin = findAdminByAnyId(l.uid, l.userName) || {};
         const st = ensure(l.uid, l.userName, admin);
         const d = calculateLoanDetails(l);
-        if (["approved", "cleared"].includes(lower(l.status))) st.minus += d.principal;
+        // Only accumulating these stats without subtracting it from standard "minus".
         st.loan += d.principal;
         st.paid += d.totalPaid;
         st.remaining += Math.max(0, d.remaining);
@@ -1264,7 +1317,7 @@
               <div class="admin-total"><span>Minus</span><strong style="color:var(--danger)">${formatMoney(a.minus)}</strong></div>
               <div class="admin-total"><span>Net</span><strong style="color:${net >= 0 ? "var(--primary)" : "var(--danger)"}">${formatMoney(net)}</strong></div>
             </div>
-            <div class="admin-meta">Loan: ${formatMoney(a.loan)} • Paid: ${formatMoney(a.paid)} • Remaining: ${formatMoney(a.remaining)}</div>
+            <div class="admin-meta">Running Loan: ${formatMoney(a.remaining)} • Total Paid: ${formatMoney(a.paid)}</div>
           </div>
         </div>`;
       }).join("");
