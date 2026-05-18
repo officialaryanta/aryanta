@@ -9,9 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono&display=swap" rel="stylesheet">
     
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js" defer></script>
 
-     <link rel="stylesheet" href="style.css?v=10">
+   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -103,7 +103,7 @@
                         <!-- Dynamic addresses -->
                     </div>
 
-                    <button type="button" class="btn-action bounce-hover" style="margin-top: 25px;" onclick="openNewAddressForm()"><i class="fas fa-plus"></i> Add New Address</button>
+                    <button type="button" class="btn-action bounce-hover" id="addAddressBtn" style="margin-top: 25px;" onclick="openNewAddressForm()"><i class="fas fa-plus"></i> Add New Physical Address</button>
                     
                     <div id="inlineAddressForm" style="display: none; margin-top: 25px; background: var(--surface); padding: 25px; border-radius: 24px; border: 1px dashed var(--border); box-shadow: var(--shadow-sm);">
                         <h4 style="margin-bottom: 18px; font-size: 16px; font-weight: 800;">New Address Details</h4>
@@ -166,7 +166,7 @@
                                 <span>Credit Card, UPI, NetBanking, Wallets</span>
                             </div>
                         </label>
-                        <label class="pay-radio">
+                        <label class="pay-radio" id="codPaymentOption">
                             <input type="radio" name="payMethod" value="cod" onchange="updatePaymentUI()">
                             <div class="pay-radio-content">
                                 <strong><i class="fas fa-money-bill-wave"></i> Cash on Delivery</strong>
@@ -188,10 +188,15 @@
                     <h3 class="summary-title">Order Summary</h3>
                     
                     <div class="summary-line"><span>Items Selected (<span id="sumItemCount">0</span>)</span> <strong id="sumSubtotal">₹0</strong></div>
-                    <div class="summary-line muted"><span>Shipping Fee</span> <strong id="sumShipping">Calculated next</strong></div>
+                    <div class="summary-line muted"><span>Delivery Fee</span> <strong id="sumShipping">Calculated next</strong></div>
                     
                     <div class="summary-line discount" id="sumDiscountRow" style="display: none;">
                         <span>Discount</span> <strong id="sumDiscountVal">-₹0</strong>
+                    </div>
+                    
+                    <!-- NEW ARYANTA POINTS REWARD -->
+                    <div class="summary-line points" id="sumPointsRow" style="border-top: 1px dashed var(--border); padding-top: 15px; margin-top: 5px;">
+                        <span><i class="fas fa-coins" style="color: #f59e0b;"></i> Earn Points</span> <strong id="sumPoints">+0 Pts</strong>
                     </div>
 
                     <div class="summary-total">
@@ -292,7 +297,7 @@
                     <i class="fas fa-home"></i> Back to Home
                 </button>
                 <button type="button" class="btn-prime receipt-download-btn" onclick="downloadReceiptImage()">
-                    <i class="fas fa-image"></i> Download Receipt.
+                    <i class="fas fa-image"></i> Download Receipt
                 </button>
             </div>
         </div>
@@ -330,9 +335,10 @@
         window.requireAdvance = false;
         window.backendDeliveryCharge = 60; // Default fallback amount
         
-        window.state = { itemsTotal: 0, shippingCost: 0, walletBalance: 0, walletApplied: 0, promoDiscount: 0, finalPayable: 0, promoCode: "" };
+        window.state = { itemsTotal: 0, shippingCost: 0, walletBalance: 0, walletApplied: 0, promoDiscount: 0, finalPayable: 0, promoCode: "", hasEmailDelivery: false, hasPhysicalDelivery: false, allEmailDelivery: false, removedDbItems: 0 };
         window.checkoutBusy = false;
         window.checkoutBootDone = false;
+        window.cartValidationPromise = null;
 
         // Centralized DOM Methods attached to window
         window.toggleButtonState = function(btnId, isLoading, defaultHtml) {
@@ -456,7 +462,6 @@
             bindClick('socialInstaBtn', 'https://instagram.com/official.aryanta');
             bindClick('socialXBtn', 'https://x.com/officialaryanta');
             bindClick('socialFbBtn', 'https://www.facebook.com/share/1E8hFiNnmw/');
-            bindClick('btnSuccessShop', 'https://aryanta.in/');
         });
         
         function loadAppSettings() {
@@ -550,6 +555,243 @@
             return Array.from(seen.values());
         };
 
+
+        window.mergeCartSources = function(...sources) {
+            const merged = new Map();
+            sources.forEach(source => {
+                window.normalizeCartItems(source).forEach(item => {
+                    const id = String(item.id || item.productId || item.sku || "");
+                    if (!id) return;
+                    const old = merged.get(id);
+                    if (old) {
+                        merged.set(id, {
+                            ...old,
+                            ...item,
+                            id,
+                            qty: Math.max(Number(old.qty || 1), Number(item.qty || 1)),
+                            selected: old.selected !== false || item.selected !== false,
+                            image: old.image || item.image || (Array.isArray(item.images) ? item.images[0] : "") || ""
+                        });
+                    } else {
+                        merged.set(id, { ...item, id });
+                    }
+                });
+            });
+            return Array.from(merged.values());
+        };
+
+        window.firstNonEmpty = function(...values) {
+            for (const value of values) {
+                if (value !== undefined && value !== null && String(value).trim() !== "") return value;
+            }
+            return "";
+        };
+
+        window.booleanFlag = function(value) {
+            if (value === true || value === 1) return true;
+            const text = String(value || "").trim().toLowerCase();
+            return ["true", "yes", "1", "enabled", "active", "email", "digital"].includes(text);
+        };
+
+        window.isEmailDeliveryItem = function(item = {}) {
+            const flags = [
+                item.emailDelivery,
+                item.isEmailDelivery,
+                item.email_delivery,
+                item.deliverByEmail,
+                item.deliveredByEmail,
+                item.deliveryByEmail,
+                item.deliveryEmailOnly,
+                item.digitalDelivery,
+                item.isDigital,
+                item.digital,
+                item.downloadable,
+                item.isGiftCard
+            ];
+            if (flags.some(window.booleanFlag)) return true;
+
+            const text = [
+                item.deliveryMode,
+                item.deliveryType,
+                item.delivery_method,
+                item.fulfillment,
+                item.fulfilment,
+                item.fulfillmentType,
+                item.productType,
+                item.itemType,
+                item.type,
+                item.category,
+                item.subCategory,
+                item.tag,
+                Array.isArray(item.tags) ? item.tags.join(" ") : item.tags,
+                item.name,
+                item.title
+            ].filter(Boolean).join(" ").toLowerCase();
+
+            return text.includes("email delivery") ||
+                text.includes("deliver by email") ||
+                text.includes("delivered by email") ||
+                text.includes("email-delivery") ||
+                text.includes("e-mail delivery") ||
+                text.includes("digital delivery") ||
+                text.includes("digital product") ||
+                text.includes("downloadable") ||
+                text.includes("gift card") ||
+                text.includes("e-gift") ||
+                text.includes("egift");
+        };
+
+        window.getSelectedCartItems = function() {
+            return window.cart.filter(item => item && item.selected !== false);
+        };
+
+        window.refreshDeliveryModeState = function() {
+            const selected = window.getSelectedCartItems();
+            const emailCount = selected.filter(window.isEmailDeliveryItem).length;
+            window.state.hasEmailDelivery = emailCount > 0;
+            window.state.hasPhysicalDelivery = selected.length > emailCount;
+            window.state.allEmailDelivery = selected.length > 0 && emailCount === selected.length;
+            return {
+                selectedCount: selected.length,
+                emailCount,
+                hasEmailDelivery: window.state.hasEmailDelivery,
+                hasPhysicalDelivery: window.state.hasPhysicalDelivery,
+                allEmailDelivery: window.state.allEmailDelivery
+            };
+        };
+
+        window.calculateShippingCost = function() {
+            const mode = window.refreshDeliveryModeState();
+            return mode.hasPhysicalDelivery && window.requireAdvance ? Number(window.backendDeliveryCharge || 0) : 0;
+        };
+
+        window.flattenFirestoreValue = function(value) {
+            if (!value || typeof value !== "object") return value;
+            if ("stringValue" in value) return value.stringValue;
+            if ("integerValue" in value) return Number(value.integerValue);
+            if ("doubleValue" in value) return Number(value.doubleValue);
+            if ("booleanValue" in value) return !!value.booleanValue;
+            if ("timestampValue" in value) return value.timestampValue;
+            if ("arrayValue" in value) return (value.arrayValue.values || []).map(window.flattenFirestoreValue);
+            if ("mapValue" in value) {
+                const obj = {};
+                Object.entries(value.mapValue.fields || {}).forEach(([k, v]) => { obj[k] = window.flattenFirestoreValue(v); });
+                return obj;
+            }
+            return value;
+        };
+
+        window.normalizeBackendProduct = function(payload, requestedId = "") {
+            if (!payload) return null;
+            if (payload.success === false || payload.exists === false || payload.found === false) return null;
+
+            let raw = payload.product || payload.item || payload.data || payload.result || payload.doc || payload.document || payload;
+            if (Array.isArray(payload.products)) raw = payload.products.find(p => String(p?.id || p?.productId || p?.sku || "") === String(requestedId)) || payload.products[0];
+            if (Array.isArray(payload.items)) raw = payload.items.find(p => String(p?.id || p?.productId || p?.sku || "") === String(requestedId)) || payload.items[0];
+            if (Array.isArray(payload.documents)) raw = payload.documents[0];
+            if (Array.isArray(raw)) raw = raw.find(p => String(p?.id || p?.productId || p?.sku || "") === String(requestedId)) || raw[0];
+            if (!raw || typeof raw !== "object") return null;
+
+            if (raw.fields && typeof raw.fields === "object") {
+                const flat = {};
+                Object.entries(raw.fields).forEach(([k, v]) => { flat[k] = window.flattenFirestoreValue(v); });
+                const docId = String(raw.name || "").split('/').pop();
+                raw = { ...flat, id: flat.id || flat.productId || docId };
+            }
+
+            const id = String(window.firstNonEmpty(raw.id, raw.productId, raw.pid, raw.sku, requestedId));
+            if (!id) return null;
+            const name = String(window.firstNonEmpty(raw.name, raw.title, raw.productName, raw.itemName, "Aryanta Product"));
+            const image = window.firstNonEmpty(raw.image, raw.thumbnail, raw.imageUrl, raw.photo, Array.isArray(raw.images) ? raw.images[0] : "", Array.isArray(raw.imageUrls) ? raw.imageUrls[0] : "");
+            const price = Number(window.firstNonEmpty(raw.price, raw.salePrice, raw.sellingPrice, raw.finalPrice, raw.amount, 0)) || 0;
+            const stock = Number(window.firstNonEmpty(raw.stock, raw.quantity, raw.qty, raw.availableStock, 999));
+            return { ...raw, id, productId: raw.productId || id, name, title: name, image, price, stock: Number.isFinite(stock) ? stock : 999 };
+        };
+
+        window.isLiveDBProduct = function(product) {
+            if (!product || !product.id) return false;
+            const statusText = String(window.firstNonEmpty(product.status, product.approvalStatus, product.productStatus, product.sellerStatus, "")).toLowerCase();
+            const visibilityText = String(window.firstNonEmpty(product.visibility, product.publicStatus, "")).toLowerCase();
+            if (product.deleted === true || product.isDeleted === true || product.blocked === true || product.isBlocked === true) return false;
+            if (product.isVisible === false || product.visible === false || product.isPublicVisible === false || product.publicVisible === false) return false;
+            if (product.isLive === false || product.live === false || product.isApproved === false || product.approved === false) return false;
+            if (["rejected", "blocked", "deleted", "disabled", "hidden", "private", "offline"].some(x => statusText.includes(x) || visibilityText.includes(x))) return false;
+            if (["pending", "review", "draft"].some(x => statusText === x || visibilityText === x)) return false;
+            if (Number(product.stock) <= 0 && product.allowBackorder !== true && product.backorder !== true) return false;
+            return true;
+        };
+
+        window.fetchLiveCartProduct = async function(id) {
+            const encoded = encodeURIComponent(id);
+            const paths = [`/product?id=${encoded}`, `/product?productId=${encoded}`, `/products?id=${encoded}`];
+            for (const path of paths) {
+                try {
+                    const data = await window.fastFetchJSON(`${window.API_BASE_URL}${path}&_cartcheck=${Date.now()}`, {}, 0);
+                    const product = window.normalizeBackendProduct(data, id);
+                    if (window.isLiveDBProduct(product)) return product;
+                } catch(e) {}
+            }
+            return null;
+        };
+
+        window.validateCartAgainstDB = async function(reason = "cart-open") {
+            if (!window.cart.length) return [];
+            if (window.cartValidationPromise) return window.cartValidationPromise;
+
+            window.cartValidationPromise = (async () => {
+                const beforeIds = new Set(window.cart.map(i => String(i.id)));
+                const checks = await Promise.all(window.cart.map(async item => ({ item, live: await window.fetchLiveCartProduct(item.id) })));
+                const nextCart = [];
+                const removed = [];
+
+                checks.forEach(({ item, live }) => {
+                    if (!live) {
+                        removed.push(item);
+                        return;
+                    }
+                    const wasEmailOrGift = window.isEmailDeliveryItem(item);
+                    const liveEmailOrGift = window.isEmailDeliveryItem(live);
+                    const keepCustomPrice = wasEmailOrGift && Number(item.price || 0) > 0 && Number(item.price) !== Number(live.price || 0);
+                    const qty = Math.max(1, Number(item.qty || 1) || 1);
+                    const stock = Number(live.stock || 999);
+                    const clampedQty = Number.isFinite(stock) && stock > 0 && live.allowBackorder !== true && live.backorder !== true ? Math.min(qty, stock) : qty;
+                    nextCart.push({
+                        ...item,
+                        ...live,
+                        id: String(live.id || item.id),
+                        productId: String(live.productId || live.id || item.productId || item.id),
+                        qty: clampedQty,
+                        selected: item.selected !== false,
+                        price: keepCustomPrice ? Number(item.price || 0) : Number(live.price || item.price || 0),
+                        image: live.image || item.image || (Array.isArray(live.images) ? live.images[0] : "") || "",
+                        emailDelivery: liveEmailOrGift || wasEmailOrGift
+                    });
+                });
+
+                const normalized = window.normalizeCartItems(nextCart);
+                const changed = removed.length > 0 || normalized.length !== window.cart.length || normalized.some(item => !beforeIds.has(String(item.id)) || JSON.stringify(item) !== JSON.stringify(window.cart.find(old => String(old.id) === String(item.id)) || {}));
+                if (changed) {
+                    window.cart = normalized;
+                    window.state.removedDbItems += removed.length;
+                    window.saveCartData();
+                    if (window.cart.length) {
+                        if (window.currentStep === 1) window.renderStep1();
+                        else if (window.currentStep === 2) window.renderStep2();
+                        else if (window.currentStep === 3) window.renderStep3();
+                    } else {
+                        window.renderEmptyCartState();
+                    }
+                    if (removed.length) {
+                        const names = removed.slice(0, 2).map(i => i.name || i.title || i.id).join(', ');
+                        window.showToast(`${removed.length} unavailable item${removed.length > 1 ? 's were' : ' was'} removed from cart${names ? ': ' + names : '.'}`);
+                    }
+                }
+                return removed;
+            })().finally(() => { window.cartValidationPromise = null; });
+
+            return window.cartValidationPromise;
+        };
+
         window.renderCartWarmupState = function(message = "Loading your secure cart...") {
             document.getElementById('stepperNav').style.display = 'none';
             document.getElementById('summaryPanel').style.display = 'none';
@@ -628,10 +870,12 @@
             if (normalized.length > 0) {
                 window.cart = normalized;
                 localStorage.setItem('local_cart', JSON.stringify(window.cart));
+                window.refreshDeliveryModeState();
                 document.getElementById('stepperNav').style.display = 'flex';
                 document.getElementById('summaryPanel').style.display = 'block';
                 window.renderStep1();
                 window.checkoutBootDone = true;
+                if (source !== "db-validated") window.validateCartAgainstDB(source).catch(() => {});
                 return true;
             }
 
@@ -670,14 +914,12 @@
             document.body.style.visibility = 'visible';
             history.pushState(null, null, window.location.href);
 
-            // First paint: render local cart immediately so checkout never opens blank while DB sync catches up.
             const localCart = window.getLocalCart();
             if (!window.applyCartAndRender(localCart, "local")) {
                 window.renderCartWarmupState();
                 window.toggleLoader(true, "Syncing secure cart...");
             } else {
                 window.toggleLoader(false);
-                // Repair cloud cart if user clicked checkout before product page DB sync completed.
                 window.syncCartToCloudSilently("checkout-open-local-cart");
             }
 
@@ -698,7 +940,7 @@
                 window.API_KEYS.RAZORPAY = kData.razorpayKey || kData.RAZORPAY_KEY_ID || kData.RAZORPAY_KEY || window.API_KEYS.RAZORPAY || "";
                 window.API_KEYS.EMAILJS_PUBLIC = kData.EMAILJS_PUBLIC_KEY || kData.emailjsPublicKey || kData.emailjs_public_key || window.API_KEYS.EMAILJS_PUBLIC || "";
                 window.API_KEYS.EMAILJS_ORDER_SERVICE = kData.emailjsOrderService || kData.EMAILJS_ORDER_SERVICE || kData.EMAILJS_SERVICE_ID || kData.emailjsServiceId || kData.emailjsOrderServiceId || window.API_KEYS.EMAILJS_ORDER_SERVICE || "";
-                window.API_KEYS.EMAILJS_ORDER_TEMPLATE = "template_qiyhfbm";
+                window.API_KEYS.EMAILJS_ORDER_TEMPLATE = kData.emailjsOrderTemplate || kData.EMAILJS_ORDER_TEMPLATE || kData.EMAILJS_TEMPLATE_ID || kData.emailjsTemplateId || kData.emailjsOrderTemplateId || window.API_KEYS.EMAILJS_ORDER_TEMPLATE || "template_qiyhfbm";
                 if (window.API_KEYS.EMAILJS_PUBLIC && window.emailjs) {
                     try { emailjs.init(window.API_KEYS.EMAILJS_PUBLIC); } catch(e) {}
                 }
@@ -721,23 +963,14 @@
             const localCart = window.normalizeCartItems(window.getLocalCart());
             const cloudCart = window.normalizeCartItems(window.userData && Array.isArray(window.userData.cart) ? window.userData.cart : []);
 
-            // Choose the most useful cart. Local wins when it is fresher / longer, fixing "empty until refresh".
-            let chosenCart = [];
-            if (localCart.length && cloudCart.length) {
-                const localQty = localCart.reduce((s, i) => s + Number(i.qty || 1), 0);
-                const cloudQty = cloudCart.reduce((s, i) => s + Number(i.qty || 1), 0);
-                chosenCart = localQty >= cloudQty ? localCart : cloudCart;
-            } else {
-                chosenCart = localCart.length ? localCart : cloudCart;
-            }
+            const chosenCart = window.mergeCartSources(cloudCart, localCart);
 
             if (chosenCart.length) {
-                window.applyCartAndRender(chosenCart, cloudCart.length ? "cloud" : "local");
-                if (!cloudCart.length || JSON.stringify(chosenCart) !== JSON.stringify(cloudCart)) {
-                    window.syncCartToCloudSilently("cart-mismatch-repair");
+                window.applyCartAndRender(chosenCart, "merged-cloud-local");
+                if (JSON.stringify(chosenCart) !== JSON.stringify(cloudCart)) {
+                    window.syncCartToCloudSilently("cart-merge-repair");
                 }
             } else {
-                // One last tiny delayed local check catches add-to-cart redirects where storage writes are still settling.
                 await new Promise(resolve => setTimeout(resolve, 280));
                 const lateLocal = window.normalizeCartItems(window.getLocalCart());
                 if (lateLocal.length) {
@@ -764,6 +997,7 @@
             let qtyTotal = 0;
 
             const isPrime = window.activeSession && window.activeSession.isPrime;
+            window.refreshDeliveryModeState();
 
             if (window.cart.length === 0) {
                 list.innerHTML = `
@@ -800,7 +1034,8 @@
                                 <div class="cart-img-box"><img src="${img}" loading="lazy" decoding="async" alt="${item.name || 'Aryanta Product'}"></div>
                                 <div class="cart-details">
                                     <h4>${item.name}</h4>
-                                    <div class="price">₹${(price * item.qty).toLocaleString('en-IN')}</div>
+                                    <div class="price">${window.money(price * item.qty)}</div>
+                                    ${window.isEmailDeliveryItem(item) ? '<span class="delivery-badge email"><i class="fas fa-envelope-circle-check"></i> Digital delivery</span>' : '<span class="delivery-badge physical"><i class="fas fa-truck-fast"></i> Physical delivery</span>'}
                                     ${isPrime ? '<span style="font-size:12px; color:var(--accent); font-weight:800; margin-top:4px; display:block;"><i class="fas fa-gem"></i> Prime Applied</span>' : ''}
                                 </div>
                             </div>
@@ -817,10 +1052,14 @@
             });
 
             document.getElementById('sumItemCount').innerText = qtyTotal;
-            document.getElementById('sumSubtotal').innerText = `₹${window.state.itemsTotal.toLocaleString('en-IN')}`;
+            document.getElementById('sumSubtotal').innerText = window.money(window.state.itemsTotal);
             document.getElementById('sumShipping').innerText = `Calculated next`;
-            document.getElementById('sumGrandTotal').innerText = `₹${window.state.itemsTotal.toLocaleString('en-IN')}`;
+            document.getElementById('sumGrandTotal').innerText = window.money(window.state.itemsTotal);
             
+            // Show points calculation on Step 1 dynamically
+            const earnedPts = Math.floor(window.state.itemsTotal * 0.1);
+            document.getElementById('sumPoints').innerText = `+${earnedPts.toLocaleString('en-IN')} Pts`;
+
             document.getElementById('btnBackStep').style.display = 'none';
             document.getElementById('btnNextStep').innerHTML = 'Proceed to Delivery <i class="fas fa-arrow-right"></i>';
             document.getElementById('btnNextStep').onclick = window.goStepForward;
@@ -880,9 +1119,19 @@
                 }
                 window.renderStep2();
             } else if (window.currentStep === 2) {
-                if(!window.userData || !window.userData.addresses || window.userData.addresses.length === 0) {
+                const mode = window.refreshDeliveryModeState();
+                if(!mode.allEmailDelivery && (!window.userData || !window.userData.addresses || window.userData.addresses.length === 0)) {
                     return window.showToast("Please add a delivery location to proceed.");
                 }
+                
+                // Validate email if digital item exists
+                if (mode.hasEmailDelivery) {
+                    const emailInput = document.getElementById('checkoutDeliveryEmail');
+                    if (emailInput && (!emailInput.value.trim() || !/^\S+@\S+\.\S+$/.test(emailInput.value.trim()))) {
+                        return window.showAlert("Please provide a valid email address for digital delivery.", "Email Required");
+                    }
+                }
+
                 window.renderStep3();
             } else if (window.currentStep === 3) {
                 window.processCheckout();
@@ -903,35 +1152,69 @@
             document.getElementById('step3Container').style.display = 'none';
 
             const grid = document.getElementById('addressSelectionGrid');
+            const mode = window.refreshDeliveryModeState();
             grid.innerHTML = '';
 
-            if (window.userData && window.userData.addresses && window.userData.addresses.length > 0) {
-                window.userData.addresses.forEach((a, index) => {
-                    const isSelected = index === window.selectedAddressIndex;
-                    grid.innerHTML += `
-                        <div class="address-card-sel ${isSelected ? 'selected' : ''}" onclick="selectAddress(${index})">
-                            <strong style="display:block; font-size:16px; margin-bottom:8px; color:var(--primary); font-weight:800;"><i class="fas fa-map-marker-alt"></i> ${index===0 ? 'Primary Location' : 'Location '+ (index+1)}</strong>
-                            <div style="font-weight:700; font-size:15px; margin-bottom:4px; color:var(--text-main);">${a.name} (${a.phone})</div>
-                            <div style="color:var(--text-muted); font-size:14px; line-height:1.5; font-weight:500;">${a.street}, ${a.city}, ${a.state} - <strong>${a.pincode}</strong></div>
-                        </div>`;
-                });
+            let savedEmail = window.userData?.checkoutEmail || window.activeSession.email;
+
+            if (mode.allEmailDelivery) {
+                document.getElementById('inlineAddressForm').style.display = 'none';
+                const addBtn = document.getElementById('addAddressBtn');
+                if (addBtn) addBtn.style.display = 'none';
+                grid.innerHTML = `
+                    <div class="address-card-sel selected email-delivery-card" style="cursor: default;">
+                        <strong><i class="fas fa-envelope-circle-check"></i> Digital Delivery Selected</strong>
+                        <div style="margin-bottom: 15px;">Your digital products will be delivered via email.</div>
+                        <label style="font-size:13px; font-weight:800; color:var(--text-main); margin-bottom:6px; display:block;">Delivery Email Address</label>
+                        <input type="email" id="checkoutDeliveryEmail" class="form-input" value="${savedEmail}" placeholder="Enter delivery email" onchange="window.userData.checkoutEmail = this.value" style="background: var(--surface); color: var(--text-main); font-family: var(--font-mono); font-size: 14px; padding: 12px; margin-bottom: 8px;">
+                        <small>No pincode, no courier, no delivery charge for digital items.</small>
+                    </div>`;
             } else {
-                grid.innerHTML = `<div style="padding:24px; text-align:center; color:var(--danger); border:1px dashed var(--danger); border-radius:16px; font-weight:600;">No addresses found. Please add one below.</div>`;
+                const addBtn = document.getElementById('addAddressBtn');
+                if (addBtn) addBtn.style.display = 'inline-flex';
+                
+                if (mode.hasEmailDelivery) {
+                    grid.innerHTML += `
+                        <div class="mixed-delivery-note" style="flex-direction: column;">
+                            <div style="display:flex; gap:12px; align-items:center;">
+                                <i class="fas fa-circle-info"></i>
+                                <span>Your cart contains both physical and digital items. Delivery charge is only for the physical items.</span>
+                            </div>
+                            <div style="margin-top:10px; width: 100%;">
+                                <label style="font-size:13px; font-weight:800; color:var(--text-main); margin-bottom:6px; display:block;">Digital Delivery Email</label>
+                                <input type="email" id="checkoutDeliveryEmail" class="form-input" value="${savedEmail}" placeholder="Enter email for digital delivery" onchange="window.userData.checkoutEmail = this.value" style="background: var(--surface); color: var(--text-main); font-family: var(--font-mono); font-size: 14px; padding: 12px; margin-bottom: 0;">
+                            </div>
+                        </div>`;
+                }
+
+                if (window.userData && window.userData.addresses && window.userData.addresses.length > 0) {
+                    window.userData.addresses.forEach((a, index) => {
+                        const isSelected = index === window.selectedAddressIndex;
+                        grid.innerHTML += `
+                            <div class="address-card-sel ${isSelected ? 'selected' : ''}" onclick="selectAddress(${index})">
+                                <strong style="display:block; font-size:16px; margin-bottom:8px; color:var(--primary); font-weight:800;"><i class="fas fa-map-marker-alt"></i> ${index===0 ? 'Primary Location' : 'Location '+ (index+1)}</strong>
+                                <div style="font-weight:700; font-size:15px; margin-bottom:4px; color:var(--text-main);">${a.name} (${a.phone})</div>
+                                <div style="color:var(--text-muted); font-size:14px; line-height:1.5; font-weight:500;">${a.street}, ${a.city}, ${a.state || 'NA'} - <strong>${a.pincode}</strong></div>
+                            </div>`;
+                    });
+                } else {
+                    grid.innerHTML += `<div style="padding:24px; text-align:center; color:var(--danger); border:1px dashed var(--danger); border-radius:16px; font-weight:600;">No addresses found. Please add one below.</div>`;
+                }
             }
 
             document.getElementById('btnBackStep').style.display = 'block';
             document.getElementById('btnNextStep').innerHTML = 'Proceed to Payment <i class="fas fa-lock"></i>';
             document.getElementById('btnNextStep').onclick = window.goStepForward;
 
-            // DYNAMIC SHIPPING CALCULATION
-            window.state.shippingCost = window.requireAdvance ? window.backendDeliveryCharge : 0;
-            
-            if(window.state.shippingCost > 0) {
-                document.getElementById('sumShipping').innerText = `₹${window.state.shippingCost}`;
+            window.state.shippingCost = window.calculateShippingCost();
+            if (mode.allEmailDelivery) {
+                document.getElementById('sumShipping').innerText = 'No delivery charge';
+            } else if (window.state.shippingCost > 0) {
+                document.getElementById('sumShipping').innerText = `${window.money(window.state.shippingCost)} physical delivery`;
             } else {
-                document.getElementById('sumShipping').innerText = `Free Delivery`;
+                document.getElementById('sumShipping').innerText = 'Free Delivery';
             }
-            
+
             window.updateTotals();
         };
 
@@ -990,6 +1273,9 @@
             let deductions = window.state.promoDiscount + window.state.walletApplied;
             window.state.finalPayable = Math.max(0, preTotal - deductions);
 
+            const earnedPts = Math.floor(window.state.itemsTotal * 0.1);
+            document.getElementById('sumPoints').innerText = `+${earnedPts.toLocaleString('en-IN')} Pts`;
+
             if (deductions > 0) {
                 document.getElementById('sumDiscountRow').style.display = 'flex';
                 let dTxt = "";
@@ -1003,7 +1289,8 @@
             document.getElementById('sumGrandTotal').innerText = window.money(window.state.finalPayable);
             
             const btn = document.getElementById('btnNextStep');
-            const isCOD = document.querySelector('input[name="payMethod"][value="cod"]').checked;
+            const mode = window.refreshDeliveryModeState();
+            const isCOD = !mode.hasEmailDelivery && document.querySelector('input[name="payMethod"][value="cod"]')?.checked;
 
             if (window.currentStep === 3) {
                 if (isCOD && !window.requireAdvance) {
@@ -1074,26 +1361,49 @@
         };
 
         window.updatePaymentUI = function() {
-            const isCOD = document.querySelector('input[name="payMethod"][value="cod"]').checked;
+            const mode = window.refreshDeliveryModeState();
+            const codOption = document.getElementById('codPaymentOption');
+            const codInput = document.querySelector('input[name="payMethod"][value="cod"]');
+            const onlineInput = document.querySelector('input[name="payMethod"][value="online"]');
+            const isCOD = codInput ? codInput.checked : false;
             const wBox = document.getElementById('codWarningBox');
             const sub = document.getElementById('codSubtext');
 
-            if (isCOD) {
-                if (window.requireAdvance) {
+            if (mode.hasEmailDelivery) {
+                if (codOption) codOption.style.display = 'none';
+                if (codInput) codInput.checked = false;
+                if (onlineInput) onlineInput.checked = true;
+                if (wBox) {
                     wBox.style.display = 'block';
-                    sub.style.color = 'var(--danger)';
-                    sub.innerText = "Advance Shipping Fee Required.";
+                    wBox.classList.add('digital-info');
+                    wBox.innerHTML = `<i class="fas fa-envelope-circle-check"></i> Your cart contains digital items. Cash on Delivery is disabled. Please pay online securely.`;
+                }
+                if (sub) sub.innerText = 'Unavailable for email delivery.';
+            } else {
+                if (codOption) codOption.style.display = '';
+                if (wBox) {
+                    wBox.classList.remove('digital-info');
+                    wBox.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Notice: Due to frequent past cancellations, you must pay the delivery charge upfront to place a Cash on Delivery order.`;
+                }
+                if (isCOD) {
+                    if (window.requireAdvance) {
+                        wBox.style.display = 'block';
+                        sub.style.color = 'var(--danger)';
+                        sub.innerText = 'Advance Shipping Fee Required.';
+                    } else {
+                        wBox.style.display = 'none';
+                        sub.style.color = 'var(--text-muted)';
+                        sub.innerText = 'Pay when your order arrives.';
+                    }
                 } else {
                     wBox.style.display = 'none';
                     sub.style.color = 'var(--text-muted)';
-                    sub.innerText = "Pay when your order arrives.";
+                    sub.innerText = 'Pay when your order arrives.';
                 }
-            } else {
-                wBox.style.display = 'none';
-                sub.style.color = 'var(--text-muted)';
-                sub.innerText = "Pay when your order arrives.";
             }
-            
+
+            window.state.shippingCost = window.calculateShippingCost();
+            if (mode.allEmailDelivery) document.getElementById('sumShipping').innerText = 'No delivery charge';
             window.updateTotals();
         };
 
@@ -1101,7 +1411,8 @@
         window.resetCheckoutButton = function() {
             const btn = document.getElementById('btnNextStep');
             if (!btn) return;
-            const isCOD = document.querySelector('input[name="payMethod"]:checked')?.value === 'cod';
+            const mode = window.refreshDeliveryModeState();
+            const isCOD = !mode.hasEmailDelivery && document.querySelector('input[name="payMethod"]:checked')?.value === 'cod';
             let amount = window.state?.finalPayable || 0;
             if (isCOD && window.requireAdvance) amount = Math.max(0, (window.state.shippingCost || 0) - (window.state.promoDiscount || 0) - (window.state.walletApplied || 0));
             if (isCOD && !window.requireAdvance) btn.innerHTML = 'Place Order <i class="fas fa-check"></i>';
@@ -1117,8 +1428,17 @@
             window.checkoutBusy = true;
             window.toggleButtonState('btnNextStep', true, 'Securing Order...');
 
+            const mode = window.refreshDeliveryModeState();
             const checkedPay = document.querySelector('input[name="payMethod"]:checked');
             const isCOD = checkedPay ? checkedPay.value === 'cod' : false;
+            
+            if (isCOD && mode.hasEmailDelivery) {
+                window.checkoutBusy = false;
+                window.resetCheckoutButton();
+                return window.showAlert('Cash on Delivery is not available for email-delivery items. Please use online payment or wallet.', 'Online Payment Required');
+            }
+            
+            window.state.shippingCost = window.calculateShippingCost();
             let amountToPay = 0;
 
             if (isCOD) {
@@ -1164,7 +1484,7 @@
                     window.toggleLoader(false);
                     window.showProcessingAnimation(response.razorpay_payment_id, isCOD ? 'Cash On Delivery' : 'Online Secure');
                 },
-                prefill: { name: selAddr.name, email: window.activeSession.email, contact: selAddr.phone },
+                prefill: { name: selAddr ? selAddr.name : window.activeSession.name, email: window.activeSession.email, contact: selAddr ? selAddr.phone : window.activeSession.phone },
                 theme: { color: '#1d1d1f' },
                 modal: {
                     ondismiss: function() {
@@ -1215,6 +1535,7 @@
                     overlay.classList.remove('show');
                     window.populateReceipt(receipt);
                     document.getElementById('successModal').classList.add('show');
+                    window.prepareReceiptAutoScroll();
                     window.checkoutBusy = false;
                 }, Math.max(120, minimum - elapsed));
             } catch (error) {
@@ -1228,6 +1549,31 @@
             }
         };
 
+        window.getCheckoutAddress = function() {
+            const mode = window.refreshDeliveryModeState();
+            const emailInput = document.getElementById('checkoutDeliveryEmail');
+            const deliveryEmail = emailInput && emailInput.value.trim() !== "" ? emailInput.value.trim() : (window.userData?.checkoutEmail || window.activeSession?.email || '');
+            
+            if (mode.allEmailDelivery) {
+                return {
+                    name: window.activeSession?.name || window.activeSession?.fullName || 'Aryanta User',
+                    phone: window.activeSession?.phone || '',
+                    street: `Digital delivery to ${deliveryEmail}`,
+                    city: 'Online Delivery',
+                    state: 'NA',
+                    pincode: '000000',
+                    emailDelivery: true,
+                    email: deliveryEmail
+                };
+            }
+            
+            const addr = window.userData?.addresses?.[window.selectedAddressIndex] || null;
+            if (addr && mode.hasEmailDelivery) {
+                addr.email = deliveryEmail;
+            }
+            return addr;
+        };
+
         window.buildOrderPayload = function(paymentId, payMethodStr, orderNo, orderedItems, selAddr, fullAddress) {
             const safeState = JSON.parse(JSON.stringify(window.state || {}));
             const createdAt = new Date().toISOString();
@@ -1237,6 +1583,8 @@
             const walletDeducted = Number(window.pendingWalletPaymentAmount || safeState.walletApplied || 0);
             const orderPayable = Math.max(0, Number(safeState.itemsTotal || 0) + Number(safeState.shippingCost || 0) - Number(safeState.promoDiscount || 0));
             const paymentStatus = isWallet ? 'paid' : (String(paymentId || '').startsWith('COD_FREE') ? 'cod' : (String(paymentId || '').startsWith('NO_CHARGE') ? 'covered' : 'paid'));
+            const earnedPoints = Math.floor(Number(safeState.itemsTotal || 0) * 0.1);
+
             const cleanItems = orderedItems.map(item => {
                 const qty = Math.max(1, Number(item.qty || item.quantity || 1) || 1);
                 const price = Number(item.price || item.salePrice || item.finalPrice || 0) || 0;
@@ -1251,13 +1599,15 @@
                     quantity: qty,
                     price,
                     amount: price * qty,
+                    deliveryMode: window.isEmailDeliveryItem(item) ? 'email' : 'physical',
+                    emailDelivery: window.isEmailDeliveryItem(item),
                     sellerId: item.sellerId || item.seller_id || item.sellerUid || '',
                     sellerUid: item.sellerUid || item.sellerId || item.seller_id || ''
                 };
             });
             const confirmationSubject = `Aryanta Order Confirmed - ${orderNo}`;
             const emailItems = cleanItems.map(i => `${i.name} (x${Number(i.qty || 1)}) — ${window.money(Number(i.price || 0) * Number(i.qty || 1))}`).join('\n');
-            const confirmationBody = `Hey ${selAddr.name || 'Customer'},\n\nYour Aryanta order ${orderNo} has been successfully placed.\n\nItems:\n${emailItems}\n\nSubtotal: ${window.money(safeState.itemsTotal)}\nShipping: ${window.money(safeState.shippingCost)}\nDiscount: ${window.money(safeState.promoDiscount)}\nWallet Paid: ${window.money(walletDeducted)}\nTotal Order Value: ${window.money(orderPayable)}\nPayment Method: ${methodText}\nTransaction ID: ${paymentId || 'N/A'}\n\nDelivery Address:\n${fullAddress}\n\nThank you for shopping with Aryanta.`;
+            const confirmationBody = `Hey ${selAddr.name || 'Customer'},\n\nYour Aryanta order ${orderNo} has been successfully placed.\n\nItems:\n${emailItems}\n\nSubtotal: ${window.money(safeState.itemsTotal)}\nShipping: ${window.money(safeState.shippingCost)}\nDiscount: ${window.money(safeState.promoDiscount)}\nWallet Paid: ${window.money(walletDeducted)}\nTotal Order Value: ${window.money(orderPayable)}\nPoints Earned: ${earnedPoints}\nPayment Method: ${methodText}\nTransaction ID: ${paymentId || 'N/A'}\n\nDelivery Address:\n${fullAddress}\n\nThank you for shopping with Aryanta.`;
 
             return {
                 projectId: window.PROJECT_ID,
@@ -1283,6 +1633,10 @@
                 delivery_phone: selAddr.phone || '',
                 delivery_address: fullAddress,
                 deliveryAddress: fullAddress,
+                deliveryEmail: selAddr.email || window.activeSession.email, // Explicitly capture digital delivery email
+                delivery_mode: safeState.allEmailDelivery ? 'email' : (safeState.hasEmailDelivery ? 'mixed' : 'physical'),
+                deliveryMode: safeState.allEmailDelivery ? 'email' : (safeState.hasEmailDelivery ? 'mixed' : 'physical'),
+                emailDelivery: !!safeState.hasEmailDelivery,
                 address: selAddr,
                 items: cleanItems,
                 products: cleanItems,
@@ -1291,7 +1645,8 @@
                 totalPrice: orderPayable,
                 finalAmount: orderPayable,
                 payable_amount: isWallet ? 0 : Number(safeState.finalPayable || orderPayable),
-                financials: { ...safeState, orderPayable, walletApplied: walletDeducted },
+                earnedPoints: earnedPoints, // Save earned points with the order
+                financials: { ...safeState, orderPayable, walletApplied: walletDeducted, earnedPoints },
                 payment_method: methodText,
                 paymentMethod: methodText,
                 payment_status: paymentStatus,
@@ -1321,16 +1676,70 @@
             };
         };
 
+        window.sendOrderConfirmationEmail = async function(details) {
+            const publicKey = String(window.API_KEYS.EMAILJS_PUBLIC || '').trim();
+            const serviceId = String(window.API_KEYS.EMAILJS_ORDER_SERVICE || '').trim();
+            const templateId = String(window.API_KEYS.EMAILJS_ORDER_TEMPLATE || '').trim();
+            if (!window.emailjs || !publicKey || !serviceId || !templateId) return;
+            if (!/^service_/i.test(serviceId) || !/^template_/i.test(templateId)) return;
+
+            try {
+                try { window.emailjs.init(publicKey); } catch(e) {}
+                const emailItemsStr = details.orderedItems.map(i => `${i.name} (x${Number(i.qty || 1)}) — ${window.money(Number(i.price || 0) * Number(i.qty || 1))}${window.isEmailDeliveryItem(i) ? ' [Digital delivery]' : ''}`).join('\n');
+                const subject = `Aryanta Order Confirmed - ${details.orderNo}`;
+                const body = `Hey ${details.selAddr.name || 'Customer'},\n\nYour order ${details.orderNo} has successfully been placed.\n\n${emailItemsStr}\n\nSubtotal: ${window.money(window.state.itemsTotal)}\nShipping: ${window.money(window.state.shippingCost)}\nDiscount: ${window.money(window.state.promoDiscount)}\nWallet Paid: ${window.money(details.walletDeductNow)}\nTotal: ${window.money(details.orderTotal)}\nPayment: ${details.payMethodStr}\nTransaction ID: ${details.paymentId || 'N/A'}\n\nDelivery: ${details.fullAddress}\n\nThank you for shopping with Aryanta.`;
+                const params = {
+                    to_email: window.activeSession.email,
+                    email: window.activeSession.email,
+                    reply_to: 'support@aryanta.in',
+                    to_name: details.selAddr.name || window.activeSession.name || 'Aryanta User',
+                    name: details.selAddr.name || window.activeSession.name || 'Aryanta User',
+                    subject,
+                    title: subject,
+                    order_subject: subject,
+                    order_no: details.orderNo,
+                    order_id: details.orderNo,
+                    address: details.fullAddress,
+                    delivery_address: details.fullAddress,
+                    delivery_mode: window.state.allEmailDelivery ? 'Digital delivery' : (window.state.hasEmailDelivery ? 'Mixed delivery' : 'Physical delivery'),
+                    items_list: emailItemsStr,
+                    items: emailItemsStr,
+                    subtotal: window.money(window.state.itemsTotal),
+                    shipping: window.money(window.state.shippingCost),
+                    discount: window.money(window.state.promoDiscount),
+                    grand_total: window.money(details.orderTotal),
+                    total: window.money(details.orderTotal),
+                    transaction_id: details.paymentId || 'N/A',
+                    payment_method: details.payMethodStr,
+                    message: body,
+                    body
+                };
+                await window.emailjs.send(serviceId, templateId, params, publicKey);
+            } catch(e) {
+                console.warn('Email confirmation skipped:', e && (e.text || e.message || e.status) ? (e.text || e.message || e.status) : e);
+            }
+        };
+
         window.executeOrderPlacement = async function(paymentId, payMethodStr) {
             const orderedItems = window.cart.filter(i => i.selected);
             const remainingItems = window.cart.filter(i => !i.selected);
             if (!orderedItems.length) throw new Error('No selected items.');
 
-            const selAddr = window.userData.addresses[window.selectedAddressIndex];
+            const selAddr = window.getCheckoutAddress();
             if (!selAddr) throw new Error('Delivery address missing.');
 
             const orderNo = 'ARY-' + Date.now().toString().slice(-6) + Math.floor(Math.random() * 100);
-            const fullAddress = [selAddr.street, selAddr.city, selAddr.pincode].filter(Boolean).join(', ');
+            
+            // Format address nicely depending on digital or mixed delivery
+            let fullAddress = '';
+            if (selAddr.emailDelivery) {
+                fullAddress = `Digital delivery to ${selAddr.email || window.activeSession.email}`;
+            } else if (selAddr.email) {
+                fullAddress = `${[selAddr.street, selAddr.city, selAddr.pincode].filter(Boolean).join(', ')} (Digital items to: ${selAddr.email})`;
+            } else {
+                fullAddress = [selAddr.street, selAddr.city, selAddr.pincode].filter(Boolean).join(', ');
+            }
+
             const orderData = window.buildOrderPayload(paymentId, payMethodStr, orderNo, orderedItems, selAddr, fullAddress);
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 18000);
@@ -1361,52 +1770,46 @@
                 clearTimeout(timeout);
             }
 
+            // Calculate wallet and points logic locally before 1-shot API sync
             const walletDeductNow = Number(window.pendingWalletPaymentAmount || window.state.walletApplied || 0);
-            if (walletDeductNow > 0) {
-                const newBal = Math.max(0, Number(window.state.walletBalance || 0) - walletDeductNow);
-                await fetch(`${window.API_BASE_URL}/update-user`, {
-                    method: 'POST',
-                    mode: 'cors',
-                    cache: 'no-store',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({ email: window.activeSession.email, updates: { wallet: newBal }, projectId: window.PROJECT_ID })
-                }).catch(() => {});
-                window.state.walletBalance = newBal;
-                window.pendingWalletPaymentAmount = 0;
-            }
-
-            try {
-                if (window.API_KEYS.EMAILJS_PUBLIC && window.API_KEYS.EMAILJS_ORDER_SERVICE && window.emailjs) {
-                    const emailItemsStr = orderedItems.map(i => `${i.name} (x${Number(i.qty || 1)}) — ${window.money(Number(i.price || 0) * Number(i.qty || 1))}`).join('\n');
-                    const subject = `Aryanta Order Confirmed - ${orderNo}`;
-                    const body = `Hey ${selAddr.name},\n\nYour order ${orderNo} has successfully been placed.\n\n${emailItemsStr}\n\nSubtotal: ${window.money(window.state.itemsTotal)}\nShipping: ${window.money(window.state.shippingCost)}\nDiscount: ${window.money(window.state.promoDiscount)}\nWallet Paid: ${window.money(walletDeductNow)}\nTotal: ${window.money(orderData.total)}\nPayment: ${payMethodStr}\nTransaction ID: ${paymentId || 'N/A'}\n\nThank you for shopping with Aryanta.`;
-                    await emailjs.send(window.API_KEYS.EMAILJS_ORDER_SERVICE, 'template_qiyhfbm', {
-                        to_email: window.activeSession.email,
-                        to_name: selAddr.name,
-                        subject,
-                        order_subject: subject,
-                        order_no: orderNo,
-                        address: fullAddress,
-                        items_list: emailItemsStr,
-                        shipping: window.money(window.state.shippingCost),
-                        grand_total: window.money(orderData.total),
-                        transaction_id: paymentId || 'N/A',
-                        payment_method: payMethodStr,
-                        message: body,
-                        body
-                    });
-                }
-            } catch(e) {}
-
+            const newBal = Math.max(0, Number(window.state.walletBalance || 0) - walletDeductNow);
+            window.state.walletBalance = newBal;
+            window.pendingWalletPaymentAmount = 0;
+            
+            const earnedPoints = Math.floor(Number(window.state.itemsTotal || 0) * 0.1);
+            const newPoints = Number(window.userData.points || 0) + earnedPoints;
+            window.userData.points = newPoints;
+            
             window.cart = remainingItems;
             localStorage.setItem('local_cart', JSON.stringify(window.cart));
+
+            // Unified, fast single request to update wallet, points, and clear the cart
             await fetch(`${window.API_BASE_URL}/update-user`, {
                 method: 'POST',
                 mode: 'cors',
                 cache: 'no-store',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify({ email: window.activeSession.email, updates: { cart: window.cart }, projectId: window.PROJECT_ID })
+                body: JSON.stringify({ 
+                    email: window.activeSession.email, 
+                    updates: { 
+                        wallet: newBal, 
+                        points: newPoints, 
+                        cart: window.cart 
+                    }, 
+                    projectId: window.PROJECT_ID 
+                })
             }).catch(() => {});
+
+            await window.sendOrderConfirmationEmail({
+                orderNo,
+                orderedItems,
+                selAddr,
+                fullAddress,
+                walletDeductNow,
+                orderTotal: orderData.total,
+                paymentId,
+                payMethodStr
+            });
 
             return {
                 orderNo,
@@ -1418,6 +1821,19 @@
                 date: new Date(),
                 apiResponse: orderJson
             };
+        };
+
+        window.prepareReceiptAutoScroll = function() {
+            const modalBox = document.querySelector('#successModal .receipt-modal-box');
+            if (!modalBox) return;
+            modalBox.scrollTop = 0;
+            if (window.matchMedia('(max-width: 620px)').matches) {
+                setTimeout(() => {
+                    const target = Math.min(130, Math.max(0, modalBox.scrollHeight - modalBox.clientHeight));
+                    if (target > 0) modalBox.scrollTo({ top: target, behavior: 'smooth' });
+                    setTimeout(() => modalBox.scrollTo({ top: 0, behavior: 'smooth' }), 900);
+                }, 350);
+            }
         };
 
         window.populateReceipt = function(receipt) {
