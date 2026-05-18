@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#f8fafc" />
+  <meta name="description" content="Aryanta Storefront - view seller profile, reviews and live products." />
+  <title>Aryanta Store</title>
+
+  <link rel="preconnect" href="https://rough-field-c679.official-aryanta.workers.dev" crossorigin>
+  <link rel="dns-prefetch" href="//rough-field-c679.official-aryanta.workers.dev">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+  <style>
+    :root{
+      --bg:#f8fafc;
+      --surface:#ffffff;
+      --surface-2:#f1f5f9;
+      --surface-3:#e2e8f0;
+      --text:#0f172a;
+      --muted:#64748b;
+      --soft:#94a3b8;
+      --border:#e2e8f0;
+      --brand:#020617;
+      --brand-2:#0f172a;
+      --accent:#2563eb;
+      --success:#10b981;
+      --warning:#f59e0b;
+      --danger:#ef4444;
+      --shadow-sm:0 8px 20px rgba(15,23,42,.06);
+      --shadow-md:0 18px 45px rgba(15,23,42,.10);
+      --shadow-lg:0 28px 80px rgba(15,23,42,.18);
+      --radius:24px;
+      --radius-sm:16px;
+      --font:'Plus Jakarta Sans',system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      --mono:'Space Mono',monospace;
+    }
+
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg:#020617;
+        --surface:#0f172a;
+        --surface-2:#111827;
+        --surface-3:#1e293b;
+        --text:#f8fafc;
+        --muted:#cbd5e1;
+        --soft:#94a3b8;
+        --border:#334155;
+        --brand:#f8fafc;
+        --brand-2:#e2e8f0;
+        --shadow-sm:0 8px 20px rgba(0,0,0,.25);
+        --shadow-md:0 18px 45px rgba(0,0,0,.32);
+        --shadow-lg:0 28px 80px rgba(0,0,0,.48);
+      }
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0;font-family:var(--font);-webkit-tap-highlight-color:transparent}
+    html{scroll-behavior:smooth}
+    body{min-height:100vh;background:radial-gradient(circle at top left,rgba(37,99,235,.08),transparent 34%),var(--bg);color:var(--text);overflow-x:hidden}
+    button,input,select{font:inherit}
+    button{border:none;cursor:pointer}
+    img{max-width:100%;display:block}
+
+    .page-loader{position:fixed;inset:0;background:rgba(248,250,252,.94);backdrop-filter:blur(20px);z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;transition:.35s ease}
+    @media (prefers-color-scheme: dark){.page-loader{background:rgba(2,6,23,.94)}}
+    .loader-hidden{opacity:0;visibility:hidden;pointer-events:none}
+    .spinner{width:48px;height:48px;border:4px solid rgba(148,163,184,.35);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .topbar-wrap{position:sticky;top:0;z-index:1000;padding:12px 18px;background:linear-gradient(to bottom,rgba(248,250,252,.92),rgba(248,250,252,.70));backdrop-filter:blur(18px);border-bottom:1px solid rgba(226,232,240,.76)}
+    @media (prefers-color-scheme: dark){.topbar-wrap{background:linear-gradient(to bottom,rgba(2,6,23,.92),rgba(2,6,23,.70));border-color:rgba(51,65,85,.75)}}
+    .topbar{max-width:1240px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px}
+    .brand{display:flex;align-items:center;gap:10px;min-width:0}
+    .brand-logo{width:42px;height:42px;border-radius:14px;object-fit:cover;border:1px solid var(--border);box-shadow:var(--shadow-sm);background:var(--surface)}
+    .brand-text{font-weight:900;letter-spacing:-.7px;font-size:20px;color:var(--text);white-space:nowrap}
+    .brand-dot{color:var(--accent)}
+    .top-actions{display:flex;align-items:center;gap:10px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;border-radius:14px;padding:12px 15px;font-weight:900;font-size:13px;transition:.18s ease;white-space:nowrap;color:var(--text);background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm)}
+    .btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+    .btn:active{transform:scale(.98)}
+    .btn-dark{background:var(--brand);color:var(--bg);border-color:var(--brand)}
+    .btn-blue{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none}
+    .btn-soft{background:var(--surface-2)}
+
+    .container{max-width:1240px;margin:0 auto;padding:18px 18px 70px}
+
+    .hero{position:relative;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:30px;box-shadow:var(--shadow-md)}
+    .banner{height:310px;background:linear-gradient(135deg,#0f172a,#2563eb);position:relative}
+    .banner img{width:100%;height:100%;object-fit:cover}
+    .banner::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(2,6,23,.04),rgba(2,6,23,.72))}
+    .store-badge{position:absolute;top:18px;right:18px;z-index:2;display:inline-flex;align-items:center;gap:9px;background:rgba(15,23,42,.74);color:#fff;border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(16px);font-weight:900;font-size:12px;padding:10px 13px;border-radius:999px}
+    .hero-main{position:relative;margin-top:-72px;padding:0 24px 26px;display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:end;z-index:3}
+    .store-logo-shell{width:142px;height:142px;border-radius:32px;padding:8px;background:rgba(255,255,255,.88);box-shadow:var(--shadow-lg);border:1px solid rgba(255,255,255,.60)}
+    @media (prefers-color-scheme: dark){.store-logo-shell{background:rgba(15,23,42,.88);border-color:rgba(255,255,255,.12)}}
+    .store-logo{width:100%;height:100%;border-radius:25px;object-fit:cover;background:linear-gradient(135deg,#111827,#2563eb);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:42px}
+    .seller-title h1{font-size:34px;line-height:1.08;font-weight:900;letter-spacing:-1.2px;color:#fff;text-shadow:0 6px 28px rgba(0,0,0,.38);margin-bottom:8px}
+    .seller-title p{max-width:650px;color:rgba(255,255,255,.92);font-weight:700;line-height:1.6;text-shadow:0 6px 22px rgba(0,0,0,.24)}
+    .hero-actions{display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+
+    .stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:18px}
+    .stat{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:18px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden}
+    .stat::after{content:"";position:absolute;right:-24px;top:-24px;width:76px;height:76px;border-radius:50%;background:rgba(37,99,235,.08)}
+    .stat small{display:block;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.8px;font-size:10px;margin-bottom:8px}
+    .stat strong{display:flex;align-items:center;gap:8px;font-size:24px;font-weight:900;color:var(--text)}
+    .stat strong i{font-size:15px;color:var(--accent)}
+
+    .section-grid{display:grid;grid-template-columns:360px 1fr;gap:18px;margin-top:18px;align-items:start}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:24px;box-shadow:var(--shadow-sm);padding:22px}
+    .card-title{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:900;margin-bottom:14px;letter-spacing:-.4px}
+    .card-title i{color:var(--accent)}
+    .seller-line{display:flex;gap:12px;align-items:flex-start;padding:13px 0;border-bottom:1px solid var(--border)}
+    .seller-line:last-child{border-bottom:none}
+    .seller-line i{width:38px;height:38px;border-radius:14px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;color:var(--accent);flex:0 0 auto}
+    .seller-line div{min-width:0}
+    .seller-line small{display:block;color:var(--muted);font-weight:800;font-size:11px;margin-bottom:2px;text-transform:uppercase;letter-spacing:.5px}
+    .seller-line strong{display:block;color:var(--text);font-weight:900;line-height:1.35;word-break:break-word}
+    .seller-line span{display:block;color:var(--muted);font-weight:650;line-height:1.45;font-size:13px}
+
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+    .searchbox{flex:1;min-width:210px;position:relative}
+    .searchbox input{width:100%;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:18px;padding:14px 44px 14px 43px;outline:none;font-weight:800;transition:.18s ease}
+    .searchbox input:focus{background:var(--surface);border-color:var(--accent);box-shadow:0 0 0 4px rgba(37,99,235,.12)}
+    .searchbox i{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--muted)}
+    .select{border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:16px;padding:13px 14px;font-weight:900;outline:none}
+    .chips{display:flex;gap:9px;overflow-x:auto;padding-bottom:2px;margin-bottom:16px;scrollbar-width:none}
+    .chips::-webkit-scrollbar{display:none}
+    .chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);padding:10px 14px;border-radius:999px;font-weight:900;font-size:12px;white-space:nowrap;box-shadow:var(--shadow-sm)}
+    .chip.active{background:var(--brand);color:var(--bg);border-color:var(--brand)}
+
+    .product-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+    .product-card{background:var(--surface);border:1px solid var(--border);border-radius:23px;overflow:hidden;box-shadow:var(--shadow-sm);transition:.2s ease;display:flex;flex-direction:column;min-height:100%}
+    .product-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:rgba(37,99,235,.35)}
+    .product-img{height:210px;background:var(--surface-2);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+    .product-img img{width:100%;height:100%;object-fit:cover;transition:.28s ease}
+    .product-card:hover .product-img img{transform:scale(1.045)}
+    .placeholder-img{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--surface-2),var(--surface-3));font-size:38px;color:var(--soft)}
+    .tag-row{position:absolute;top:12px;left:12px;right:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;z-index:2}
+    .badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:7px 10px;font-size:10px;font-weight:900;letter-spacing:.3px;color:#fff;background:rgba(15,23,42,.78);backdrop-filter:blur(12px)}
+    .badge.live{background:rgba(16,185,129,.95)}
+    .badge.sponsored{background:rgba(245,158,11,.95)}
+    .product-body{padding:16px;display:flex;flex-direction:column;gap:10px;flex:1}
+    .product-name{font-size:15px;font-weight:900;line-height:1.38;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:42px}
+    .product-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;color:var(--muted);font-size:11px;font-weight:800}
+    .rating{display:inline-flex;align-items:center;gap:4px;background:#fef3c7;color:#92400e;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:900}
+    .price-row{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:2px}
+    .price{font-size:22px;font-weight:900;color:var(--text);letter-spacing:-.7px}
+    .mrp{text-decoration:line-through;color:var(--soft);font-weight:800;font-size:12px}
+    .off{color:var(--success);font-weight:900;font-size:12px}
+    .stock{font-size:12px;font-weight:850;color:var(--muted)}
+    .product-actions{display:grid;grid-template-columns:1fr auto;gap:9px;margin-top:auto;padding-top:4px}
+    .mini-btn{border-radius:13px;padding:11px 12px;font-size:12px;font-weight:900;background:var(--brand);color:var(--bg);display:flex;align-items:center;justify-content:center;gap:7px}
+    .mini-btn.outline{background:var(--surface-2);color:var(--text);border:1px solid var(--border)}
+
+    .skeleton{background:linear-gradient(90deg,var(--surface-2),var(--surface-3),var(--surface-2));background-size:200% 100%;animation:skeleton 1.2s ease infinite;border-radius:18px}
+    @keyframes skeleton{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    .empty{padding:42px 22px;text-align:center;background:var(--surface);border:1px dashed var(--border);border-radius:24px;color:var(--muted)}
+    .empty i{font-size:42px;color:var(--soft);margin-bottom:14px}
+    .empty h3{color:var(--text);font-size:20px;font-weight:900;margin-bottom:8px}
+    .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);opacity:0;background:rgba(15,23,42,.94);color:#fff;padding:13px 16px;border-radius:14px;font-weight:850;box-shadow:var(--shadow-lg);z-index:99999;transition:.22s ease;display:flex;align-items:center;gap:9px;max-width:calc(100vw - 24px)}
+    .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+    .footer{padding:34px 18px 50px;text-align:center;color:var(--muted);font-weight:750}
+    .footer strong{color:var(--text)}
+
+    @media (max-width:1020px){
+      .section-grid{grid-template-columns:1fr}
+      .product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .hero-main{grid-template-columns:auto 1fr;align-items:end}.hero-actions{grid-column:1/-1;justify-content:flex-start}.seller-title h1{font-size:28px}
+    }
+    @media (max-width:640px){
+      .topbar-wrap{padding:10px 12px}.brand-text{font-size:17px}.brand-logo{width:38px;height:38px}.btn span.hide-mobile{display:none}.btn{padding:11px 12px;border-radius:13px}
+      .container{padding:12px 12px 48px}.banner{height:230px}.hero{border-radius:24px}.hero-main{grid-template-columns:1fr;text-align:left;padding:0 16px 20px;margin-top:-58px;gap:12px}.store-logo-shell{width:116px;height:116px;border-radius:27px}.store-logo{border-radius:21px;font-size:34px}.seller-title h1{font-size:24px;color:var(--text);text-shadow:none}.seller-title p{color:var(--muted);text-shadow:none}.hero-actions{gap:8px}.stats-grid{gap:10px}.stat{padding:15px;border-radius:18px}.stat strong{font-size:20px}.card{padding:16px;border-radius:20px}.toolbar{align-items:stretch}.select{width:100%}.product-grid{grid-template-columns:1fr;gap:13px}.product-img{height:245px}
+    }
+  </style>
+</head>
+<body>
+  <div id="pageLoader" class="page-loader">
+    <div class="spinner"></div>
+    <div style="font-weight:900;letter-spacing:2px;">ARYANTA STORE</div>
+  </div>
+
+  <header class="topbar-wrap">
+    <div class="topbar">
+      <div class="brand" onclick="location.href='https://aryanta.in/'" role="button" tabindex="0" aria-label="Go to Aryanta home">
+        <img class="brand-logo" src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta Logo" onerror="this.style.display='none'">
+        <div class="brand-text">ARYANTA<span class="brand-dot">.</span></div>
+      </div>
+      <div class="top-actions">
+        <button class="btn btn-soft" onclick="goBackSafe()"><i class="fa-solid fa-arrow-left"></i><span class="hide-mobile">Go Back</span></button>
+        <button class="btn btn-dark" onclick="shareStore()"><i class="fa-solid fa-share-nodes"></i><span class="hide-mobile">Share Store</span></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero" id="storeHero">
+      <div class="banner" id="storeBannerBox">
+        <div class="store-badge"><i class="fa-solid fa-store"></i> Aryanta Verified Store</div>
+      </div>
+      <div class="hero-main">
+        <div class="store-logo-shell">
+          <div class="store-logo" id="storeLogoBox">A</div>
+        </div>
+        <div class="seller-title">
+          <h1 id="storeName">Loading store...</h1>
+          <p id="storeAbout">Please wait while we load this Aryanta seller store.</p>
+        </div>
+        <div class="hero-actions">
+          <button class="btn btn-blue" onclick="scrollToProducts()"><i class="fa-solid fa-bag-shopping"></i> Shop Products</button>
+          <button class="btn" onclick="copyStoreLink()"><i class="fa-solid fa-link"></i> Copy Link</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats-grid" aria-label="Store statistics">
+      <div class="stat"><small>Total Live Items</small><strong><i class="fa-solid fa-box-open"></i><span id="statItems">0</span></strong></div>
+      <div class="stat"><small>Shop Rating</small><strong><i class="fa-solid fa-star"></i><span id="statRating">0.0</span></strong></div>
+      <div class="stat"><small>Total Reviews</small><strong><i class="fa-solid fa-comments"></i><span id="statReviews">0</span></strong></div>
+      <div class="stat"><small>Seller Since</small><strong><i class="fa-solid fa-calendar-check"></i><span id="statSince">-</span></strong></div>
+    </section>
+
+    <section class="section-grid">
+      <aside class="card">
+        <h2 class="card-title"><i class="fa-solid fa-circle-info"></i> About Seller</h2>
+        <div class="seller-line">
+          <i class="fa-solid fa-store"></i>
+          <div><small>Seller Name</small><strong id="aboutName">-</strong></div>
+        </div>
+        <div class="seller-line">
+          <i class="fa-solid fa-shield-heart"></i>
+          <div><small>Trust Status</small><strong id="aboutTrust">Aryanta Store Partner</strong><span>Products become public only after QC Pass / Live approval.</span></div>
+        </div>
+        <div class="seller-line">
+          <i class="fa-solid fa-location-dot"></i>
+          <div><small>Location</small><strong id="aboutLocation">India</strong></div>
+        </div>
+        <div class="seller-line">
+          <i class="fa-solid fa-envelope-circle-check"></i>
+          <div><small>Support</small><strong id="aboutSupport">Contact through Aryanta order support</strong><span>Seller contact is protected for customer safety.</span></div>
+        </div>
+      </aside>
+
+      <section class="card" id="productsSection">
+        <div class="toolbar">
+          <h2 class="card-title" style="margin-bottom:0"><i class="fa-solid fa-fire"></i> Store Products</h2>
+          <div class="searchbox">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input id="productSearch" type="search" autocomplete="off" placeholder="Search this store..." oninput="renderProducts()">
+          </div>
+          <select class="select" id="sortSelect" onchange="renderProducts()" aria-label="Sort products">
+            <option value="smart">Smart Sort</option>
+            <option value="new">Newest First</option>
+            <option value="low">Price Low to High</option>
+            <option value="high">Price High to Low</option>
+            <option value="rating">Top Rated</option>
+          </select>
+        </div>
+        <div class="chips" id="categoryChips"></div>
+        <div class="product-grid" id="productGrid"></div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <strong>Aryanta</strong> store pages show seller branding, live QC-passed products, ratings and public product links.
+  </footer>
+
+  <div class="toast" id="toast"><i class="fa-solid fa-circle-check"></i><span id="toastText">Copied</span></div>
+
+  <script>
+    const API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
+    const PROJECT_ID = "aryanta-mart-a8893";
+    const FALLBACK_LOGO = "https://aryanta.in/vurify/aryanta.jpeg";
+
+    let db = null;
+    let activeSeller = null;
+    let allProducts = [];
+    let filteredCategory = "All";
+    let imageRefCache = new Map();
+
+    const $ = id => document.getElementById(id);
+    const safe = v => String(v ?? "").replace(/[&<>'"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[ch]));
+    const lower = v => String(v ?? "").trim().toLowerCase();
+    const number = v => Number(v || 0) || 0;
+    const boolTrue = v => v === true || lower(v) === "true" || lower(v) === "yes" || lower(v) === "1" || lower(v) === "live";
+
+    document.addEventListener("DOMContentLoaded", bootStore);
+
+    async function bootStore(){
+      try{
+        showSkeletonProducts();
+        await initFirebase();
+        const params = new URLSearchParams(location.search);
+        const productId = params.get("productId") || params.get("pid") || params.get("id") || "";
+        const sellerKey = params.get("seller") || params.get("sellerEmail") || params.get("email") || params.get("sid") || params.get("sellerId") || getSellerFromPath();
+        await resolveSellerAndProducts({sellerKey, productId});
+        renderSeller();
+        buildCategoryChips();
+        renderProducts();
+      }catch(err){
+        console.error(err);
+        showStoreError(err.message || "Store could not be loaded.");
+      }finally{
+        hideLoader();
+      }
+    }
+
+    function getSellerFromPath(){
+      const parts = location.pathname.split("/").filter(Boolean);
+      const idx = parts.findIndex(p => p.toLowerCase() === "store");
+      if(idx >= 0 && parts[idx+1]) return decodeURIComponent(parts[idx+1]);
+      return "";
+    }
+
+    async function initFirebase(){
+      if(typeof firebase === "undefined") throw new Error("Firebase SDK not loaded.");
+      let config = null;
+      try{
+        const res = await fetch(API_BASE_URL + "/get-api-keys", {headers:{Accept:"application/json"}, cache:"no-store"});
+        if(res.ok){
+          const data = await res.json();
+          config = data.firebaseConfig || data.firebase || null;
+        }
+      }catch(e){ console.warn("Firebase config fetch failed", e); }
+      if(!config){
+        config = {apiKey:"FETCHED_SECURELY", authDomain:PROJECT_ID + ".firebaseapp.com", projectId:PROJECT_ID, storageBucket:PROJECT_ID + ".appspot.com"};
+      }
+      if(!firebase.apps.length) firebase.initializeApp(config);
+      db = firebase.firestore();
+    }
+
+    async function resolveSellerAndProducts({sellerKey, productId}){
+      let sellerEmail = "";
+      let sellerId = "";
+      let seedProduct = null;
+
+      if(productId){
+        try{
+          const doc = await db.collection("products").doc(productId).get();
+          if(doc.exists){
+            seedProduct = normalizeProduct({id:doc.id, ...doc.data()});
+            sellerEmail = seedProduct.sellerEmail || seedProduct.email || "";
+            sellerId = seedProduct.sellerId || seedProduct.sellerUID || "";
+          }
+        }catch(e){ console.warn("Product lookup failed", e); }
+      }
+
+      if(sellerKey){
+        if(String(sellerKey).includes("@")) sellerEmail = sellerKey;
+        else sellerId = sellerKey;
+      }
+
+      if(sellerEmail){
+        activeSeller = await getSellerByEmail(sellerEmail);
+      }
+      if(!activeSeller && sellerId){
+        activeSeller = await getSellerById(sellerId);
+      }
+      if(!activeSeller && seedProduct){
+        activeSeller = sellerFromProduct(seedProduct);
+      }
+      if(!activeSeller && !sellerEmail && !sellerId){
+        throw new Error("Missing seller. Open this page as /store?seller=seller@email.com or /store?productId=PRODUCT_ID.");
+      }
+
+      sellerEmail = activeSeller?.email || activeSeller?.sellerEmail || sellerEmail;
+      sellerId = activeSeller?.id || activeSeller?.uid || activeSeller?.sellerId || sellerId;
+      allProducts = await getSellerProducts({sellerEmail, sellerId});
+
+      if(!activeSeller && allProducts.length) activeSeller = sellerFromProduct(allProducts[0]);
+      if(!activeSeller) throw new Error("Seller profile not found.");
+
+      activeSeller.storeLogo = await resolveImage(activeSeller.storeLogo || activeSeller.logo || activeSeller.profileImage || activeSeller.storeLogoShortLink);
+      activeSeller.storeBanner = await resolveImage(activeSeller.storeBanner || activeSeller.banner || activeSeller.coverImage || activeSeller.storeBannerShortLink);
+      allProducts = await Promise.all(allProducts.map(async p => ({...p, displayImage: await getProductImage(p)})));
+      calculateStoreReviewStats();
+    }
+
+    async function getSellerByEmail(email){
+      const cleanEmail = String(email || "").trim().toLowerCase();
+      if(!cleanEmail) return null;
+      try{
+        const direct = await db.collection("sellers").doc(cleanEmail).get();
+        if(direct.exists) return {email:cleanEmail, id:direct.id, ...direct.data()};
+      }catch(e){ console.warn("Direct seller doc failed", e); }
+      try{
+        const q = await db.collection("sellers").where("email", "==", cleanEmail).limit(1).get();
+        if(!q.empty) return {id:q.docs[0].id, ...q.docs[0].data()};
+      }catch(e){ console.warn("Seller email query failed", e); }
+      return null;
+    }
+
+    async function getSellerById(sellerId){
+      const sid = String(sellerId || "").trim();
+      if(!sid) return null;
+      const fields = ["id", "uid", "sellerId", "storeId"];
+      for(const field of fields){
+        try{
+          const q = await db.collection("sellers").where(field, "==", sid).limit(1).get();
+          if(!q.empty) return {id:q.docs[0].id, ...q.docs[0].data()};
+        }catch(e){ console.warn("Seller ID query failed", field, e); }
+      }
+      return null;
+    }
+
+    async function getSellerProducts({sellerEmail, sellerId}){
+      let docs = [];
+      const cleanEmail = String(sellerEmail || "").trim().toLowerCase();
+      const sid = String(sellerId || "").trim();
+
+      if(cleanEmail){
+        docs = await queryProducts("sellerEmail", cleanEmail);
+        if(!docs.length) docs = await queryProducts("email", cleanEmail);
+      }
+      if(!docs.length && sid){
+        docs = await queryProducts("sellerId", sid);
+        if(!docs.length) docs = await queryProducts("sellerUID", sid);
+      }
+      if(!docs.length){
+        docs = await fallbackProductsFromWorker();
+        docs = docs.filter(p => {
+          const byEmail = cleanEmail && lower(p.sellerEmail || p.email) === lower(cleanEmail);
+          const byId = sid && lower(p.sellerId || p.sellerUID || p.storeId) === lower(sid);
+          return byEmail || byId;
+        });
+      }
+      return docs.map(normalizeProduct).filter(isPublicLiveProduct).sort((a,b) => String(b.liveAt || b.timestamp || b.updatedAt || "").localeCompare(String(a.liveAt || a.timestamp || a.updatedAt || "")));
+    }
+
+    async function queryProducts(field, value){
+      try{
+        const snap = await db.collection("products").where(field, "==", value).limit(300).get();
+        return snap.docs.map(d => ({id:d.id, ...d.data()}));
+      }catch(e){
+        console.warn("Product query failed", field, e);
+        return [];
+      }
+    }
+
+    async function fallbackProductsFromWorker(){
+      try{
+        const res = await fetch(API_BASE_URL + "/products", {headers:{Accept:"application/json"}, cache:"no-store"});
+        if(!res.ok) return [];
+        const data = await res.json();
+        return arrayFromAnyResponse(data);
+      }catch(e){ return []; }
+    }
+
+    function arrayFromAnyResponse(data){
+      if(Array.isArray(data)) return data;
+      if(!data || typeof data !== "object") return [];
+      for(const key of ["products", "items", "data", "results"]){
+        if(Array.isArray(data[key])) return data[key];
+      }
+      if(data.data && typeof data.data === "object"){
+        for(const key of ["products", "items", "results"]){
+          if(Array.isArray(data.data[key])) return data.data[key];
+        }
+      }
+      return [];
+    }
+
+    function normalizeProduct(raw){
+      const p = {...raw};
+      p.id = p.id || p.productId || p.docId || p.sku || "";
+      p.name = p.name || p.title || p.productName || "Aryanta Product";
+      p.category = p.category || p.cat || p.type || "General";
+      p.price = number(p.listedPrice || p.finalPrice || p.salePrice || p.price);
+      p.rawPrice = number(p.priceOriginal || p.basePrice || p.sellerPrice || p.price);
+      p.mrp = number(p.mrp || p.maxPrice || p.oldPrice || p.price);
+      p.rating = number(p.rating || p.avgRating || p.stars || p.reviewRating);
+      p.reviewCount = number(p.reviewCount || p.reviewsCount || p.totalReviews || (Array.isArray(p.reviews) ? p.reviews.length : 0));
+      p.stock = number(p.stock || p.qty || p.quantity || p.inventory);
+      p.sellerEmail = String(p.sellerEmail || p.email || "").toLowerCase();
+      return p;
+    }
+
+    function isPublicLiveProduct(p){
+      const approval = lower(p.approvalStatus || p.qcStatus || p.liveStatus || p.status);
+      const approved = ["approved", "qc pass", "qc pass / live", "live", "pass", "active"].some(x => approval.includes(x));
+      const rejected = ["rejected", "cancelled", "canceled", "blocked", "draft", "pending", "qc progress"].some(x => approval === x || approval.includes(x));
+      if(rejected && !approved) return false;
+      if(boolTrue(p.isBlocked) || boolTrue(p.blocked)) return false;
+      if(p.isVisible === false || p.publicVisible === false) return false;
+      return approved || boolTrue(p.isVisible) || boolTrue(p.liveStatus) || Boolean(p.productLink);
+    }
+
+    function sellerFromProduct(p){
+      return {
+        email:p.sellerEmail || p.email || "",
+        id:p.sellerId || p.sellerUID || "",
+        companyName:p.sellerName || p.companyName || p.storeName || "Aryanta Seller",
+        storeName:p.storeName || p.sellerName || p.companyName || "Aryanta Seller",
+        about:p.sellerAbout || p.aboutSeller || "Trusted seller on Aryanta.",
+        city:p.sellerCity || p.city || "India",
+        createdAt:p.sellerCreatedAt || ""
+      };
+    }
+
+    async function resolveImage(value){
+      if(!value) return "";
+      const v = String(value);
+      if(v.startsWith("data:image/") || v.startsWith("http://") || v.startsWith("https://") || v.startsWith("blob:")) return v;
+      if(v.startsWith("aryanta-img:")){
+        const id = v.replace("aryanta-img:", "").trim();
+        if(imageRefCache.has(id)) return imageRefCache.get(id);
+        try{
+          const doc = await db.collection("seller_image_refs").doc(id).get();
+          if(doc.exists){
+            const dataUrl = doc.data().dataUrl || doc.data().url || "";
+            imageRefCache.set(id, dataUrl);
+            return dataUrl;
+          }
+        }catch(e){ console.warn("Image ref resolve failed", e); }
+      }
+      return v;
+    }
+
+    async function getProductImage(p){
+      const choices = [];
+      if(Array.isArray(p.images)) choices.push(...p.images);
+      if(Array.isArray(p.imageRefs)) choices.push(...p.imageRefs);
+      if(Array.isArray(p.imageLinks)) choices.push(...p.imageLinks);
+      choices.push(p.image, p.img, p.thumbnail, p.primaryImageRef);
+      const first = choices.find(Boolean);
+      return await resolveImage(first);
+    }
+
+    function calculateStoreReviewStats(){
+      let totalReviews = 0;
+      let weightedRating = 0;
+      allProducts.forEach(p => {
+        const count = number(p.reviewCount || (Array.isArray(p.reviews) ? p.reviews.length : 0));
+        const rating = number(p.rating || averageReviewArray(p.reviews));
+        if(count && rating){
+          totalReviews += count;
+          weightedRating += rating * count;
+        }
+      });
+      activeSeller.totalShopReviews = number(activeSeller.totalShopReviews || activeSeller.reviewCount || totalReviews);
+      activeSeller.shopRating = number(activeSeller.shopRating || activeSeller.rating || (totalReviews ? weightedRating / totalReviews : 0));
+    }
+
+    function averageReviewArray(reviews){
+      if(!Array.isArray(reviews) || !reviews.length) return 0;
+      const vals = reviews.map(r => number(r.rating || r.stars)).filter(Boolean);
+      if(!vals.length) return 0;
+      return vals.reduce((a,b)=>a+b,0)/vals.length;
+    }
+
+    function renderSeller(){
+      const name = activeSeller.storeName || activeSeller.companyName || activeSeller.name || activeSeller.sellerName || "Aryanta Seller";
+      const about = activeSeller.about || activeSeller.description || activeSeller.storeAbout || "This Aryanta seller offers QC-passed live products with secure shopping and Aryanta order support.";
+      const location = [activeSeller.city, activeSeller.state, activeSeller.country].filter(Boolean).join(", ") || activeSeller.location || "India";
+      const since = formatYear(activeSeller.createdAt || activeSeller.joinedAt || activeSeller.timestamp);
+
+      document.title = name + " | Aryanta Store";
+      $("storeName").textContent = name;
+      $("storeAbout").textContent = about;
+      $("aboutName").textContent = name;
+      $("aboutLocation").textContent = location;
+      $("statItems").textContent = allProducts.length;
+      $("statReviews").textContent = number(activeSeller.totalShopReviews).toLocaleString("en-IN");
+      $("statRating").textContent = number(activeSeller.shopRating).toFixed(1);
+      $("statSince").textContent = since;
+
+      if(activeSeller.storeLogo){
+        $("storeLogoBox").innerHTML = `<img class="store-logo" src="${safe(activeSeller.storeLogo)}" alt="${safe(name)} logo" onerror="this.parentElement.textContent='${safe(firstLetter(name))}'">`;
+      }else{
+        $("storeLogoBox").textContent = firstLetter(name);
+      }
+      if(activeSeller.storeBanner){
+        $("storeBannerBox").insertAdjacentHTML("afterbegin", `<img src="${safe(activeSeller.storeBanner)}" alt="${safe(name)} banner" onerror="this.remove()">`);
+      }
+    }
+
+    function firstLetter(name){ return String(name || "A").trim().charAt(0).toUpperCase() || "A"; }
+    function formatYear(value){
+      const d = value ? new Date(value) : null;
+      if(!d || isNaN(d.getTime())) return "2026";
+      return String(d.getFullYear());
+    }
+
+    function buildCategoryChips(){
+      const cats = ["All", ...Array.from(new Set(allProducts.map(p => p.category).filter(Boolean)))];
+      $("categoryChips").innerHTML = cats.map(cat => `<button class="chip ${cat === filteredCategory ? "active" : ""}" onclick="setCategory('${safe(cat)}')">${safe(cat)}</button>`).join("");
+    }
+
+    window.setCategory = function(cat){
+      filteredCategory = cat;
+      buildCategoryChips();
+      renderProducts();
+    };
+
+    window.renderProducts = function(){
+      const search = lower($("productSearch").value);
+      const sort = $("sortSelect").value;
+      let items = [...allProducts];
+      if(filteredCategory !== "All") items = items.filter(p => p.category === filteredCategory);
+      if(search){
+        items = items.filter(p => lower([p.name, p.category, p.id, p.desc, p.highlights].join(" ")).includes(search));
+      }
+      if(sort === "new") items.sort((a,b)=>String(b.timestamp||b.liveAt||"").localeCompare(String(a.timestamp||a.liveAt||"")));
+      if(sort === "low") items.sort((a,b)=>number(a.price)-number(b.price));
+      if(sort === "high") items.sort((a,b)=>number(b.price)-number(a.price));
+      if(sort === "rating") items.sort((a,b)=>number(b.rating)-number(a.rating));
+      if(sort === "smart") items.sort((a,b)=>scoreProduct(b)-scoreProduct(a));
+
+      const grid = $("productGrid");
+      if(!items.length){
+        grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><i class="fa-solid fa-box-open"></i><h3>No live products found</h3><p>This store has no QC-passed live products for this filter yet.</p></div>`;
+        return;
+      }
+      grid.innerHTML = items.map(productCardHtml).join("");
+    };
+
+    function scoreProduct(p){
+      return (number(p.rating)*20) + (number(p.reviewCount)*1.2) + (isSponsored(p)?30:0) + (number(p.stock)>0?10:0);
+    }
+
+    function isSponsored(p){
+      const txt = lower([p.sponsored, p.isSponsored, p.sponsorStatus, p.adStatus, p.promotionStatus].join(" "));
+      return txt.includes("true") || txt.includes("sponsor") || txt.includes("active") || txt.includes("boost");
+    }
+
+    function productCardHtml(p){
+      const link = productLinkFor(p.id || p.productId);
+      const mrp = number(p.mrp);
+      const price = number(p.price || p.listedPrice);
+      const off = mrp > price && price > 0 ? Math.round(((mrp-price)/mrp)*100) : 0;
+      const rating = number(p.rating);
+      const reviews = number(p.reviewCount);
+      const img = p.displayImage ? `<img src="${safe(p.displayImage)}" alt="${safe(p.name)}" loading="lazy" decoding="async" onerror="this.outerHTML='<div class=&quot;placeholder-img&quot;><i class=&quot;fa-solid fa-image&quot;></i></div>'">` : `<div class="placeholder-img"><i class="fa-solid fa-image"></i></div>`;
+      return `
+        <article class="product-card">
+          <div class="product-img" onclick="openProduct('${safe(link)}')">
+            ${img}
+            <div class="tag-row">
+              <span class="badge live"><i class="fa-solid fa-circle-check"></i> Live</span>
+              ${isSponsored(p) ? `<span class="badge sponsored"><i class="fa-solid fa-bolt"></i> Sponsored</span>` : ``}
+            </div>
+          </div>
+          <div class="product-body">
+            <div class="product-name" onclick="openProduct('${safe(link)}')">${safe(p.name)}</div>
+            <div class="product-meta">
+              <span>ID: ${safe(p.id || p.productId || "-")}</span>
+              <span>•</span>
+              <span>${safe(p.category || "General")}</span>
+            </div>
+            <div class="product-meta">
+              ${rating ? `<span class="rating">${rating.toFixed(1)} <i class="fa-solid fa-star"></i></span>` : `<span class="rating">New</span>`}
+              <span>${reviews ? reviews.toLocaleString("en-IN") + " reviews" : "No reviews yet"}</span>
+            </div>
+            <div class="price-row">
+              <span class="price">₹${price.toLocaleString("en-IN")}</span>
+              ${mrp && mrp > price ? `<span class="mrp">₹${mrp.toLocaleString("en-IN")}</span>` : ``}
+              ${off ? `<span class="off">${off}% off</span>` : ``}
+            </div>
+            <div class="stock">${number(p.stock) > 0 ? `${number(p.stock)} items available` : `Currently limited stock`}</div>
+            <div class="product-actions">
+              <button class="mini-btn" onclick="openProduct('${safe(link)}')"><i class="fa-solid fa-eye"></i> View Product</button>
+              <button class="mini-btn outline" onclick="copyText('${safe(link)}','Product link copied')" title="Copy product link"><i class="fa-solid fa-link"></i></button>
+            </div>
+          </div>
+        </article>`;
+    }
+
+    function productLinkFor(id){ return `https://aryanta.in/product?id=${encodeURIComponent(id || "")}`; }
+    window.openProduct = function(link){ location.href = link; };
+    window.scrollToProducts = function(){ $("productsSection").scrollIntoView({behavior:"smooth", block:"start"}); };
+    window.goBackSafe = function(){ if(history.length > 1) history.back(); else location.href = "https://aryanta.in/"; };
+    window.copyStoreLink = function(){ copyText(location.href, "Store link copied"); };
+    window.shareStore = async function(){
+      const title = document.title;
+      const url = location.href;
+      if(navigator.share){
+        try{ await navigator.share({title, url}); return; }catch(e){}
+      }
+      copyText(url, "Store link copied");
+    };
+    window.copyText = async function(text, msg){
+      try{ await navigator.clipboard.writeText(text); }
+      catch(e){ const input=document.createElement("input"); input.value=text; document.body.appendChild(input); input.select(); document.execCommand("copy"); input.remove(); }
+      toast(msg || "Copied");
+    };
+
+    function showSkeletonProducts(){
+      $("productGrid").innerHTML = Array.from({length:6}).map(()=>`<div class="product-card"><div class="product-img skeleton"></div><div class="product-body"><div class="skeleton" style="height:22px;width:90%"></div><div class="skeleton" style="height:16px;width:55%"></div><div class="skeleton" style="height:28px;width:45%"></div><div class="skeleton" style="height:42px;width:100%;margin-top:auto"></div></div></div>`).join("");
+    }
+
+    function showStoreError(message){
+      $("storeName").textContent = "Store not found";
+      $("storeAbout").textContent = message;
+      $("productGrid").innerHTML = `<div class="empty" style="grid-column:1/-1"><i class="fa-solid fa-triangle-exclamation"></i><h3>Unable to load store</h3><p>${safe(message)}</p><br><button class="btn btn-dark" onclick="location.reload()">Retry</button></div>`;
+      $("categoryChips").innerHTML = "";
+    }
+
+    function hideLoader(){ setTimeout(()=>$("pageLoader").classList.add("loader-hidden"), 250); }
+    function toast(message){
+      const el = $("toast");
+      $("toastText").textContent = message;
+      el.classList.add("show");
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(()=>el.classList.remove("show"), 2300);
+    }
+  </script>
+</body>
+</html>
