@@ -11,7 +11,7 @@
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
-     <link rel="stylesheet" href="style.css">
+     <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 
@@ -26,11 +26,19 @@
     <div class="processing-overlay" id="processingOrderOverlay">
         <div class="processing-box">
             <div class="proc-icon-wrapper">
+                <span class="proc-orbit-dot dot-a"></span>
+                <span class="proc-orbit-dot dot-b"></span>
                 <i class="fas fa-box"></i>
                 <div class="proc-circle"></div>
             </div>
-            <h3>Securing Your Order</h3>
-            <p>Please do not close this window...</p>
+            <h3 id="processingTitle">Securing Your Order</h3>
+            <p id="processingSubtitle">Please do not close this window...</p>
+            <div class="checkout-progress-rail" aria-hidden="true"><span></span></div>
+            <div class="processing-steps">
+                <span><i class="fas fa-shield-alt"></i> Verify</span>
+                <span><i class="fas fa-receipt"></i> Create</span>
+                <span><i class="fas fa-truck"></i> Dispatch</span>
+            </div>
         </div>
     </div>
 
@@ -120,16 +128,33 @@
                     <h3 style="font-size: 24px; font-weight: 800; margin-bottom: 25px; letter-spacing: -0.5px; color: var(--text-main);">Payment Options</h3>
                     
                     <!-- Wallet / Coupons -->
-                    <div class="coupon-section">
-                        <button type="button" id="walletUseBtn" class="btn-action bounce-hover" style="margin-bottom: 20px; width: 100%; display: none;" onclick="toggleWallet()">
-                            <i class="fas fa-wallet"></i> Use Wallet Balance
-                        </button>
-                        
-                        <div style="display: flex; gap: 12px;">
-                            <input type="text" id="couponCodeInput" class="form-input" placeholder="Have a Promo Code?" style="margin-bottom: 0; text-transform: uppercase;">
-                            <button type="button" class="btn-prime bounce-hover" style="width: auto; padding: 14px 28px; border-radius: 16px;" id="applyPromoBtn" onclick="applyPromo()">Apply</button>
+                    <div class="coupon-section checkout-offer-box">
+                        <div class="promo-title-row">
+                            <div>
+                                <h4><i class="fas fa-ticket-alt"></i> Enter promo code</h4>
+                                <p>Apply a valid Aryanta coupon before payment.</p>
+                            </div>
                         </div>
-                        <p id="promoMessage" style="font-size: 14px; font-weight: 700; margin-top: 12px; display: none;"></p>
+
+                        <div class="wallet-pay-card" id="walletPayCard">
+                            <div class="wallet-pay-left">
+                                <span class="wallet-icon"><i class="fas fa-wallet"></i></span>
+                                <div>
+                                    <strong>Aryanta Wallet</strong>
+                                    <small id="walletInfo">Checking wallet balance...</small>
+                                </div>
+                            </div>
+                            <button type="button" id="walletUseBtn" class="wallet-pay-btn" style="display:none;" onclick="payByAryantaWallet()">
+                                Pay by Wallet
+                            </button>
+                        </div>
+                        <p id="walletMessage" class="wallet-message" style="display:none;"></p>
+                        
+                        <div class="promo-input-row">
+                            <input type="text" id="couponCodeInput" class="form-input" placeholder="ENTER PROMO CODE" autocomplete="off" spellcheck="false">
+                            <button type="button" class="btn-prime bounce-hover" id="applyPromoBtn" onclick="applyPromo()">Apply</button>
+                        </div>
+                        <p id="promoMessage" class="promo-message" style="display: none;"></p>
                     </div>
 
                     <!-- Payment Methods -->
@@ -201,44 +226,75 @@
 
     <!-- Premium Success & Physical Receipt Modal -->
     <div class="modal-overlay" id="successModal">
-        <div class="modal-box" style="padding: 0; background: transparent; border: none; box-shadow: none;">
-            
-            <!-- Custom Ultra Animation -->
-            <div class="ultra-anim-container">
+        <div class="modal-box receipt-modal-box">
+            <div class="ultra-anim-container receipt-success-anim" aria-hidden="true">
+                <span class="success-glow"></span>
+                <span class="success-confetti c1"></span>
+                <span class="success-confetti c2"></span>
+                <span class="success-confetti c3"></span>
+                <span class="success-confetti c4"></span>
+                <span class="success-confetti c5"></span>
                 <i class="fas fa-box-open box-icon"></i>
                 <i class="fas fa-cube item-icon"></i>
                 <i class="fas fa-check-circle tick-icon"></i>
             </div>
 
-            <h1 class="success-title" style="color:var(--text-main); font-size:32px; background: var(--surface-solid); border-radius: 32px 32px 0 0; padding-top: 35px; margin: 0; letter-spacing: -1px; font-weight: 800;">Order Confirmed</h1>
-            <p class="success-subtitle" style="color:var(--text-muted); font-weight:600; font-size: 15px; margin-bottom:0; background: var(--surface-solid); padding-bottom: 35px;">Your order has been placed securely.</p>
-            
-            <div class="physical-receipt-slip" style="margin-top: -5px;">
-                <div class="receipt-cutout top"></div>
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <h2 style="font-size: 26px; font-weight: 800; letter-spacing: 3px; color: var(--text-main);">ARYANTA</h2>
-                    <p style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; font-weight: 800; margin-top: 8px;">Order Summary</p>
-                </div>
-                <div style="margin-bottom: 20px;">
-                    <p style="display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 12px; font-family: var(--font-mono);">
-                        <span style="color: var(--text-muted); font-family: var(--font-main); font-weight: 700;">Order No:</span> <strong id="recOrderNo" style="color: var(--text-main);"></strong>
-                    </p>
-                    <p style="display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 12px; font-family: var(--font-mono);">
-                        <span style="color: var(--text-muted); font-family: var(--font-main); font-weight: 700;">Method:</span> <strong id="recMethod" style="color: var(--text-main);"></strong>
-                    </p>
-                    <div id="recItemsList" style="margin: 20px 0; border-top: 2px dashed var(--border); border-bottom: 2px dashed var(--border); padding: 20px 0; font-size: 14px; color: var(--text-main); font-weight: 500;">
-                        <!-- Item list populates here -->
+            <div class="receipt-card" id="receiptCapture">
+                <div class="receipt-brand-row">
+                    <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta" crossorigin="anonymous">
+                    <div>
+                        <h2>ARYANTA</h2>
+                        <p>Secure order receipt</p>
                     </div>
-                    <p style="display: flex; justify-content: space-between; font-size: 18px; margin-bottom: 5px; font-family: var(--font-mono);">
-                        <span style="color: var(--text-main); font-family: var(--font-main); font-weight: 800;">Total Paid:</span> <strong id="recTotal" style="color: var(--primary); font-size: 22px;"></strong>
-                    </p>
+                    <span class="receipt-status-pill" id="recStatus">CONFIRMED</span>
                 </div>
-                <div class="receipt-cutout bottom"></div>
+
+                <div class="receipt-hero-check">
+                    <i class="fas fa-check-circle"></i>
+                    <h1>Order Confirmed</h1>
+                    <p>Your order has been saved securely in Aryanta database.</p>
+                </div>
+
+                <div class="receipt-meta-grid">
+                    <div class="receipt-meta-box">
+                        <span>Order No</span>
+                        <strong id="recOrderNo">---</strong>
+                    </div>
+                    <div class="receipt-meta-box">
+                        <span>Transaction ID</span>
+                        <strong id="recTxnId">---</strong>
+                    </div>
+                    <div class="receipt-meta-box">
+                        <span>Method</span>
+                        <strong id="recMethod">---</strong>
+                    </div>
+                    <div class="receipt-meta-box">
+                        <span>Date</span>
+                        <strong id="recDate">---</strong>
+                    </div>
+                </div>
+
+                <div class="receipt-items" id="recItemsList"></div>
+
+                <div class="receipt-total-row">
+                    <span>Total Paid</span>
+                    <strong id="recTotal">₹0</strong>
+                </div>
+
+                <div class="receipt-note">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Keep this image for payment/order support.</span>
+                </div>
             </div>
-            
-            <button type="button" class="btn-prime w-100 bounce-hover" style="margin-top: 25px; padding: 20px; border-radius: 100px; box-shadow: var(--shadow-md); font-size: 16px;" id="btnSuccessShop">
-                <i class="fas fa-shopping-bag"></i> Continue Shopping
-            </button>
+
+            <div class="receipt-actions">
+                <button type="button" class="btn-action receipt-home-btn" onclick="window.location.href='https://aryanta.in/'">
+                    <i class="fas fa-home"></i> Back to Home
+                </button>
+                <button type="button" class="btn-prime receipt-download-btn" onclick="downloadReceiptImage()">
+                    <i class="fas fa-image"></i> Download Receipt.
+                </button>
+            </div>
         </div>
     </div>
 
@@ -275,6 +331,8 @@
         window.backendDeliveryCharge = 60; // Default fallback amount
         
         window.state = { itemsTotal: 0, shippingCost: 0, walletBalance: 0, walletApplied: 0, promoDiscount: 0, finalPayable: 0, promoCode: "" };
+        window.checkoutBusy = false;
+        window.checkoutBootDone = false;
 
         // Centralized DOM Methods attached to window
         window.toggleButtonState = function(btnId, isLoading, defaultHtml) {
@@ -300,6 +358,77 @@
             document.getElementById('alertTitle').innerText = title;
             document.getElementById('alertMessage').innerText = message;
             document.getElementById('customAlertOverlay').classList.add('show');
+        };
+
+        window.money = function(value) {
+            return '₹' + Number(value || 0).toLocaleString('en-IN');
+        };
+
+        window.refreshWalletFromCloud = async function() {
+            if (!window.activeSession || !window.activeSession.email) return Number(window.state.walletBalance || 0);
+            try {
+                const fresh = await window.fastFetchJSON(`${window.API_BASE_URL}/get-user?email=${encodeURIComponent(window.activeSession.email)}&_wallet=${Date.now()}`, {}, 1);
+                if (fresh && typeof fresh === 'object') {
+                    window.userData = { ...(window.userData || {}), ...fresh };
+                    window.state.walletBalance = Number(fresh.wallet ?? fresh.walletBalance ?? fresh.wallet_amount ?? fresh.balance ?? 0) || 0;
+                }
+            } catch(e) {}
+            window.updateWalletPayUI();
+            return Number(window.state.walletBalance || 0);
+        };
+
+        window.getPayableNow = function() {
+            return Math.max(0, Number(window.state.finalPayable || 0));
+        };
+
+        window.updateWalletPayUI = function() {
+            const card = document.getElementById('walletPayCard');
+            const btn = document.getElementById('walletUseBtn');
+            const info = document.getElementById('walletInfo');
+            const msg = document.getElementById('walletMessage');
+            if (!card || !btn || !info || !msg) return;
+
+            const wallet = Number(window.state.walletBalance || 0);
+            const payable = window.getPayableNow();
+            info.innerText = `Balance: ${window.money(wallet)}`;
+
+            if (payable <= 0) {
+                btn.style.display = 'none';
+                msg.style.display = 'block';
+                msg.className = 'wallet-message success';
+                msg.innerHTML = `<i class="fas fa-check-circle"></i> Payable amount is already covered by discount/promo.`;
+                return;
+            }
+
+            if (wallet >= payable) {
+                btn.style.display = 'inline-flex';
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-wallet"></i> Pay ${window.money(payable)}`;
+                msg.style.display = 'block';
+                msg.className = 'wallet-message success';
+                msg.innerHTML = `<i class="fas fa-bolt"></i> Wallet can cover this full order instantly.`;
+            } else {
+                btn.style.display = 'none';
+                msg.style.display = 'block';
+                msg.className = 'wallet-message warn';
+                msg.innerHTML = `<i class="fas fa-info-circle"></i> Wallet balance ${window.money(wallet)} is less than payable ${window.money(payable)}. Use promo code or pay online.`;
+            }
+        };
+
+        window.payByAryantaWallet = async function() {
+            if (window.checkoutBusy) return;
+            await window.refreshWalletFromCloud();
+            const payable = window.getPayableNow();
+            const wallet = Number(window.state.walletBalance || 0);
+            if (payable <= 0) return window.processCheckout();
+            if (wallet < payable) {
+                window.updateWalletPayUI();
+                return window.showAlert(`Insufficient Aryanta Wallet balance. Wallet: ${window.money(wallet)} | Payable: ${window.money(payable)}`, 'Wallet Balance Low');
+            }
+            window.pendingWalletPaymentAmount = payable;
+            window.checkoutBusy = true;
+            window.toggleButtonState('walletUseBtn', true, 'Paying by Wallet...');
+            await window.showProcessingAnimation('ARYANTA_WALLET_' + Date.now(), 'Aryanta Wallet');
         };
 
         window.toggleLoader = function(show, text = "Loading...") {
@@ -379,94 +508,246 @@
             }
         });
 
-        // --- LIGHTNING FAST BOOT SEQUENCE (No stale product cache) ---
+        // --- LIGHTNING FAST BOOT SEQUENCE (local cart first, DB sync second) ---
+        window.safeJSON = function(value, fallback) {
+            try { return JSON.parse(value); } catch(e) { return fallback; }
+        };
+
+        window.getLocalCart = function() {
+            const raw = localStorage.getItem('local_cart');
+            const parsed = window.safeJSON(raw, []);
+            return Array.isArray(parsed) ? parsed : [];
+        };
+
+        window.normalizeCartItems = function(items) {
+            if (!Array.isArray(items)) return [];
+            const seen = new Map();
+
+            items.forEach(raw => {
+                if (!raw || !raw.id) return;
+                const id = String(raw.id);
+                const old = seen.get(id);
+                const qty = Math.max(1, Number(raw.qty || 1) || 1);
+                const clean = {
+                    ...raw,
+                    id,
+                    name: raw.name || raw.title || "Aryanta Product",
+                    price: Number(raw.price || raw.salePrice || raw.finalPrice || 0) || 0,
+                    qty,
+                    selected: typeof raw.selected === "undefined" ? true : !!raw.selected,
+                    image: raw.image || (Array.isArray(raw.images) ? raw.images[0] : "") || raw.thumbnail || ""
+                };
+
+                if (old) {
+                    old.qty += qty;
+                    old.selected = old.selected || clean.selected;
+                    seen.set(id, old);
+                } else {
+                    seen.set(id, clean);
+                }
+            });
+
+            return Array.from(seen.values());
+        };
+
+        window.renderCartWarmupState = function(message = "Loading your secure cart...") {
+            document.getElementById('stepperNav').style.display = 'none';
+            document.getElementById('summaryPanel').style.display = 'none';
+            document.getElementById('step1Container').style.display = 'block';
+            const list = document.getElementById('cartItemsList');
+            if (!list) return;
+            list.innerHTML = `
+                <div class="cart-warmup-state">
+                    <div class="cart-warmup-icon"><i class="fas fa-bag-shopping"></i></div>
+                    <h3>${message}</h3>
+                    <p>Checking local cart first and syncing Aryanta cloud in the background.</p>
+                    <div class="warmup-lines"><span></span><span></span><span></span></div>
+                </div>`;
+        };
+
+        window.renderEmptyCartState = function() {
+            document.getElementById('stepperNav').style.display = 'none';
+            document.getElementById('summaryPanel').style.display = 'none';
+            document.getElementById('step1Container').style.display = 'block';
+            document.getElementById('cartItemsList').innerHTML = `
+                <div class="empty-cart-state">
+                    <i class="fas fa-shopping-bag"></i>
+                    <h3>Your secure cart is empty</h3>
+                    <p style="color:var(--text-muted); font-weight:700; margin-top:8px;">Add items from the store to start checkout.</p>
+                    <button type="button" class="btn-prime bounce-hover" style="width: auto; margin: 20px auto 0; padding: 16px 32px;" onclick="window.location.href='https://aryanta.in/'">Explore Store</button>
+                </div>`;
+        };
+
+        window.fastFetchJSON = async function(url, options = {}, retries = 2) {
+            let lastError;
+            for (let attempt = 0; attempt <= retries; attempt++) {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), attempt === 0 ? 4500 : 7500);
+                try {
+                    const res = await fetch(url, {
+                        cache: 'no-store',
+                        ...options,
+                        signal: controller.signal,
+                        headers: {
+                            'Accept': 'application/json',
+                            ...(options.headers || {})
+                        }
+                    });
+                    clearTimeout(timeout);
+                    if (!res.ok) throw new Error("HTTP " + res.status);
+                    return await res.json();
+                } catch (err) {
+                    clearTimeout(timeout);
+                    lastError = err;
+                    await new Promise(resolve => setTimeout(resolve, 220 + attempt * 260));
+                }
+            }
+            throw lastError;
+        };
+
+        window.ensureUserAddressModel = function() {
+            if (!window.userData) window.userData = { ...window.activeSession };
+            if (typeof window.userData.addresses === 'string') {
+                try { window.userData.addresses = JSON.parse(window.userData.addresses); } catch(e) { window.userData.addresses = []; }
+            }
+            if (!Array.isArray(window.userData.addresses)) window.userData.addresses = [];
+            if (window.userData.addresses.length === 0 && window.userData.address) {
+                window.userData.addresses.push({
+                    name: window.userData.name || window.activeSession?.name || "",
+                    phone: window.userData.phone || window.activeSession?.phone || "",
+                    street: window.userData.address,
+                    city: window.userData.city || "",
+                    state: window.userData.state || "NA",
+                    pincode: window.userData.pincode || ""
+                });
+            }
+        };
+
+        window.applyCartAndRender = function(nextCart, source = "local") {
+            const normalized = window.normalizeCartItems(nextCart);
+            if (normalized.length > 0) {
+                window.cart = normalized;
+                localStorage.setItem('local_cart', JSON.stringify(window.cart));
+                document.getElementById('stepperNav').style.display = 'flex';
+                document.getElementById('summaryPanel').style.display = 'block';
+                window.renderStep1();
+                window.checkoutBootDone = true;
+                return true;
+            }
+
+            if (!window.checkoutBootDone) window.renderCartWarmupState(source === "cloud" ? "Still checking Aryanta cloud..." : "Loading your secure cart...");
+            return false;
+        };
+
+        window.syncCartToCloudSilently = function(reason = "local-first") {
+            if (!window.activeSession || !window.activeSession.email || !window.cart.length) return;
+            const payload = {
+                email: window.activeSession.email,
+                updates: { cart: window.cart },
+                projectId: window.PROJECT_ID,
+                _enc_packet: window.encryptPayload({ a: "cart_repair", reason })
+            };
+            fetch(`${window.API_BASE_URL}/update-user`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                keepalive: true
+            }).catch(() => {});
+        };
+
         window.onload = async () => {
             const sessionStr = localStorage.getItem('active_session');
             if (!sessionStr) return window.location.href = 'https://aryanta.in/login/';
-            
-            window.activeSession = JSON.parse(sessionStr);
+
+            window.activeSession = window.safeJSON(sessionStr, null);
             if (!window.activeSession || !window.activeSession.email) return window.location.href = 'https://aryanta.in/login/';
 
             const topAv = document.getElementById('topAvatarImg');
             if (topAv && window.activeSession.avatar) topAv.src = window.activeSession.avatar;
 
+            window.userData = { ...window.activeSession };
+            window.ensureUserAddressModel();
             document.body.style.visibility = 'visible';
             history.pushState(null, null, window.location.href);
 
-            window.toggleLoader(true, "Synchronizing Secure Profile...");
+            // First paint: render local cart immediately so checkout never opens blank while DB sync catches up.
+            const localCart = window.getLocalCart();
+            if (!window.applyCartAndRender(localCart, "local")) {
+                window.renderCartWarmupState();
+                window.toggleLoader(true, "Syncing secure cart...");
+            } else {
+                window.toggleLoader(false);
+                // Repair cloud cart if user clicked checkout before product page DB sync completed.
+                window.syncCartToCloudSilently("checkout-open-local-cart");
+            }
 
             await window.fetchKeysAndDB();
-            
             window.toggleLoader(false);
         };
 
         window.fetchKeysAndDB = async function() {
-            try {
-                const keyRes = await fetch(`${window.API_BASE_URL}/get-api-keys`);
-                const kData = await keyRes.json();
-                window.API_KEYS.RAZORPAY = kData.razorpayKey || "";
-                window.API_KEYS.EMAILJS_PUBLIC = kData.emailjsPublicKey || "";
-                window.API_KEYS.EMAILJS_ORDER_SERVICE = kData.emailjsOrderService || "";
-                window.API_KEYS.EMAILJS_ORDER_TEMPLATE = "template_qiyhfbm"; 
-                
-                if(window.API_KEYS.EMAILJS_PUBLIC) emailjs.init(window.API_KEYS.EMAILJS_PUBLIC);
-            } catch(e) { }
+            const email = encodeURIComponent(window.activeSession.email);
 
-            // DB Cart is Source of Truth
-            try {
-                const res = await fetch(`${window.API_BASE_URL}/get-user?email=${encodeURIComponent(window.activeSession.email)}`);
-                window.userData = await res.json();
-                
-                if (window.userData && window.userData.cart) {
-                    window.cart = window.userData.cart;
-                    window.cart.forEach(i => { if(typeof i.selected === 'undefined') i.selected = true; });
-                    localStorage.setItem('local_cart', JSON.stringify(window.cart));
+            const keyPromise = window.fastFetchJSON(`${window.API_BASE_URL}/get-api-keys`, {}, 1).catch(() => null);
+            const userPromise = window.fastFetchJSON(`${window.API_BASE_URL}/get-user?email=${email}&_=${Date.now()}`, {}, 2).catch(() => null);
+            const deliveryPromise = window.fastFetchJSON(`${window.API_BASE_URL}/delivery-check?email=${email}&_=${Date.now()}`, {}, 1).catch(() => null);
+
+            const [kData, uData, delData] = await Promise.all([keyPromise, userPromise, deliveryPromise]);
+
+            if (kData) {
+                window.API_KEYS.RAZORPAY = kData.razorpayKey || kData.RAZORPAY_KEY_ID || kData.RAZORPAY_KEY || window.API_KEYS.RAZORPAY || "";
+                window.API_KEYS.EMAILJS_PUBLIC = kData.EMAILJS_PUBLIC_KEY || kData.emailjsPublicKey || kData.emailjs_public_key || window.API_KEYS.EMAILJS_PUBLIC || "";
+                window.API_KEYS.EMAILJS_ORDER_SERVICE = kData.emailjsOrderService || kData.EMAILJS_ORDER_SERVICE || kData.EMAILJS_SERVICE_ID || kData.emailjsServiceId || kData.emailjsOrderServiceId || window.API_KEYS.EMAILJS_ORDER_SERVICE || "";
+                window.API_KEYS.EMAILJS_ORDER_TEMPLATE = "template_qiyhfbm";
+                if (window.API_KEYS.EMAILJS_PUBLIC && window.emailjs) {
+                    try { emailjs.init(window.API_KEYS.EMAILJS_PUBLIC); } catch(e) {}
                 }
-
-                window.state.walletBalance = window.userData.wallet || 0;
-
-                if (typeof window.userData.addresses === 'string') {
-                    try { window.userData.addresses = JSON.parse(window.userData.addresses); } catch(e) { window.userData.addresses = []; }
-                }
-
-                if (!window.userData.addresses || !Array.isArray(window.userData.addresses)) {
-                    window.userData.addresses = [];
-                    if(window.userData.address) {
-                        window.userData.addresses.push({ name: window.userData.name, phone: window.userData.phone, street: window.userData.address, city: window.userData.city, state: window.userData.state || 'NA', pincode: window.userData.pincode });
-                    }
-                }
-
-                try {
-                    const delRes = await fetch(`${window.API_BASE_URL}/delivery-check?email=${encodeURIComponent(window.activeSession.email)}`);
-                    if (delRes.ok) {
-                        const delData = await delRes.json();
-                        window.requireAdvance = delData.requireAdvance; 
-                        window.backendDeliveryCharge = delData.deliveryCharge;
-                    }
-                } catch (e) { console.warn("Advance delivery config failed."); }
-
-            } catch(e) {
-                // Fallback to local if DB totally fails
-                window.userData = window.activeSession;
-                window.cart = JSON.parse(localStorage.getItem('local_cart')) || [];
-            }
-            
-            if(window.cart.length === 0) {
-                document.getElementById('stepperNav').style.display = 'none';
-                document.getElementById('summaryPanel').style.display = 'none';
-                document.getElementById('step1Container').style.display = 'block';
-                document.getElementById('cartItemsList').innerHTML = `
-                    <div class="empty-cart-state">
-                        <i class="fas fa-shopping-bag"></i>
-                        <h3>Your secure cart is empty</h3>
-                        <button type="button" class="btn-prime bounce-hover" style="width: auto; margin: 20px auto 0; padding: 16px 32px;" onclick="window.location.href='https://aryanta.in/'">Explore Store</button>
-                    </div>`;
-                return;
             }
 
-            document.getElementById('stepperNav').style.display = 'flex';
-            document.getElementById('summaryPanel').style.display = 'block';
-            window.renderStep1();
+            if (delData) {
+                window.requireAdvance = !!delData.requireAdvance;
+                window.backendDeliveryCharge = Number(delData.deliveryCharge || delData.shippingCharge || delData.charge || window.backendDeliveryCharge || 60);
+            }
+
+            if (uData && typeof uData === "object") {
+                window.userData = { ...window.activeSession, ...uData };
+            } else {
+                window.userData = { ...window.activeSession, ...(window.userData || {}) };
+            }
+
+            window.ensureUserAddressModel();
+            window.state.walletBalance = Number(window.userData.wallet ?? window.userData.walletBalance ?? window.userData.wallet_amount ?? window.userData.balance ?? 0) || 0;
+
+            const localCart = window.normalizeCartItems(window.getLocalCart());
+            const cloudCart = window.normalizeCartItems(window.userData && Array.isArray(window.userData.cart) ? window.userData.cart : []);
+
+            // Choose the most useful cart. Local wins when it is fresher / longer, fixing "empty until refresh".
+            let chosenCart = [];
+            if (localCart.length && cloudCart.length) {
+                const localQty = localCart.reduce((s, i) => s + Number(i.qty || 1), 0);
+                const cloudQty = cloudCart.reduce((s, i) => s + Number(i.qty || 1), 0);
+                chosenCart = localQty >= cloudQty ? localCart : cloudCart;
+            } else {
+                chosenCart = localCart.length ? localCart : cloudCart;
+            }
+
+            if (chosenCart.length) {
+                window.applyCartAndRender(chosenCart, cloudCart.length ? "cloud" : "local");
+                if (!cloudCart.length || JSON.stringify(chosenCart) !== JSON.stringify(cloudCart)) {
+                    window.syncCartToCloudSilently("cart-mismatch-repair");
+                }
+            } else {
+                // One last tiny delayed local check catches add-to-cart redirects where storage writes are still settling.
+                await new Promise(resolve => setTimeout(resolve, 280));
+                const lateLocal = window.normalizeCartItems(window.getLocalCart());
+                if (lateLocal.length) {
+                    window.applyCartAndRender(lateLocal, "late-local");
+                    window.syncCartToCloudSilently("late-local-repair");
+                } else {
+                    window.checkoutBootDone = true;
+                    window.renderEmptyCartState();
+                }
+            }
         };
 
         // --- STEP 1: CART LOGIC ---
@@ -516,7 +797,7 @@
                         </label>
                         <div class="cart-item-row" style="padding:0; margin:0; border:none; box-shadow:none; background:transparent;">
                             <div class="item-click-area" onclick="openProduct('${item.id}')">
-                                <div class="cart-img-box"><img src="${img}"></div>
+                                <div class="cart-img-box"><img src="${img}" loading="lazy" decoding="async" alt="${item.name || 'Aryanta Product'}"></div>
                                 <div class="cart-details">
                                     <h4>${item.name}</h4>
                                     <div class="price">₹${(price * item.qty).toLocaleString('en-IN')}</div>
@@ -699,13 +980,9 @@
 
             document.getElementById('btnBackStep').style.display = 'block';
             
-            const wBtn = document.getElementById('walletUseBtn');
-            if (window.state.walletBalance > 0) {
-                wBtn.style.display = 'flex';
-                wBtn.innerHTML = `<i class="fas fa-wallet"></i> Use Wallet Balance (₹${window.state.walletBalance})`;
-            }
-
             window.updatePaymentUI();
+            window.updateWalletPayUI();
+            window.refreshWalletFromCloud();
         };
 
         window.updateTotals = function() {
@@ -716,14 +993,14 @@
             if (deductions > 0) {
                 document.getElementById('sumDiscountRow').style.display = 'flex';
                 let dTxt = "";
-                if(window.state.promoDiscount>0) dTxt += `Promo: -₹${window.state.promoDiscount} `;
-                if(window.state.walletApplied>0) dTxt += `Wallet: -₹${window.state.walletApplied}`;
+                if(window.state.promoDiscount>0) dTxt += `Promo: -${window.money(window.state.promoDiscount)} `;
+                if(window.state.walletApplied>0) dTxt += `Wallet: -${window.money(window.state.walletApplied)}`;
                 document.getElementById('sumDiscountVal').innerText = dTxt;
             } else {
                 document.getElementById('sumDiscountRow').style.display = 'none';
             }
 
-            document.getElementById('sumGrandTotal').innerText = `₹${window.state.finalPayable.toLocaleString('en-IN')}`;
+            document.getElementById('sumGrandTotal').innerText = window.money(window.state.finalPayable);
             
             const btn = document.getElementById('btnNextStep');
             const isCOD = document.querySelector('input[name="payMethod"][value="cod"]').checked;
@@ -735,74 +1012,63 @@
                     btn.innerHTML = 'Complete Order <i class="fas fa-check"></i>';
                 } else {
                     let amt = isCOD ? Math.max(0, window.state.shippingCost - deductions) : window.state.finalPayable;
-                    btn.innerHTML = `Pay ₹${amt.toLocaleString('en-IN')} <i class="fas fa-lock"></i>`;
+                    btn.innerHTML = `Pay ${window.money(amt)} <i class="fas fa-lock"></i>`;
                 }
                 btn.onclick = window.processCheckout;
             }
+            window.updateWalletPayUI();
         };
 
         window.toggleWallet = function() {
-            const wBtn = document.getElementById('walletUseBtn');
-            if (window.state.walletApplied > 0) {
-                window.state.walletApplied = 0;
-                wBtn.style.background = 'var(--surface-solid)';
-                wBtn.style.color = 'var(--text-main)';
-                wBtn.style.borderColor = 'var(--border)';
-                wBtn.innerHTML = `<i class="fas fa-wallet"></i> Use Wallet Balance (₹${window.state.walletBalance})`;
-            } else {
-                let maxApp = Math.min(window.state.walletBalance, window.state.itemsTotal + window.state.shippingCost - window.state.promoDiscount);
-                window.state.walletApplied = maxApp;
-                wBtn.style.background = 'rgba(52, 199, 89, 0.1)';
-                wBtn.style.color = 'var(--success)';
-                wBtn.style.borderColor = 'var(--success)';
-                wBtn.innerHTML = `<i class="fas fa-check-circle"></i> Wallet Applied (-₹${maxApp})`;
-            }
-            window.updateTotals(); window.updatePaymentUI();
+            return window.payByAryantaWallet();
         };
 
         window.applyPromo = async function() {
             const code = document.getElementById('couponCodeInput').value.trim().toUpperCase();
-            if(!code) return window.showToast("Enter promo code.");
-            
-            window.toggleButtonState('applyPromoBtn', true, '...');
             const msg = document.getElementById('promoMessage');
+            if(!code) {
+                msg.style.display = 'block';
+                msg.className = 'promo-message warn';
+                msg.innerHTML = '<i class="fas fa-info-circle"></i> Enter promo code first.';
+                return;
+            }
+            
+            window.toggleButtonState('applyPromoBtn', true, 'Checking...');
+            msg.style.display = 'block';
+            msg.className = 'promo-message info';
+            msg.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Checking Aryanta promo...';
             
             try {
                 const res = await fetch(`${window.API_BASE_URL}/validate-promo`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: code, cartTotal: window.state.itemsTotal })
+                    method: 'POST',
+                    mode: 'cors',
+                    cache: 'no-store',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ code: code, cartTotal: window.state.itemsTotal, email: window.activeSession.email })
                 });
 
-                let result;
-                if(!res.ok) {
-                    if (code === 'WELCOME10' || code === 'ARYANTA10') {
-                        result = { valid: true, discountAmount: Math.floor(window.state.itemsTotal * 0.10) };
-                    } else if (code === 'FLAT50') {
-                        result = { valid: true, discountAmount: 50 };
-                    } else {
-                        throw new Error("Promo invalid.");
-                    }
-                } else {
-                    result = await res.json();
-                }
+                if(!res.ok) throw new Error('Promo service failed.');
+                const result = await res.json();
                 
-                msg.style.display = 'block';
                 if(result.valid) {
-                    let discount = Math.min(window.state.itemsTotal, result.discountAmount);
+                    let discount = Math.min(window.state.itemsTotal, Number(result.discountAmount || result.discount || 0));
                     window.state.promoDiscount = discount;
                     window.state.promoCode = code;
-                    msg.style.color = 'var(--success)';
-                    msg.innerHTML = `<i class="fas fa-check-circle"></i> ₹${discount} Promo Applied!`;
-                    if(window.state.walletApplied > 0) window.toggleWallet();
-                    window.updateTotals(); window.updatePaymentUI();
+                    msg.className = 'promo-message success';
+                    msg.innerHTML = `<i class="fas fa-check-circle"></i> ${window.money(discount)} promo applied.`;
+                    window.updateTotals();
+                    window.updatePaymentUI();
+                    window.updateWalletPayUI();
                 } else {
-                    msg.style.color = 'var(--danger)';
-                    msg.innerText = result.message || "Invalid Code";
+                    window.state.promoDiscount = 0;
+                    window.state.promoCode = '';
+                    msg.className = 'promo-message error';
+                    msg.innerHTML = `<i class="fas fa-times-circle"></i> ${result.message || 'Invalid or expired promo code.'}`;
+                    window.updateTotals();
                 }
             } catch(e) { 
-                msg.style.display = 'block';
-                msg.style.color = 'var(--danger)';
-                msg.innerText = "Invalid or expired promo code.";
+                msg.className = 'promo-message error';
+                msg.innerHTML = '<i class="fas fa-exclamation-circle"></i> Promo could not be verified. Please try again.';
             }
             window.toggleButtonState('applyPromoBtn', false, 'Apply');
         };
@@ -831,183 +1097,438 @@
             window.updateTotals();
         };
 
-        // --- FINAL CHECKOUT PROCESS (WITH CRITICAL FIXES) ---
+        // --- FINAL CHECKOUT PROCESS (DB-SAFE + NO FALSE CONFIRMATION) ---
+        window.resetCheckoutButton = function() {
+            const btn = document.getElementById('btnNextStep');
+            if (!btn) return;
+            const isCOD = document.querySelector('input[name="payMethod"]:checked')?.value === 'cod';
+            let amount = window.state?.finalPayable || 0;
+            if (isCOD && window.requireAdvance) amount = Math.max(0, (window.state.shippingCost || 0) - (window.state.promoDiscount || 0) - (window.state.walletApplied || 0));
+            if (isCOD && !window.requireAdvance) btn.innerHTML = 'Place Order <i class="fas fa-check"></i>';
+            else if (amount <= 0) btn.innerHTML = 'Complete Order <i class="fas fa-check"></i>';
+            else btn.innerHTML = `Pay ${window.money(amount)} <i class="fas fa-lock"></i>`;
+            btn.disabled = false;
+            window.updateWalletPayUI();
+        };
+
         window.processCheckout = async function() {
-            const isCOD = document.querySelector('input[name="payMethod"]:checked').value === 'cod';
+            window.pendingWalletPaymentAmount = 0;
+            if (window.checkoutBusy) return;
+            window.checkoutBusy = true;
+            window.toggleButtonState('btnNextStep', true, 'Securing Order...');
+
+            const checkedPay = document.querySelector('input[name="payMethod"]:checked');
+            const isCOD = checkedPay ? checkedPay.value === 'cod' : false;
             let amountToPay = 0;
 
             if (isCOD) {
-                if (window.requireAdvance) {
-                    amountToPay = Math.max(0, window.state.shippingCost - window.state.promoDiscount - window.state.walletApplied);
-                } else {
-                    amountToPay = 0; 
-                }
+                amountToPay = window.requireAdvance ? Math.max(0, window.state.shippingCost - window.state.promoDiscount - window.state.walletApplied) : 0;
             } else {
                 amountToPay = window.state.finalPayable;
             }
 
-            // Zero Payment Needed (Free COD or fully covered by wallet)
             if (amountToPay === 0) {
-                window.showProcessingAnimation(isCOD ? "COD_FREE_" + Date.now() : "PAID_WALLET_" + Date.now(), isCOD ? "Cash On Delivery" : "Wallet / Full Promo");
+                const zeroId = isCOD ? 'COD_FREE_' + Date.now() : 'NO_CHARGE_' + Date.now();
+                const zeroMethod = isCOD ? 'Cash On Delivery' : 'Full Promo';
+                await window.showProcessingAnimation(zeroId, zeroMethod);
                 return;
             }
 
             if (!window.API_KEYS.RAZORPAY) {
-                window.toggleButtonState('btnNextStep', true, 'Synchronizing Keys...');
                 try {
-                    const keyRes = await fetch(`${window.API_BASE_URL}/get-api-keys`);
-                    if(keyRes.ok) {
+                    const keyRes = await fetch(`${window.API_BASE_URL}/get-api-keys`, { cache: 'no-store' });
+                    if (keyRes.ok) {
                         const kData = await keyRes.json();
-                        window.API_KEYS.RAZORPAY = kData.razorpayKey || "";
+                        window.API_KEYS.RAZORPAY = kData.razorpayKey || '';
                     }
                 } catch(e) {}
             }
 
             if (!window.API_KEYS.RAZORPAY) {
-                window.toggleButtonState('btnNextStep', false, `Pay ₹${amountToPay.toLocaleString('en-IN')} <i class="fas fa-lock"></i>`);
-                return window.showAlert("Secure Gateway config missing. Please try again or refresh.");
+                window.checkoutBusy = false;
+                window.resetCheckoutButton();
+                return window.showAlert('Secure Gateway config missing. Please refresh and try again.');
             }
 
-            // Show connecting loader
             window.toggleLoader(true, 'Connecting to Secure Gateway...');
-            
             const selAddr = window.userData.addresses[window.selectedAddressIndex];
             const preciseAmount = Math.round(amountToPay * 100);
 
             const options = {
-                "key": window.API_KEYS.RAZORPAY, 
-                "amount": preciseAmount, 
-                "currency": "INR", 
-                "name": "Aryanta",
-                "description": isCOD ? "Advance Shipping Fee" : "Secure Order Payment",
-                "handler": function (response) { 
+                key: window.API_KEYS.RAZORPAY,
+                amount: preciseAmount,
+                currency: 'INR',
+                name: 'Aryanta',
+                description: isCOD ? 'Advance Shipping Fee' : 'Secure Order Payment',
+                handler: function(response) {
                     window.toggleLoader(false);
-                    window.showProcessingAnimation(response.razorpay_payment_id, isCOD ? "Cash On Delivery" : "Online Secure"); 
+                    window.showProcessingAnimation(response.razorpay_payment_id, isCOD ? 'Cash On Delivery' : 'Online Secure');
                 },
-                "prefill": { "name": selAddr.name, "email": window.activeSession.email, "contact": selAddr.phone },
-                "theme": { "color": "#1d1d1f" },
-                // CRITICAL CANCELLATION FIX: Handle modal dismissal
-                "modal": { 
-                    "ondismiss": function() { 
-                        window.toggleLoader(false); 
-                        window.toggleButtonState('btnNextStep', false, `Pay ₹${amountToPay.toLocaleString('en-IN')} <i class="fas fa-lock"></i>`); 
-                    } 
+                prefill: { name: selAddr.name, email: window.activeSession.email, contact: selAddr.phone },
+                theme: { color: '#1d1d1f' },
+                modal: {
+                    ondismiss: function() {
+                        window.toggleLoader(false);
+                        window.checkoutBusy = false;
+                        window.resetCheckoutButton();
+                    }
                 }
             };
-            
+
             try {
-                const rzp = new Razorpay(options); 
-                rzp.on('payment.failed', function (r) { 
+                const rzp = new Razorpay(options);
+                rzp.on('payment.failed', function () {
                     window.toggleLoader(false);
-                    window.toggleButtonState('btnNextStep', false, `Pay ₹${amountToPay.toLocaleString('en-IN')} <i class="fas fa-lock"></i>`); 
-                    window.showToast("Transaction Failed"); 
+                    window.checkoutBusy = false;
+                    window.resetCheckoutButton();
+                    window.showToast('Transaction failed. No order was created.');
                 });
                 rzp.open();
-                
-                // Safety timeout to hide our loader once Razorpay overlay is active
-                setTimeout(() => window.toggleLoader(false), 1200);
-
-            } catch (error) { 
+                setTimeout(() => window.toggleLoader(false), 900);
+            } catch (error) {
                 window.toggleLoader(false);
-                window.showToast("Failed to initiate secure gateway."); 
-                window.toggleButtonState('btnNextStep', false, `Pay ₹${amountToPay.toLocaleString('en-IN')} <i class="fas fa-lock"></i>`);
+                window.checkoutBusy = false;
+                window.resetCheckoutButton();
+                window.showAlert('Failed to initiate secure gateway. Please try again.');
             }
         };
 
-        // --- NEW PROCESSING ANIMATION SEQUENCE ---
         window.showProcessingAnimation = async function(paymentId, payMethodStr) {
-            // 1. Show Highly Animated Processing Overlay
-            document.getElementById('processingOrderOverlay').classList.add('show');
-            
-            // 2. Execute DB Logic in background
-            await window.executeOrderPlacement(paymentId, payMethodStr);
-            
-            // 3. Keep animation visible for at least a few seconds to feel satisfying
-            setTimeout(() => {
-                document.getElementById('processingOrderOverlay').classList.remove('show');
-                document.getElementById('successModal').classList.add('show');
-            }, 3000);
+            const overlay = document.getElementById('processingOrderOverlay');
+            const title = document.getElementById('processingTitle');
+            const sub = document.getElementById('processingSubtitle');
+
+            if (title) title.innerText = 'Securing Your Order';
+            if (sub) sub.innerText = 'Verifying payment and saving your Aryanta order...';
+            overlay.classList.add('show');
+
+            try {
+                const startedAt = performance.now();
+                const receipt = await window.executeOrderPlacement(paymentId, payMethodStr);
+                const elapsed = performance.now() - startedAt;
+                const minimum = 950;
+
+                if (title) title.innerText = 'Order Confirmed';
+                if (sub) sub.innerText = 'Database saved. Receipt is ready.';
+
+                setTimeout(() => {
+                    overlay.classList.remove('show');
+                    window.populateReceipt(receipt);
+                    document.getElementById('successModal').classList.add('show');
+                    window.checkoutBusy = false;
+                }, Math.max(120, minimum - elapsed));
+            } catch (error) {
+                console.error('Order processing error', error);
+                overlay.classList.remove('show');
+                window.checkoutBusy = false;
+                window.resetCheckoutButton();
+                window.updateWalletPayUI();
+                const txnText = paymentId ? `\nTransaction ID: ${paymentId}` : '';
+                window.showAlert('Order was NOT confirmed because it could not be saved to Aryanta database. Please do not pay again. Contact support with this transaction ID.' + txnText, 'Order Not Saved');
+            }
+        };
+
+        window.buildOrderPayload = function(paymentId, payMethodStr, orderNo, orderedItems, selAddr, fullAddress) {
+            const safeState = JSON.parse(JSON.stringify(window.state || {}));
+            const createdAt = new Date().toISOString();
+            const methodText = String(payMethodStr || 'Online Secure');
+            const isCod = methodText.toLowerCase().includes('cash');
+            const isWallet = methodText.toLowerCase().includes('wallet') || String(paymentId || '').startsWith('ARYANTA_WALLET');
+            const walletDeducted = Number(window.pendingWalletPaymentAmount || safeState.walletApplied || 0);
+            const orderPayable = Math.max(0, Number(safeState.itemsTotal || 0) + Number(safeState.shippingCost || 0) - Number(safeState.promoDiscount || 0));
+            const paymentStatus = isWallet ? 'paid' : (String(paymentId || '').startsWith('COD_FREE') ? 'cod' : (String(paymentId || '').startsWith('NO_CHARGE') ? 'covered' : 'paid'));
+            const cleanItems = orderedItems.map(item => {
+                const qty = Math.max(1, Number(item.qty || item.quantity || 1) || 1);
+                const price = Number(item.price || item.salePrice || item.finalPrice || 0) || 0;
+                return {
+                    id: String(item.id || item.productId || item.sku || ''),
+                    productId: String(item.productId || item.id || item.sku || ''),
+                    sku: String(item.sku || item.id || ''),
+                    name: String(item.name || item.title || 'Aryanta Product'),
+                    title: String(item.title || item.name || 'Aryanta Product'),
+                    image: item.image || item.thumbnail || (Array.isArray(item.images) ? item.images[0] : ''),
+                    qty,
+                    quantity: qty,
+                    price,
+                    amount: price * qty,
+                    sellerId: item.sellerId || item.seller_id || item.sellerUid || '',
+                    sellerUid: item.sellerUid || item.sellerId || item.seller_id || ''
+                };
+            });
+            const confirmationSubject = `Aryanta Order Confirmed - ${orderNo}`;
+            const emailItems = cleanItems.map(i => `${i.name} (x${Number(i.qty || 1)}) — ${window.money(Number(i.price || 0) * Number(i.qty || 1))}`).join('\n');
+            const confirmationBody = `Hey ${selAddr.name || 'Customer'},\n\nYour Aryanta order ${orderNo} has been successfully placed.\n\nItems:\n${emailItems}\n\nSubtotal: ${window.money(safeState.itemsTotal)}\nShipping: ${window.money(safeState.shippingCost)}\nDiscount: ${window.money(safeState.promoDiscount)}\nWallet Paid: ${window.money(walletDeducted)}\nTotal Order Value: ${window.money(orderPayable)}\nPayment Method: ${methodText}\nTransaction ID: ${paymentId || 'N/A'}\n\nDelivery Address:\n${fullAddress}\n\nThank you for shopping with Aryanta.`;
+
+            return {
+                projectId: window.PROJECT_ID,
+                order_no: orderNo,
+                orderNo,
+                id: orderNo,
+                user_email: window.activeSession.email,
+                email: window.activeSession.email,
+                userEmail: window.activeSession.email,
+                customerEmail: window.activeSession.email,
+                uid: window.activeSession.uid || window.activeSession.userUid || '',
+                userUid: window.activeSession.uid || window.activeSession.userUid || '',
+                user: {
+                    email: window.activeSession.email,
+                    uid: window.activeSession.uid || '',
+                    name: selAddr.name || window.activeSession.name || 'Aryanta User',
+                    phone: selAddr.phone || window.activeSession.phone || ''
+                },
+                userName: selAddr.name || window.activeSession.name || 'Aryanta User',
+                customerName: selAddr.name || window.activeSession.name || 'Aryanta User',
+                phone: selAddr.phone || '',
+                delivery_name: selAddr.name || '',
+                delivery_phone: selAddr.phone || '',
+                delivery_address: fullAddress,
+                deliveryAddress: fullAddress,
+                address: selAddr,
+                items: cleanItems,
+                products: cleanItems,
+                amount: orderPayable,
+                total: orderPayable,
+                totalPrice: orderPayable,
+                finalAmount: orderPayable,
+                payable_amount: isWallet ? 0 : Number(safeState.finalPayable || orderPayable),
+                financials: { ...safeState, orderPayable, walletApplied: walletDeducted },
+                payment_method: methodText,
+                paymentMethod: methodText,
+                payment_status: paymentStatus,
+                paymentStatus,
+                payment: {
+                    gateway: isWallet ? 'aryanta_wallet' : (String(paymentId || '').startsWith('pay_') ? 'razorpay' : 'aryanta'),
+                    method: methodText,
+                    transactionId: paymentId || '',
+                    status: paymentStatus
+                },
+                razorpay_id: paymentId || '',
+                razorpay_payment_id: paymentId || '',
+                payment_id: paymentId || '',
+                transaction_id: paymentId || '',
+                transactionId: paymentId || '',
+                status: isCod ? 'Placed' : 'Confirmed',
+                orderStatus: isCod ? 'Placed' : 'Confirmed',
+                timestamp: createdAt,
+                createdAt,
+                date: createdAt.slice(0, 10),
+                applied_coupon: safeState.promoCode || '',
+                wallet_deducted: walletDeducted,
+                email_subject: confirmationSubject,
+                email_body: confirmationBody,
+                emailNotification: { to: window.activeSession.email, subject: confirmationSubject, body: confirmationBody, template: 'template_qiyhfbm' },
+                source: 'aryanta_checkout_web'
+            };
         };
 
         window.executeOrderPlacement = async function(paymentId, payMethodStr) {
             const orderedItems = window.cart.filter(i => i.selected);
             const remainingItems = window.cart.filter(i => !i.selected);
-            
+            if (!orderedItems.length) throw new Error('No selected items.');
+
             const selAddr = window.userData.addresses[window.selectedAddressIndex];
-            const orderNo = "ARY-" + Date.now().toString().slice(-6) + Math.floor(Math.random() * 100); 
-            const fullAddress = `${selAddr.street}, ${selAddr.city} - ${selAddr.pincode}`;
-            
-            const orderData = { 
-                order_no: orderNo, 
-                user_email: window.activeSession.email, 
-                delivery_name: selAddr.name, 
-                delivery_phone: selAddr.phone, 
-                delivery_address: fullAddress, 
-                items: orderedItems, 
-                financials: window.state, 
-                payment_method: payMethodStr, 
-                razorpay_id: paymentId, 
-                status: "Confirmed", 
-                timestamp: new Date().toISOString(),
-                applied_coupon: window.state.promoCode, 
-                wallet_deducted: window.state.walletApplied
-            };
-            
+            if (!selAddr) throw new Error('Delivery address missing.');
+
+            const orderNo = 'ARY-' + Date.now().toString().slice(-6) + Math.floor(Math.random() * 100);
+            const fullAddress = [selAddr.street, selAddr.city, selAddr.pincode].filter(Boolean).join(', ');
+            const orderData = window.buildOrderPayload(paymentId, payMethodStr, orderNo, orderedItems, selAddr, fullAddress);
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 18000);
+
+            let orderJson = {};
             try {
-                // Post order to database
-                await fetch(`${window.API_BASE_URL}/order`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderData) });
-                
-                // Deduct Wallet Balance
-                if (window.state.walletApplied > 0) {
-                    let newBal = window.state.walletBalance - window.state.walletApplied;
-                    await fetch(`${window.API_BASE_URL}/update-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: window.activeSession.email, updates: { wallet: newBal }, projectId: window.PROJECT_ID }) });
+                const orderRes = await fetch(`${window.API_BASE_URL}/order`, {
+                    method: 'POST',
+                    mode: 'cors',
+                    credentials: 'omit',
+                    cache: 'no-store',
+                    signal: controller.signal,
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify(orderData)
+                });
+
+                const rawText = await orderRes.text().catch(() => '');
+                try { orderJson = rawText ? JSON.parse(rawText) : {}; } catch(e) { orderJson = { raw: rawText }; }
+
+                if (!orderRes.ok || orderJson.success === false) {
+                    const apiMsg = orderJson.error || orderJson.message || orderJson.details || rawText || 'Order API failed';
+                    throw new Error(`Order API failed ${orderRes.status}: ${apiMsg}`);
                 }
-
-                // EmailJS Logic
-                try {
-                    let emailItemsStr = orderedItems.map(i => `${i.name} (x${i.qty}) - Rs.${i.price*i.qty}`).join('\n');
-                    let customMessageText = `Dear Customer,\nThank you for ordering with Aryanta.\nYour order has been successfully placed and is now being processed by our team.\nOrder Number: ${orderNo}\nThe items in your order have been confirmed successfully. You will receive further updates regarding shipping and delivery soon.\nThank you for choosing Aryanta. We truly appreciate your trust and support.\nBest regards,\nAryanta Team`;
-
-                    emailjs.send(
-                        window.API_KEYS.EMAILJS_ORDER_SERVICE, 
-                        "template_qiyhfbm", 
-                        { 
-                            to_email: window.activeSession.email, 
-                            to_name: selAddr.name, 
-                            order_no: orderNo, 
-                            address: fullAddress, 
-                            items_list: emailItemsStr, 
-                            shipping: window.state.shippingCost, 
-                            grand_total: window.state.finalPayable,
-                            message: customMessageText 
-                        }
-                    ).catch(err => console.warn("Email dispatch error bypassed safely."));
-                } catch(e) {}
-
-                // Sync remaining items back to user profile instantly
-                window.cart = remainingItems;
-                localStorage.setItem('local_cart', JSON.stringify(window.cart));
-                await fetch(`${window.API_BASE_URL}/update-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: window.activeSession.email, updates: { cart: window.cart }, projectId: window.PROJECT_ID }) });
-
-                // Prepare Receipt HTML
-                document.getElementById('recOrderNo').innerText = orderNo;
-                document.getElementById('recMethod').innerText = payMethodStr;
-                
-                const recItemsList = document.getElementById('recItemsList');
-                recItemsList.innerHTML = orderedItems.map(item => `
-                    <div style="display:flex; justify-content:space-between; margin-bottom: 10px;">
-                        <span style="font-weight:600;">${item.name} <span style="color:var(--text-muted); font-weight:800; margin-left:5px;">x${item.qty}</span></span>
-                        <strong style="color:var(--primary);">₹${(item.price * item.qty).toLocaleString('en-IN')}</strong>
-                    </div>
-                `).join('');
-
-                document.getElementById('recTotal').innerText = `₹${window.state.finalPayable.toLocaleString('en-IN')}`;
-                
-            } catch (error) { 
-                console.error("Order processing error", error);
-                window.showToast("Order placed but there was a sync delay. ID: " + paymentId); 
+            } catch (err) {
+                if (err && err.name === 'AbortError') throw new Error('Order API timeout. Please check My Orders before trying again.');
+                throw err;
+            } finally {
+                clearTimeout(timeout);
             }
+
+            const walletDeductNow = Number(window.pendingWalletPaymentAmount || window.state.walletApplied || 0);
+            if (walletDeductNow > 0) {
+                const newBal = Math.max(0, Number(window.state.walletBalance || 0) - walletDeductNow);
+                await fetch(`${window.API_BASE_URL}/update-user`, {
+                    method: 'POST',
+                    mode: 'cors',
+                    cache: 'no-store',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ email: window.activeSession.email, updates: { wallet: newBal }, projectId: window.PROJECT_ID })
+                }).catch(() => {});
+                window.state.walletBalance = newBal;
+                window.pendingWalletPaymentAmount = 0;
+            }
+
+            try {
+                if (window.API_KEYS.EMAILJS_PUBLIC && window.API_KEYS.EMAILJS_ORDER_SERVICE && window.emailjs) {
+                    const emailItemsStr = orderedItems.map(i => `${i.name} (x${Number(i.qty || 1)}) — ${window.money(Number(i.price || 0) * Number(i.qty || 1))}`).join('\n');
+                    const subject = `Aryanta Order Confirmed - ${orderNo}`;
+                    const body = `Hey ${selAddr.name},\n\nYour order ${orderNo} has successfully been placed.\n\n${emailItemsStr}\n\nSubtotal: ${window.money(window.state.itemsTotal)}\nShipping: ${window.money(window.state.shippingCost)}\nDiscount: ${window.money(window.state.promoDiscount)}\nWallet Paid: ${window.money(walletDeductNow)}\nTotal: ${window.money(orderData.total)}\nPayment: ${payMethodStr}\nTransaction ID: ${paymentId || 'N/A'}\n\nThank you for shopping with Aryanta.`;
+                    await emailjs.send(window.API_KEYS.EMAILJS_ORDER_SERVICE, 'template_qiyhfbm', {
+                        to_email: window.activeSession.email,
+                        to_name: selAddr.name,
+                        subject,
+                        order_subject: subject,
+                        order_no: orderNo,
+                        address: fullAddress,
+                        items_list: emailItemsStr,
+                        shipping: window.money(window.state.shippingCost),
+                        grand_total: window.money(orderData.total),
+                        transaction_id: paymentId || 'N/A',
+                        payment_method: payMethodStr,
+                        message: body,
+                        body
+                    });
+                }
+            } catch(e) {}
+
+            window.cart = remainingItems;
+            localStorage.setItem('local_cart', JSON.stringify(window.cart));
+            await fetch(`${window.API_BASE_URL}/update-user`, {
+                method: 'POST',
+                mode: 'cors',
+                cache: 'no-store',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ email: window.activeSession.email, updates: { cart: window.cart }, projectId: window.PROJECT_ID })
+            }).catch(() => {});
+
+            return {
+                orderNo,
+                transactionId: paymentId,
+                method: payMethodStr,
+                total: orderData.total || window.state.finalPayable,
+                walletPaid: walletDeductNow,
+                items: orderedItems,
+                date: new Date(),
+                apiResponse: orderJson
+            };
         };
+
+        window.populateReceipt = function(receipt) {
+            window.lastOrderReceipt = receipt;
+            document.getElementById('recOrderNo').innerText = receipt.orderNo || '---';
+            document.getElementById('recTxnId').innerText = receipt.transactionId || '---';
+            document.getElementById('recMethod').innerText = receipt.method || '---';
+            document.getElementById('recDate').innerText = receipt.date ? receipt.date.toLocaleString('en-IN') : new Date().toLocaleString('en-IN');
+            document.getElementById('recStatus').innerText = 'CONFIRMED';
+            document.getElementById('recTotal').innerText = `₹${Number(receipt.total || 0).toLocaleString('en-IN')}`;
+            const recItemsList = document.getElementById('recItemsList');
+            recItemsList.innerHTML = (receipt.items || []).map(item => `
+                <div class="receipt-item-row">
+                    <span>${item.name} <b>x${item.qty || 1}</b></span>
+                    <strong>₹${(Number(item.price || 0) * Number(item.qty || 1)).toLocaleString('en-IN')}</strong>
+                </div>
+            `).join('');
+        };
+
+        window.downloadReceiptImage = function() {
+            const r = window.lastOrderReceipt;
+            if (!r) return window.showToast('Receipt data not ready.');
+
+            const canvas = document.createElement('canvas');
+            const scale = 2;
+            const width = 760;
+            const itemCount = Math.min((r.items || []).length, 8);
+            const height = 560 + itemCount * 46;
+            canvas.width = width * scale;
+            canvas.height = height * scale;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(scale, scale);
+
+            ctx.fillStyle = '#f5f5f7';
+            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = '#ffffff';
+            roundRect(ctx, 36, 34, width - 72, height - 68, 34, true, false);
+
+            ctx.fillStyle = '#1d1d1f';
+            ctx.font = '900 34px Arial';
+            ctx.fillText('ARYANTA', 70, 92);
+            ctx.fillStyle = '#34c759';
+            ctx.font = '900 20px Arial';
+            ctx.fillText('ORDER CONFIRMED', 70, 128);
+
+            ctx.fillStyle = '#86868b';
+            ctx.font = '700 16px Arial';
+            ctx.fillText('Order No', 70, 185);
+            ctx.fillText('Transaction ID', 70, 238);
+            ctx.fillText('Payment Method', 70, 291);
+            ctx.fillText('Date', 70, 344);
+
+            ctx.fillStyle = '#1d1d1f';
+            ctx.font = '800 18px Arial';
+            ctx.fillText(String(r.orderNo || '---'), 275, 185);
+            ctx.fillText(String(r.transactionId || '---').slice(0, 42), 275, 238);
+            ctx.fillText(String(r.method || '---'), 275, 291);
+            ctx.fillText(r.date ? r.date.toLocaleString('en-IN') : new Date().toLocaleString('en-IN'), 275, 344);
+
+            ctx.strokeStyle = '#e5e5ea';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(70, 382); ctx.lineTo(width - 70, 382); ctx.stroke();
+
+            let y = 425;
+            ctx.font = '800 17px Arial';
+            (r.items || []).slice(0, 8).forEach(item => {
+                const name = String(item.name || 'Item').slice(0, 42);
+                const qty = Number(item.qty || 1);
+                const price = Number(item.price || 0) * qty;
+                ctx.fillStyle = '#1d1d1f';
+                ctx.fillText(`${name} x${qty}`, 70, y);
+                ctx.textAlign = 'right';
+                ctx.fillText('₹' + price.toLocaleString('en-IN'), width - 70, y);
+                ctx.textAlign = 'left';
+                y += 46;
+            });
+
+            ctx.strokeStyle = '#e5e5ea';
+            ctx.beginPath();
+            ctx.moveTo(70, y + 8); ctx.lineTo(width - 70, y + 8); ctx.stroke();
+            ctx.fillStyle = '#1d1d1f';
+            ctx.font = '900 28px Arial';
+            ctx.fillText('Total Paid', 70, y + 60);
+            ctx.textAlign = 'right';
+            ctx.fillText('₹' + Number(r.total || 0).toLocaleString('en-IN'), width - 70, y + 60);
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#86868b';
+            ctx.font = '700 14px Arial';
+            ctx.fillText('Keep this receipt image for Aryanta support.', 70, height - 70);
+
+            const a = document.createElement('a');
+            a.download = `Aryanta-Receipt-${r.orderNo || Date.now()}.png`;
+            a.href = canvas.toDataURL('image/png');
+            a.click();
+        };
+
+        function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+            if (w < 2 * r) r = w / 2;
+            if (h < 2 * r) r = h / 2;
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+            if (fill) ctx.fill();
+            if (stroke) ctx.stroke();
+        }
+
     </script>
 </body>
 </html>
