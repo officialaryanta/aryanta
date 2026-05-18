@@ -1221,11 +1221,20 @@
           config: {
              display: {
                 blocks: {
-                   upi: { name: "Pay via UPI", instruments: [{ method: "upi" }] },
-                   other: { name: "Other Payment Modes", instruments: [{ method: "card" }, { method: "netbanking" }, { method: "wallet" }] }
+                   upi: { 
+                       name: "Pay via UPI", 
+                       instruments: [
+                           { method: "upi", apps: ["google_pay", "phonepe", "paytm", "bhim"] },
+                           { method: "upi" } // Fallback for standard QR
+                       ] 
+                   },
+                   other: { 
+                       name: "Other Payment Modes", 
+                       instruments: [{ method: "card" }, { method: "netbanking" }, { method: "wallet" }] 
+                   }
                 },
                 sequence: ["block.upi", "block.other"],
-                preferences: { show_default_blocks: true }
+                preferences: { show_default_blocks: false }
              }
           },
           handler: async function(response) {
