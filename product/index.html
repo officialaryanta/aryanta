@@ -487,6 +487,9 @@
         let currentFinalPrice = 0;
         let currentNormalPrice = 0;
         let currentMaxPrice = 0;
+        let productFirebaseDb = null;
+        let productFirebaseInitPromise = null;
+        let searchCatalogPromise = null;
 
         let selectedStars = 0;
         let selectedReviewImages = [];
@@ -672,7 +675,10 @@
             let searchTimeout;
             if(!input || !dropdown) return;
 
+            input.addEventListener("focus", () => ensureSearchCatalogReady());
+
             input.addEventListener("input", function () {
+                ensureSearchCatalogReady();
                 clearTimeout(searchTimeout);
                 const query = this.value.toLowerCase().trim();
 
@@ -707,7 +713,7 @@
                         const img = getProductImageSafe(p);
                         const tag = isSponsoredProduct(p) ? '<span class="s-sponsored-tag">Sponsored</span>' : (isBoostedProduct(p) ? '<span class="s-sponsored-tag boosted">Boosted</span>' : '');
                         return `
-                            <div class="search-item" onclick="window.location.href='https://aryanta.in/product?id=${encodeURIComponent(p.id)}'">
+                            <div class="search-item" onclick="window.location.href='${getPublicProductUrl(p.id)}'">
                                 <img src="${escapeAttr(img)}" loading="lazy" decoding="async" style="width: 44px; height: 44px; object-fit: contain; border-radius: 8px; border:1px solid var(--border); padding:2px;">
                                 <div style="display:flex; flex-direction:column; overflow:hidden; padding-left:5px; min-width:0; width:100%;">
                                     <span style="font-weight: 800; font-size: 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-main);">
@@ -946,6 +952,138 @@
             return escapeHtmlText(str).replaceAll("`", "&#096;");
         }
 
+        function cleanRouteProductId(value) {
+            let v = String(value || "").trim();
+            if (!v) return "";
+            try { v = decodeURIComponent(v); } catch(e) {}
+            v = v.replace(/^\/+|\/+$/g, "").trim();
+            const low = v.toLowerCase();
+            const bad = new Set(["index.html", "index.htm", "product.html", "store.html", "home.html", "default.html", "undefined", "null", "nan", "product", "products", "store", "aryanta"]);
+            if (bad.has(low)) return "";
+            if (/^[a-z]+\.html$/i.test(v)) return "";
+            return v;
+        }
+
+        function getRequestedProductId() {
+            const params = new URLSearchParams(window.location.search);
+            const keys = ["id", "productId", "pid", "sku", "docId"];
+            for (const key of keys) {
+                const cleaned = cleanRouteProductId(params.get(key));
+                if (cleaned) return cleaned;
+            }
+            const parts = window.location.pathname.split("/").filter(Boolean);
+            const idx = parts.findIndex(p => p.toLowerCase() === "product");
+            if (idx >= 0 && parts[idx + 1]) return cleanRouteProductId(parts[idx + 1]);
+            return "";
+        }
+
+        function getProductIdentifiers(p) {
+            if (!p) return [];
+            return [p.id, p.productId, p.pid, p.sku, p.docId, p.itemId, p.slug]
+                .map(v => String(v || "").trim())
+                .filter(Boolean);
+        }
+
+        function matchesProductIdentifier(p, id) {
+            const target = cleanRouteProductId(id);
+            if (!target) return false;
+            const lowTarget = target.toLowerCase();
+            return getProductIdentifiers(p).some(v => v === target || v.toLowerCase() === lowTarget);
+        }
+
+        function getPublicProductUrl(id) {
+            return `https://aryanta.in/product/?id=${encodeURIComponent(id || "")}`;
+        }
+
+        function getRelativeProductUrl(id) {
+            if (location.protocol === "file:" || location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+                return `?id=${encodeURIComponent(id || "")}`;
+            }
+            return `/product/?id=${encodeURIComponent(id || "")}`;
+        }
+
+        function loadScriptOnce(src) {
+            return new Promise((resolve, reject) => {
+                const old = document.querySelector(`script[src="${src}"]`);
+                if (old) {
+                    if (old.dataset.loaded === "1") return resolve();
+                    old.addEventListener("load", resolve, { once: true });
+                    old.addEventListener("error", reject, { once: true });
+                    return;
+                }
+                const s = document.createElement("script");
+                s.src = src;
+                s.async = true;
+                s.onload = () => { s.dataset.loaded = "1"; resolve(); };
+                s.onerror = reject;
+                document.head.appendChild(s);
+            });
+        }
+
+        async function initProductFirestore() {
+            if (productFirebaseDb) return productFirebaseDb;
+            if (productFirebaseInitPromise) return productFirebaseInitPromise;
+            productFirebaseInitPromise = (async () => {
+                try {
+                    if (typeof firebase === "undefined") {
+                        await loadScriptOnce("https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js");
+                        await loadScriptOnce("https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js");
+                    }
+                    if (typeof firebase === "undefined" || !firebase.firestore) return null;
+                    const data = await fetchPublicJson("/get-api-keys", 3800).catch(() => null);
+                    const config = data?.firebaseConfig || data?.firebase || null;
+                    if (!config || !config.apiKey || String(config.apiKey).includes("FETCHED")) return null;
+                    const appName = "aryanta-product-fallback";
+                    const app = firebase.apps.find(a => a.name === appName) || firebase.initializeApp(config, appName);
+                    productFirebaseDb = app.firestore();
+                    return productFirebaseDb;
+                } catch(e) {
+                    console.warn("Product Firestore fallback unavailable", e);
+                    return null;
+                }
+            })();
+            return productFirebaseInitPromise;
+        }
+
+        async function fetchProductFromFirestore(productId) {
+            const db = await initProductFirestore();
+            if (!db || !productId) return null;
+            const productKey = String(productId).trim();
+            try {
+                const doc = await db.collection("products").doc(productKey).get();
+                if (doc.exists) {
+                    const data = doc.data() || {};
+                    return normalizeProductItem({ ...data, id: doc.id, docId: doc.id, productId: data.productId || data.id || doc.id });
+                }
+            } catch(e) { console.warn("Direct product doc lookup failed", e); }
+
+            const fields = ["id", "productId", "pid", "sku", "docId"];
+            for (const field of fields) {
+                try {
+                    const snap = await db.collection("products").where(field, "==", productKey).limit(1).get();
+                    if (!snap.empty) {
+                        const doc = snap.docs[0];
+                        const data = doc.data() || {};
+                        return normalizeProductItem({ ...data, id: doc.id, docId: doc.id, productId: data.productId || data.id || productKey });
+                    }
+                } catch(e) { console.warn("Product field lookup failed", field, e); }
+            }
+            return null;
+        }
+
+        function ensureSearchCatalogReady() {
+            if (backgroundCatalogLoaded || searchCatalogPromise) return searchCatalogPromise;
+            searchCatalogPromise = fetchProductBatch(2500)
+                .then(list => {
+                    if (list.length) mergeProducts(list);
+                    backgroundCatalogLoaded = list.length > 0;
+                    return allProducts;
+                })
+                .catch(() => allProducts)
+                .finally(() => { searchCatalogPromise = null; });
+            return searchCatalogPromise;
+        }
+
         async function fetchPublicJson(path, timeoutMs = 4500) {
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -964,34 +1102,31 @@
         }
 
         async function fetchSingleProduct(productId) {
-            if (!productId) return null;
-            const encoded = encodeURIComponent(productId);
-            const paths = [
-                `/product?id=${encoded}`,
-                `/product?productId=${encoded}`,
-                `/products?id=${encoded}`
-            ];
+            const cleanId = cleanRouteProductId(productId);
+            if (!cleanId) return null;
 
-            for (const path of paths) {
-                try {
-                    const data = await fetchPublicJson(path, 2800);
-                    const list = normalizeProductList(data);
-                    const exact = list.find(p => String(p.id) === String(productId)) || list[0];
-                    if (exact && isLiveProduct(exact)) return exact;
-                } catch(e) {}
-            }
+            // Do not call Worker /product with id/productId/pid/sku. That route returns 404/400 for many valid
+            // catalog IDs and creates noisy console errors. Load the public catalog, then match by any ID field.
+            const catalog = await fetchProductBatch(2500);
+            const exact = catalog.find(p => matchesProductIdentifier(p, cleanId));
+            if (exact && isLiveProduct(exact)) return exact;
+
+            const fireProduct = await fetchProductFromFirestore(cleanId);
+            if (fireProduct && isLiveProduct(fireProduct)) return fireProduct;
             return null;
         }
 
         async function fetchProductBatch(limit = FAST_SIMILAR_LIMIT) {
+            const safeLimit = Math.max(Number(limit) || FAST_SIMILAR_LIMIT, 2500);
             const paths = [
-                `/home-fast?limit=${limit}`,
-                `/products?limit=${limit}`,
+                `/products?limit=${safeLimit}&approved=true&live=true`,
+                `/products?limit=${safeLimit}`,
+                `/home-fast?limit=${safeLimit}`,
                 `/products`
             ];
             for (const path of paths) {
                 try {
-                    const data = await fetchPublicJson(path, 3800);
+                    const data = await fetchPublicJson(path, 6200);
                     const list = normalizeProductList(data);
                     if (list.length) return list;
                 } catch(e) {}
@@ -1000,7 +1135,7 @@
         }
 
         async function fetchProducts() {
-            const productId = new URLSearchParams(window.location.search).get("id");
+            const productId = cleanRouteProductId(getRequestedProductId());
 
             try {
                 let initialProduct = productId ? await fetchSingleProduct(productId) : null;
@@ -1008,34 +1143,42 @@
                 if (!initialProduct) {
                     const firstBatch = await fetchProductBatch(INITIAL_SIMILAR_TOTAL + LOAD_MORE_NORMAL_COUNT + LOAD_MORE_SPONSORED_COUNT + 1);
                     if (firstBatch.length) {
-                        initialProduct = productId
-                            ? firstBatch.find(p => String(p.id) === String(productId)) || firstBatch[0]
-                            : shuffleArrayFast(firstBatch)[0];
                         mergeProducts(firstBatch);
+                        initialProduct = productId
+                            ? (firstBatch.find(p => matchesProductIdentifier(p, productId)) || null)
+                            : shuffleArrayFast(firstBatch)[0];
+                        if (!initialProduct && !productId) initialProduct = firstBatch[0];
                     }
                 } else {
                     mergeProducts([initialProduct]);
                 }
 
-                if (!initialProduct) throw new Error("No live product returned by Worker.");
+                if (!initialProduct && allProducts.length && !productId) initialProduct = shuffleArrayFast(allProducts)[0];
+                if (!initialProduct) throw new Error(productId ? `Product not found: ${productId}` : "No live product returned by Worker.");
 
                 currentProduct = initialProduct;
-                if (!productId || String(productId) !== String(initialProduct.id)) {
-                    window.history.replaceState(null, "", "?id=" + encodeURIComponent(initialProduct.id));
+                if (!productId || !matchesProductIdentifier(initialProduct, productId)) {
+                    try { window.history.replaceState(null, "", getRelativeProductUrl(initialProduct.id)); } catch(e) {}
                 }
 
                 initProductPage();
                 queueBackgroundProductFetches();
+                ensureSearchCatalogReady();
 
             } catch (err) {
                 console.error("Product boot failed:", err);
                 const loader = document.getElementById('pageLoader');
                 if (loader) {
                     loader.innerHTML = `
-                        <p style="color:var(--danger); font-weight:800; text-align:center; font-size:18px;">
-                            <i class="fas fa-exclamation-triangle"></i> Error loading product.<br>
-                            <span style="font-size:14px; font-weight:600;">Please check Worker /product and /products routes.</span>
-                        </p>
+                        <div style="max-width:420px; padding:24px; text-align:center;">
+                            <p style="color:var(--danger); font-weight:900; font-size:18px; margin-bottom:10px;">
+                                <i class="fas fa-exclamation-triangle"></i> Product not found.
+                            </p>
+                            <p style="font-size:14px; color:var(--text-muted); font-weight:700; line-height:1.6; margin-bottom:18px;">
+                                This link may be using an old product route. Open it again from the seller store or Aryanta home page.
+                            </p>
+                            <button class="btn-prime" onclick="window.location.href='https://aryanta.in/'" style="width:auto; padding:12px 18px; margin:auto;">Back to Aryanta</button>
+                        </div>
                     `;
                 }
             }
@@ -1251,7 +1394,7 @@
             let verifiedUI = `<span style="background:var(--text-main); color:var(--bg-color); padding: 6px 10px; border-radius:8px; font-size:11px; font-weight:800; display:flex; align-items:center; gap:6px; box-shadow:var(--shadow-sm);"><i class="fas fa-check-circle"></i> Verified</span>`;
             
             document.getElementById('pBrandContainer').innerHTML = `
-                <div class="seller-premium-box" onclick="window.location.href='https://aryanta.in/store/?id=${encodeURIComponent(sellerLinkID)}'">
+                <div class="seller-premium-box" onclick="window.location.href='https://aryanta.in/store/?seller=${encodeURIComponent(sellerLinkID)}'">
                     <div style="display:flex; align-items:center; gap: 14px;">
                         <div class="s-icon"><i class="fas fa-store"></i></div>
                         <div>
@@ -2416,7 +2559,7 @@
                 : `<button class="s-add-btn" style="flex:1; background:var(--surface); color:var(--text-main); border-color:var(--border);" onclick="event.stopPropagation(); quickAddCart('${p.id}', this)"><i class="fas fa-shopping-cart"></i></button>`;
 
             return `
-                <div class="similar-card ${isSponsoredProduct(p) ? 'is-sponsored-card' : (isBoostedProduct(p) ? 'is-boosted-card' : '')}" onclick="window.location.href='?id=${encodeURIComponent(p.id)}'">
+                <div class="similar-card ${isSponsoredProduct(p) ? 'is-sponsored-card' : (isBoostedProduct(p) ? 'is-boosted-card' : '')}" onclick="window.location.href=getRelativeProductUrl(p.id)">
                     ${isSponsoredProduct(p) ? '<div class="sponsored-ribbon">Sponsored</div>' : (isBoostedProduct(p) ? '<div class="sponsored-ribbon boosted-ribbon">Boosted</div>' : '')}
                     <div class="s-card-top">
                         <img src="${escapeAttr(img)}" class="s-img" loading="lazy" decoding="async">
