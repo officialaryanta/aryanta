@@ -1,4 +1,13 @@
 const API_BASE_URL="https://rough-field-c679.official-aryanta.workers.dev";
+var updateBrandingLimitText = window.updateBrandingLimitText || function(){
+    const el=document.getElementById("brandingLimitText")||document.getElementById("brandLimitText")||document.getElementById("currentPlanBadge");
+    if(!el||!window.activeSeller&&!activeSeller)return;
+    const s=(typeof activeSeller!=="undefined"&&activeSeller)?activeSeller:{};
+    const plan=String(s.subscription||"Basic / Free");
+    if(el.id==="currentPlanBadge")el.textContent=plan;
+    else el.textContent=plan.includes("Ultra")?"Unlimited branding tools enabled.":plan.includes("Pro")?"Pro branding tools enabled.":"Basic branding tools enabled.";
+};
+window.updateBrandingLimitText=updateBrandingLimitText;
 const PROJECT_ID="aryanta-mart-a8893";
 let API_KEYS={RAZORPAY:"",EMAILJS_PUBLIC:"",EMAILJS_OTP_SERVICE:"",EMAILJS_OTP_TEMPLATE:""};
 let db=null;
@@ -59,6 +68,7 @@ async function fetchAppKeysAndBoot(){
         firebase.initializeApp({apiKey:"FETCHED_SECURELY",authDomain:`${PROJECT_ID}.firebaseapp.com`,projectId:PROJECT_ID,storageBucket:`${PROJECT_ID}.appspot.com`});
     }
     db=firebase.firestore();
+    try{db.settings({experimentalAutoDetectLongPolling:true,useFetchStreams:false,merge:true});}catch(e){}
     if(API_KEYS.EMAILJS_PUBLIC)emailjs.init(API_KEYS.EMAILJS_PUBLIC);
     checkSession();
     setTimeout(()=>{
@@ -577,6 +587,7 @@ window.showSection=function(section){
         case 'profile':loadProfile();break;
         case 'inventory':loadInventory();break;
         case 'newOrders':loadNewOrders();break;
+        case 'breached':loadBreachedOrders();break;
         case 'acceptedOrders':loadAcceptedOrders();break;
         case 'completedScan':loadCompletedScanOrders();break;
         case 'shippedOrders':loadShippedOrders();break;
@@ -730,14 +741,8 @@ ordSnap.forEach(doc => {
 
     if(activeSeller.settings && activeSeller.settings.autoAcc){
         const status = String(o.status || "").toLowerCase().trim();
-
         if(["placed", "new", "pending", "confirmed", "order placed", "processing"].includes(status)){
-            const oTime = o.timestamp ? new Date(o.timestamp).getTime() : Date.now();
-
-            if((Date.now() - oTime) <= 3 * 3600000){
-                db.collection("orders").doc(o.id).update({status:"Accepted"});
-                o.status = "Accepted";
-            }
+            o.autoAcceptEligible = true;
         }
     }
 
@@ -1589,13 +1594,19 @@ window.bulkAcceptNewOrders=async function(){
 }
 
 window.acceptOrder=async function(id,isBreached){
-    const o=sellerOrders.find(x=>x.id===id);if(o)o.status='Accepted';
+    const o=sellerOrders.find(x=>String(x.id)===String(id));
+    if(!o)return showToast("Order not found. Refresh first.","error");
+    const status=String(o.status||"").toLowerCase().trim();
+    if(!["placed","new","pending","confirmed","order placed","processing"].includes(status)){
+        return showToast("This order is already processed. No new order was created.","warning");
+    }
+    o.status='Accepted';
     renderDashboardStats();loadNewOrders();loadAcceptedOrders();
     if(isBreached){
-        showToast("Order Accepted. ₹20 SLA Fine applied.","warning");
-        try{await db.collection("fines").add({email:activeSeller.email,amount:20,reason:`Late Acceptance SLA Breach: Order ${id}`,timestamp:new Date().toISOString()});}catch(e){}
+        showToast("Order Accepted. SLA breach was recorded.","warning");
+        try{await db.collection("fines").add({email:activeSeller.email,amount:20,reason:`Late Acceptance SLA Breach: Order ${id}`,timestamp:new Date().toISOString(), orderId:id});}catch(e){}
     }else{showToast("Order Accepted!","success");}
-    try{await db.collection("orders").doc(id).update({status:'Accepted'});}catch(e){}
+    try{await db.collection("orders").doc(id).update({status:'Accepted',acceptedAt:new Date().toISOString(),acceptedBySeller:true});}catch(e){showToast("Could not update existing order.","error");}
 }
 
 window.cancelOrder=async function(id){
@@ -4019,7 +4030,7 @@ window.loadTutorials = function() {
         setSwitch('settingSearchSuggestions', s.searchSuggestions !== false);
         setSwitch('settingAutoAcc', !!(s.autoAcc || s.autoAcceptOrders));
         setSwitch('settingVacation', !!s.vacation);
-        updateBrandingLimitText && updateBrandingLimitText();
+        if(typeof updateBrandingLimitText === "function") updateBrandingLimitText();
     };
 
     const oldToggleSetting = window.toggleSetting;
@@ -4221,12 +4232,11 @@ window.loadTutorials = function() {
             if(!isNewStatus(o.status)) continue;
             const age = orderAgeHours(o);
             if(autoAccept && age >= 3 && age < 12 && !o.autoAcceptedAt){
-                o.status = 'Accepted'; o.autoAcceptedAt = nowIso();
-                updates.push(db.collection('orders').doc(o.id).update({status:'Accepted', autoAccepted:true, autoAcceptedAt:o.autoAcceptedAt, acceptedAt:o.autoAcceptedAt}));
-                savePaymentLedger({type:'order_auto_accept', orderId:o.id, amount:0, status:'Accepted', note:'Auto accepted after 3 hours'});
-            }else if(age >= 12 && !o.sellerAutoBreachProcessed){
-                o.status = 'Cancelled'; o.sellerBreach = true; o.cancelReason = 'Seller did not accept within 12 hours'; o.sellerAutoBreachProcessed = true;
-                updates.push(db.collection('orders').doc(o.id).update({status:'Cancelled', sellerBreach:true, cancelReason:o.cancelReason, cancelledAt:nowIso(), sellerAutoBreachProcessed:true}));
+                o.autoAcceptEligible = true;
+            }
+            if(age >= 12 && !o.sellerAutoBreachProcessed){
+                o.status = 'Breached'; o.sellerBreach = true; o.cancelReason = 'Seller did not accept within 12 hours'; o.sellerAutoBreachProcessed = true;
+                updates.push(db.collection('orders').doc(o.id).update({status:'Breached', sellerBreach:true, cancelReason:o.cancelReason, breachedAt:nowIso(), sellerAutoBreachProcessed:true}));
                 try{
                     const prev = await db.collection('seller_breach_records').where('sellerEmail','==',activeSeller.email).limit(500).get();
                     const countAfter = prev.size + 1;
@@ -4379,7 +4389,7 @@ window.loadTutorials = function() {
     window.activateSubscription = activateSubscription = async function(planName){
         const end = new Date(); end.setMonth(end.getMonth()+1);
         const payload={subscription:planName, subStartDate:nowIso(), subEndDate:end.toISOString(), updatedAt:nowIso()};
-        try{ await db.collection('sellers').doc(activeSeller.email).update(payload); Object.assign(activeSeller,payload); localStorage.setItem('sellerToken',JSON.stringify(activeSeller)); const badge=$('currentPlanBadge'); if(badge) badge.textContent = planName; updateBrandingLimitText && updateBrandingLimitText(); showToast(`${planName} plan activated.`, 'success'); }catch(e){ showToast('Subscription update failed.', 'error'); }
+        try{ await db.collection('sellers').doc(activeSeller.email).update(payload); Object.assign(activeSeller,payload); localStorage.setItem('sellerToken',JSON.stringify(activeSeller)); const badge=$('currentPlanBadge'); if(badge) badge.textContent = planName; if(typeof updateBrandingLimitText === "function") updateBrandingLimitText(); showToast(`${planName} plan activated.`, 'success'); }catch(e){ showToast('Subscription update failed.', 'error'); }
     };
 
     const oldValidate = window.validatePayoutButtons;
@@ -4392,4 +4402,767 @@ window.loadTutorials = function() {
     document.addEventListener('DOMContentLoaded', function(){
         setTimeout(()=>{ if(typeof loadSettingsUI === 'function') loadSettingsUI(); }, 800);
     });
+})();
+
+
+(function(){
+    const PATCH_ID = 'ARYANTA_FINAL_BREACH_PAYMENT_PATCH_2026_05_19';
+    window[PATCH_ID] = true;
+    const $ = id => document.getElementById(id);
+    const txt = v => String(v == null ? '' : v);
+    const lower = v => txt(v).toLowerCase().trim();
+    const safe = v => txt(v).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const nowIso2 = () => new Date().toISOString();
+    const newStatuses = ['placed','new','pending','confirmed','order placed','processing'];
+    function orderAgeHours2(o){
+        const d = new Date(o.timestamp || o.createdAt || o.orderDate || o.date || Date.now());
+        const t = Number.isFinite(d.getTime()) ? d.getTime() : Date.now();
+        return (Date.now() - t) / 3600000;
+    }
+    function isNewOrder2(o){ return newStatuses.includes(lower(o.status || o.orderStatus)); }
+    function isBreachedOrder2(o){
+        return !!(o.sellerBreach || o.breached || o.slaBreached || lower(o.status).includes('breach') || (isNewOrder2(o) && orderAgeHours2(o) >= 12));
+    }
+    function sellerItems2(o){
+        try{ return typeof getSellerItemsFromOrder === 'function' ? getSellerItemsFromOrder(o) : (Array.isArray(o.items) ? o.items : []); }catch(e){ return []; }
+    }
+    function orderAmount2(o){
+        const items = sellerItems2(o);
+        if(items.length) return items.reduce((s,i)=>s + (Number(i.price || i.amount || i.finalPrice || 0) * Number(i.qty || i.quantity || 1)), 0);
+        return Number(o.finalAmount || o.totalPrice || o.amount || o.total || 0);
+    }
+    function commission2(gross){ return Math.round(Number(gross || 0) * 0.075); }
+    function addLedgerRow(arr, row){ arr.push(row); }
+    window.loadBreachedOrders = function(){
+        const list = $('breachedOrdersList');
+        if(!list) return;
+        const rows = [];
+        (sellerOrders || []).forEach(o => {
+            if(!sellerItems2(o).length) return;
+            if(!isBreachedOrder2(o)) return;
+            const items = sellerItems2(o);
+            const amount = orderAmount2(o);
+            const age = Math.floor(orderAgeHours2(o));
+            const itemHtml = items.map(i => `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div>${typeof getProductImageHtml === 'function' ? getProductImageHtml(i.name || i.title || '') : ''}</div><div><b>${safe(i.name || i.title || 'Product')}</b><br><span style="font-size:12px;color:var(--text-light);">Qty ${Number(i.qty || i.quantity || 1)}</span></div></div>`).join('');
+            rows.push(`<tr class="clickable-row" onclick="viewOrderDetails('${safe(o.id)}')">
+                <td data-label="Date"><strong>${new Date(o.timestamp || o.createdAt || Date.now()).toLocaleString()}</strong><br><span style="font-size:11px;color:var(--danger);font-weight:800;">${age}h old</span></td>
+                <td data-label="Ref"><strong style="font-family:monospace;color:var(--danger);">${safe(o.order_no || o.orderNo || o.id)}</strong></td>
+                <td data-label="Items">${itemHtml}</td>
+                <td data-label="Reason"><span style="background:var(--danger);color:#fff;padding:5px 9px;border-radius:9px;font-weight:900;">SLA Breached</span><br><span style="font-size:12px;color:var(--text-light);">${safe(o.cancelReason || o.breachReason || 'Seller did not accept within SLA')}</span></td>
+                <td data-label="Amount / Fine"><strong>₹${amount.toLocaleString('en-IN')}</strong><br><span style="font-size:12px;color:var(--danger);font-weight:800;">Fine can apply</span></td>
+                <td data-label="Action"><button class="btn-sm" onclick="event.stopPropagation();viewOrderDetails('${safe(o.id)}')"><i class="fas fa-eye"></i> View</button></td>
+            </tr>`);
+        });
+        list.innerHTML = rows.length ? rows.join('') : `<tr><td colspan="6" style="text-align:center;font-weight:700;">No breached orders or items found.</td></tr>`;
+        const badge = $('badge-breached');
+        if(badge){ badge.innerText = rows.length; badge.style.display = rows.length ? 'inline-block' : 'none'; }
+    };
+    const previousLoadPayments = window.loadPayments;
+    window.loadPayments = function(){
+        const listUpcoming=$('payUpcomingList'), listProgress=$('payProgressList'), listCompleted=$('payCompletedList'), listFines=$('payFinesList'), listAll=$('payAllList');
+        if(!listUpcoming || !listProgress || !listCompleted || !listFines){
+            if(previousLoadPayments) return previousLoadPayments();
+            return;
+        }
+        listUpcoming.innerHTML = '';
+        listProgress.innerHTML = '';
+        listCompleted.innerHTML = '';
+        listFines.innerHTML = '';
+        if(listAll) listAll.innerHTML = '';
+        const ledger = [];
+        let totalUpcoming = 0;
+        let totalFines = (sellerFines || []).reduce((s,f)=>s + Number(f.amount || 0), 0);
+        const now = new Date();
+        (sellerOrders || []).forEach(o => {
+            const items = sellerItems2(o);
+            if(!items.length) return;
+            const gross = orderAmount2(o);
+            const commission = commission2(gross);
+            const net = Math.max(0, gross - commission);
+            if(o.status === 'Delivered' && !o.sellerSettled){
+                const deliveredDate = new Date(o.deliveredAt || o.timestamp || Date.now());
+                const transferDate = new Date(deliveredDate);
+                transferDate.setDate(transferDate.getDate() + 7);
+                if(now < transferDate){
+                    listProgress.innerHTML += `<tr><td data-label="Delivered Date"><strong>${deliveredDate.toLocaleDateString()}</strong></td><td data-label="Release Date"><span style="color:var(--warning);font-weight:900;">${transferDate.toLocaleDateString()}</span></td><td data-label="Order Ref"><strong style="font-family:monospace;color:var(--primary);">${safe(o.order_no || o.id)}</strong></td><td data-label="Amount"><strong>₹${net.toLocaleString('en-IN')}</strong><br><span style="font-size:11px;color:var(--text-light);">Gross ₹${gross.toLocaleString('en-IN')} - fee ₹${commission.toLocaleString('en-IN')}</span></td></tr>`;
+                    addLedgerRow(ledger, {date:deliveredDate, type:'In Progress', ref:o.order_no || o.id, gross, deductions:commission, net, status:'Release on ' + transferDate.toLocaleDateString()});
+                }else{
+                    totalUpcoming += net;
+                    listUpcoming.innerHTML += `<tr><td data-label="Transfer Date"><strong>${transferDate.toLocaleDateString()}</strong></td><td data-label="Order Ref"><strong style="font-family:monospace;color:var(--primary);">${safe(o.order_no || o.id)}</strong></td><td data-label="Status"><span style="color:var(--secondary);font-weight:900;">Processing by Bank</span></td><td data-label="Net Amount" style="color:var(--success);font-weight:900;">₹${net.toLocaleString('en-IN')}<br><span style="font-size:11px;color:var(--text-light);">Gross ₹${gross.toLocaleString('en-IN')} - fee ₹${commission.toLocaleString('en-IN')}</span></td></tr>`;
+                    addLedgerRow(ledger, {date:transferDate, type:'Upcoming', ref:o.order_no || o.id, gross, deductions:commission, net, status:'Processing'});
+                }
+            }
+        });
+        if(!(sellerPayouts || []).length) listCompleted.innerHTML = `<tr><td colspan="3" style="text-align:center;">No settlements yet.</td></tr>`;
+        else (sellerPayouts || []).forEach(p => {
+            const amount = Number(p.netPayout || p.amount || 0);
+            listCompleted.innerHTML += `<tr class="clickable-row" onclick="viewSettledSlip('${safe(p.id)}')"><td data-label="Settled Date"><strong>${new Date(p.date || p.settledDate || Date.now()).toLocaleDateString()}</strong></td><td data-label="Slip Ref"><strong style="font-family:monospace;color:var(--primary);">${safe(p.id)}</strong></td><td data-label="Amount" style="color:var(--success);font-weight:900;">₹${amount.toLocaleString('en-IN')}</td></tr>`;
+            addLedgerRow(ledger, {date:new Date(p.date || p.settledDate || Date.now()), type:'Settled', ref:p.id, gross:Number(p.gross || amount), deductions:Number(p.fines || p.commission || 0), net:amount, status:p.status || 'Settled'});
+        });
+        (sellerFines || []).forEach(f => {
+            const amt = Number(f.amount || 0);
+            listFines.innerHTML += `<tr><td data-label="Date"><strong>${new Date(f.timestamp || Date.now()).toLocaleDateString()}</strong></td><td data-label="Reason"><span style="font-weight:700;">${safe(f.reason)}</span></td><td data-label="Amount" style="color:var(--danger);font-weight:900;">-₹${amt.toLocaleString('en-IN')}</td></tr>`;
+            addLedgerRow(ledger, {date:new Date(f.timestamp || Date.now()), type:'Fine', ref:f.key || f.id || '-', gross:0, deductions:amt, net:-amt, status:f.reason || 'Deducted'});
+        });
+        if(listAll){
+            ledger.sort((a,b)=>b.date-a.date);
+            listAll.innerHTML = ledger.length ? ledger.map(r => `<tr><td data-label="Date"><strong>${r.date.toLocaleDateString()}</strong></td><td data-label="Type"><span class="badge-ui">${safe(r.type)}</span></td><td data-label="Reference"><strong style="font-family:monospace;">${safe(r.ref)}</strong></td><td data-label="Gross">₹${Number(r.gross || 0).toLocaleString('en-IN')}</td><td data-label="Deductions" style="color:var(--danger);font-weight:900;">-₹${Number(r.deductions || 0).toLocaleString('en-IN')}</td><td data-label="Net / Amount" style="font-weight:900;color:${Number(r.net || 0) < 0 ? 'var(--danger)' : 'var(--success)'};">₹${Number(r.net || 0).toLocaleString('en-IN')}</td><td data-label="Status">${safe(r.status)}</td></tr>`).join('') : `<tr><td colspan="7" style="text-align:center;font-weight:700;">No ledger records yet.</td></tr>`;
+        }
+        if(!listProgress.innerHTML) listProgress.innerHTML = `<tr><td colspan="4" style="text-align:center;font-weight:700;">No in-progress payments.</td></tr>`;
+        if(!listUpcoming.innerHTML) listUpcoming.innerHTML = `<tr><td colspan="4" style="text-align:center;font-weight:700;">No upcoming transfers.</td></tr>`;
+        if(!listFines.innerHTML) listFines.innerHTML = `<tr><td colspan="3" style="text-align:center;font-weight:700;">No fines.</td></tr>`;
+        const finalUpcoming = totalUpcoming - totalFines;
+        cachedTotalUpcoming = finalUpcoming;
+        const alertBox = $('upcomingAlertBox');
+        if(alertBox){
+            if(totalUpcoming > 0 || totalFines > 0){
+                alertBox.style.display='block';
+                alertBox.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span>Net payout after 7.5% platform fee:</span><strong>₹${totalUpcoming.toLocaleString('en-IN')}</strong></div><div style="display:flex;justify-content:space-between;margin-bottom:5px;color:var(--danger);"><span>Total fines/deductions:</span><strong>-₹${totalFines.toLocaleString('en-IN')}</strong></div><div style="border-top:2px solid #bfdbfe;margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:900;font-size:16px;color:#1e3a8a;">Final Expected Transfer:</span><strong style="color:var(--primary);font-size:22px;">₹${finalUpcoming.toLocaleString('en-IN')}</strong></div>`;
+                if(typeof syncPayoutToAdmin === 'function') syncPayoutToAdmin(totalUpcoming,totalFines,finalUpcoming);
+            }else alertBox.style.display='none';
+        }
+        if(typeof validatePayoutButtons === 'function') validatePayoutButtons();
+    };
+    const oldShowSection = window.showSection;
+    window.showSection = function(section){
+        if(oldShowSection) oldShowSection(section);
+        if(section === 'breached') window.loadBreachedOrders();
+    };
+})();
+
+
+(function(){
+    if(window.ARYANTA_SELLER_NO_LAG_PATCH_2026_05_19)return;
+    window.ARYANTA_SELLER_NO_LAG_PATCH_2026_05_19=true;
+    const byId=id=>document.getElementById(id);
+    const asText=v=>String(v==null?'':v);
+    const lower=v=>asText(v).toLowerCase().trim();
+    const sellerEmail=()=>asText(activeSeller&&activeSeller.email).toLowerCase().trim();
+    const dataState={products:false,orders:false,payments:false,warranty:false,support:false,b2b:false,reviews:false,loading:{}};
+    const visibleMap={home:'homeSection',profile:'profileSection',inventory:'inventorySection',newOrders:'newOrdersSection',acceptedOrders:'acceptedOrdersSection',completedScan:'completedScanSection',shippedOrders:'shippedOrdersSection',deliveredOrders:'deliveredOrdersSection',history:'historySection',returns:'returnsSection',warranty:'warrantySection',payments:'paymentsSection',ads:'adsSection',subscription:'subscriptionSection',tutorial:'tutorialSection',qna:'qnaSection',buyB2b:'buyB2bSection',support:'supportSection',settings:'settingsSection',oldTickets:'oldTicketsSection',notifications:'notificationsSection',breached:'breachedSection'};
+    function runOnce(key,fn){
+        if(dataState[key])return Promise.resolve();
+        if(dataState.loading[key])return dataState.loading[key];
+        dataState.loading[key]=Promise.resolve().then(fn).then(()=>{dataState[key]=true;}).catch(e=>{console.warn('Aryanta lazy load failed:',key,e);}).finally(()=>{delete dataState.loading[key];});
+        return dataState.loading[key];
+    }
+    function isMyOrderLight(o){
+        const email=sellerEmail();
+        if(!email||!o)return false;
+        const direct=lower(o.sellerEmail||o.seller_email||o.vendorEmail||o.vendor_email);
+        if(direct&&direct===email)return true;
+        const products=(sellerProducts||[]);
+        const ids=new Set(products.map(p=>asText(p.id||p.productId||p.product_id).trim()).filter(Boolean));
+        const skus=new Set(products.map(p=>lower(p.sku)).filter(Boolean));
+        return Array.isArray(o.items)&&o.items.some(i=>{
+            const itemEmail=lower(i.sellerEmail||i.seller_email||i.vendorEmail||i.vendor_email||i.seller);
+            if(itemEmail)return itemEmail===email;
+            const id=asText(i.id||i.productId||i.product_id||i.productDocId).trim();
+            const sku=lower(i.sku);
+            return (id&&ids.has(id))||(sku&&skus.has(sku));
+        });
+    }
+    function hideLoaderFast(){
+        const loader=byId('pageLoader');
+        if(loader){loader.style.opacity='0';setTimeout(()=>{loader.style.display='none';loader.style.opacity='1';},220);}
+    }
+    function setMiniLoader(text){
+        const loader=byId('pageLoader');
+        const lp=byId('loadPercent');
+        if(loader)loader.style.display='flex';
+        if(lp)lp.innerText=text||'Loading';
+    }
+    window.ensureSellerProducts=function(force){
+        if(force)dataState.products=false;
+        return runOnce('products',async()=>{
+            if(!db||!activeSeller)return;
+            const email=sellerEmail();
+            const snap=await db.collection('products').where('sellerEmail','==',email).get();
+            sellerProducts=snap.docs.map(d=>({id:d.id,...d.data()}));
+        });
+    };
+    window.ensureSellerOrders=function(force){
+        if(force)dataState.orders=false;
+        return runOnce('orders',async()=>{
+            if(!db||!activeSeller)return;
+            await window.ensureSellerProducts();
+            const snap=await db.collection('orders').orderBy('timestamp','desc').limit(350).get();
+            const rows=[];
+            snap.forEach(doc=>{const o={id:doc.id,...doc.data()};if(isMyOrderLight(o))rows.push(o);});
+            sellerOrders=rows;
+        });
+    };
+    window.ensureSellerPayments=function(force){
+        if(force)dataState.payments=false;
+        return runOnce('payments',async()=>{
+            if(!db||!activeSeller)return;
+            await window.ensureSellerOrders();
+            const email=sellerEmail();
+            const fineSnap=await db.collection('fines').where('email','==',email).get();
+            sellerFines=fineSnap.docs.map(d=>({id:d.id,...d.data()}));
+            const payoutSnap=await db.collection('seller_payouts').where('sellerEmail','==',email).get();
+            sellerPayouts=payoutSnap.docs.map(d=>({id:d.id,...d.data()}));
+        });
+    };
+    window.ensureSellerWarranty=function(force){
+        if(force)dataState.warranty=false;
+        return runOnce('warranty',async()=>{
+            if(!db||!activeSeller)return;
+            const snap=await db.collection('warranties').where('sellerEmail','==',sellerEmail()).get();
+            sellerWarranties=snap.docs.map(d=>({id:d.id,...d.data()}));
+        });
+    };
+    window.ensureSellerSupport=function(force){
+        if(force)dataState.support=false;
+        return runOnce('support',async()=>{
+            if(!db||!activeSeller)return;
+            const snap=await db.collection('seller_support_tickets').where('email','==',sellerEmail()).orderBy('timestamp','desc').limit(120).get();
+            sellerSupportTickets=snap.docs.map(d=>({id:d.id,...d.data()}));
+        });
+    };
+    window.ensureSellerReviews=function(force){
+        if(force)dataState.reviews=false;
+        return runOnce('reviews',async()=>{
+            if(!db||!activeSeller)return;
+            await window.ensureSellerProducts();
+            const ids=new Set((sellerProducts||[]).map(p=>asText(p.id).trim()).filter(Boolean));
+            const snap=await db.collection('reviews').limit(300).get();
+            sellerReviews=[];
+            snap.forEach(doc=>{const r={id:doc.id,...doc.data()};if(ids.has(asText(r.productId).trim()))sellerReviews.push(r);});
+        });
+    };
+    window.ensureSellerB2B=function(force){
+        if(force)dataState.b2b=false;
+        return runOnce('b2b',async()=>{
+            if(!db||!activeSeller)return;
+            try{const snap=await db.collection('b2b_items').where('sellerEmail','==',sellerEmail()).get();b2bItems=snap.docs.map(d=>({id:d.id,...d.data()}));}catch(e){b2bItems=b2bItems||[];}
+        });
+    };
+    window.fetchSupportTicketBadges=async function(){
+        try{
+            if(!db||!activeSeller)return;
+            const snap=await db.collection('seller_support_tickets').where('email','==',sellerEmail()).limit(60).get();
+            let waitingCount=0;
+            snap.forEach(doc=>{const d=doc.data();if(d.status==='Waiting for User'||d.status==='In Progress')waitingCount++;});
+            const b=byId('badge-support-replies');
+            if(b){b.style.display=waitingCount?'inline-block':'none';b.innerText=waitingCount;}
+        }catch(e){}
+    };
+    async function loadDashboardNumbers(){
+        setMiniLoader('Fast');
+        try{
+            const sm=byId('sellerMarquee');
+            db.collection('site_config').doc('global').get().then(conf=>{
+                if(sm)sm.innerText=conf.exists&&conf.data().marqueeMessage?conf.data().marqueeMessage:'We help to make your business no. 1. Thanks for choosing us! Keep growing with Aryanta Prime Seller Network.';
+            }).catch(()=>{});
+            await Promise.all([window.ensureSellerProducts(),window.ensureSellerOrders()]);
+            if(typeof renderDashboardStats==='function')renderDashboardStats();
+            if(typeof window.loadBreachedOrders==='function')window.loadBreachedOrders();
+        }finally{hideLoaderFast();}
+    }
+    window.initDashboard=initDashboard=async function(){
+        await loadDashboardNumbers();
+    };
+    function activateOnly(section){
+        const target=visibleMap[section]||visibleMap.home;
+        document.querySelectorAll('.data-section').forEach(sec=>sec.classList.remove('active'));
+        const el=byId(target);if(el)el.classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(nav=>nav.classList.remove('active'));
+        const clicked=window.event&&window.event.target&&window.event.target.closest?window.event.target.closest('.nav-item'):null;
+        if(clicked)clicked.classList.add('active');
+        const sb=byId('mobileSidebar');if(sb)sb.classList.remove('open');
+        const ov=byId('mobileSidebarOverlay');if(ov)ov.style.display='none';
+    }
+    function loadingRow(id,cols,text){
+        const el=byId(id);if(el)el.innerHTML=`<tr><td colspan="${cols}" style="text-align:center;font-weight:800;padding:28px;"><i class="fas fa-circle-notch fa-spin"></i> ${text||'Loading live data...'}</td></tr>`;
+    }
+    window.showSection=async function(section){
+        if(section==='tutorial')return window.openHowToSellPage?window.openHowToSellPage():window.open('https://aryanta.in/getdetails','_blank','noopener');
+        activateOnly(section);
+        try{
+            switch(section){
+                case 'home':await window.ensureSellerOrders();if(typeof renderDashboardStats==='function')renderDashboardStats();break;
+                case 'profile':if(typeof loadProfile==='function')loadProfile();break;
+                case 'inventory':loadingRow('inventoryTableBody',6,'Loading inventory...');await window.ensureSellerProducts();if(typeof loadInventory==='function')loadInventory();break;
+                case 'newOrders':loadingRow('newOrdersList',6,'Loading new orders...');await window.ensureSellerOrders();if(typeof loadNewOrders==='function')loadNewOrders();break;
+                case 'acceptedOrders':loadingRow('acceptedOrdersList',6,'Loading accepted orders...');await window.ensureSellerOrders();if(typeof loadAcceptedOrders==='function')loadAcceptedOrders();break;
+                case 'completedScan':await window.ensureSellerOrders();if(typeof loadCompletedScanOrders==='function')loadCompletedScanOrders();break;
+                case 'shippedOrders':await window.ensureSellerOrders();if(typeof loadShippedOrders==='function')loadShippedOrders();break;
+                case 'deliveredOrders':await window.ensureSellerOrders();if(typeof loadDeliveredOrders==='function')loadDeliveredOrders();break;
+                case 'history':await window.ensureSellerOrders();if(typeof loadOrderHistory==='function')loadOrderHistory();break;
+                case 'returns':await window.ensureSellerOrders();if(typeof loadReturns==='function')loadReturns();break;
+                case 'warranty':await window.ensureSellerWarranty();if(typeof loadWarranty==='function')loadWarranty();break;
+                case 'payments':loadingRow('payUpcomingList',4,'Building payment ledger...');await window.ensureSellerPayments();if(typeof loadPayments==='function')loadPayments();break;
+                case 'ads':await window.ensureSellerProducts();if(typeof loadAds==='function')loadAds();break;
+                case 'subscription':await window.ensureSellerPayments();if(typeof loadSubscriptionsUI==='function')loadSubscriptionsUI();break;
+                case 'qna':await window.ensureSellerProducts();if(typeof loadQna==='function')loadQna();break;
+                case 'buyB2b':await window.ensureSellerB2B();if(typeof loadB2bStore==='function')loadB2bStore();break;
+                case 'support':await window.ensureSellerSupport();if(typeof filterSupportTickets==='function')filterSupportTickets('All');break;
+                case 'settings':if(typeof loadSettingsUI==='function')loadSettingsUI();break;
+                case 'oldTickets':await window.ensureSellerSupport();if(typeof loadOldTickets==='function')loadOldTickets();break;
+                case 'notifications':if(typeof fetchNotifications==='function')fetchNotifications();break;
+                case 'breached':await window.ensureSellerOrders();if(typeof loadBreachedOrders==='function')loadBreachedOrders();break;
+            }
+        }catch(e){console.error('Section load failed:',section,e);if(typeof showToast==='function')showToast('Could not load this section. Check network and retry.','error');}
+    };
+    const oldRefresh=window.loadFirebaseData;
+    window.loadFirebaseData=async function(){
+        Object.keys(dataState).forEach(k=>{if(k!=='loading')dataState[k]=false;});
+        await loadDashboardNumbers();
+        if(typeof showToast==='function')showToast('Dashboard numbers refreshed. Open a tab to load its full details.','success');
+        if(oldRefresh&&false)oldRefresh();
+    };
+})();
+
+(function(){
+    const BOOT_SECTIONS = ['Dashboard','Profile Info','Notifications','My Inventory','New Orders'];
+    const BOOT_LIMIT_ORDERS = 350;
+    const MONTH_KEY = new Date().toISOString().slice(0,7);
+    const $id = id => document.getElementById(id);
+    const txt = v => String(v == null ? '' : v);
+    const low = v => txt(v).toLowerCase().trim();
+    const nowIso2 = () => new Date().toISOString();
+    window.__ARYANTA_RAM = window.__ARYANTA_RAM || {bootLoaded:false,booting:false,loadedTabs:{},notifications:[]};
+
+    function setBootLoader(message, percent){
+        const loader=$id('pageLoader');
+        const msg=$id('loaderMessage');
+        const pct=$id('loadPercent');
+        if(loader){loader.style.display='flex';loader.style.opacity='1';}
+        if(msg)msg.innerText=message || 'Loading secure seller panel...';
+        if(pct) pct.innerText = typeof percent === 'number' ? percent + '%' : (percent || 'Loading');
+    }
+    function hideBootLoader(){
+        const loader=$id('pageLoader');
+        if(!loader)return;
+        loader.style.opacity='0';
+        setTimeout(()=>{loader.style.display='none';loader.style.opacity='1';},260);
+    }
+    function showLoginOnly(){
+        const lo=$id('loginOverlay');
+        const lb=$id('loginBox');
+        const sb=$id('statusBox');
+        const app=$id('mainAppContainer') || document.querySelector('.seller-container');
+        if(lo)lo.style.display='flex';
+        if(lb)lb.style.display='block';
+        if(sb)sb.style.display='none';
+        if(app)app.style.display='none';
+        hideBootLoader();
+    }
+    function showAppOnly(){
+        const lo=$id('loginOverlay');
+        const app=$id('mainAppContainer') || document.querySelector('.seller-container');
+        if(lo)lo.style.display='none';
+        if(app)app.style.display='flex';
+    }
+    function showRestricted(title,message,timerText){
+        const lo=$id('loginOverlay');
+        const lb=$id('loginBox');
+        const sb=$id('statusBox');
+        const app=$id('mainAppContainer') || document.querySelector('.seller-container');
+        if(lo)lo.style.display='flex';
+        if(lb)lb.style.display='none';
+        if(sb)sb.style.display='block';
+        if(app)app.style.display='none';
+        const st=$id('statusTitle'); if(st)st.innerText=title;
+        const sm=$id('statusMessage'); if(sm)sm.innerHTML=message;
+        const tm=$id('suspendTimer');
+        if(tm){
+            if(timerText){tm.style.display='block';tm.innerText=timerText;}
+            else tm.style.display='none';
+        }
+        hideBootLoader();
+    }
+    function docEmail(){ return low(activeSeller && activeSeller.email); }
+    function productKeys(){
+        const ids=new Set(), skus=new Set();
+        (sellerProducts||[]).forEach(p=>{
+            [p.id,p.productId,p.product_id,p.productDocId].forEach(v=>{v=txt(v).trim();if(v)ids.add(v);});
+            const sku=low(p.sku); if(sku)skus.add(sku);
+        });
+        return {ids,skus};
+    }
+    function isMineOrder(order){
+        const email=docEmail();
+        if(!order || !email)return false;
+        const direct=low(order.sellerEmail || order.seller_email || order.vendorEmail || order.vendor_email);
+        if(direct && direct===email)return true;
+        const {ids,skus}=productKeys();
+        const items=Array.isArray(order.items)?order.items:[];
+        return items.some(item=>{
+            const itemEmail=low(item.sellerEmail || item.seller_email || item.vendorEmail || item.vendor_email || item.seller);
+            if(itemEmail)return itemEmail===email;
+            const id=txt(item.id || item.productId || item.product_id || item.productDocId).trim();
+            const sku=low(item.sku);
+            return (id && ids.has(id)) || (sku && skus.has(sku));
+        });
+    }
+    function dateMs(value){
+        if(!value)return 0;
+        if(value && typeof value.toDate==='function')return value.toDate().getTime();
+        const n=Date.parse(value); return Number.isFinite(n)?n:0;
+    }
+    function sortNewest(rows){ return (rows||[]).sort((a,b)=>dateMs(b.timestamp||b.time||b.createdAt)-dateMs(a.timestamp||a.time||a.createdAt)); }
+    async function fetchSellerDocFromToken(token){
+        const email=low(token && token.email);
+        if(!email)throw new Error('Seller token email missing');
+        let snap=await db.collection('sellers').doc(email).get();
+        if(snap.exists)return {id:snap.id,...snap.data()};
+        const qs=await db.collection('sellers').where('email','==',email).limit(1).get();
+        if(!qs.empty)return {id:qs.docs[0].id,...qs.docs[0].data()};
+        return token;
+    }
+    async function forceOfflineMode(reason){
+        try{
+            if(!activeSeller || !activeSeller.email || !db)return;
+            const settings={...(activeSeller.settings||{}),offline:true};
+            activeSeller.settings=settings;
+            await db.collection('sellers').doc(activeSeller.email).set({settings,offline:true,offlineReason:reason||'Account restricted',offlineForcedAt:nowIso2()},{merge:true});
+            const snap=await db.collection('products').where('sellerEmail','==',docEmail()).get();
+            let batch=db.batch(), count=0;
+            for(const d of snap.docs){
+                batch.update(d.ref,{isVisible:false,visible:false,publicVisible:false,offlineHidden:true,offlineHiddenAt:nowIso2()});
+                count++;
+                if(count%420===0){await batch.commit();batch=db.batch();}
+            }
+            if(count%420!==0)await batch.commit();
+        }catch(e){console.warn('Offline enforcement skipped:',e);}
+    }
+    function statusTimer(unlockMs){
+        clearInterval(window.__sellerSuspendTick);
+        const tm=$id('suspendTimer');
+        function paint(){
+            const diff=unlockMs-Date.now();
+            if(diff<=0){if(tm)tm.innerText='Suspension period completed. Refreshing account...';clearInterval(window.__sellerSuspendTick);setTimeout(()=>location.reload(),1200);return;}
+            const d=Math.floor(diff/86400000), h=Math.floor(diff%86400000/3600000), m=Math.floor(diff%3600000/60000), sec=Math.floor(diff%60000/1000);
+            if(tm)tm.innerText=`${d}d ${h}h ${m}m ${sec}s`;
+        }
+        paint(); window.__sellerSuspendTick=setInterval(paint,1000);
+    }
+    async function handleSellerStatus(){
+        const status=low(activeSeller.status || activeSeller.accountStatus || activeSeller.sellerStatus);
+        if(status==='blocked' || status==='block'){
+            await forceOfflineMode('Blocked account');
+            showRestricted('Account Blocked','Your seller account is blocked by Aryanta. Offline Mode has been automatically enabled and your live products are hidden. For more details contact the company at <b>support@aryanta.in</b>.','');
+            return false;
+        }
+        if(status==='suspended' || status==='suspend'){
+            let suspendedAt=activeSeller.suspendedAt || activeSeller.suspendAt || activeSeller.suspensionStartedAt;
+            if(!suspendedAt){
+                suspendedAt=nowIso2();
+                try{await db.collection('sellers').doc(activeSeller.email).set({suspendedAt},{merge:true});}catch(e){}
+            }
+            const start=dateMs(suspendedAt)||Date.now();
+            const unlock=start+7*86400000;
+            if(Date.now()>=unlock){
+                try{await db.collection('sellers').doc(activeSeller.email).set({status:'Active',suspendedAt:firebase.firestore.FieldValue.delete()},{merge:true});}catch(e){}
+                activeSeller.status='Active';
+                delete activeSeller.suspendedAt;
+                return true;
+            }
+            await forceOfflineMode('Suspended account');
+            showRestricted('Account Suspended','You cannot use this seller panel for <b>7 days</b> from the suspension time. Offline Mode has been automatically enabled and your products are hidden. For more details contact the company at <b>support@aryanta.in</b>.','Calculating...');
+            statusTimer(unlock);
+            return false;
+        }
+        return true;
+    }
+    async function fetchProductsCore(){
+        const snap=await db.collection('products').where('sellerEmail','==',docEmail()).get();
+        sellerProducts=snap.docs.map(d=>({id:d.id,...d.data()}));
+        window.__ARYANTA_RAM.products=sellerProducts;
+    }
+    async function fetchOrdersCore(){
+        const snap=await db.collection('orders').orderBy('timestamp','desc').limit(BOOT_LIMIT_ORDERS).get();
+        const rows=[];
+        snap.forEach(doc=>{const o={id:doc.id,...doc.data()}; if(isMineOrder(o))rows.push(o);});
+        sellerOrders=rows;
+        window.__ARYANTA_RAM.orders=sellerOrders;
+    }
+    async function fetchNotificationsCore(){
+        const email=docEmail();
+        const rows=[];
+        try{
+            const snap=await db.collection('admin_broadcasts').orderBy('timestamp','desc').limit(40).get();
+            snap.forEach(doc=>{
+                const d=doc.data();
+                const target=low(d.target || d.sellerEmail || d.email || 'all');
+                if(target==='all' || target==='sellers' || target===email){rows.push({id:doc.id,source:'admin_broadcasts',text:d.message||d.text||d.title||'New Aryanta notice',title:d.title||'Aryanta Notice',time:d.timestamp||d.time||d.createdAt||nowIso2(),link:d.link||d.url||d.actionLink||''});}
+            });
+        }catch(e){console.warn('admin_broadcasts notifications skipped',e);}
+        try{
+            const snap=await db.collection('seller_notifications').where('email','==',email).limit(50).get();
+            snap.forEach(doc=>{const d=doc.data();rows.push({id:doc.id,source:'seller_notifications',text:d.message||d.text||d.title||'Seller notification',title:d.title||'Seller Notification',time:d.timestamp||d.time||d.createdAt||nowIso2(),link:d.link||d.url||d.actionLink||''});});
+        }catch(e){console.warn('seller_notifications skipped',e);}
+        try{
+            const snap=await db.collection('seller_popups').where('sellerEmail','==',email).limit(25).get();
+            snap.forEach(doc=>{const d=doc.data();rows.push({id:doc.id,source:'seller_popups',text:d.message||d.text||d.title||'Seller popup',title:d.title||'Seller Notice',time:d.timestamp||d.time||d.createdAt||nowIso2(),link:d.link||d.url||d.actionLink||''});});
+        }catch(e){console.warn('seller_popups skipped',e);}
+        adminNotifications=sortNewest(rows).slice(0,80);
+        sellerNotifications=adminNotifications;
+        unreadNotifCount=adminNotifications.filter(n=>!n.read && n.isRead!==true).length || adminNotifications.length;
+        window.__ARYANTA_RAM.notifications=adminNotifications;
+        renderNotificationsFinal();
+    }
+    function renderNotificationsFinal(){
+        const badge=$id('notifBadge');
+        if(badge){badge.style.display=adminNotifications.length?'inline-block':'none';badge.innerText=adminNotifications.length;}
+        const dropdown=$id('notifList');
+        const full=$id('fullNotifList');
+        const html=adminNotifications.length?adminNotifications.map(n=>{
+            const time=n.time?new Date(n.time).toLocaleString():'Now';
+            const link=n.link?`<a href="${String(n.link).startsWith('http')?n.link:'https://'+n.link}" target="_blank" rel="noopener" class="short-link-chip"><i class="fas fa-link"></i> Open Link</a>`:'';
+            return `<div class="notification-card" onclick="openFullNotifFinal('${n.id}')"><strong>${escapeHtmlFinal(n.title||'Aryanta Notice')}</strong><p>${escapeHtmlFinal(n.text||'No message')}</p><small><i class="fas fa-clock"></i> ${escapeHtmlFinal(time)}</small>${link}</div>`;
+        }).join(''):`<div style="text-align:center;padding:30px;color:var(--text-light);font-weight:800;"><i class="fas fa-bell-slash" style="font-size:30px;margin-bottom:10px;"></i><br>No notifications yet.</div>`;
+        if(dropdown)dropdown.innerHTML=html;
+        if(full)full.innerHTML=html;
+    }
+    function escapeHtmlFinal(v){return txt(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    window.openFullNotifFinal=function(id){
+        const n=(adminNotifications||[]).find(x=>String(x.id)===String(id));
+        if(!n)return;
+        if(typeof showToast==='function')showToast(n.text||'Notification','info');
+        if(n.link){const link=String(n.link).startsWith('http')?n.link:'https://'+n.link; window.open(link,'_blank','noopener');}
+    };
+    async function bootstrapInitialSellerData(){
+        if(window.__ARYANTA_RAM.booting)return;
+        window.__ARYANTA_RAM.booting=true;
+        setBootLoader('Loading Dashboard, Profile, Notifications, My Inventory and New Orders...',12);
+        await fetchProductsCore();
+        setBootLoader('Inventory loaded. Matching seller orders...',38);
+        await Promise.all([fetchOrdersCore(), fetchNotificationsCore()]);
+        setBootLoader('Rendering dashboard and seller tools...',72);
+        try{if(typeof applySettingsToUI==='function')applySettingsToUI();}catch(e){}
+        try{if(typeof loadProfile==='function')loadProfile();}catch(e){}
+        try{if(typeof renderDashboardStats==='function')renderDashboardStats();}catch(e){}
+        try{if(typeof loadInventory==='function')loadInventory();}catch(e){}
+        try{if(typeof loadNewOrders==='function')loadNewOrders();}catch(e){}
+        try{if(typeof loadBreachedOrders==='function')loadBreachedOrders();}catch(e){}
+        try{updateBrandingLimitText();}catch(e){}
+        renderBrandingPreviewsFinal();
+        window.__ARYANTA_RAM.bootLoaded=true;
+        window.__ARYANTA_RAM.booting=false;
+        setBootLoader('Opening seller panel...',100);
+    }
+    checkSession = window.checkSession = async function(){
+        const raw=localStorage.getItem('sellerToken');
+        if(!raw || !db)return showLoginOnly();
+        setBootLoader('Checking seller account status...',5);
+        let token=null;
+        try{token=JSON.parse(raw);}catch(e){localStorage.removeItem('sellerToken');return showLoginOnly();}
+        try{
+            activeSeller=await fetchSellerDocFromToken(token);
+            if(!activeSeller.settings)activeSeller.settings={};
+            localStorage.setItem('sellerToken',JSON.stringify(activeSeller));
+            if(!(await handleSellerStatus()))return;
+            const lo=$id('loginOverlay'); if(lo)lo.style.display='none';
+            const app=$id('mainAppContainer') || document.querySelector('.seller-container'); if(app)app.style.display='none';
+            const greet=$id('sellerGreeting'); if(greet)greet.innerText=`| ${activeSeller.companyName||activeSeller.shopName||activeSeller.email||''}`;
+            const vb=$id('verifiedBadge'); if(vb && activeSeller.subscription && activeSeller.subscription!=='None')vb.style.display='inline';
+            const kb=$id('kycAlertBanner'); if(kb)kb.style.display=activeSeller.kycRequested?'block':'none';
+            await bootstrapInitialSellerData();
+            showAppOnly();
+            hideBootLoader();
+        }catch(e){
+            console.error('Seller boot failed:',e);
+            setBootLoader('Could not load seller panel. Check internet and retry.', 'Retry');
+            if(typeof showToast==='function')showToast('Could not load seller panel. Please check internet and refresh.','error');
+        }
+    };
+    initDashboard = window.initDashboard = async function(){
+        if(!window.__ARYANTA_RAM.bootLoaded) await bootstrapInitialSellerData();
+        else { try{if(typeof renderDashboardStats==='function')renderDashboardStats();}catch(e){} }
+    };
+    window.ensureSellerProducts=async function(force){ if(force || !window.__ARYANTA_RAM.products){await fetchProductsCore();} return sellerProducts; };
+    window.ensureSellerOrders=async function(force){ if(force || !window.__ARYANTA_RAM.orders){if(!window.__ARYANTA_RAM.products)await fetchProductsCore();await fetchOrdersCore();} return sellerOrders; };
+    window.ensureSellerSupport=async function(force){
+        if(!force && window.__ARYANTA_RAM.support){sellerSupportTickets=window.__ARYANTA_RAM.support;return sellerSupportTickets;}
+        const snap=await db.collection('seller_support_tickets').where('email','==',docEmail()).limit(150).get();
+        sellerSupportTickets=[];snap.forEach(d=>sellerSupportTickets.push({id:d.id,...d.data()}));
+        sellerSupportTickets=sortNewest(sellerSupportTickets);
+        window.__ARYANTA_RAM.support=sellerSupportTickets;
+        return sellerSupportTickets;
+    };
+    window.fetchNotifications = fetchNotifications = async function(){ await fetchNotificationsCore(); };
+    window.toggleNotifications=function(){
+        const d=$id('notifDropdown'); if(d)d.classList.toggle('show');
+        if(!window.__ARYANTA_RAM.notifications)fetchNotificationsCore().catch(()=>{});
+    };
+    const finalVisibleMap={home:'homeSection',profile:'profileSection',inventory:'inventorySection',newOrders:'newOrdersSection',acceptedOrders:'acceptedOrdersSection',completedScan:'completedScanSection',shippedOrders:'shippedOrdersSection',deliveredOrders:'deliveredOrdersSection',history:'historySection',returns:'returnsSection',warranty:'warrantySection',payments:'paymentsSection',ads:'adsSection',subscription:'subscriptionSection',tutorial:'tutorialSection',qna:'qnaSection',buyB2b:'buyB2bSection',support:'supportSection',settings:'settingsSection',oldTickets:'oldTicketsSection',notifications:'notificationsSection',breached:'breachedSection'};
+    function activate(section){
+        document.querySelectorAll('.data-section').forEach(x=>x.classList.remove('active'));
+        const el=$id(finalVisibleMap[section]||'homeSection'); if(el)el.classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+        const clicked=window.event&&window.event.target&&window.event.target.closest?window.event.target.closest('.nav-item'):null;if(clicked)clicked.classList.add('active');
+        const sb=$id('mobileSidebar'); if(sb)sb.classList.remove('open'); const ov=$id('mobileSidebarOverlay'); if(ov)ov.style.display='none';
+    }
+    window.showSection=async function(section){
+        if(section==='tutorial')return window.openHowToSellPage?window.openHowToSellPage():window.open('https://aryanta.in/getdetails','_blank','noopener');
+        activate(section);
+        try{
+            switch(section){
+                case 'home': await window.ensureSellerOrders(); if(typeof renderDashboardStats==='function')renderDashboardStats(); break;
+                case 'profile': if(typeof loadProfile==='function')loadProfile(); break;
+                case 'notifications': await fetchNotificationsCore(); break;
+                case 'inventory': await window.ensureSellerProducts(); if(typeof loadInventory==='function')loadInventory(); break;
+                case 'newOrders': await window.ensureSellerOrders(); if(typeof loadNewOrders==='function')loadNewOrders(); break;
+                case 'breached': await window.ensureSellerOrders(); if(typeof loadBreachedOrders==='function')loadBreachedOrders(); break;
+                case 'acceptedOrders': await window.ensureSellerOrders(); if(typeof loadAcceptedOrders==='function')loadAcceptedOrders(); break;
+                case 'completedScan': await window.ensureSellerOrders(); if(typeof loadCompletedScanOrders==='function')loadCompletedScanOrders(); break;
+                case 'shippedOrders': await window.ensureSellerOrders(); if(typeof loadShippedOrders==='function')loadShippedOrders(); break;
+                case 'deliveredOrders': await window.ensureSellerOrders(); if(typeof loadDeliveredOrders==='function')loadDeliveredOrders(); break;
+                case 'history': await window.ensureSellerOrders(); if(typeof loadOrderHistory==='function')loadOrderHistory(); break;
+                case 'returns': await window.ensureSellerOrders(); if(typeof loadReturns==='function')loadReturns(); break;
+                case 'warranty': if(typeof ensureSellerWarranty==='function')await ensureSellerWarranty(); if(typeof loadWarranty==='function')loadWarranty(); break;
+                case 'payments': if(typeof ensureSellerPayments==='function')await ensureSellerPayments(); if(typeof loadPayments==='function')loadPayments(); break;
+                case 'ads': await window.ensureSellerProducts(); if(typeof loadAds==='function')loadAds(); break;
+                case 'subscription': if(typeof loadSubscriptionsUI==='function')loadSubscriptionsUI(); break;
+                case 'qna': await window.ensureSellerProducts(); if(typeof loadQna==='function')loadQna(); break;
+                case 'buyB2b': if(typeof ensureSellerB2B==='function')await ensureSellerB2B(); if(typeof loadB2bStore==='function')loadB2bStore(); break;
+                case 'support': await window.ensureSellerSupport(); if(typeof filterSupportTickets==='function')filterSupportTickets('All'); break;
+                case 'oldTickets': await window.ensureSellerSupport(); if(typeof loadOldTickets==='function')loadOldTickets(); break;
+                case 'settings': if(typeof loadSettingsUI==='function')loadSettingsUI(); renderBrandingPreviewsFinal(); break;
+            }
+        }catch(e){console.error('Section load failed',section,e); if(typeof showToast==='function')showToast('Could not load this section. Please retry.','error');}
+    };
+
+    function pickBrand(type){
+        const s=activeSeller||{};
+        if(type==='logo')return s.storeLogo||s.storeLogoUrl||s.logo||s.logoUrl||s.shopLogo||s.companyLogo||'';
+        return s.storeBanner||s.storeBannerUrl||s.banner||s.bannerUrl||s.shopBanner||s.coverImage||'';
+    }
+    window.renderBrandingPreviewsFinal=renderBrandingPreviewsFinal;
+    function renderBrandingPreviewsFinal(){
+        [['logo','storeLogoPreview','storeLogoEmpty','storeLogoFileName'],['banner','storeBannerPreview','storeBannerEmpty','storeBannerFileName']].forEach(([type,imgId,emptyId,fileId])=>{
+            const src=pickBrand(type); const img=$id(imgId); const empty=$id(emptyId); const file=$id(fileId);
+            if(img){img.src=src||'';img.style.display=src?'block':'none';}
+            if(empty)empty.style.display=src?'none':'flex';
+            if(file)file.innerText=src?'Current image loaded. Click Edit to replace.':`No ${type} selected`;
+            const row=$id(type==='logo'?'storeLogoActionRow':'storeBannerActionRow'); if(row)row.style.display='none';
+        });
+    }
+    window.startBrandingEdit=function(type){
+        const input=$id(type==='logo'?'storeLogoInput':'storeBannerInput'); if(input)input.click();
+    };
+    window.cancelBrandingEdit=function(type){
+        const input=$id(type==='logo'?'storeLogoInput':'storeBannerInput'); if(input)input.value='';
+        renderBrandingPreviewsFinal();
+    };
+    window.previewBrandingFile=function(type){
+        const input=$id(type==='logo'?'storeLogoInput':'storeBannerInput'); const file=input&&input.files&&input.files[0];
+        const label=$id(type==='logo'?'storeLogoFileName':'storeBannerFileName');
+        if(!file)return;
+        if(label)label.innerText=file.name;
+        const reader=new FileReader();
+        reader.onload=e=>{
+            const img=$id(type==='logo'?'storeLogoPreview':'storeBannerPreview'); const empty=$id(type==='logo'?'storeLogoEmpty':'storeBannerEmpty'); const row=$id(type==='logo'?'storeLogoActionRow':'storeBannerActionRow');
+            if(img){img.src=e.target.result;img.style.display='block';}
+            if(empty)empty.style.display='none'; if(row)row.style.display='grid';
+        };
+        reader.readAsDataURL(file);
+    };
+    function compressImage(file,type){
+        return new Promise((resolve,reject)=>{
+            const reader=new FileReader();
+            reader.onerror=reject;
+            reader.onload=()=>{
+                const img=new Image();
+                img.onerror=reject;
+                img.onload=()=>{
+                    const maxW=type==='banner'?1200:700, maxH=type==='banner'?420:700;
+                    let w=img.width,h=img.height,ratio=Math.min(maxW/w,maxH/h,1); w=Math.round(w*ratio); h=Math.round(h*ratio);
+                    const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+                    const ctx=canvas.getContext('2d'); ctx.drawImage(img,0,0,w,h);
+                    resolve(canvas.toDataURL('image/jpeg',0.78));
+                };
+                img.src=reader.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+    window.uploadStoreBranding=async function(type){
+        const input=$id(type==='logo'?'storeLogoInput':'storeBannerInput'); const file=input&&input.files&&input.files[0];
+        if(!file)return showToast(`Choose a ${type} image first.`,'warning');
+        if(!confirm(`Replace current store ${type}? Previous ${type} field will be removed from database and this new image will be saved.`))return;
+        try{
+            setBootLoader(`Uploading store ${type}...`,'Save');
+            const dataUrl=await compressImage(file,type);
+            const payload={brandingUpdatedAt:nowIso2(),brandingUpdatedBy:'seller-panel'};
+            const del=firebase.firestore.FieldValue.delete();
+            if(type==='logo'){
+                Object.assign(payload,{storeLogo:dataUrl,storeLogoUpdatedAt:nowIso2(),storeLogoUrl:del,logo:del,logoUrl:del,shopLogo:del,companyLogo:del});
+            }else{
+                Object.assign(payload,{storeBanner:dataUrl,storeBannerUpdatedAt:nowIso2(),storeBannerUrl:del,banner:del,bannerUrl:del,shopBanner:del,coverImage:del});
+            }
+            await db.collection('sellers').doc(activeSeller.email).set(payload,{merge:true});
+            if(type==='logo'){activeSeller.storeLogo=dataUrl;delete activeSeller.storeLogoUrl;delete activeSeller.logo;delete activeSeller.logoUrl;delete activeSeller.shopLogo;delete activeSeller.companyLogo;}
+            else{activeSeller.storeBanner=dataUrl;delete activeSeller.storeBannerUrl;delete activeSeller.banner;delete activeSeller.bannerUrl;delete activeSeller.shopBanner;delete activeSeller.coverImage;}
+            localStorage.setItem('sellerToken',JSON.stringify(activeSeller));
+            if(input)input.value='';
+            renderBrandingPreviewsFinal();
+            hideBootLoader();
+            showToast(`Store ${type} updated. Previous DB image field replaced.`,'success');
+        }catch(e){console.error(e);hideBootLoader();showToast(`Could not upload ${type}. Try smaller image or check network.`,'error');}
+    };
+    const originalLoadSettingsFinal=window.loadSettingsUI || loadSettingsUI;
+    window.loadSettingsUI = loadSettingsUI = function(){ try{originalLoadSettingsFinal&&originalLoadSettingsFinal();}catch(e){} renderBrandingPreviewsFinal(); };
+
+    function adPlanLimit(){
+        const plan=low(activeSeller && (activeSeller.subscription || activeSeller.plan || activeSeller.package));
+        if(plan.includes('ultra')||plan.includes('enterprise')||plan.includes('premium'))return 10;
+        if(plan.includes('pro')||plan.includes('growth'))return 6;
+        if(plan.includes('plus')||plan.includes('standard')||plan.includes('starter'))return 3;
+        return 1;
+    }
+    function adUsage(){
+        const u=(activeSeller&&activeSeller.sponsoredAdUsage)||{};
+        if(u.month===MONTH_KEY)return Number(u.used||0)||0;
+        return Number(activeSeller?.sponsoredAdsUsedThisMonth||activeSeller?.adCreditsUsed||0)||0;
+    }
+    async function saveAdUsage(nextUsed){
+        const usage={month:MONTH_KEY,used:nextUsed,updatedAt:nowIso2()};
+        await db.collection('sellers').doc(activeSeller.email).set({sponsoredAdUsage:usage,sponsoredAdsUsedThisMonth:nextUsed},{merge:true});
+        activeSeller.sponsoredAdUsage=usage;activeSeller.sponsoredAdsUsedThisMonth=nextUsed;localStorage.setItem('sellerToken',JSON.stringify(activeSeller));
+    }
+    window.startAd=async function(id){
+        const p=(sellerProducts||[]).find(x=>String(x.id)===String(id))||{};
+        const limit=adPlanLimit(), used=adUsage(), left=Math.max(0,limit-used);
+        const modal=$id('adPaymentModal'), msg=$id('adPlanMessage'), cost=$id('adCostDisplay'), input=$id('adProdId');
+        if(input)input.value=id;
+        if(msg)msg.innerHTML=left>0?`<i class="fas fa-circle-check"></i> Free sponsored slot available: <b>${left}/${limit}</b> left this month for your plan. Product: <b>${escapeHtmlFinal(p.name||p.title||id)}</b>.`:`<i class="fas fa-wallet"></i> No free sponsored slots left this month. Your plan gives <b>${limit}</b> free ad${limit>1?'s':''}/month. Pay now or deduct from upcoming payout.`;
+        if(cost)cost.innerText=left>0?'FREE':'₹70';
+        const online=modal&&modal.querySelector('button[onclick="payAdOnline()"]');
+        const payout=$id('btnAdPayout');
+        if(online)online.innerHTML=left>0?'<i class="fas fa-bolt"></i> Use Free Sponsored Slot':'Pay Now (Online)';
+        if(payout)payout.style.display=left>0?'none':'inline-flex';
+        if(modal){modal.style.display='flex';setTimeout(()=>modal.classList.add('show'),10);}
+    };
+    async function activateSponsored(id,isFree){
+        const until=new Date(Date.now()+24*3600000).toISOString();
+        await db.collection('products').doc(id).set({isAd:true,isSponsored:true,sponsored:true,adStatus:'Sponsored',sponsoredAt:nowIso2(),sponsoredUntil:until},{merge:true});
+        const p=(sellerProducts||[]).find(x=>String(x.id)===String(id)); if(p)Object.assign(p,{isAd:true,isSponsored:true,sponsored:true,adStatus:'Sponsored',sponsoredUntil:until});
+        if(isFree)await saveAdUsage(adUsage()+1);
+        if(typeof loadAds==='function')loadAds();
+        showToast(isFree?'Free sponsored slot activated for 24 hours.':'Sponsored ad activated for 24 hours.','success');
+    }
+    window.payAdOnline=async function(){
+        const id=$id('adProdId')?.value; if(!id)return;
+        const left=Math.max(0,adPlanLimit()-adUsage());
+        if(left>0){closeModal('adPaymentModal');return activateSponsored(id,true);}
+        if(!API_KEYS.RAZORPAY)return showToast('Payment key missing. Refresh and retry.','error');
+        const options={key:API_KEYS.RAZORPAY,amount:7000,currency:'INR',name:'Aryanta Ads',description:'Sponsored Ad 24 Hours',handler:async function(res){try{if(typeof savePaymentLedger==='function')await savePaymentLedger({type:'sponsored_ad_online',productId:id,amount:70,status:'Paid',razorpayPaymentId:res.razorpay_payment_id||''});}catch(e){}closeModal('adPaymentModal');activateSponsored(id,false);},prefill:{email:activeSeller.email,contact:activeSeller.phone||''},theme:{color:'#0f172a'}};
+        new Razorpay(options).open();
+    };
+    window.payAdUpcoming=async function(){
+        const id=$id('adProdId')?.value; if(!id)return;
+        try{if(typeof addFineOnce==='function')await addFineOnce('sponsored_ad_'+id+'_'+Date.now(),70,'Sponsored Ad Fee');else await db.collection('fines').add({email:activeSeller.email,amount:70,reason:'Sponsored Ad Fee',timestamp:nowIso2()});}catch(e){}
+        try{if(typeof savePaymentLedger==='function')await savePaymentLedger({type:'sponsored_ad_payout',productId:id,amount:70,status:'Deducted from payout'});}catch(e){}
+        closeModal('adPaymentModal');activateSponsored(id,false);
+    };
+
+    const oldSetScanStep = window.setScanStep;
+    window.setScanStep=function(step){
+        currentScanStep=step;
+        ['scanStep1','scanStep2','scanStep3'].forEach(id=>{const el=$id(id);if(el)el.classList.toggle('active',id===('scanStep'+step));});
+    };
 })();
