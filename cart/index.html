@@ -4,25 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Secure Checkout | Aryanta</title>
-    
+
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono&display=swap" rel="stylesheet">
-    
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js" defer></script>
 
    <link rel="stylesheet" href="style.css">
+   <style>
+        .cart-img-box{width:92px;height:92px;border-radius:20px;overflow:hidden;background:linear-gradient(135deg,#f8fafc,#eef2ff);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex:0 0 92px;box-shadow:var(--shadow-sm)}
+        .cart-img-box img{width:100%;height:100%;object-fit:cover;display:block;transition:.22s ease}
+        .cart-img-box img.fallback-img{object-fit:cover;padding:0;background:transparent}.cart-img-missing{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center;color:var(--text-muted,#64748b);font-size:10px;font-weight:900;background:linear-gradient(135deg,#f8fafc,#eef2ff)}.cart-img-missing i{font-size:22px;color:var(--primary,#2563eb)}.dark-theme .cart-img-missing{background:linear-gradient(135deg,#0f172a,#1e293b)}
+        .email-edit-row{display:flex;align-items:center;gap:10px;width:100%}
+        .email-edit-row .form-input{flex:1;min-width:0}
+        .email-edit-btn,.email-cancel-btn{height:46px;border-radius:14px;border:1px solid var(--border);padding:0 14px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;gap:7px;background:var(--surface);color:var(--text-main);box-shadow:var(--shadow-sm);white-space:nowrap}
+        .email-edit-btn.save{background:var(--primary);border-color:var(--primary);color:#fff}
+        .email-cancel-btn{display:none;background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.22);color:var(--danger)}
+        .email-delivery-card .form-input[readonly],.mixed-delivery-note .form-input[readonly]{opacity:.9;cursor:default;background:var(--surface-2)!important}
+        @media(max-width:560px){.cart-img-box{width:82px;height:82px;border-radius:18px;flex-basis:82px}.email-edit-row{gap:8px}.email-edit-btn,.email-cancel-btn{height:44px;padding:0 11px;font-size:12px}.email-edit-btn span,.email-cancel-btn span{display:none}}
+   </style>
 </head>
 <body>
 
-    <!-- Full Screen Centered Lightning Fast Loader -->
+
     <div class="loader-overlay" id="checkoutLoader">
         <div class="spinner"></div>
         <h4 id="loaderText" style="font-weight: 800; color: var(--text-main); font-size: 20px; letter-spacing: 2px;">ARYANTA</h4>
         <p style="font-size: 14px; color: var(--text-muted); margin-top: 10px; font-weight: 600;">Secure Checkout</p>
     </div>
 
-    <!-- Animated Placing Order Overlay -->
+
     <div class="processing-overlay" id="processingOrderOverlay">
         <div class="processing-box">
             <div class="proc-icon-wrapper">
@@ -42,7 +57,7 @@
         </div>
     </div>
 
-    <!-- Alert Modal for Empty Selections & Errors -->
+
     <div class="modal-overlay" id="customAlertOverlay">
         <div class="modal-box" style="max-width: 400px; padding: 40px 30px; text-align: center;">
             <div style="font-size: 50px; color: var(--warning); margin-bottom: 20px;"><i class="fas fa-exclamation-circle"></i></div>
@@ -56,7 +71,7 @@
         <div class="nav-left">
             <button type="button" id="navStoreBtn" class="store-btn"><i class="fas fa-arrow-left"></i></button>
         </div>
-        
+
         <a href="https://aryanta.in/" id="navLogoBtn" class="brand-logo-btn">
             <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta Logo">
             ARYANTA<span class="prime-dot">.</span>
@@ -69,14 +84,14 @@
         </div>
     </header>
 
-    <!-- Floating Theme Button (PC) -->
+
     <button id="themeToggleBtn" class="floating-theme-btn" onclick="toggleThemeCycle()" title="Toggle Theme">
         <i class="fas fa-desktop"></i>
     </button>
 
     <div class="cart-wrapper">
-        
-        <!-- Interactive Step Indicator -->
+
+
         <div class="step-header" id="stepperNav" style="display: none;">
             <div class="step-node active" id="node1"><i class="fas fa-shopping-bag"></i><span class="step-label">Cart Items</span></div>
             <div class="step-node" id="node2"><i class="fas fa-map-marker-alt"></i><span class="step-label">Delivery</span></div>
@@ -84,27 +99,27 @@
         </div>
 
         <div class="cart-layout">
-            
-            <!-- LEFT COLUMN: Checkout Steps -->
+
+
             <div class="checkout-steps-container" style="position: relative; min-height: 300px;">
-                
-                <!-- STEP 1: CART ITEMS -->
+
+
                 <div class="step-container active" id="step1Container">
                     <div id="cartItemsList">
-                        <!-- Dynamic items -->
+
                     </div>
                 </div>
 
-                <!-- STEP 2: ADDRESS -->
+
                 <div class="step-container" id="step2Container">
                     <h3 style="font-size: 24px; font-weight: 800; margin-bottom: 25px; letter-spacing: -0.5px; color: var(--text-main);">Select Delivery Location</h3>
-                    
+
                     <div id="addressSelectionGrid" class="address-grid">
-                        <!-- Dynamic addresses -->
+
                     </div>
 
                     <button type="button" class="btn-action bounce-hover" id="addAddressBtn" style="margin-top: 25px;" onclick="openNewAddressForm()"><i class="fas fa-plus"></i> Add New Physical Address</button>
-                    
+
                     <div id="inlineAddressForm" style="display: none; margin-top: 25px; background: var(--surface); padding: 25px; border-radius: 24px; border: 1px dashed var(--border); box-shadow: var(--shadow-sm);">
                         <h4 style="margin-bottom: 18px; font-size: 16px; font-weight: 800;">New Address Details</h4>
                         <div style="display: flex; gap: 12px;">
@@ -123,11 +138,11 @@
                     </div>
                 </div>
 
-                <!-- STEP 3: PAYMENT -->
+
                 <div class="step-container" id="step3Container">
                     <h3 style="font-size: 24px; font-weight: 800; margin-bottom: 25px; letter-spacing: -0.5px; color: var(--text-main);">Payment Options</h3>
-                    
-                    <!-- Wallet / Coupons -->
+
+
                     <div class="coupon-section checkout-offer-box">
                         <div class="promo-title-row">
                             <div>
@@ -149,7 +164,7 @@
                             </button>
                         </div>
                         <p id="walletMessage" class="wallet-message" style="display:none;"></p>
-                        
+
                         <div class="promo-input-row">
                             <input type="text" id="couponCodeInput" class="form-input" placeholder="ENTER PROMO CODE" autocomplete="off" spellcheck="false">
                             <button type="button" class="btn-prime bounce-hover" id="applyPromoBtn" onclick="applyPromo()">Apply</button>
@@ -157,7 +172,7 @@
                         <p id="promoMessage" class="promo-message" style="display: none;"></p>
                     </div>
 
-                    <!-- Payment Methods -->
+
                     <div class="payment-options">
                         <label class="pay-radio">
                             <input type="radio" name="payMethod" value="online" checked onchange="updatePaymentUI()">
@@ -182,19 +197,19 @@
 
             </div>
 
-            <!-- RIGHT COLUMN: Order Summary -->
+
             <div>
                 <div class="summary-panel" id="summaryPanel" style="display: none;">
                     <h3 class="summary-title">Order Summary</h3>
-                    
+
                     <div class="summary-line"><span>Items Selected (<span id="sumItemCount">0</span>)</span> <strong id="sumSubtotal">₹0</strong></div>
                     <div class="summary-line muted"><span>Delivery Fee</span> <strong id="sumShipping">Calculated next</strong></div>
-                    
+
                     <div class="summary-line discount" id="sumDiscountRow" style="display: none;">
                         <span>Discount</span> <strong id="sumDiscountVal">-₹0</strong>
                     </div>
-                    
-                    <!-- NEW ARYANTA POINTS REWARD -->
+
+
                     <div class="summary-line points" id="sumPointsRow" style="border-top: 1px dashed var(--border); padding-top: 15px; margin-top: 5px;">
                         <span><i class="fas fa-coins" style="color: #f59e0b;"></i> Earn Points</span> <strong id="sumPoints">+0 Pts</strong>
                     </div>
@@ -203,7 +218,7 @@
                         <span>Total Pay</span> <span id="sumGrandTotal">₹0</span>
                     </div>
 
-                    <!-- Dynamic Progression Button -->
+
                     <div style="margin-top: 35px;">
                         <button type="button" class="btn-action bounce-hover" id="btnBackStep" style="display: none; margin-bottom: 15px; width: 100%;" onclick="goStepBack()"><i class="fas fa-arrow-left"></i> Go Back</button>
                         <button type="button" class="btn-prime bounce-hover" id="btnNextStep" onclick="goStepForward()">Proceed to Delivery <i class="fas fa-arrow-right"></i></button>
@@ -229,7 +244,7 @@
         </div>
     </footer>
 
-    <!-- Premium Success & Physical Receipt Modal -->
+
     <div class="modal-overlay" id="successModal">
         <div class="modal-box receipt-modal-box">
             <div class="ultra-anim-container receipt-success-anim" aria-hidden="true">
@@ -303,44 +318,39 @@
         </div>
     </div>
 
-    <!-- Notifications -->
+
     <div id="toastNotification" class="toast-notification"><i class="fas fa-info-circle"></i> <span id="toastMessage">Message</span></div>
 
     <script>
-        // Exact Security Logs - Keep Console Clean
         console.log(
-            "%c🛑 ARYANTA Data Is Encrypted code #4076", 
+            "%c🛑 ARYANTA Data Is Encrypted code #4076",
             "color: #ff3b30; font-size: 22px; font-weight: 900; font-family: -apple-system, sans-serif;"
         );
         console.log(
-            "%cThis is a browser feature intended for developers. Do not paste any code here, or your account may be compromised. All data transmitted is securely encrypted.", 
+            "%cThis is a browser feature intended for developers. Do not paste any code here, or your account may be compromised. All data transmitted is securely encrypted.",
             "color: #86868b; font-size: 14px; font-weight: bold; font-family: -apple-system, sans-serif;"
         );
 
-        // Core Globals Bound Explicitly to Window
         window.API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
         window.PROJECT_ID = "aryanta-mart-a8893";
         window.API_KEYS = { RAZORPAY: "", EMAILJS_PUBLIC: "", EMAILJS_ORDER_SERVICE: "", EMAILJS_ORDER_TEMPLATE: "" };
 
-        // Core State
         window.currentStep = 1;
         window.cart = [];
         window.activeSession = null;
         window.userData = null;
         window.selectedAddressIndex = 0;
-        
+
         let appSettings = { theme: 'system' };
-        
-        // --- SECURE BACKEND VARIABLES ---
+
         window.requireAdvance = false;
-        window.backendDeliveryCharge = 60; // Default fallback amount
-        
+        window.backendDeliveryCharge = 60;
+
         window.state = { itemsTotal: 0, shippingCost: 0, walletBalance: 0, walletApplied: 0, promoDiscount: 0, finalPayable: 0, promoCode: "", hasEmailDelivery: false, hasPhysicalDelivery: false, allEmailDelivery: false, removedDbItems: 0 };
         window.checkoutBusy = false;
         window.checkoutBootDone = false;
         window.cartValidationPromise = null;
 
-        // Centralized DOM Methods attached to window
         window.toggleButtonState = function(btnId, isLoading, defaultHtml) {
             const btn = document.getElementById(btnId);
             if (!btn) return;
@@ -449,7 +459,6 @@
             return btoa(encodeURIComponent(jsonString)).split('').reverse().join('');
         };
 
-        // JS Navigation Handlers
         document.addEventListener('DOMContentLoaded', () => {
             loadAppSettings();
             const bindClick = (id, url) => {
@@ -463,7 +472,7 @@
             bindClick('socialXBtn', 'https://x.com/officialaryanta');
             bindClick('socialFbBtn', 'https://www.facebook.com/share/1E8hFiNnmw/');
         });
-        
+
         function loadAppSettings() {
             try {
                 const stored = localStorage.getItem('aryanta_settings');
@@ -480,7 +489,7 @@
         function applyTheme() {
             const btnIcon = document.querySelector('#themeToggleBtn i');
             document.body.classList.remove('dark-theme', 'light-theme');
-            
+
             if (appSettings.theme === 'dark') {
                 document.body.classList.add('dark-theme');
                 if(btnIcon) btnIcon.className = 'fas fa-moon';
@@ -501,7 +510,7 @@
         }
 
         window.openProduct = function(id) {
-            window.location.href = 'https://aryanta.in/product?id=' + id;
+            window.location.href = 'https://aryanta.in/product/?id=' + encodeURIComponent(id);
         };
 
         window.addEventListener('popstate', function(event) {
@@ -513,39 +522,95 @@
             }
         });
 
-        // --- LIGHTNING FAST BOOT SEQUENCE (local cart first, DB sync second) ---
         window.safeJSON = function(value, fallback) {
             try { return JSON.parse(value); } catch(e) { return fallback; }
         };
 
+        window.deferBackgroundTask = function(fn) {
+            if (typeof fn !== "function") return;
+            if ("requestIdleCallback" in window) {
+                requestIdleCallback(fn, { timeout: 1200 });
+            } else {
+                setTimeout(fn, 80);
+            }
+        };
+
         window.getLocalCart = function() {
-            const raw = localStorage.getItem('local_cart');
+            const raw = localStorage.getItem('local_cart') || sessionStorage.getItem('local_cart') || "[]";
             const parsed = window.safeJSON(raw, []);
             return Array.isArray(parsed) ? parsed : [];
         };
 
-        window.normalizeCartItems = function(items) {
+        window.cleanCartImageForDisplay = function(value) {
+            let img = String(value || "").trim();
+            if (!img) return "";
+            const lower = img.toLowerCase();
+            if (lower === "null" || lower === "undefined" || lower === "na" || lower === "n/a" || lower === "[object object]") return "";
+            if (lower.includes("via.placeholder.com") || lower.includes("placeholder.com")) return "";
+            if (lower.includes("aryanta.in/vurify/aryanta.jpeg") || (lower.includes("aryanta.jpeg") && lower.includes("vurify"))) return "";
+            if (img.startsWith("//")) img = "https:" + img;
+            if (img.startsWith("/")) img = "https://aryanta.in" + img;
+            if (img.startsWith("data:image/")) return img.length <= 350000 ? img : "";
+            if (!/^https?:\/\//i.test(img)) return "";
+            return img;
+        };
+
+        window.cleanCartImageForStorage = function(value) {
+            const img = window.cleanCartImageForDisplay(value);
+            if (!img) return "";
+            if (img.startsWith("data:image/")) return "";
+            if (img.length > 2200) return "";
+            return img;
+        };
+
+        window.pickCartValue = function(raw, keys, fallback = "") {
+            for (const key of keys) {
+                const value = raw && raw[key];
+                if (value !== undefined && value !== null && String(value).trim() !== "") return value;
+            }
+            return fallback;
+        };
+
+        window.normalizeCartItems = function(items, opts = {}) {
             if (!Array.isArray(items)) return [];
+            const forStorage = !!(opts && opts.forStorage);
             const seen = new Map();
 
             items.forEach(raw => {
-                if (!raw || !raw.id) return;
-                const id = String(raw.id);
+                if (!raw || typeof raw !== "object") return;
+                const id = String(window.pickCartValue(raw, ["id", "productId", "productID", "pid", "docId", "sku"], "")).trim();
+                if (!id) return;
+
                 const old = seen.get(id);
-                const qty = Math.max(1, Number(raw.qty || 1) || 1);
+                const qty = Math.max(1, Number(raw.qty || raw.quantity || 1) || 1);
+                const imageRaw = window.getProductImageCandidate ? window.getProductImageCandidate(raw) : window.pickCartValue(raw, ["image", "thumbnail", "imageUrl", "img", "photo"], Array.isArray(raw.images) ? raw.images[0] : "");
+                const name = String(window.pickCartValue(raw, ["name", "title", "productName", "itemName"], "Aryanta Product")).slice(0, 180);
                 const clean = {
-                    ...raw,
                     id,
-                    name: raw.name || raw.title || "Aryanta Product",
-                    price: Number(raw.price || raw.salePrice || raw.finalPrice || 0) || 0,
+                    productId: String(window.pickCartValue(raw, ["productId", "productID", "pid", "docId"], id)).trim(),
+                    sku: String(window.pickCartValue(raw, ["sku", "barcode"], "")).slice(0, 80),
+                    name,
+                    title: name,
+                    price: Number(window.pickCartValue(raw, ["price", "salePrice", "sellingPrice", "finalPrice", "listedPrice", "amount"], 0)) || 0,
+                    mrp: Number(window.pickCartValue(raw, ["mrp", "originalPrice", "maxPrice"], 0)) || 0,
                     qty,
                     selected: typeof raw.selected === "undefined" ? true : !!raw.selected,
-                    image: raw.image || (Array.isArray(raw.images) ? raw.images[0] : "") || raw.thumbnail || ""
+                    image: forStorage ? window.cleanCartImageForStorage(imageRaw) : window.cleanCartImageForDisplay(imageRaw),
+                    category: String(window.pickCartValue(raw, ["category", "cat"], "")).slice(0, 80),
+                    sellerEmail: String(window.pickCartValue(raw, ["sellerEmail", "seller_email", "vendorEmail", "ownerEmail"], "")).toLowerCase().slice(0, 160),
+                    sellerId: String(window.pickCartValue(raw, ["sellerId", "sellerUID", "storeId", "uid"], "")).slice(0, 120),
+                    sellerName: String(window.pickCartValue(raw, ["sellerName", "storeName", "companyName"], "")).slice(0, 120),
+                    stock: Number(window.pickCartValue(raw, ["stock", "quantity", "availableStock"], 999)) || 999,
+                    emailDelivery: window.booleanFlag ? window.booleanFlag(raw.emailDelivery || raw.isEmailDelivery || raw.deliverByEmail || raw.digitalDelivery || raw.isDigital || raw.digital || raw.isGiftCard) : !!(raw.emailDelivery || raw.isEmailDelivery || raw.deliverByEmail || raw.digitalDelivery || raw.isDigital || raw.digital || raw.isGiftCard),
+                    digitalDelivery: !!(raw.digitalDelivery || raw.isDigital || raw.digital || raw.isGiftCard),
+                    deliveryMode: String(window.pickCartValue(raw, ["deliveryMode", "deliveryType", "delivery_method", "fulfillment", "productType", "type"], "")).slice(0, 80)
                 };
 
                 if (old) {
                     old.qty += qty;
                     old.selected = old.selected || clean.selected;
+                    old.price = clean.price || old.price;
+                    old.image = old.image || clean.image;
                     seen.set(id, old);
                 } else {
                     seen.set(id, clean);
@@ -553,6 +618,22 @@
             });
 
             return Array.from(seen.values());
+        };
+
+        window.saveLocalCartCompact = function(items) {
+            const compact = window.normalizeCartItems(items, { forStorage: true });
+            const payload = JSON.stringify(compact);
+            try {
+                localStorage.setItem('local_cart', payload);
+                try { sessionStorage.removeItem('local_cart'); } catch(e) {}
+            } catch (err) {
+                try { localStorage.removeItem('local_cart'); } catch(e) {}
+                try { sessionStorage.setItem('local_cart', payload); } catch(e) {}
+                if (err && (err.name === 'QuotaExceededError' || err.code === 22)) {
+                    console.warn('Aryanta cart was too large for localStorage. Saved compact cart safely.');
+                }
+            }
+            return compact;
         };
 
 
@@ -585,6 +666,10 @@
                 if (value !== undefined && value !== null && String(value).trim() !== "") return value;
             }
             return "";
+        };
+
+        window.escapeAttr = function(value) {
+            return String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
         };
 
         window.booleanFlag = function(value) {
@@ -702,10 +787,285 @@
             const id = String(window.firstNonEmpty(raw.id, raw.productId, raw.pid, raw.sku, requestedId));
             if (!id) return null;
             const name = String(window.firstNonEmpty(raw.name, raw.title, raw.productName, raw.itemName, "Aryanta Product"));
-            const image = window.firstNonEmpty(raw.image, raw.thumbnail, raw.imageUrl, raw.photo, Array.isArray(raw.images) ? raw.images[0] : "", Array.isArray(raw.imageUrls) ? raw.imageUrls[0] : "");
+            const image = window.getProductImageCandidate ? window.getProductImageCandidate(raw) : window.firstNonEmpty(raw.image, raw.thumbnail, raw.imageUrl, raw.photo, Array.isArray(raw.images) ? raw.images[0] : "", Array.isArray(raw.imageUrls) ? raw.imageUrls[0] : "");
             const price = Number(window.firstNonEmpty(raw.price, raw.salePrice, raw.sellingPrice, raw.finalPrice, raw.amount, 0)) || 0;
             const stock = Number(window.firstNonEmpty(raw.stock, raw.quantity, raw.qty, raw.availableStock, 999));
             return { ...raw, id, productId: raw.productId || id, name, title: name, image, price, stock: Number.isFinite(stock) ? stock : 999 };
+        };
+
+        window.CART_IMAGE_MISSING_SVG = "";
+        window.cartProductImageCache = {};
+        window.cartProductDataCache = {};
+        window.cartCatalogPromise = null;
+
+        window.isBadCartImageUrl = function(value, allowData = false) {
+            const url = String(value || "").trim();
+            if (!url) return true;
+            const lower = url.toLowerCase();
+            if (lower === "null" || lower === "undefined" || lower === "na" || lower === "n/a" || lower === "[object object]") return true;
+            if (lower.includes("via.placeholder.com") || lower.includes("placeholder.com")) return true;
+            if (lower.includes("aryanta.in/vurify/aryanta.jpeg")) return true;
+            if (lower.includes("aryanta.jpeg") && lower.includes("vurify")) return true;
+            if (lower.startsWith("data:image/")) return !allowData;
+            if (url.length > 6000) return true;
+            return false;
+        };
+
+        window.normalizeCartImageUrl = function(value, allowData = true) {
+            if (value && typeof value === "object") {
+                const nested = window.getProductImageCandidate(value, allowData);
+                return nested || "";
+            }
+            let url = String(value || "").trim();
+            if (window.isBadCartImageUrl(url, allowData)) return "";
+            if (url.startsWith("//")) url = "https:" + url;
+            if (url.startsWith("/")) url = "https://aryanta.in" + url;
+            if (url.startsWith("data:image/") && allowData) return url;
+            if (!/^https?:\/\//i.test(url)) return "";
+            return url;
+        };
+
+        window.parsePossibleImageList = function(value) {
+            if (!value) return [];
+            if (Array.isArray(value)) return value;
+            if (typeof value === "object") {
+                if (Array.isArray(value.values)) return value.values;
+                if (value.arrayValue && Array.isArray(value.arrayValue.values)) return value.arrayValue.values;
+                return Object.values(value);
+            }
+            if (typeof value === "string") {
+                const text = value.trim();
+                if ((text.startsWith("[") && text.endsWith("]")) || (text.startsWith("{") && text.endsWith("}"))) {
+                    try {
+                        const parsed = JSON.parse(text);
+                        return Array.isArray(parsed) ? parsed : Object.values(parsed || {});
+                    } catch(e) {}
+                }
+                return [text];
+            }
+            return [];
+        };
+
+        window.getProductImageCandidate = function(product = {}, allowData = true) {
+            if (!product) return "";
+            if (typeof product === "string") return window.normalizeCartImageUrl(product, allowData);
+            if (product.fields && typeof product.fields === "object") product = window.normalizeBackendProduct(product) || product;
+
+            const directKeys = [
+                "image", "imageUrl", "imageURL", "img", "photo", "thumbnail", "thumbnailUrl", "thumb",
+                "cover", "coverImage", "mainImage", "mainImageUrl", "primaryImage", "primaryImageUrl",
+                "productImage", "productImageUrl", "itemImage", "itemImageUrl", "displayImage", "displayImageUrl",
+                "bannerImage", "photoURL", "photoUrl", "url", "src", "fileUrl", "fileURL", "downloadURL",
+                "downloadUrl", "secure_url", "publicUrl", "publicURL", "image_url", "image_url_1", "image1",
+                "image1Url", "image2", "image2Url", "image3", "image3Url", "preview", "previewUrl"
+            ];
+            for (const key of directKeys) {
+                const url = window.normalizeCartImageUrl(product[key], allowData);
+                if (url) return url;
+            }
+
+            const arrayKeys = ["images", "imageUrls", "imageURLS", "photos", "gallery", "media", "files", "productImages", "imageList", "image_links", "pictures", "attachments"];
+            for (const key of arrayKeys) {
+                const entries = window.parsePossibleImageList(product[key]);
+                for (const entry of entries) {
+                    const url = typeof entry === "string" ? window.normalizeCartImageUrl(entry, allowData) : window.getProductImageCandidate(entry || {}, allowData);
+                    if (url) return url;
+                }
+            }
+
+            const nestedKeys = ["selectedVariant", "variant", "variants", "product", "item", "data", "meta", "details"];
+            for (const key of nestedKeys) {
+                const val = product[key];
+                if (!val) continue;
+                const entries = Array.isArray(val) ? val : [val];
+                for (const entry of entries) {
+                    if (entry && typeof entry === "object") {
+                        const url = window.getProductImageCandidate(entry, allowData);
+                        if (url) return url;
+                    }
+                }
+            }
+            return "";
+        };
+
+        window.cartProductKeys = function(item = {}) {
+            return [
+                item.id, item.productId, item.productID, item.pid, item.docId, item.productDocId,
+                item.sku, item.itemId, item.slug, item.uid, item.barcode
+            ].map(v => String(v || "").trim()).filter(Boolean);
+        };
+
+        window.cacheCartProductImage = function(product = {}) {
+            const img = window.getProductImageCandidate(product, true);
+            if (!img) return;
+            window.cartProductKeys(product).forEach(key => {
+                window.cartProductImageCache[key] = img;
+                window.cartProductDataCache[key] = product;
+            });
+        };
+
+        window.cartArrayFromResponse = function(data) {
+            if (!data) return [];
+            if (Array.isArray(data)) return data;
+            if (Array.isArray(data.products)) return data.products;
+            if (Array.isArray(data.items)) return data.items;
+            if (Array.isArray(data.data)) return data.data;
+            if (data.data && Array.isArray(data.data.products)) return data.data.products;
+            if (data.data && Array.isArray(data.data.items)) return data.data.items;
+            if (data.result && Array.isArray(data.result.products)) return data.result.products;
+            if (Array.isArray(data.documents)) return data.documents.map(doc => window.normalizeBackendProduct(doc)).filter(Boolean);
+            if (data.products && typeof data.products === "object") return Object.values(data.products);
+            if (data.items && typeof data.items === "object") return Object.values(data.items);
+            return [];
+        };
+
+        window.fetchCartCatalogImageMap = async function() {
+            if (window.cartCatalogPromise) return window.cartCatalogPromise;
+            window.cartCatalogPromise = (async () => {
+                const urls = [
+                    `${window.API_BASE_URL}/products?limit=2500&_cartimg=${Date.now()}`,
+                    `${window.API_BASE_URL}/home-fast?limit=2500&_cartimg=${Date.now()}`,
+                    `${window.API_BASE_URL}/products?_cartimg=${Date.now()}`
+                ];
+                for (const url of urls) {
+                    try {
+                        const data = await window.fastFetchJSON(url, {}, 1);
+                        window.cartArrayFromResponse(data).forEach(raw => {
+                            const p = window.normalizeBackendProduct(raw) || raw;
+                            window.cacheCartProductImage(p);
+                        });
+                    } catch(e) {}
+                }
+                return window.cartProductImageCache;
+            })().finally(() => { window.cartCatalogPromise = null; });
+            return window.cartCatalogPromise;
+        };
+
+        window.getCartDisplayImage = function(item = {}) {
+            const direct = window.getProductImageCandidate(item, true);
+            if (direct) return direct;
+            for (const key of window.cartProductKeys(item)) {
+                const cached = window.normalizeCartImageUrl(window.cartProductImageCache[key], true);
+                if (cached) return cached;
+            }
+            return "";
+        };
+
+        window.renderCartImageHtml = function(item = {}) {
+            const img = window.getCartDisplayImage(item);
+            const name = window.escapeAttr(item.name || item.title || "Aryanta Product");
+            const id = window.escapeAttr(item.id || item.productId || item.sku || "");
+            if (img) {
+                return `<img src="${window.escapeAttr(img)}" loading="eager" fetchpriority="high" decoding="async" alt="${name}" data-cart-img-id="${id}" onerror="handleCartImageError(this)">`;
+            }
+            return `<div class="cart-img-missing" data-cart-img-id="${id}"><i class="fas fa-image"></i><span>Loading photo</span></div>`;
+        };
+
+        window.handleCartImageError = function(img) {
+            if (!img) return;
+            const id = img.getAttribute("data-cart-img-id") || "";
+            img.onerror = null;
+            img.replaceWith(document.createRange().createContextualFragment(`<div class="cart-img-missing" data-cart-img-id="${window.escapeAttr(id)}"><i class="fas fa-image"></i><span>Photo unavailable</span></div>`));
+        };
+
+        window.fetchSingleCartProductFast = async function(item = {}) {
+            const keys = window.cartProductKeys(item).slice(0, 3);
+            for (const key of keys) {
+                try {
+                    const url = `${window.API_BASE_URL}/product?id=${encodeURIComponent(key)}&_cartfast=${Date.now()}`;
+                    const data = await window.fastFetchJSON(url, {}, 0);
+                    const product = window.normalizeBackendProduct(data, key);
+                    if (product) {
+                        window.cacheCartProductImage(product);
+                        return product;
+                    }
+                } catch(e) {}
+            }
+            return null;
+        };
+
+        window.enrichCartImagesSilently = async function(reason = "cart-images") {
+            if (!Array.isArray(window.cart) || !window.cart.length) return;
+            const missingItems = window.cart.filter(item => !window.getCartDisplayImage(item));
+            if (!missingItems.length) return;
+
+            let changed = false;
+            const firstBatch = missingItems.slice(0, 10);
+            const products = await Promise.all(firstBatch.map(item => window.fetchSingleCartProductFast(item)));
+            products.filter(Boolean).forEach(product => window.cacheCartProductImage(product));
+
+            window.cart.forEach(item => {
+                if (window.getProductImageCandidate(item, true)) return;
+                const img = window.getCartDisplayImage(item);
+                if (img) {
+                    item.image = img;
+                    changed = true;
+                }
+            });
+
+            if (!changed && missingItems.length) {
+                await window.fetchCartCatalogImageMap();
+                window.cart.forEach(item => {
+                    if (window.getProductImageCandidate(item, true)) return;
+                    const img = window.getCartDisplayImage(item);
+                    if (img) {
+                        item.image = img;
+                        changed = true;
+                    }
+                });
+            }
+
+            if (changed) window.saveLocalCartCompact(window.cart);
+            if (window.currentStep === 1) window.renderStep1();
+        };
+
+        window.renderDeliveryEmailEditor = function(savedEmail) {
+            const email = window.escapeAttr ? window.escapeAttr(savedEmail || "") : String(savedEmail || "").replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[ch] || ch));
+            return `
+                <div class="email-edit-row">
+                    <input type="email" id="checkoutDeliveryEmail" class="form-input" value="${email}" placeholder="Enter delivery email" readonly data-last-email="${email}" onchange="window.userData.checkoutEmail = this.value" style="background: var(--surface); color: var(--text-main); font-family: var(--font-mono); font-size: 14px; padding: 12px; margin-bottom: 0;">
+                    <button type="button" id="deliveryEmailEditBtn" class="email-edit-btn" onclick="toggleDeliveryEmailEdit()"><i class="fas fa-pen"></i><span>Edit</span></button>
+                    <button type="button" id="deliveryEmailCancelBtn" class="email-cancel-btn" onclick="cancelDeliveryEmailEdit()"><i class="fas fa-times"></i><span>Cancel</span></button>
+                </div>`;
+        };
+
+        window.toggleDeliveryEmailEdit = function() {
+            const input = document.getElementById('checkoutDeliveryEmail');
+            const btn = document.getElementById('deliveryEmailEditBtn');
+            const cancel = document.getElementById('deliveryEmailCancelBtn');
+            if (!input || !btn) return;
+            if (input.readOnly) {
+                input.dataset.lastEmail = input.value;
+                input.readOnly = false;
+                input.focus();
+                input.select();
+                btn.classList.add('save');
+                btn.innerHTML = '<i class="fas fa-check"></i><span>Save</span>';
+                if (cancel) cancel.style.display = 'inline-flex';
+            } else {
+                const val = input.value.trim();
+                if (!/^\S+@\S+\.\S+$/.test(val)) return window.showAlert('Please enter a valid delivery email.', 'Email Required');
+                window.userData.checkoutEmail = val;
+                input.value = val;
+                input.dataset.lastEmail = val;
+                input.readOnly = true;
+                btn.classList.remove('save');
+                btn.innerHTML = '<i class="fas fa-pen"></i><span>Edit</span>';
+                if (cancel) cancel.style.display = 'none';
+                window.showToast('Delivery email updated.');
+            }
+        };
+
+        window.cancelDeliveryEmailEdit = function() {
+            const input = document.getElementById('checkoutDeliveryEmail');
+            const btn = document.getElementById('deliveryEmailEditBtn');
+            const cancel = document.getElementById('deliveryEmailCancelBtn');
+            if (!input || !btn) return;
+            input.value = input.dataset.lastEmail || window.userData?.checkoutEmail || window.activeSession?.email || '';
+            input.readOnly = true;
+            btn.classList.remove('save');
+            btn.innerHTML = '<i class="fas fa-pen"></i><span>Edit</span>';
+            if (cancel) cancel.style.display = 'none';
         };
 
         window.isLiveDBProduct = function(product) {
@@ -722,16 +1082,13 @@
         };
 
         window.fetchLiveCartProduct = async function(id) {
-            const encoded = encodeURIComponent(id);
-            const paths = [`/product?id=${encoded}`, `/product?productId=${encoded}`, `/products?id=${encoded}`];
-            for (const path of paths) {
-                try {
-                    const data = await window.fastFetchJSON(`${window.API_BASE_URL}${path}&_cartcheck=${Date.now()}`, {}, 0);
-                    const product = window.normalizeBackendProduct(data, id);
-                    if (window.isLiveDBProduct(product)) return product;
-                } catch(e) {}
-            }
-            return null;
+            await window.fetchCartCatalogImageMap();
+            const sid = String(id || "").trim();
+            if (!sid) return null;
+            const cachedImage = window.cartProductImageCache[sid] || "";
+            const existing = (window.cart || []).find(i => window.cartProductKeys(i).includes(sid));
+            if (!existing && !cachedImage) return null;
+            return { ...(existing || {}), id: sid, image: cachedImage || window.getProductImageCandidate(existing || {}) };
         };
 
         window.validateCartAgainstDB = async function(reason = "cart-open") {
@@ -802,7 +1159,7 @@
                 <div class="cart-warmup-state">
                     <div class="cart-warmup-icon"><i class="fas fa-bag-shopping"></i></div>
                     <h3>${message}</h3>
-                    <p>Checking local cart first and syncing Aryanta cloud in the background.</p>
+                    <p>Loading compact cart and syncing your Aryanta account safely.</p>
                     <div class="warmup-lines"><span></span><span></span><span></span></div>
                 </div>`;
         };
@@ -869,13 +1226,13 @@
             const normalized = window.normalizeCartItems(nextCart);
             if (normalized.length > 0) {
                 window.cart = normalized;
-                localStorage.setItem('local_cart', JSON.stringify(window.cart));
+                window.saveLocalCartCompact(window.cart);
                 window.refreshDeliveryModeState();
                 document.getElementById('stepperNav').style.display = 'flex';
                 document.getElementById('summaryPanel').style.display = 'block';
                 window.renderStep1();
                 window.checkoutBootDone = true;
-                if (source !== "db-validated") window.validateCartAgainstDB(source).catch(() => {});
+                window.enrichCartImagesSilently(source).catch(() => {});
                 return true;
             }
 
@@ -887,7 +1244,7 @@
             if (!window.activeSession || !window.activeSession.email || !window.cart.length) return;
             const payload = {
                 email: window.activeSession.email,
-                updates: { cart: window.cart },
+                updates: { cart: window.normalizeCartItems(window.cart, { forStorage: true }) },
                 projectId: window.PROJECT_ID,
                 _enc_packet: window.encryptPayload({ a: "cart_repair", reason })
             };
@@ -899,8 +1256,11 @@
             }).catch(() => {});
         };
 
-        window.onload = async () => {
-            const sessionStr = localStorage.getItem('active_session');
+        window.startCheckoutBoot = function() {
+            if (window.__checkoutBootStarted) return;
+            window.__checkoutBootStarted = true;
+
+            const sessionStr = localStorage.getItem('active_session') || sessionStorage.getItem('active_session');
             if (!sessionStr) return window.location.href = 'https://aryanta.in/login/';
 
             window.activeSession = window.safeJSON(sessionStr, null);
@@ -915,17 +1275,26 @@
             history.pushState(null, null, window.location.href);
 
             const localCart = window.getLocalCart();
-            if (!window.applyCartAndRender(localCart, "local")) {
-                window.renderCartWarmupState();
-                window.toggleLoader(true, "Syncing secure cart...");
-            } else {
+            const openedFromLocal = window.applyCartAndRender(localCart, "local-fast");
+
+            if (openedFromLocal) {
                 window.toggleLoader(false);
                 window.syncCartToCloudSilently("checkout-open-local-cart");
+                window.deferBackgroundTask(() => {
+                    window.fetchKeysAndDB().catch(() => {}).finally(() => window.toggleLoader(false));
+                });
+            } else {
+                window.renderCartWarmupState();
+                window.toggleLoader(true, "Syncing secure cart...");
+                window.fetchKeysAndDB().catch(() => {}).finally(() => window.toggleLoader(false));
             }
-
-            await window.fetchKeysAndDB();
-            window.toggleLoader(false);
         };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', window.startCheckoutBoot, { once: true });
+        } else {
+            window.startCheckoutBoot();
+        }
 
         window.fetchKeysAndDB = async function() {
             const email = encodeURIComponent(window.activeSession.email);
@@ -983,7 +1352,6 @@
             }
         };
 
-        // --- STEP 1: CART LOGIC ---
         window.renderStep1 = function() {
             window.currentStep = 1;
             window.updateStepNodes();
@@ -992,7 +1360,6 @@
             document.getElementById('step3Container').style.display = 'none';
 
             const list = document.getElementById('cartItemsList');
-            list.innerHTML = '';
             window.state.itemsTotal = 0;
             let qtyTotal = 0;
 
@@ -1011,52 +1378,62 @@
             }
 
             document.getElementById('summaryPanel').style.display = 'block';
+            const rows = [];
 
             window.cart.forEach(item => {
-                let price = Number(item.price);
+                const rawId = String(item.id || item.productId || item.sku || '');
+                const safeId = window.escapeAttr(rawId);
+                const jsIdArg = window.escapeAttr(JSON.stringify(rawId));
+                const itemName = window.escapeAttr(item.name || item.title || 'Aryanta Product');
+                let price = Number(item.price) || 0;
                 if (isPrime) price = Math.floor(price * 0.95);
-                
+                const qty = Math.max(1, Number(item.qty || 1) || 1);
+
                 if (item.selected) {
-                    window.state.itemsTotal += price * item.qty;
-                    qtyTotal += item.qty;
+                    window.state.itemsTotal += price * qty;
+                    qtyTotal += qty;
                 }
 
-                let img = item.image || (item.images ? item.images[0] : 'https://via.placeholder.com/150');
-                
-                list.innerHTML += `
-                    <div class="cart-item-wrapper" id="cart-wrapper-${item.id}">
+                const imageHtml = window.renderCartImageHtml(item);
+                const deliveryBadge = window.isEmailDeliveryItem(item)
+                    ? '<span class="delivery-badge email"><i class="fas fa-envelope-circle-check"></i> Digital delivery</span>'
+                    : '<span class="delivery-badge physical"><i class="fas fa-truck-fast"></i> Physical delivery</span>';
+                const primeBadge = isPrime ? '<span style="font-size:12px; color:var(--accent); font-weight:800; margin-top:4px; display:block;"><i class="fas fa-gem"></i> Prime Applied</span>' : '';
+
+                rows.push(`
+                    <div class="cart-item-wrapper" id="cart-wrapper-${safeId}">
                         <label class="custom-checkbox" title="Select Item">
-                            <input type="checkbox" ${item.selected ? 'checked' : ''} onchange="toggleItemSelection('${item.id}')">
+                            <input type="checkbox" ${item.selected ? 'checked' : ''} onchange="toggleItemSelection(${jsIdArg})">
                             <span class="checkmark"><i class="fas fa-check"></i></span>
                         </label>
                         <div class="cart-item-row" style="padding:0; margin:0; border:none; box-shadow:none; background:transparent;">
-                            <div class="item-click-area" onclick="openProduct('${item.id}')">
-                                <div class="cart-img-box"><img src="${img}" loading="lazy" decoding="async" alt="${item.name || 'Aryanta Product'}"></div>
+                            <div class="item-click-area" onclick="openProduct(${jsIdArg})">
+                                <div class="cart-img-box">${imageHtml}</div>
                                 <div class="cart-details">
-                                    <h4>${item.name}</h4>
-                                    <div class="price">${window.money(price * item.qty)}</div>
-                                    ${window.isEmailDeliveryItem(item) ? '<span class="delivery-badge email"><i class="fas fa-envelope-circle-check"></i> Digital delivery</span>' : '<span class="delivery-badge physical"><i class="fas fa-truck-fast"></i> Physical delivery</span>'}
-                                    ${isPrime ? '<span style="font-size:12px; color:var(--accent); font-weight:800; margin-top:4px; display:block;"><i class="fas fa-gem"></i> Prime Applied</span>' : ''}
+                                    <h4>${itemName}</h4>
+                                    <div class="price">${window.money(price * qty)}</div>
+                                    ${deliveryBadge}
+                                    ${primeBadge}
                                 </div>
                             </div>
                             <div class="cart-controls">
                                 <div style="display:flex; align-items:center; gap:12px;">
-                                    <button type="button" class="qty-btn" onclick="changeQty('${item.id}', -1)"><i class="fas fa-minus"></i></button>
-                                    <span style="font-weight:800; font-size:16px; width:25px; text-align:center;">${item.qty}</span>
-                                    <button type="button" class="qty-btn" onclick="changeQty('${item.id}', 1)"><i class="fas fa-plus"></i></button>
+                                    <button type="button" class="qty-btn" onclick="changeQty(${jsIdArg}, -1)"><i class="fas fa-minus"></i></button>
+                                    <span style="font-weight:800; font-size:16px; width:25px; text-align:center;">${qty}</span>
+                                    <button type="button" class="qty-btn" onclick="changeQty(${jsIdArg}, 1)"><i class="fas fa-plus"></i></button>
                                 </div>
-                                <button type="button" class="btn-remove" onclick="removeFromCart('${item.id}')"><i class="fas fa-trash"></i> Drop</button>
+                                <button type="button" class="btn-remove" onclick="removeFromCart(${jsIdArg})"><i class="fas fa-trash"></i> Drop</button>
                             </div>
                         </div>
-                    </div>`;
+                    </div>`);
             });
 
+            list.innerHTML = rows.join('');
             document.getElementById('sumItemCount').innerText = qtyTotal;
             document.getElementById('sumSubtotal').innerText = window.money(window.state.itemsTotal);
             document.getElementById('sumShipping').innerText = `Calculated next`;
             document.getElementById('sumGrandTotal').innerText = window.money(window.state.itemsTotal);
-            
-            // Show points calculation on Step 1 dynamically
+
             const earnedPts = Math.floor(window.state.itemsTotal * 0.1);
             document.getElementById('sumPoints').innerText = `+${earnedPts.toLocaleString('en-IN')} Pts`;
 
@@ -1081,23 +1458,25 @@
                 if(item.qty <= 0) {
                     window.cart = window.cart.filter(i => String(i.id) !== String(id));
                 }
-                window.saveCartData(); 
+                window.saveCartData();
                 window.renderStep1();
             }
         };
 
         window.removeFromCart = function(id) {
             window.cart = window.cart.filter(i => String(i.id) !== String(id));
-            window.saveCartData(); 
+            window.saveCartData();
             window.renderStep1();
         };
 
         window.saveCartData = function() {
-            localStorage.setItem('local_cart', JSON.stringify(window.cart));
-            if(window.activeSession) {
+            window.cart = window.normalizeCartItems(window.cart);
+            window.saveLocalCartCompact(window.cart);
+            if(window.activeSession && window.activeSession.email) {
+                const compactCart = window.normalizeCartItems(window.cart, { forStorage: true });
                 fetch(`${window.API_BASE_URL}/update-user`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: window.activeSession.email, updates: { cart: window.cart }, projectId: window.PROJECT_ID, _enc_packet: window.encryptPayload({a:'cart'}) })
+                    body: JSON.stringify({ email: window.activeSession.email, updates: { cart: compactCart }, projectId: window.PROJECT_ID, _enc_packet: window.encryptPayload({a:'cart'}) })
                 }).catch(e => {});
             }
         };
@@ -1123,8 +1502,7 @@
                 if(!mode.allEmailDelivery && (!window.userData || !window.userData.addresses || window.userData.addresses.length === 0)) {
                     return window.showToast("Please add a delivery location to proceed.");
                 }
-                
-                // Validate email if digital item exists
+
                 if (mode.hasEmailDelivery) {
                     const emailInput = document.getElementById('checkoutDeliveryEmail');
                     if (emailInput && (!emailInput.value.trim() || !/^\S+@\S+\.\S+$/.test(emailInput.value.trim()))) {
@@ -1143,7 +1521,6 @@
             else if (window.currentStep === 2) window.renderStep1();
         };
 
-        // --- STEP 2: ADDRESS LOGIC ---
         window.renderStep2 = function() {
             window.currentStep = 2;
             window.updateStepNodes();
@@ -1166,13 +1543,13 @@
                         <strong><i class="fas fa-envelope-circle-check"></i> Digital Delivery Selected</strong>
                         <div style="margin-bottom: 15px;">Your digital products will be delivered via email.</div>
                         <label style="font-size:13px; font-weight:800; color:var(--text-main); margin-bottom:6px; display:block;">Delivery Email Address</label>
-                        <input type="email" id="checkoutDeliveryEmail" class="form-input" value="${savedEmail}" placeholder="Enter delivery email" onchange="window.userData.checkoutEmail = this.value" style="background: var(--surface); color: var(--text-main); font-family: var(--font-mono); font-size: 14px; padding: 12px; margin-bottom: 8px;">
+                        ${window.renderDeliveryEmailEditor(savedEmail)}
                         <small>No pincode, no courier, no delivery charge for digital items.</small>
                     </div>`;
             } else {
                 const addBtn = document.getElementById('addAddressBtn');
                 if (addBtn) addBtn.style.display = 'inline-flex';
-                
+
                 if (mode.hasEmailDelivery) {
                     grid.innerHTML += `
                         <div class="mixed-delivery-note" style="flex-direction: column;">
@@ -1182,7 +1559,7 @@
                             </div>
                             <div style="margin-top:10px; width: 100%;">
                                 <label style="font-size:13px; font-weight:800; color:var(--text-main); margin-bottom:6px; display:block;">Digital Delivery Email</label>
-                                <input type="email" id="checkoutDeliveryEmail" class="form-input" value="${savedEmail}" placeholder="Enter email for digital delivery" onchange="window.userData.checkoutEmail = this.value" style="background: var(--surface); color: var(--text-main); font-family: var(--font-mono); font-size: 14px; padding: 12px; margin-bottom: 0;">
+                                ${window.renderDeliveryEmailEditor(savedEmail)}
                             </div>
                         </div>`;
                 }
@@ -1224,16 +1601,16 @@
         };
 
         window.openNewAddressForm = function() { document.getElementById('inlineAddressForm').style.display = 'block'; };
-        
+
         window.saveInlineAddress = async function() {
             const name = document.getElementById('newAddName').value.trim();
             const phone = document.getElementById('newAddPhone').value.trim();
             const street = document.getElementById('newAddStreet').value.trim();
             const city = document.getElementById('newAddCity').value.trim();
             const pin = document.getElementById('newAddPin').value.trim();
-            
+
             if(!name || !phone || !street || !city || !pin) return window.showToast("All fields are required.");
-            
+
             window.toggleLoader(true, "Saving securely...");
             const newAdd = { name, phone, street, city, state: "NA", pincode: pin };
             window.userData.addresses.push(newAdd);
@@ -1253,7 +1630,6 @@
             }
         };
 
-        // --- STEP 3: PAYMENT LOGIC ---
         window.renderStep3 = function() {
             window.currentStep = 3;
             window.updateStepNodes();
@@ -1262,7 +1638,7 @@
             document.getElementById('step3Container').style.display = 'block';
 
             document.getElementById('btnBackStep').style.display = 'block';
-            
+
             window.updatePaymentUI();
             window.updateWalletPayUI();
             window.refreshWalletFromCloud();
@@ -1287,7 +1663,7 @@
             }
 
             document.getElementById('sumGrandTotal').innerText = window.money(window.state.finalPayable);
-            
+
             const btn = document.getElementById('btnNextStep');
             const mode = window.refreshDeliveryModeState();
             const isCOD = !mode.hasEmailDelivery && document.querySelector('input[name="payMethod"][value="cod"]')?.checked;
@@ -1319,12 +1695,12 @@
                 msg.innerHTML = '<i class="fas fa-info-circle"></i> Enter promo code first.';
                 return;
             }
-            
+
             window.toggleButtonState('applyPromoBtn', true, 'Checking...');
             msg.style.display = 'block';
             msg.className = 'promo-message info';
             msg.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Checking Aryanta promo...';
-            
+
             try {
                 const res = await fetch(`${window.API_BASE_URL}/validate-promo`, {
                     method: 'POST',
@@ -1336,7 +1712,7 @@
 
                 if(!res.ok) throw new Error('Promo service failed.');
                 const result = await res.json();
-                
+
                 if(result.valid) {
                     let discount = Math.min(window.state.itemsTotal, Number(result.discountAmount || result.discount || 0));
                     window.state.promoDiscount = discount;
@@ -1353,7 +1729,7 @@
                     msg.innerHTML = `<i class="fas fa-times-circle"></i> ${result.message || 'Invalid or expired promo code.'}`;
                     window.updateTotals();
                 }
-            } catch(e) { 
+            } catch(e) {
                 msg.className = 'promo-message error';
                 msg.innerHTML = '<i class="fas fa-exclamation-circle"></i> Promo could not be verified. Please try again.';
             }
@@ -1407,7 +1783,6 @@
             window.updateTotals();
         };
 
-        // --- FINAL CHECKOUT PROCESS (DB-SAFE + NO FALSE CONFIRMATION) ---
         window.resetCheckoutButton = function() {
             const btn = document.getElementById('btnNextStep');
             if (!btn) return;
@@ -1422,6 +1797,26 @@
             window.updateWalletPayUI();
         };
 
+        window.ensureRazorpayLoaded = function() {
+            if (window.Razorpay) return Promise.resolve();
+            if (window.__razorpayLoadPromise) return window.__razorpayLoadPromise;
+            window.__razorpayLoadPromise = new Promise((resolve, reject) => {
+                let script = document.querySelector('script[src*="checkout.razorpay.com/v1/checkout.js"]');
+                const done = () => window.Razorpay ? resolve() : reject(new Error('Razorpay unavailable'));
+                if (!script) {
+                    script = document.createElement('script');
+                    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+                    script.async = true;
+                    document.head.appendChild(script);
+                }
+                if (window.Razorpay) return resolve();
+                script.addEventListener('load', done, { once: true });
+                script.addEventListener('error', () => reject(new Error('Razorpay load failed')), { once: true });
+                setTimeout(done, 6500);
+            }).finally(() => { window.__razorpayLoadPromise = null; });
+            return window.__razorpayLoadPromise;
+        };
+
         window.processCheckout = async function() {
             window.pendingWalletPaymentAmount = 0;
             if (window.checkoutBusy) return;
@@ -1431,13 +1826,13 @@
             const mode = window.refreshDeliveryModeState();
             const checkedPay = document.querySelector('input[name="payMethod"]:checked');
             const isCOD = checkedPay ? checkedPay.value === 'cod' : false;
-            
+
             if (isCOD && mode.hasEmailDelivery) {
                 window.checkoutBusy = false;
                 window.resetCheckoutButton();
                 return window.showAlert('Cash on Delivery is not available for email-delivery items. Please use online payment or wallet.', 'Online Payment Required');
             }
-            
+
             window.state.shippingCost = window.calculateShippingCost();
             let amountToPay = 0;
 
@@ -1496,7 +1891,9 @@
             };
 
             try {
-                const rzp = new Razorpay(options);
+                await window.ensureRazorpayLoaded();
+                if (!window.Razorpay) throw new Error('Razorpay unavailable');
+                const rzp = new window.Razorpay(options);
                 rzp.on('payment.failed', function () {
                     window.toggleLoader(false);
                     window.checkoutBusy = false;
@@ -1553,7 +1950,7 @@
             const mode = window.refreshDeliveryModeState();
             const emailInput = document.getElementById('checkoutDeliveryEmail');
             const deliveryEmail = emailInput && emailInput.value.trim() !== "" ? emailInput.value.trim() : (window.userData?.checkoutEmail || window.activeSession?.email || '');
-            
+
             if (mode.allEmailDelivery) {
                 return {
                     name: window.activeSession?.name || window.activeSession?.fullName || 'Aryanta User',
@@ -1566,7 +1963,7 @@
                     email: deliveryEmail
                 };
             }
-            
+
             const addr = window.userData?.addresses?.[window.selectedAddressIndex] || null;
             if (addr && mode.hasEmailDelivery) {
                 addr.email = deliveryEmail;
@@ -1633,7 +2030,7 @@
                 delivery_phone: selAddr.phone || '',
                 delivery_address: fullAddress,
                 deliveryAddress: fullAddress,
-                deliveryEmail: selAddr.email || window.activeSession.email, // Explicitly capture digital delivery email
+                deliveryEmail: selAddr.email || window.activeSession.email,
                 delivery_mode: safeState.allEmailDelivery ? 'email' : (safeState.hasEmailDelivery ? 'mixed' : 'physical'),
                 deliveryMode: safeState.allEmailDelivery ? 'email' : (safeState.hasEmailDelivery ? 'mixed' : 'physical'),
                 emailDelivery: !!safeState.hasEmailDelivery,
@@ -1645,7 +2042,7 @@
                 totalPrice: orderPayable,
                 finalAmount: orderPayable,
                 payable_amount: isWallet ? 0 : Number(safeState.finalPayable || orderPayable),
-                earnedPoints: earnedPoints, // Save earned points with the order
+                earnedPoints: earnedPoints,
                 financials: { ...safeState, orderPayable, walletApplied: walletDeducted, earnedPoints },
                 payment_method: methodText,
                 paymentMethod: methodText,
@@ -1729,8 +2126,7 @@
             if (!selAddr) throw new Error('Delivery address missing.');
 
             const orderNo = 'ARY-' + Date.now().toString().slice(-6) + Math.floor(Math.random() * 100);
-            
-            // Format address nicely depending on digital or mixed delivery
+
             let fullAddress = '';
             if (selAddr.emailDelivery) {
                 fullAddress = `Digital delivery to ${selAddr.email || window.activeSession.email}`;
@@ -1770,33 +2166,31 @@
                 clearTimeout(timeout);
             }
 
-            // Calculate wallet and points logic locally before 1-shot API sync
             const walletDeductNow = Number(window.pendingWalletPaymentAmount || window.state.walletApplied || 0);
             const newBal = Math.max(0, Number(window.state.walletBalance || 0) - walletDeductNow);
             window.state.walletBalance = newBal;
             window.pendingWalletPaymentAmount = 0;
-            
+
             const earnedPoints = Math.floor(Number(window.state.itemsTotal || 0) * 0.1);
             const newPoints = Number(window.userData.points || 0) + earnedPoints;
             window.userData.points = newPoints;
-            
-            window.cart = remainingItems;
-            localStorage.setItem('local_cart', JSON.stringify(window.cart));
 
-            // Unified, fast single request to update wallet, points, and clear the cart
+            window.cart = remainingItems;
+            window.cart = window.saveLocalCartCompact(window.cart);
+
             await fetch(`${window.API_BASE_URL}/update-user`, {
                 method: 'POST',
                 mode: 'cors',
                 cache: 'no-store',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify({ 
-                    email: window.activeSession.email, 
-                    updates: { 
-                        wallet: newBal, 
-                        points: newPoints, 
-                        cart: window.cart 
-                    }, 
-                    projectId: window.PROJECT_ID 
+                body: JSON.stringify({
+                    email: window.activeSession.email,
+                    updates: {
+                        wallet: newBal,
+                        points: newPoints,
+                        cart: window.normalizeCartItems(window.cart, { forStorage: true })
+                    },
+                    projectId: window.PROJECT_ID
                 })
             }).catch(() => {});
 
