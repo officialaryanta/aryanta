@@ -262,8 +262,7 @@
 
         <div class="product-list" id="productShelf"></div>
         
-        <div id="infiniteScrollLoader" style="width: 100%; display: flex; justify-content: center; align-items:center; gap:14px; flex-wrap:wrap; padding: 30px 0 80px; visibility: hidden;">
-            <button id="manualLoadMoreBtn" class="btn-prime" style="border-radius:16px; padding:14px 22px; font-weight:800;" onclick="loadMoreProducts(SCROLL_BATCH)"><i class="fas fa-plus"></i> Load More Products</button>
+        <div id="infiniteScrollLoader" style="width: 100%; display: flex; justify-content: center; padding: 30px 0 80px; visibility: hidden;">
             <div class="spinner" style="width: 40px; height: 40px; border-width: 4px; border-top-color: var(--primary);"></div>
         </div>
     </main>
@@ -295,9 +294,9 @@
         let baseCategoryProducts = []; 
         let currentlyDisplayed = 0;
         
-        const INITIAL_BATCH = 24;
-const SCROLL_BATCH = 24;
-const HOME_FULL_CATALOG_LIMIT = 2500;
+        const INITIAL_BATCH = 10;
+const SCROLL_BATCH = 10;
+const HOME_FULL_CATALOG_LIMIT = 1000;
 let HOME_CATALOG_READY = false;
 let siteConfig = { isSpecialDay: false, specialDayName: "", specialEvent: null };
 let currentSpecialEvent = null;
@@ -677,23 +676,8 @@ function isProductVisibleForHome(raw) {
     return true;
 }
 
-function cleanRouteId(value) {
-    let v = String(value || "").trim();
-    if (!v) return "";
-    try { v = decodeURIComponent(v); } catch(e) {}
-    v = v.replace(/^\/+|\/+$/g, "").trim();
-    const bad = new Set(["index.html", "index.htm", "product.html", "store.html", "home.html", "default.html", "undefined", "null", "nan"]);
-    if (bad.has(v.toLowerCase())) return "";
-    return v;
-}
-
-function aryantaProductUrl(id) {
-    const clean = cleanRouteId(id);
-    return `https://aryanta.in/product/?id=${encodeURIComponent(clean)}`;
-}
-
 function makeProductId(p) {
-    const direct = cleanRouteId(
+    const direct = String(
         p?.id ||
         p?.productId ||
         p?.productID ||
@@ -703,7 +687,7 @@ function makeProductId(p) {
         p?.itemId ||
         p?.slug ||
         ""
-    );
+    ).trim();
 
     if (direct) return direct;
 
@@ -1128,12 +1112,12 @@ async function bootHomeUltraFast(force = false) {
             const bannerPromise = fetchJsonWithTimeout("/banners", 5500).catch(() => null);
 
             const first = await fetchFirstWorkingProductList([
-                `/products?limit=${HOME_FULL_CATALOG_LIMIT}&approved=true&live=true`,
-                `/products?limit=${HOME_FULL_CATALOG_LIMIT}`,
-                `/home-fast?limit=${HOME_FULL_CATALOG_LIMIT}&random=1&approved=true&live=true`,
-                `/home-fast?limit=${HOME_FULL_CATALOG_LIMIT}`,
+                "/home-fast?limit=10&random=1&approved=true&live=true",
+                "/products?limit=10&random=1&approved=true&live=true",
+                "/home-fast?limit=20",
+                "/products?limit=20",
                 "/products"
-            ], 9500);
+            ], 5200);
 
             const initialProducts = first.products || [];
             mergeProductCatalog(initialProducts, { replace: true });
@@ -1189,7 +1173,7 @@ async function bootHomeUltraFast(force = false) {
                         "position": index + 1,
                         "item": {
                             "@type": "Product",
-                            "url": aryantaProductUrl(p.id),
+                            "url": `https://aryanta.in/product?id=${p.id}`,
                             "name": p.name,
                             "image": p.images && p.images.length > 0 ? p.images : [p.image],
                             "description": p.desc || `Buy premium ${p.name} at Aryanta Store. Quality guaranteed.`,
@@ -1197,7 +1181,7 @@ async function bootHomeUltraFast(force = false) {
                             "brand": { "@type": "Brand", "name": p.brand || "Aryanta" },
                             "offers": {
                                 "@type": "Offer",
-                                "url": aryantaProductUrl(p.id),
+                                "url": `https://aryanta.in/product?id=${p.id}`,
                                 "priceCurrency": "INR",
                                 "price": p.price,
                                 "priceValidUntil": new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
@@ -1476,7 +1460,7 @@ window.loadMoreProducts = function(batchCount = SCROLL_BATCH) {
         container.appendChild(fragment);
         currentlyDisplayed += nextBatch.length;
 
-        if (loader) loader.style.visibility = currentlyDisplayed < baseCategoryProducts.length ? 'visible' : 'hidden';
+        if (loader) loader.style.visibility = 'hidden';
         isFetchingMore = false;
     });
 };
@@ -1613,7 +1597,7 @@ function escapeHtml(str = "") {
                 }
                 if (!e.target.closest('button') && !e.target.closest('.b-img-nav') && !e.target.closest('i.fa-heart')) {
                     trackRecentlyViewed(product); 
-                    window.location.href = aryantaProductUrl(product.id);
+                    window.location.href = `https://aryanta.in/product?id=${product.id}`;
                 }
             });
         }
@@ -1668,7 +1652,15 @@ function escapeHtml(str = "") {
 
     // Full data loads after popup opens
     try {
-        const fullProduct = findProductByAnyId(product.id) || product;
+        const res = await fetch(`${API_BASE_URL}/product?id=${encodeURIComponent(product.id)}`, {
+            method: "GET",
+            headers: { "Accept": "application/json" },
+            cache: "default"
+        });
+
+        if (!res.ok) throw new Error("Full product fetch failed");
+
+        const fullProduct = await res.json();
 
         qvCurrentProduct = { ...product, ...fullProduct };
 
@@ -1753,7 +1745,7 @@ function escapeHtml(str = "") {
         }
 
         window.copyShareLink = function(id) {
-            const url = aryantaProductUrl(id);
+            const url = `https://aryanta.in/product?id=${id}`;
             const btn = document.getElementById('qvShareBtn');
             const oldHtml = btn.innerHTML;
             
@@ -1989,7 +1981,7 @@ function renderRecentlyViewed() {
         const price = Number(item.price || 0).toLocaleString("en-IN");
 
         return `
-            <div class="recent-item-card" onclick="window.location.href='${aryantaProductUrl(item.id)}'">
+            <div class="recent-item-card" onclick="window.location.href='https://aryanta.in/product?id=${encodeURIComponent(item.id)}'">
                 <div class="recent-img-wrap">
                     <img src="${safeImg}" alt="${safeName}" loading="lazy" decoding="async">
                 </div>
@@ -2260,7 +2252,7 @@ function enableRecentViewedScroll() {
                     const suggestions = pickRandomSuggestions(filtered, 3);
                     
                     dropdown.innerHTML = `${HOME_CATALOG_READY ? '' : '<div class="search-item"><i class="fas fa-spinner fa-spin"></i><span>Loading full catalog...</span></div>'}` + suggestions.map(p => `
-                        <div class="search-item ${p.sponsored ? 'search-sponsored' : ''}" onclick="window.location.href='${aryantaProductUrl(p.id)}'">
+                        <div class="search-item ${p.sponsored ? 'search-sponsored' : ''}" onclick="window.location.href='https://aryanta.in/product?id=${encodeURIComponent(p.id)}'">
                             <img src="${p.images && p.images.length > 0 ? p.images[0] : p.image}" loading="lazy" decoding="async" style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px;">
                             <div class="search-item-copy">
                                 <span class="search-item-title">
