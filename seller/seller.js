@@ -71,10 +71,6 @@ async function fetchAppKeysAndBoot(){
     try{db.settings({experimentalAutoDetectLongPolling:true,useFetchStreams:false,merge:true});}catch(e){}
     if(API_KEYS.EMAILJS_PUBLIC)emailjs.init(API_KEYS.EMAILJS_PUBLIC);
     checkSession();
-    setTimeout(()=>{
-        const pl=document.getElementById('pageLoader');
-        if(pl){pl.style.opacity='0';setTimeout(()=>pl.style.display='none',500);}
-    },1500);
 }
 
 function cleanTextLinks(text){
@@ -5989,9 +5985,609 @@ window.loadTutorials = function() {
     const grid=$('subscriptionPlansGrid');
     if(grid && !$('refreshAdminPlansBtn')){
       const wrap=document.createElement('div'); wrap.style.gridColumn='1/-1'; wrap.style.display='flex'; wrap.style.justifyContent='flex-end'; wrap.style.marginBottom='8px';
-      wrap.innerHTML='<button id="refreshAdminPlansBtn" class="btn-outline" type="button" onclick="forceRefreshDynamicAdminControls().then(()=>showToast(\'Admin seller settings refreshed\',\'success\'))"><i class="fas fa-rotate"></i> Refresh</button>';
+      wrap.innerHTML='<button id="refreshAdminPlansBtn" class="btn-outline" type="button" onclick="forceRefreshDynamicAdminControls().then(()=>showToast(\'Admin seller settings refreshed\',\'success\'))"><i class="fas fa-rotate"></i> Refresh Admin Plans</button>';
       grid.prepend(wrap);
     }
   };
   try{ loadSubscriptionsUI=window.loadSubscriptionsUI; }catch(e){}
+})();
+
+/* Aryanta Seller Subscription Final Fix v7 - stable active plan, invoices, read-more, loader gate */
+(function(){
+  if(window.ARYANTA_SUBSCRIPTION_FINAL_FIX_V7) return;
+  window.ARYANTA_SUBSCRIPTION_FINAL_FIX_V7 = true;
+
+  const $ = id => document.getElementById(id);
+  const txt = v => String(v == null ? '' : v);
+  const low = v => txt(v).toLowerCase().trim();
+  const nowIso = () => new Date().toISOString();
+  const money = n => '₹' + Number(n || 0).toLocaleString('en-IN');
+  const esc = v => txt(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const sellerEmailFinal = () => low(window.activeSeller && window.activeSeller.email);
+  const sellerDocIdFinal = () => txt(window.activeSeller && window.activeSeller.email).trim();
+  const state = window.__ARYANTA_SUB_FINAL = window.__ARYANTA_SUB_FINAL || {
+    loaded:false, loading:null, plans:[], active:null, invoices:[], config:{}, supportCategories:[], yearly:false, lastLoadedAt:0
+  };
+
+  function truthy(v, def=false){
+    if(v === undefined || v === null || v === '') return def;
+    if(typeof v === 'boolean') return v;
+    const s = low(v);
+    if(['1','true','yes','on','enabled','active','show','visible'].includes(s)) return true;
+    if(['0','false','no','off','disabled','inactive','hide','hidden'].includes(s)) return false;
+    return def;
+  }
+  function arr(v){
+    if(Array.isArray(v)) return v;
+    if(v && typeof v === 'object') return Object.keys(v).map(k => ({ id:k, ...v[k] }));
+    return [];
+  }
+  function parseLines(value){
+    if(Array.isArray(value)) return value.flatMap(parseLines).filter(Boolean);
+    if(value && typeof value === 'object') return [value.title || value.name || value.text || value.description || ''].filter(Boolean).map(txt);
+    return txt(value)
+      .split(/\r?\n|\u2022|\u25CF|\u25A0|\s*;\s*/g)
+      .map(x => x.replace(/^[-*•\d.)\s]+/, '').trim())
+      .filter(Boolean);
+  }
+  function firstDefined(...vals){
+    for(const v of vals) if(v !== undefined && v !== null && v !== '') return v;
+    return undefined;
+  }
+  function normalizePlanFinal(raw){
+    raw = raw || {};
+    const id = txt(firstDefined(raw.id, raw.planId, raw.slug, raw.name, raw.title, 'basic')).trim();
+    const name = txt(firstDefined(raw.name, raw.title, raw.planName, raw.label, id)).trim() || 'Basic';
+    const monthlyRaw = firstDefined(raw.monthlyPrice, raw.priceMonthly, raw.monthPrice, raw.price, raw.amount, raw.monthlyAmount);
+    const yearlyRaw = firstDefined(raw.yearlyPrice, raw.priceYearly, raw.yearPrice, raw.yearlyAmount);
+    let monthly = Number(monthlyRaw);
+    let yearly = Number(yearlyRaw);
+    if(!Number.isFinite(monthly)) monthly = null;
+    if(!Number.isFinite(yearly)) yearly = null;
+    const rawBenefits = firstDefined(raw.benefits, raw.features, raw.planFeatures, raw.benefitText, raw.benefitsText, raw.benefitsOnePerLine, raw.descriptionLines);
+    let benefits = parseLines(rawBenefits);
+    const settings = raw.settings || raw.enabledSettings || raw.allowedSettings || raw.settingAccess || raw.featuresAccess || {};
+    const freeAds = Number(firstDefined(raw.freeAds, raw.freeAdCount, raw.sponsoredAdsFree, raw.freeSponsoredAds, raw.adCredits, raw.sponsoredFreeAds, 0)) || 0;
+    if(!benefits.length && low(id) === 'basic') benefits = ['Dark Theme access', 'Support Tickets enabled', 'B2B Supplies access', '1 free Sponsored Ad every month'];
+    return {
+      ...raw,
+      id, planId:id, name, title:txt(firstDefined(raw.title, name)),
+      description:txt(firstDefined(raw.description, raw.subtitle, raw.shortDescription, '')),
+      monthlyPrice: monthly, yearlyPrice: yearly,
+      active: truthy(firstDefined(raw.active, raw.enabled), true),
+      visible: truthy(firstDefined(raw.visible, raw.show), true),
+      badge: txt(firstDefined(raw.badge, raw.tag, '')),
+      sortOrder: Number(firstDefined(raw.sortOrder, raw.order, raw.priority, 0)) || 0,
+      benefits, features: benefits,
+      freeAds,
+      logoLimit: Number(firstDefined(raw.logoLimit, raw.logoUploads, raw.brandLogoLimit, 0)) || 0,
+      bannerLimit: Number(firstDefined(raw.bannerLimit, raw.bannerUploads, raw.brandBannerLimit, 0)) || 0,
+      sponsoredAdPrice: Number(firstDefined(raw.sponsoredAdPrice, raw.adPrice, raw.sponsorPrice, state.config.sponsoredAdPrice, 70)) || 70,
+      commissionPercent: Number(firstDefined(raw.commissionPercent, raw.platformFeePercent, state.config.platformCommissionPercent, 0)) || 0,
+      durationDays: Number(firstDefined(raw.durationDays, raw.days, 30)) || 30,
+      settings,
+      allowPayoutPayment: truthy(firstDefined(raw.allowPayoutPayment, raw.payoutPayment), true),
+      freeFirstLimit: Number(firstDefined(raw.freeFirstLimit, raw.freeFirstMembers, raw.freeForFirstMembers, raw.firstFreeLimit, 0)) || 0,
+      freeFirstEnabled: truthy(firstDefined(raw.freeFirstEnabled, raw.firstMemberFree, raw.getFree, raw.freeForFirstMembers), false),
+      isFree: truthy(firstDefined(raw.isFree, raw.free), Number(monthly || 0) <= 0)
+    };
+  }
+  function basicPlanFinal(){
+    return normalizePlanFinal({
+      id:'basic', name:'Basic', title:'Basic', badge:'Free', monthlyPrice:0, yearlyPrice:0, durationDays:30,
+      description:'Free starter plan for every Aryanta seller.', freeAds:1, sortOrder:-999999,
+      settings:{ theme:true, darkTheme:true, support:true, supportTickets:true, b2b:true, buyB2b:true, b2bSupplies:true, ads:true, sponsoredAds:true, offline:false, autoAcc:false, vacation:false, sms:false, '2fa':false, searchSuggestions:false, bankEdit:false },
+      benefits:'Dark Theme access\nSupport Tickets enabled\nB2B Supplies access\n1 free Sponsored Ad every month'
+    });
+  }
+  function ensureBasicFinal(plans){
+    const clean = (plans || []).filter(p => p && p.id && p.name && p.active && p.visible).map(normalizePlanFinal);
+    const basic = basicPlanFinal();
+    const i = clean.findIndex(p => low(p.id) === 'basic' || low(p.name) === 'basic');
+    if(i >= 0){
+      clean[i] = { ...basic, ...clean[i], id:'basic', planId:'basic', name:'Basic', title:'Basic', monthlyPrice:0, yearlyPrice:0, isFree:true, freeAds:Number(clean[i].freeAds || 1) || 1, settings:{...basic.settings, ...(clean[i].settings || {})}, benefits: clean[i].benefits && clean[i].benefits.length ? clean[i].benefits : basic.benefits, features: clean[i].features && clean[i].features.length ? clean[i].features : basic.features };
+    } else clean.unshift(basic);
+    return clean.sort((a,b) => (Number(a.sortOrder || 0) - Number(b.sortOrder || 0)));
+  }
+  function priceForFinal(plan, yearly){
+    plan = normalizePlanFinal(plan);
+    if(yearly){
+      const base = Number.isFinite(Number(plan.monthlyPrice)) ? Number(plan.monthlyPrice) * 12 : Number(plan.yearlyPrice);
+      if(!Number.isFinite(base)) return null;
+      if(base <= 0) return 0;
+      return Math.round(base * 0.65);
+    }
+    const p = Number(plan.monthlyPrice);
+    return Number.isFinite(p) ? p : null;
+  }
+  function yearlyBaseFinal(plan){
+    const monthly = Number(plan && plan.monthlyPrice);
+    if(Number.isFinite(monthly)) return monthly * 12;
+    const yearly = Number(plan && plan.yearlyPrice);
+    return Number.isFinite(yearly) ? yearly : null;
+  }
+  function setLoaderFinal(msg, percent){
+    const loader = $('pageLoader'), m = $('loaderMessage'), p = $('loadPercent');
+    if(loader){ loader.style.display = 'flex'; loader.style.opacity = '1'; }
+    if(m) m.innerText = msg || 'Loading seller panel...';
+    if(p) p.innerText = typeof percent === 'number' ? percent + '%' : (percent || 'Loading');
+  }
+  function hideLoaderFinal(){
+    const loader = $('pageLoader');
+    if(!loader) return;
+    loader.style.opacity = '0';
+    setTimeout(() => { loader.style.display = 'none'; loader.style.opacity = '1'; }, 280);
+  }
+  async function getColFinal(name, limit=500){
+    if(!window.db) return [];
+    try{
+      let snap;
+      try{ snap = await db.collection(name).orderBy('sortOrder','asc').limit(limit).get(); }
+      catch(e){ snap = await db.collection(name).limit(limit).get(); }
+      const out = [];
+      snap.forEach(d => out.push({id:d.id, ...d.data(), __collection:name}));
+      return out;
+    }catch(e){ console.warn('Aryanta read skipped:', name, e); return []; }
+  }
+  async function getDocFinal(path){
+    if(!window.db) return null;
+    try{ const d = await db.doc(path).get(); return d.exists ? {id:d.id, ...d.data()} : null; }
+    catch(e){ console.warn('Aryanta doc read skipped:', path, e); return null; }
+  }
+  async function fetchWorkerBootFinal(){
+    if(!window.API_BASE_URL) return {};
+    const email = sellerEmailFinal();
+    try{
+      const url = API_BASE_URL + '/seller/panel-boot' + (email ? '?email=' + encodeURIComponent(email) : '');
+      const res = await fetch(url, { cache:'no-store' });
+      const json = await res.json().catch(() => ({}));
+      return json.data || json || {};
+    }catch(e){ console.warn('Worker panel boot failed:', e); return {}; }
+  }
+  async function fetchDynamicFinal(force=false){
+    if(state.loading && !force) return state.loading;
+    if(state.loaded && !force) return state;
+    state.loading = (async() => {
+      const boot = await fetchWorkerBootFinal();
+      const cfgDocs = await Promise.all([
+        getDocFinal('seller_panel_config/global'), getDocFinal('seller_config/global'), getDocFinal('admin_config/seller_panel'), getDocFinal('aryanta_config/seller_panel')
+      ]);
+      state.config = Object.assign({}, boot.panelConfig || {}, ...cfgDocs.filter(Boolean));
+      let rawPlans = arr(boot.subscriptionPlans || boot.plans || boot.subscriptions || state.config.subscriptionPlans || state.config.plans);
+      if(rawPlans.length <= 1){
+        for(const c of ['subscription_plans','seller_subscription_plans','seller_subscriptions_plans','subscriptions_plans','seller_plans']){
+          const rows = await getColFinal(c, 200);
+          if(rows.length){ rawPlans = rows; break; }
+        }
+      }
+      state.plans = ensureBasicFinal(rawPlans.map(normalizePlanFinal));
+      window.__ARYANTA_DB_SUBSCRIPTION_PLANS = state.plans;
+      let cats = arr(boot.issueCategories || boot.supportCategories || state.config.issueCategories || state.config.supportCategories);
+      if(!cats.length){
+        for(const c of ['seller_issue_categories','support_categories','seller_support_categories','issue_categories']){
+          const rows = await getColFinal(c, 200);
+          if(rows.length){ cats = rows; break; }
+        }
+      }
+      state.supportCategories = cats;
+      window.__ARYANTA_DB_SUPPORT_CATEGORIES = cats;
+      await fetchActiveSubscriptionFinal();
+      await fetchSubscriptionInvoicesFinal();
+      state.loaded = true; state.lastLoadedAt = Date.now();
+      return state;
+    })().finally(() => { state.loading = null; });
+    return state.loading;
+  }
+  function planByIdNameFinal(idOrName){
+    const s = low(idOrName);
+    return (state.plans || []).find(p => s && (low(p.id) === s || low(p.planId) === s || low(p.name) === s || low(p.title) === s)) || null;
+  }
+  function recordEndMs(r){
+    const v = firstDefined(r && r.endDate, r && r.subEndDate, r && r.validTill, r && r.expiresAt, r && r.expiryDate);
+    const t = Date.parse(v || '');
+    return Number.isFinite(t) ? t : 0;
+  }
+  function isRecordActive(r){
+    if(!r) return false;
+    const st = low(firstDefined(r.status, r.state, 'active'));
+    if(['cancelled','expired','failed','rejected','inactive'].includes(st)) return false;
+    const end = recordEndMs(r);
+    return !end || end >= Date.now();
+  }
+  async function fetchActiveSubscriptionFinal(){
+    const email = sellerEmailFinal();
+    const found = [];
+    if(email && window.db){
+      const directIds = [email, email.replace(/[.#$\[\]/]/g,'_'), encodeURIComponent(email)];
+      for(const id of directIds){
+        const d = await getDocFinal('active_seller_subscriptions/' + id);
+        if(d) found.push(d);
+      }
+      for(const c of ['active_seller_subscriptions','seller_subscriptions']){
+        try{ const snap = await db.collection(c).where('sellerEmail','==',email).limit(20).get(); snap.forEach(d => found.push({id:d.id, ...d.data(), __collection:c})); }catch(e){}
+        try{ const snap = await db.collection(c).where('email','==',email).limit(20).get(); snap.forEach(d => found.push({id:d.id, ...d.data(), __collection:c})); }catch(e){}
+      }
+    }
+    if(window.activeSeller){
+      if(activeSeller.subscription || activeSeller.subscriptionId || activeSeller.subscriptionPlanId){
+        found.push({
+          id:'seller_doc_current', planId:firstDefined(activeSeller.subscriptionId, activeSeller.subscriptionPlanId, activeSeller.subscription, 'basic'),
+          plan:firstDefined(activeSeller.subscription, activeSeller.plan), endDate:activeSeller.subEndDate, status:'Active',
+          features: activeSeller.subscriptionFeatures && activeSeller.subscriptionFeatures.features,
+          freeAds: activeSeller.subscriptionFeatures && activeSeller.subscriptionFeatures.freeAds,
+          settings: activeSeller.subscriptionFeatures && activeSeller.subscriptionFeatures.settings
+        });
+      }
+      arr(activeSeller.subHistory).forEach(h => found.push(h));
+    }
+    const active = found.filter(isRecordActive).sort((a,b) => recordEndMs(b) - recordEndMs(a))[0] || null;
+    let plan = active ? planByIdNameFinal(firstDefined(active.planId, active.subscriptionId, active.plan, active.subscription, active.name)) : null;
+    if(!plan) plan = basicPlanFinal();
+    state.active = { ...(active || {}), planId:plan.id, plan:plan.name, planName:plan.name, endDate:firstDefined(active && active.endDate, active && active.subEndDate, active && active.validTill, active && active.expiresAt, window.activeSeller && activeSeller.subEndDate, '') };
+    if(window.activeSeller){
+      activeSeller.subscription = plan.name;
+      activeSeller.subscriptionId = plan.id;
+      activeSeller.subscriptionPlanId = plan.id;
+      if(state.active.endDate) activeSeller.subEndDate = state.active.endDate;
+      activeSeller.subscriptionFeatures = {
+        ...(activeSeller.subscriptionFeatures || {}),
+        planId:plan.id, planName:plan.name, features:plan.benefits || plan.features || [], freeAds:Number(plan.freeAds || 0),
+        logoLimit:Number(plan.logoLimit || 0), bannerLimit:Number(plan.bannerLimit || 0), settings:plan.settings || {},
+        commissionPercent:Number(plan.commissionPercent || 0), sponsoredAdPrice:Number(plan.sponsoredAdPrice || 70)
+      };
+      try{ localStorage.setItem('sellerToken', JSON.stringify(activeSeller)); }catch(e){}
+    }
+    return state.active;
+  }
+  async function fetchSubscriptionInvoicesFinal(){
+    const email = sellerEmailFinal();
+    const rows = [];
+    if(email && window.db){
+      for(const c of ['seller_subscriptions','subscription_purchases','seller_payment_ledger']){
+        try{ const snap = await db.collection(c).where('sellerEmail','==',email).limit(100).get(); snap.forEach(d => rows.push({id:d.id, ...d.data(), __collection:c})); }catch(e){}
+        try{ const snap = await db.collection(c).where('email','==',email).limit(100).get(); snap.forEach(d => rows.push({id:d.id, ...d.data(), __collection:c})); }catch(e){}
+      }
+    }
+    arr(window.activeSeller && activeSeller.subHistory).forEach((h,i) => rows.push({id:'history_' + i, ...h, __collection:'seller_doc_history'}));
+    const isSub = r => low(r.type || '').includes('subscription') || r.planId || r.plan || r.subscription || r.subscriptionId;
+    const seen = new Set();
+    state.invoices = rows.filter(isSub).filter(r => {
+      const key = [r.id, r.planId, r.plan, r.amount, r.timestamp, r.startDate, r.endDate].join('|');
+      if(seen.has(key)) return false; seen.add(key); return true;
+    }).sort((a,b) => Date.parse(firstDefined(b.timestamp,b.createdAt,b.startDate,b.date,'') || 0) - Date.parse(firstDefined(a.timestamp,a.createdAt,a.startDate,a.date,'') || 0));
+    return state.invoices;
+  }
+  function activePlanFinal(){
+    if(!state.plans.length) state.plans = ensureBasicFinal([]);
+    const id = firstDefined(state.active && state.active.planId, window.activeSeller && activeSeller.subscriptionId, window.activeSeller && activeSeller.subscriptionPlanId, window.activeSeller && activeSeller.subscription, 'basic');
+    return planByIdNameFinal(id) || basicPlanFinal();
+  }
+  window.getActiveSubscriptionPlanForSeller = activePlanFinal;
+  function isCurrentPlanFinal(plan){ return low(activePlanFinal().id) === low(plan.id) || low(activePlanFinal().name) === low(plan.name); }
+  function renderSubscriptionHeaderButtonsFinal(){
+    const section = $('subscriptionSection');
+    if(!section || $('yourSubInvoiceBtn')) return;
+    const panel = section.querySelector('.panel-box') || section;
+    const wrap = document.createElement('div');
+    wrap.className = 'sub-final-actions';
+    wrap.style.cssText = 'display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;';
+    wrap.innerHTML = `
+      <button type="button" id="yourSubInvoiceBtn" class="btn-prime" onclick="openSubscriptionInvoicesFinal()"><i class="fas fa-file-invoice"></i> Your Subscription Invoice</button>
+      <button type="button" class="btn-outline" onclick="refreshSellerPanelDynamicData()"><i class="fas fa-sync-alt"></i> Refresh Admin Plans</button>`;
+    panel.appendChild(wrap);
+  }
+  function renderPlanCardFinal(plan){
+    const yearly = state.yearly || window.currentPlanDuration === 'year';
+    const price = priceForFinal(plan, yearly);
+    const base = yearly ? yearlyBaseFinal(plan) : null;
+    const current = isCurrentPlanFinal(plan);
+    const missing = price === null;
+    const free = !missing && (price <= 0 || plan.isFree);
+    const benefits = parseLines(firstDefined(plan.benefits, plan.features, plan.benefitsText));
+    const actionText = current ? 'Active Plan' : missing ? 'Admin price missing' : free ? 'Activate Free Plan' : `Pay ${money(price)} & Get Now`;
+    const valid = state.active && state.active.endDate ? new Date(state.active.endDate).toLocaleDateString() : (low(plan.id)==='basic' ? 'Always available' : 'After purchase');
+    const settingsList = settingsTextFinal(plan.settings).slice(0,5);
+    return `<div class="dynamic-plan-card sub-final-card ${current?'current-plan-card':''} ${low(plan.id)==='basic'?'basic-plan-card':''}">
+      <div class="dynamic-plan-head"><div><div class="dynamic-plan-title">${esc(plan.title || plan.name)}</div><div class="dynamic-plan-desc">${esc(plan.description || '')}</div></div>${plan.badge?`<div class="plan-badge">${esc(plan.badge)}</div>`:''}</div>
+      <p class="plan-price">${missing?'<span class="missing-price">Admin price required</span>':(free?'₹<span>0</span>':`₹<span>${Number(price).toLocaleString('en-IN')}</span>`)} ${missing?'':`<span>/ ${yearly?'year':'month'}</span>`}</p>
+      ${yearly && base && base > price ? `<span class="yearly-save"><del>${money(base)}</del> 35% OFF</span>` : ''}
+      <div class="dynamic-plan-meta">
+        <span><i class="fas fa-calendar-check"></i> ${current ? 'Valid: ' + esc(valid) : (yearly ? '365 days' : (Number(plan.durationDays || 30) + ' days'))}</span>
+        <span><i class="fas fa-bullhorn"></i> ${Number(plan.freeAds || 0)} free ad(s)/month</span>
+        ${plan.commissionPercent ? `<span><i class="fas fa-percent"></i> ${Number(plan.commissionPercent)}% fee</span>` : ''}
+        ${plan.freeFirstEnabled && plan.freeFirstLimit ? `<span><i class="fas fa-gift"></i> First ${Number(plan.freeFirstLimit)} seller(s) free for 1 month</span>` : ''}
+      </div>
+      <ul class="plan-features">${benefits.length ? benefits.map(f => `<li><i class="fas fa-check-circle"></i> ${esc(f)}</li>`).join('') : '<li><i class="fas fa-info-circle"></i> Admin has not added benefits.</li>'}</ul>
+      ${settingsList.length ? `<div class="sub-setting-mini"><strong>Access:</strong> ${settingsList.map(esc).join(', ')}</div>` : ''}
+      <div class="dynamic-plan-actions">
+        <button class="btn-outline w-100" type="button" onclick="openSubscriptionReadMoreFinal('${esc(plan.id)}')"><i class="fas fa-circle-info"></i> Read more</button>
+        <button class="btn-prime w-100" ${current || missing ? 'disabled' : ''} onclick="processSubscriptionFinal('${esc(plan.id)}','online')">${esc(actionText)}</button>
+        ${plan.allowPayoutPayment && !free && !current && !missing ? `<button class="btn-outline w-100" onclick="processSubscriptionFinal('${esc(plan.id)}','payout')"><i class="fas fa-wallet"></i> Pay from Payout</button>` : ''}
+      </div>
+    </div>`;
+  }
+  function settingsTextFinal(settings){
+    if(!settings) return [];
+    const names = {theme:'Dark Theme',darkTheme:'Dark Theme',support:'Support Tickets',supportTickets:'Support Tickets',b2b:'B2B Supplies',buyB2b:'B2B Supplies',b2bSupplies:'B2B Supplies',ads:'Sponsored Ads',sponsoredAds:'Sponsored Ads',offline:'Offline Mode',autoAcc:'Auto Accept',vacation:'Vacation Mode',sms:'SMS Alerts','2fa':'2FA Security',searchSuggestions:'Search Suggestions',bankEdit:'Bank Edit'};
+    if(Array.isArray(settings)) return settings.map(k => names[low(k)] || txt(k));
+    return Object.keys(settings).filter(k => truthy(settings[k], false)).map(k => names[k] || names[low(k)] || k);
+  }
+  function renderSubscriptionsFinal(){
+    renderSubscriptionHeaderButtonsFinal();
+    const grid = $('subscriptionPlansGrid');
+    if(!grid) return;
+    if(!state.plans.length) state.plans = ensureBasicFinal([]);
+    grid.innerHTML = state.plans.map(renderPlanCardFinal).join('');
+    const badge = $('currentPlanBadge');
+    const plan = activePlanFinal();
+    if(badge) badge.textContent = plan.name || 'Basic';
+    applySettingLocksFinal();
+  }
+  window.renderSubscriptionsFinal = renderSubscriptionsFinal;
+  window.loadSubscriptionsUI = window.loadStrictSubscriptionsUI = async function(){
+    await fetchDynamicFinal(false);
+    renderSubscriptionsFinal();
+  };
+  try{ window.loadSubscriptionsUI = window.loadSubscriptionsUI; loadSubscriptionsUI = window.loadSubscriptionsUI; }catch(e){}
+  window.togglePlanDuration = function(type){
+    state.yearly = type === 'year'; window.currentPlanDuration = state.yearly ? 'year' : 'month';
+    const m = $('btnPlanMonth'), y = $('btnPlanYear');
+    if(m) m.classList.toggle('active', !state.yearly);
+    if(y){ y.classList.toggle('active', state.yearly); y.innerHTML = state.yearly ? 'Yearly -35% <i class="fas fa-check"></i>' : 'Yearly -35%'; }
+    renderSubscriptionsFinal();
+  };
+  async function freeFirstEligibleFinal(plan){
+    if(priceForFinal(plan, false) <= 0) return true;
+    if(!plan.freeFirstEnabled || !plan.freeFirstLimit) return false;
+    const email = sellerEmailFinal();
+    try{
+      const snap = await db.collection('seller_subscriptions').where('planId','==',plan.id).where('freeOffer','==',true).limit(Number(plan.freeFirstLimit)).get();
+      const already = await db.collection('seller_subscriptions').where('sellerEmail','==',email).where('planId','==',plan.id).where('freeOffer','==',true).limit(1).get().catch(()=>({empty:true}));
+      return already.empty && snap.size < Number(plan.freeFirstLimit);
+    }catch(e){ return false; }
+  }
+  async function saveInvoiceRecordFinal(plan, opts){
+    const start = new Date();
+    const duration = opts.duration === 'year' ? 'year' : 'month';
+    const days = duration === 'year' ? 365 : (low(plan.id) === 'basic' ? 30 : Number(plan.durationDays || 30));
+    const end = new Date(start.getTime() + days * 86400000);
+    const amount = Number(opts.amount || 0);
+    const record = {
+      invoiceId:'SUB-' + Date.now(), type: amount <= 0 ? 'subscription_free' : 'subscription_payment', sellerEmail:sellerEmailFinal(), email:sellerEmailFinal(), sellerName:activeSeller.companyName || activeSeller.shopName || activeSeller.email || '',
+      planId:plan.id, plan:plan.name, planName:plan.name, amount, gross:amount, deductions:0, net:amount, method:opts.method || 'online', paidBy:opts.method || 'online', status:'Active', freeOffer:!!opts.freeOffer,
+      startDate:start.toISOString(), endDate:end.toISOString(), timestamp:nowIso(), benefits:plan.benefits || plan.features || [], freeAds:Number(plan.freeAds || 0), settings:plan.settings || {}, duration
+    };
+    const sellerUpdate = { subscription:plan.name, subscriptionId:plan.id, subscriptionPlanId:plan.id, subEndDate:end.toISOString(), subscriptionUpdatedAt:nowIso(), subscriptionFeatures:{planId:plan.id, planName:plan.name, features:plan.benefits||plan.features||[], freeAds:Number(plan.freeAds||0), logoLimit:Number(plan.logoLimit||0), bannerLimit:Number(plan.bannerLimit||0), settings:plan.settings||{}, commissionPercent:Number(plan.commissionPercent||0), sponsoredAdPrice:Number(plan.sponsoredAdPrice||70)} };
+    if(!activeSeller.subHistory) activeSeller.subHistory = [];
+    activeSeller.subHistory.push(record);
+    Object.assign(activeSeller, sellerUpdate);
+    localStorage.setItem('sellerToken', JSON.stringify(activeSeller));
+    const docId = sellerDocIdFinal();
+    await db.collection('sellers').doc(docId).set({...sellerUpdate, subHistory:activeSeller.subHistory}, {merge:true});
+    await db.collection('active_seller_subscriptions').doc(docId).set({...record, ...sellerUpdate.subscriptionFeatures}, {merge:true});
+    await db.collection('seller_subscriptions').add(record);
+    try{ await db.collection('seller_payment_ledger').add({...record, reference:plan.name}); }catch(e){}
+    state.active = record;
+    await fetchSubscriptionInvoicesFinal();
+    renderSubscriptionsFinal();
+    applySettingLocksFinal();
+    if(typeof showToast === 'function') showToast(plan.name + ' activated successfully.', 'success');
+    return record;
+  }
+  window.processSubscriptionFinal = async function(planId, method){
+    await fetchDynamicFinal(false);
+    const plan = planByIdNameFinal(planId);
+    if(!plan) return showToast('Plan not found. Click Refresh Admin Plans.', 'error');
+    const yearly = state.yearly || window.currentPlanDuration === 'year';
+    let amount = priceForFinal(plan, yearly);
+    if(amount === null) return showToast('Admin has not added price for this plan.', 'error');
+    const firstFree = await freeFirstEligibleFinal(plan);
+    if(amount <= 0 || plan.isFree || firstFree || method === 'free'){
+      if(firstFree && amount > 0) showToast('Admin free offer applied for 1 month.', 'success');
+      return saveInvoiceRecordFinal(plan, {amount:0, method:'free', duration:'month', freeOffer:firstFree && amount > 0});
+    }
+    if(method === 'payout'){
+      const ok = confirm('Deduct ' + money(amount) + ' from your upcoming payout for ' + plan.name + '?');
+      if(!ok) return;
+      try{ await db.collection('fines').add({email:sellerEmailFinal(), sellerEmail:sellerEmailFinal(), amount, reason:'Subscription payout deduction: ' + plan.name, timestamp:nowIso(), planId:plan.id}); }catch(e){}
+      return saveInvoiceRecordFinal(plan, {amount, method:'payout', duration:yearly?'year':'month'});
+    }
+    if(!window.Razorpay || !window.API_KEYS || !API_KEYS.RAZORPAY) return showToast('Razorpay key missing. Ask admin to set payment key.', 'error');
+    new Razorpay({
+      key:API_KEYS.RAZORPAY, amount:Math.round(amount * 100), currency:'INR', name:'Aryanta Enterprise', description:plan.name + ' Subscription',
+      prefill:{name:activeSeller.companyName||'', email:activeSeller.email||'', contact:activeSeller.phone||''}, theme:{color:'#0f172a'},
+      handler: async res => saveInvoiceRecordFinal(plan, {amount, method:'online', duration:yearly?'year':'month', razorpayPaymentId:res.razorpay_payment_id||''})
+    }).open();
+  };
+  window.processSubscription = window.processStrictSubscription = window.processSubscriptionFinal;
+  function modalShellFinal(id, html){
+    let modal = $(id);
+    if(!modal){
+      modal = document.createElement('div'); modal.id = id; modal.className = 'modal'; modal.style.display = 'none';
+      document.body.appendChild(modal);
+    }
+    modal.innerHTML = html;
+    modal.style.display = 'flex';
+    setTimeout(() => modal.classList.add('show'), 10);
+  }
+  window.closeFinalModal = function(id){ const m = $(id); if(m){ m.classList.remove('show'); setTimeout(() => m.style.display = 'none', 200); } };
+  window.openSubscriptionReadMoreFinal = function(planId){
+    const plan = planByIdNameFinal(planId) || basicPlanFinal();
+    const monthly = priceForFinal(plan, false), yearly = priceForFinal(plan, true), base = yearlyBaseFinal(plan);
+    const benefits = parseLines(firstDefined(plan.benefits, plan.features, plan.benefitsText));
+    const settings = settingsTextFinal(plan.settings);
+    modalShellFinal('subscriptionReadMoreModal', `<div class="modal-content" style="max-width:760px;width:94%;max-height:90vh;overflow:auto;">
+      <div class="modal-header"><h3><i class="fas fa-crown"></i> ${esc(plan.name)} Plan Details</h3><button onclick="closeFinalModal('subscriptionReadMoreModal')" class="modal-close-btn"><i class="fas fa-times"></i></button></div>
+      <div class="modal-body" style="padding:20px;">
+        <div class="sub-read-hero"><h2>${esc(plan.title||plan.name)}</h2><p>${esc(plan.description||'')}</p><strong>${monthly===0?'Free':money(monthly)} / month</strong>${yearly!==null?`<span style="margin-left:10px;">Yearly: ${money(yearly)} ${base&&base>yearly?`<del>${money(base)}</del> 35% OFF`:''}</span>`:''}</div>
+        <div class="profile-info-grid" style="margin-top:16px;">
+          <div><label>Free Sponsored Ads</label><strong>${Number(plan.freeAds||0)} / month</strong></div>
+          <div><label>Logo Upload Limit</label><strong>${Number(plan.logoLimit||0)} / month</strong></div>
+          <div><label>Banner Upload Limit</label><strong>${Number(plan.bannerLimit||0)} / month</strong></div>
+          <div><label>Commission / Fee</label><strong>${Number(plan.commissionPercent||0)}%</strong></div>
+          <div><label>Sponsored Ad Price</label><strong>${money(plan.sponsoredAdPrice||70)}</strong></div>
+          <div><label>Validity</label><strong>${Number(plan.durationDays||30)} days monthly / 365 days yearly</strong></div>
+        </div>
+        <h4 style="margin-top:18px;">Benefits</h4><ul class="plan-features readmore-benefits">${benefits.length?benefits.map(b=>`<li><i class="fas fa-check-circle"></i> ${esc(b)}</li>`).join(''):'<li>No benefit text added by admin.</li>'}</ul>
+        <h4 style="margin-top:18px;">Allowed Seller Settings</h4><div class="dynamic-button-grid">${settings.length?settings.map(s=>`<div class="dynamic-button-card"><i class="fas fa-check"></i><strong>${esc(s)}</strong></div>`).join(''):'<div class="admin-note-box">No custom access list added.</div>'}</div>
+        <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;"><button class="btn-prime" onclick="processSubscriptionFinal('${esc(plan.id)}','online')">${priceForFinal(plan,state.yearly)<=0?'Activate Free':'Get This Plan'}</button><button class="btn-outline" onclick="closeFinalModal('subscriptionReadMoreModal')">Close</button></div>
+      </div></div>`);
+  };
+  function invoiceRowFinal(r, i){
+    const plan = firstDefined(r.planName, r.plan, r.subscription, r.reference, r.planId, 'Subscription');
+    const amount = Number(firstDefined(r.amount, r.net, r.gross, 0)) || 0;
+    const method = firstDefined(r.method, r.paidBy, r.paymentMethod, 'free');
+    const start = firstDefined(r.startDate, r.timestamp, r.createdAt, '');
+    const end = firstDefined(r.endDate, r.subEndDate, r.validTill, '');
+    return `<tr><td data-label="Invoice"><strong>${esc(firstDefined(r.invoiceId, r.id, 'SUB-'+(i+1)))}</strong><br><small>${start?new Date(start).toLocaleString():'N/A'}</small></td><td data-label="Plan">${esc(plan)}</td><td data-label="Paid By">${esc(method)}</td><td data-label="Amount"><strong>${money(amount)}</strong></td><td data-label="Valid Till">${end?new Date(end).toLocaleDateString():'N/A'}</td><td data-label="Slip"><button class="btn-sm" onclick="printSubscriptionSlipFinal(${i})"><i class="fas fa-print"></i> Slip</button></td></tr>`;
+  }
+  window.openSubscriptionInvoicesFinal = async function(){
+    await fetchDynamicFinal(false); await fetchSubscriptionInvoicesFinal();
+    const rows = state.invoices.length ? state.invoices.map(invoiceRowFinal).join('') : '<tr><td colspan="6" style="text-align:center;font-weight:800;padding:24px;">No subscription invoice found yet.</td></tr>';
+    modalShellFinal('subscriptionInvoicesModal', `<div class="modal-content" style="max-width:980px;width:96%;max-height:90vh;overflow:auto;">
+      <div class="modal-header"><h3><i class="fas fa-file-invoice"></i> Your Subscription Invoices</h3><button onclick="closeFinalModal('subscriptionInvoicesModal')" class="modal-close-btn"><i class="fas fa-times"></i></button></div>
+      <div class="modal-body" style="padding:20px;"><div class="table-container"><table class="admin-table"><thead><tr><th>Invoice</th><th>Plan</th><th>Paid By</th><th>Amount</th><th>Valid Till</th><th>Slip</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>`);
+  };
+  window.printSubscriptionSlipFinal = function(index){
+    const r = state.invoices[index]; if(!r) return;
+    const plan = firstDefined(r.planName, r.plan, r.subscription, r.reference, r.planId, 'Subscription');
+    const amount = Number(firstDefined(r.amount, r.net, r.gross, 0)) || 0;
+    const benefits = parseLines(firstDefined(r.benefits, r.features, (planByIdNameFinal(r.planId||plan)||{}).benefits));
+    const html = `<!doctype html><html><head><title>Subscription Invoice</title><style>body{font-family:Arial,sans-serif;background:#f8fafc;padding:24px;color:#0f172a}.slip{max-width:760px;margin:auto;background:white;border:1px solid #e2e8f0;border-radius:18px;overflow:hidden}.head{background:#0f172a;color:white;padding:24px;display:flex;justify-content:space-between;align-items:center}.body{padding:24px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.box{background:#f1f5f9;border-radius:12px;padding:14px}.label{font-size:10px;text-transform:uppercase;color:#64748b;font-weight:900}.val{font-size:15px;font-weight:800;margin-top:4px}.amount{font-size:32px;color:#059669}.foot{padding:18px 24px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:12px;color:#64748b}@media print{body{background:white}.no-print{display:none}}</style></head><body><div class="slip"><div class="head"><div><h2>Aryanta Subscription Invoice</h2><p>${esc(firstDefined(r.invoiceId,r.id,'SUB'))}</p></div><div class="amount">${money(amount)}</div></div><div class="body"><div class="grid"><div class="box"><div class="label">Seller</div><div class="val">${esc(activeSeller.companyName||activeSeller.shopName||activeSeller.email||'Seller')}</div></div><div class="box"><div class="label">Plan</div><div class="val">${esc(plan)}</div></div><div class="box"><div class="label">Paid By</div><div class="val">${esc(firstDefined(r.method,r.paidBy,r.paymentMethod,'free'))}</div></div><div class="box"><div class="label">Status</div><div class="val">${esc(firstDefined(r.status,'Active'))}</div></div><div class="box"><div class="label">Start Date</div><div class="val">${r.startDate?new Date(r.startDate).toLocaleString():'N/A'}</div></div><div class="box"><div class="label">End Date</div><div class="val">${r.endDate?new Date(r.endDate).toLocaleString():'N/A'}</div></div></div><h3>Benefits</h3><ul>${benefits.map(b=>`<li>${esc(b)}</li>`).join('') || '<li>No benefits added.</li>'}</ul><button class="no-print" onclick="window.print()" style="padding:12px 18px;background:#0f172a;color:white;border:0;border-radius:10px;font-weight:800">Print Slip</button></div><div class="foot">Generated by Aryanta Seller Panel • ${new Date().toLocaleString()}</div></div></body></html>`;
+    const w = window.open('', '_blank'); if(w){ w.document.write(html); w.document.close(); setTimeout(()=>w.print(), 400); }
+  };
+  function planAllowsSettingFinal(key){
+    const plan = activePlanFinal();
+    const s = plan.settings || {};
+    if(Array.isArray(s)) return s.map(low).includes(low(key)) || (key === 'theme' && s.map(low).includes('darktheme'));
+    if(typeof s === 'object'){
+      if(s[key] !== undefined) return truthy(s[key], false);
+      if(key === 'theme' && s.darkTheme !== undefined) return truthy(s.darkTheme, false);
+      if(key === 'support' && s.supportTickets !== undefined) return truthy(s.supportTickets, false);
+      if(key === 'b2b' && (s.buyB2b !== undefined || s.b2bSupplies !== undefined)) return truthy(firstDefined(s.buyB2b, s.b2bSupplies), false);
+      if(key === 'ads' && s.sponsoredAds !== undefined) return truthy(s.sponsoredAds, false);
+      return low(plan.id) !== 'basic';
+    }
+    return low(plan.id) === 'basic' ? ['theme','support','b2b','ads'].includes(key) : true;
+  }
+  function applySettingLocksFinal(){
+    const controls = [
+      ['settingOffline','offline'], ['settingTheme','theme'], ['settingAutoAcc','autoAcc'], ['settingVacation','vacation'], ['settingSms','sms'], ['setting2fa','2fa'], ['settingSearchSuggestions','searchSuggestions']
+    ];
+    controls.forEach(([id,key]) => {
+      const input = $(id); if(!input) return;
+      const card = input.closest('.setting-card-premium') || input.closest('.setting-card') || input.parentElement;
+      const allowed = planAllowsSettingFinal(key);
+      input.disabled = !allowed;
+      if(card){
+        card.classList.toggle('subscription-locked', !allowed);
+        let lock = card.querySelector('.sub-lock-msg');
+        if(!allowed){
+          if(!lock){ lock = document.createElement('div'); lock.className = 'sub-lock-msg'; lock.style.cssText = 'font-size:11px;font-weight:900;color:#f59e0b;margin-top:5px;'; card.appendChild(lock); }
+          lock.innerHTML = '<i class="fas fa-lock"></i> Buy subscription to unlock';
+        } else if(lock) lock.remove();
+      }
+    });
+  }
+  const oldLoadSettingsFinal = window.loadSettingsUI;
+  window.loadSettingsUI = async function(){
+    if(oldLoadSettingsFinal) await oldLoadSettingsFinal();
+    await fetchDynamicFinal(false);
+    applySettingLocksFinal();
+  };
+  window.applySubscriptionSettingLocksFinal = applySettingLocksFinal;
+  function applyProfileBrandingFinal(){
+    const plan = activePlanFinal();
+    const cfg = state.config || {};
+    const branding = cfg.branding || cfg.profileBranding || {};
+    const showBranding = truthy(firstDefined(branding.enabled, branding.show, cfg.showSellerBranding), true);
+    const logoAllowed = showBranding && Number(plan.logoLimit || 0) > 0 && truthy(firstDefined(branding.logoUploadEnabled, branding.allowLogoUpload), true);
+    const bannerAllowed = showBranding && Number(plan.bannerLimit || 0) > 0 && truthy(firstDefined(branding.bannerUploadEnabled, branding.allowBannerUpload), true);
+    const logoInput = $('storeLogoInput'), bannerInput = $('storeBannerInput');
+    [logoInput, bannerInput].forEach((inp, idx) => {
+      if(!inp) return;
+      const wrap = inp.closest('.profile-upload-box') || inp.closest('.panel-box') || inp.parentElement;
+      if(wrap) wrap.style.display = (idx === 0 ? logoAllowed : bannerAllowed) ? '' : 'none';
+    });
+  }
+  const oldLoadProfileFinal = window.loadProfile;
+  window.loadProfile = async function(){
+    if(oldLoadProfileFinal) await oldLoadProfileFinal();
+    await fetchDynamicFinal(false);
+    applyProfileBrandingFinal();
+  };
+  async function loadInitialCoreFinal(){
+    if(typeof window.ensureSellerProducts === 'function') await window.ensureSellerProducts(true);
+    if(typeof window.ensureSellerOrders === 'function') await window.ensureSellerOrders(true);
+    if(typeof window.fetchNotifications === 'function') await window.fetchNotifications().catch(()=>{});
+    if(typeof window.renderDashboardStats === 'function') window.renderDashboardStats();
+  }
+  async function fetchSellerDocFinal(token){
+    const email = low(token && token.email);
+    if(!email || !window.db) return token;
+    try{ const d = await db.collection('sellers').doc(email).get(); if(d.exists) return {id:d.id, ...d.data()}; }catch(e){}
+    try{ const qs = await db.collection('sellers').where('email','==',email).limit(1).get(); if(!qs.empty) return {id:qs.docs[0].id, ...qs.docs[0].data()}; }catch(e){}
+    return token;
+  }
+  function showLoginFinal(){
+    const lo=$('loginOverlay'), app=$('mainAppContainer') || document.querySelector('.seller-container');
+    if(lo) lo.style.display='flex'; if(app) app.style.display='none'; hideLoaderFinal();
+  }
+  function showAppFinal(){
+    const lo=$('loginOverlay'), app=$('mainAppContainer') || document.querySelector('.seller-container');
+    if(lo) lo.style.display='none'; if(app) app.style.display='flex';
+  }
+  window.checkSession = checkSession = async function(){
+    const raw = localStorage.getItem('sellerToken');
+    if(!raw || !window.db) return showLoginFinal();
+    setLoaderFinal('Checking seller account...', 8);
+    let token; try{ token = JSON.parse(raw); }catch(e){ localStorage.removeItem('sellerToken'); return showLoginFinal(); }
+    try{
+      window.activeSeller = activeSeller = await fetchSellerDocFinal(token);
+      if(!activeSeller.settings) activeSeller.settings = {};
+      localStorage.setItem('sellerToken', JSON.stringify(activeSeller));
+      const st = low(activeSeller.status || activeSeller.accountStatus || 'active');
+      if(st === 'blocked'){
+        if(typeof renderStatusScreen === 'function') renderStatusScreen('Account Blocked','Your seller account is blocked by Admin.',false);
+        const lo=$('loginOverlay'); if(lo) lo.style.display='flex'; hideLoaderFinal(); return;
+      }
+      setLoaderFinal('Loading dashboard, orders and inventory...', 28);
+      await loadInitialCoreFinal();
+      setLoaderFinal('Loading subscription, settings and support controls...', 62);
+      await fetchDynamicFinal(true);
+      setLoaderFinal('Applying active subscription access...', 82);
+      renderSubscriptionsFinal();
+      applySettingLocksFinal();
+      applyProfileBrandingFinal();
+      if(typeof window.renderSupportCategories === 'function') await window.renderSupportCategories().catch(()=>{});
+      if(typeof window.renderVersionInfo === 'function') window.renderVersionInfo();
+      if(typeof window.applyAdminTextOverrides === 'function') window.applyAdminTextOverrides();
+      const greet=$('sellerGreeting'); if(greet) greet.innerText = '| ' + (activeSeller.companyName || activeSeller.shopName || activeSeller.email || '');
+      const vb=$('verifiedBadge'); if(vb && activeSeller.subscription && activeSeller.subscription !== 'Basic') vb.style.display='inline';
+      showAppFinal();
+      setLoaderFinal('Opening seller panel...', 100);
+      setTimeout(hideLoaderFinal, 250);
+    }catch(e){
+      console.error('Final seller boot failed:', e);
+      setLoaderFinal('Could not load seller panel. Check internet and refresh.', 'Retry');
+      if(typeof showToast === 'function') showToast('Could not load seller panel. Please refresh once.', 'error');
+    }
+  };
+  window.refreshSellerPanelDynamicData = window.forceRefreshDynamicAdminControls = window.refreshDynamicAdminControls = async function(force=true){
+    setLoaderFinal('Refreshing admin subscription settings...', 35);
+    await fetchDynamicFinal(true);
+    renderSubscriptionsFinal();
+    applySettingLocksFinal();
+    applyProfileBrandingFinal();
+    if(typeof window.renderSupportCategories === 'function') await window.renderSupportCategories().catch(()=>{});
+    hideLoaderFinal();
+    if(typeof showToast === 'function') showToast('Admin seller settings refreshed.', 'success');
+    return true;
+  };
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      renderSubscriptionHeaderButtonsFinal();
+      if(state.loaded) renderSubscriptionsFinal();
+    }, 800);
+  });
 })();
