@@ -113,7 +113,6 @@
             <div class="nav-item" onclick="showSection('qna')"><i class="fas fa-comments" style="color: #60a5fa;"></i> Customer Q&A</div>
             <div class="nav-item" onclick="showSection('buyB2b')"><i class="fas fa-shopping-bag" style="color: var(--success);"></i> Buy B2B Supplies</div>
             <div class="nav-item" onclick="showSection('support')"><i class="fas fa-headset" style="color: var(--warning);"></i> Admin Support</div>
-            <div id="dynamicSidebarButtons"></div>
             
             <div class="nav-item" onclick="handleLogout()" style="color: var(--danger); margin-top:30px;"><i class="fas fa-sign-out-alt"></i> Secure Logout</div>
         </aside>
@@ -193,24 +192,19 @@
                         <h4 style="margin-bottom: 20px; font-size:18px; font-weight:800;">7-Day Sales Trend</h4>
                         <div style="position: relative; height: 250px; width: 100%;"><canvas id="salesChart"></canvas></div>
                     </div>
-
-                    <div id="dynamicDashboardButtons" class="dynamic-button-grid" style="margin-top:20px;"></div>
                 </section>
 
                 
                 <section id="profileSection" class="data-section">
                     <h3 style="font-size:24px; font-weight:800; margin-bottom:20px;">Profile & KYC</h3>
                     <div class="panel-box">
-                        <div id="profileBrandHero" class="profile-brand-hero"></div>
-                        <div id="profPersonalGrid" class="profile-details-grid">Loading...</div>
-                        <div id="profileDynamicButtons" class="dynamic-button-grid"></div>
+                        <div id="profPersonalGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:25px;">Loading...</div>
                         
                         <h4 style="font-size:18px; font-weight:800; margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">Bank Settlement Details</h4>
                         <div style="max-width:400px; margin-bottom:30px;">
                             <label>IFSC Code</label><input type="text" id="profIfsc" class="input-field" placeholder="Enter IFSC">
                             <label>Account Number</label><input type="text" id="profAcc" class="input-field" placeholder="Enter Account No">
-                            <div id="profileBankEditNote" class="admin-note-box" style="display:none;"></div>
-                            <button class="btn-prime" id="btnSaveBankInfo" onclick="updateBankDetails()"><i class="fas fa-save"></i> Save Bank Info</button>
+                            <button class="btn-prime" onclick="updateBankDetails()"><i class="fas fa-save"></i> Save Bank Info</button>
                         </div>
 
                         <div id="kycStatusBoxWrapper" style="display:none; padding:20px; border:2px dashed var(--danger); border-radius:12px; background:#fef2f2; text-align:center;">
@@ -382,20 +376,61 @@
                 <section id="subscriptionSection" class="data-section">
                     <h3 style="color: var(--warning); font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-crown"></i> Aryanta Store Subscriptions</h3>
                     <div class="panel-box" style="margin-bottom:18px; background:var(--surface-2);">
-                        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-                            <div><strong>Current plan:</strong> <span id="currentPlanBadge" class="badge-ui">Basic</span></div>
-                            <button type="button" class="btn-outline" onclick="refreshSellerPanelDynamicData()"><i class="fas fa-sync-alt"></i> Refresh Admin Plans</button>
+                        <strong>Current plan:</strong> <span id="currentPlanBadge" class="badge-ui">Basic / Free</span>
+                        <p style="margin-top:8px; color:var(--text-light); font-weight:700;">Payment records are saved to Firestore payment ledger. Sponsored and subscription payout deductions are also recorded.</p>
+                    </div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:22px;">
+                        <div class="plan-card">
+                            <div class="plan-badge" style="background:var(--surface-2); color:var(--text-main);">Free</div>
+                            <h3 style="font-size:24px; font-weight:900;">Basic Plan</h3>
+                            <p class="plan-price">₹<span>0</span> <span>/ forever</span></p>
+                            <ul class="plan-features">
+                                <li><i class="fas fa-check-circle"></i> Seller dashboard access</li>
+                                <li><i class="fas fa-check-circle"></i> QC product submission</li>
+                                <li><i class="fas fa-check-circle"></i> 1 logo + 1 banner update/month</li>
+                                <li><i class="fas fa-check-circle"></i> 7.5% commission logic</li>
+                            </ul>
+                            <button class="btn-outline w-100" onclick="processSubscription('Basic','free')">Use Basic</button>
                         </div>
-                        <p style="margin-top:8px; color:var(--text-light); font-weight:700;">Basic is always available at ₹0. Admin-added plans load once, and will update again only when you click refresh.</p>
+                        <div class="plan-card">
+                            <h3 style="font-size:24px; font-weight:900;">Go Plan</h3>
+                            <p class="plan-price">₹<span id="priceGo">199</span> <span>/ <span class="txtDuration">month</span></span></p>
+                            <ul class="plan-features">
+                                <li><i class="fas fa-check-circle"></i> Verified Seller Badge</li>
+                                <li><i class="fas fa-check-circle"></i> 1 logo + 3 banner updates/month</li>
+                                <li><i class="fas fa-check-circle"></i> Sponsored ad support</li>
+                                <li><i class="fas fa-check-circle"></i> Priority review visibility</li>
+                            </ul>
+                            <button class="btn-prime w-100" onclick="processSubscription('Go','online')">Pay Now</button>
+                            <button class="btn-outline w-100" id="btnSubPayoutGo" onclick="processSubscription('Go','payout')">Pay from Payout</button>
+                        </div>
+                        <div class="plan-card pro">
+                            <div class="plan-badge">Popular</div>
+                            <h3 style="font-size:24px; font-weight:900; color:var(--primary);">Pro Plan</h3>
+                            <p class="plan-price">₹<span id="pricePro">499</span> <span>/ <span class="txtDuration">month</span></span></p>
+                            <ul class="plan-features">
+                                <li><i class="fas fa-check-circle"></i> Premium Seller Badge</li>
+                                <li><i class="fas fa-check-circle"></i> 3 logo + 6 banner updates/month</li>
+                                <li><i class="fas fa-check-circle"></i> Faster seller support</li>
+                                <li><i class="fas fa-check-circle"></i> Pro sponsored handling</li>
+                            </ul>
+                            <button class="btn-prime w-100" onclick="processSubscription('Pro','online')">Pay Now</button>
+                            <button class="btn-outline w-100" id="btnSubPayoutPro" onclick="processSubscription('Pro','payout')">Pay from Payout</button>
+                        </div>
+                        <div class="plan-card ultra">
+                            <div class="plan-badge" style="background:#111827; color:white;">Ultra</div>
+                            <h3 style="font-size:24px; font-weight:900; color:#111827;">Ultra Plan</h3>
+                            <p class="plan-price">₹<span id="priceUltra">999</span> <span>/ <span class="txtDuration">month</span></span></p>
+                            <ul class="plan-features">
+                                <li><i class="fas fa-check-circle"></i> Highest brand limits</li>
+                                <li><i class="fas fa-check-circle"></i> Premium sponsored workflow</li>
+                                <li><i class="fas fa-check-circle"></i> Advanced warranty support</li>
+                                <li><i class="fas fa-check-circle"></i> Top support routing</li>
+                            </ul>
+                            <button class="btn-prime w-100" onclick="processSubscription('Ultra','online')">Pay Now</button>
+                            <button class="btn-outline w-100" id="btnSubPayoutUltra" onclick="processSubscription('Ultra','payout')">Pay from Payout</button>
+                        </div>
                     </div>
-                    <div class="plan-duration-toggle" id="dynamicPlanDurationToggle">
-                        <button type="button" id="btnPlanMonth" class="active" onclick="togglePlanDuration('month')">Monthly</button>
-                        <button type="button" id="btnPlanYear" onclick="togglePlanDuration('year')">Yearly -35%</button>
-                    </div>
-                    <div id="subscriptionPlansGrid" class="dynamic-plans-grid">
-                        <div class="panel-box basic-loading-note" style="grid-column:1/-1;text-align:center;font-weight:800;"><i class="fas fa-crown"></i> Basic plan is available. Loading admin plans once...</div>
-                    </div>
-                    <div id="dynamicSubscriptionButtons" class="dynamic-button-grid" style="margin-top:20px;"></div>
                 </section>
 
                 
@@ -430,11 +465,15 @@
                     <div class="panel-box" style="max-width: 600px;">
                         <form onsubmit="event.preventDefault(); submitSupportTicket();">
                             <label>Issue Category</label>
-                            <select id="supCategory" class="input-field" required onchange="updateSupportCategoryInfo()">
-                                <option value="">Loading issue categories from database...</option>
+                            <select id="supCategory" class="input-field" required>
+                                <option value="">-- Select Issue Type --</option>
+                                <option value="Payment/Payout Issue">Payment/Payout Issue</option>
+                                <option value="Order Cancellation Dispute">Order Cancellation Dispute</option>
+                                <option value="Product Listing Error">Product Listing Error</option>
+                                <option value="Shipping Partner Delay">Shipping Partner Delay</option>
+                                <option value="Customer Fraud">Customer Fraud / Dispute</option>
+                                <option value="Other">Other / General Query</option>
                             </select>
-                            <div id="supportCategoryInfo" class="admin-note-box" style="display:none;"></div>
-                            <div id="supportAttachmentBox" style="display:none; margin-bottom:12px;"></div>
                             <label>Callback Phone Number</label><input type="text" id="supPhone" class="input-field" required>
                             <label>Detailed Issue Description</label><textarea id="supDesc" class="input-field" style="height: 120px;" required></textarea>
                             <button type="submit" class="btn-prime w-100" style="background:var(--warning); font-size:16px; padding:15px;">Raise Ticket securely</button>
@@ -630,7 +669,7 @@
             
                 <div class="setting-card-premium">
                     <div class="setting-left">
-                        <div class="setting-icon"><i class="fas fa-search"></i></div>
+                        <div class="setting-icon"><i class="fas fa-magnifying-glass-chart"></i></div>
                         <div>
                             <div class="setting-title">Show Search Suggestions</div>
                             <div class="setting-sub">Enable or disable dropdown suggestions in the top search bar.</div>
@@ -642,22 +681,37 @@
                     </label>
                 </div>
 </div>
-            <div id="dynamicSettingsButtons" class="dynamic-button-grid" style="margin-top:20px;"></div>
-            <div id="downloadAppSettingsBox" class="download-app-box" style="display:none;"></div>
         </div>
 
         
         <div style="padding:25px; border-top:1px solid var(--border-color); background:var(--surface-2);">
             <h4 style="font-size:18px; font-weight:800; margin-bottom:18px;">
-                <i class="fas fa-code-branch"></i> <span data-admin-text="settings.versionTitle">Version Information</span>
+                <i class="fas fa-code-branch"></i> Version Information
             </h4>
 
-            <div class="version-box" id="versionInfoBox">
-                <div class="admin-note-box" style="grid-column:1/-1;">Loading version information from admin database...</div>
+            <div class="version-box">
+
+                <div class="version-card">
+                    <span>App Version</span>
+                    <strong>Aryanta Seller App v1.0.0</strong>
+                </div>
+
+                <div class="version-card">
+                    <span>Web Version</span>
+                    <strong>Web Build v2026.05.12</strong>
+                </div>
+
+                <div class="version-card">
+                    <span>Panel Type</span>
+                    <strong>Enterprise Seller Hub</strong>
+                </div>
+
             </div>
         </div>
 
-        </section>
+    </div>
+
+</section>
             </div>
         </main>
     </div>
@@ -996,14 +1050,6 @@
     </div>
 
     
-
-    <div class="modal" id="adminDynamicPopupModal">
-        <div class="modal-content admin-dynamic-popup-content">
-            <span class="close-modal" id="adminDynamicPopupClose" onclick="closeDynamicAdminPopup()"><i class="fas fa-times"></i></span>
-            <div id="adminDynamicPopupBody"></div>
-        </div>
-    </div>
-
     <div id="printArea" style="display:none;"></div>
 
     <div id="toastContainer"></div>
