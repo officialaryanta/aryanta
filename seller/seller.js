@@ -6591,3 +6591,266 @@ window.loadTutorials = function() {
     }, 800);
   });
 })();
+
+/* Aryanta Seller Login + Session Worker Hotfix 2026-05-21
+   Fixes: login loop, direct-Firestore login blocked by rules, missing window.API_BASE_URL,
+   and wrong "Admin seller settings refreshed" behavior while logged out. */
+(function(){
+  if(window.ARYANTA_SELLER_LOGIN_SESSION_WORKER_HOTFIX_20260521) return;
+  window.ARYANTA_SELLER_LOGIN_SESSION_WORKER_HOTFIX_20260521 = true;
+
+  try{
+    if(!window.API_BASE_URL && typeof API_BASE_URL !== 'undefined') window.API_BASE_URL = API_BASE_URL;
+    if(!window.API_BASE_URL) window.API_BASE_URL = 'https://rough-field-c679.official-aryanta.workers.dev';
+  }catch(e){ window.API_BASE_URL = window.API_BASE_URL || 'https://rough-field-c679.official-aryanta.workers.dev'; }
+
+  const $ = id => document.getElementById(id);
+  const apiBase = () => String(window.API_BASE_URL || 'https://rough-field-c679.official-aryanta.workers.dev').replace(/\/+$/,'');
+  const clean = v => String(v == null ? '' : v).trim();
+  const low = v => clean(v).toLowerCase();
+  const money = n => '₹' + Number(n || 0).toLocaleString('en-IN');
+
+  function showToastSafe(msg,type){
+    try{ if(typeof window.showToast === 'function') return window.showToast(msg,type||'info'); }catch(e){}
+    console.log('[Aryanta]', msg);
+  }
+  function setLoaderSafe(msg, percent){
+    const l=$('pageLoader'), m=$('loaderMessage'), p=$('loadPercent');
+    if(l){ l.style.display='flex'; l.style.opacity='1'; }
+    if(m) m.innerText = msg || 'Loading seller panel...';
+    if(p) p.innerText = typeof percent === 'number' ? percent + '%' : (percent || 'Loading');
+  }
+  function hideLoaderSafe(){
+    const l=$('pageLoader');
+    if(!l) return;
+    l.style.opacity='0';
+    setTimeout(()=>{ l.style.display='none'; l.style.opacity='1'; }, 260);
+  }
+  function showLoginOnlySafe(){
+    const lo=$('loginOverlay');
+    const app=$('mainAppContainer') || document.querySelector('.seller-container');
+    if(lo) lo.style.display='flex';
+    if(app) app.style.display='none';
+    hideLoaderSafe();
+  }
+  function showAppOnlySafe(){
+    const lo=$('loginOverlay');
+    const app=$('mainAppContainer') || document.querySelector('.seller-container');
+    if(lo) lo.style.display='none';
+    if(app) app.style.display='flex';
+  }
+  function readSession(){
+    try{
+      const raw = localStorage.getItem('sellerToken');
+      if(!raw) return null;
+      const s = JSON.parse(raw);
+      if(!s || typeof s !== 'object') return null;
+      return s;
+    }catch(e){ localStorage.removeItem('sellerToken'); return null; }
+  }
+  function saveSession(seller, token){
+    seller = seller && typeof seller === 'object' ? seller : {};
+    if(token) seller.token = token;
+    if(!seller.email && seller.sellerEmail) seller.email = seller.sellerEmail;
+    if(seller.email) seller.email = low(seller.email);
+    if(!seller.settings) seller.settings = {};
+    try{ localStorage.setItem('sellerToken', JSON.stringify(seller)); }catch(e){}
+    try{ window.activeSeller = activeSeller = seller; }catch(e){ window.activeSeller = seller; }
+    return seller;
+  }
+  function authHeaders(session){
+    const h = { 'Content-Type':'application/json' };
+    const token = clean(session && (session.token || session.sellerToken || session.authToken));
+    if(token) h.Authorization = 'Bearer ' + token;
+    return h;
+  }
+  async function workerJson(path, options){
+    const res = await fetch(apiBase() + path, Object.assign({ cache:'no-store' }, options || {}));
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok || data.success === false){
+      const err = new Error(data.error || data.message || ('Request failed ' + res.status));
+      err.status = res.status;
+      err.data = data;
+      throw err;
+    }
+    return data.data || data;
+  }
+  async function loginViaWorker(id, pass){
+    const body = { loginId:id, id, email:id, phone:id, password:pass, pass };
+    const data = await workerJson('/seller/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    const seller = data.seller || data.profile || data.data || data;
+    const token = data.token || seller.token || '';
+    if(!seller || !seller.email) throw new Error('Seller login response missing email');
+    return saveSession(seller, token);
+  }
+  async function loginViaFirestoreFallback(id, pass){
+    if(!window.db) throw new Error('Firestore not ready');
+    const raw = clean(id);
+    const email = low(id);
+    const phone = raw.replace(/\D/g,'');
+    const found = [];
+    async function add(q){ try{ const s=await q.get(); s.forEach(d=>found.push({id:d.id, ...d.data()})); }catch(e){} }
+    await add(db.collection('sellers').where('email','==',email).where('password','==',pass));
+    if(raw !== email) await add(db.collection('sellers').where('email','==',raw).where('password','==',pass));
+    if(phone) await add(db.collection('sellers').where('phone','==',phone).where('password','==',pass));
+    try{ const d = await db.collection('sellers').doc(email).get(); if(d.exists && String(d.data().password || '') === String(pass)) found.push({id:d.id,...d.data()}); }catch(e){}
+    const seller = found[0];
+    if(!seller) throw new Error('Invalid Credentials or Account Not Found');
+    return saveSession(seller, seller.token || '');
+  }
+  function mergeBootPayload(boot){
+    boot = boot || {};
+    const seller = boot.seller || boot.profile || null;
+    if(seller && seller.email){
+      const current = readSession() || {};
+      saveSession(Object.assign({}, current, seller, { token: current.token || seller.token || '' }), current.token || seller.token || '');
+    }
+    try{
+      const st = window.__ARYANTA_SUB_FINAL;
+      if(st){
+        if(boot.panelConfig || boot.config || boot.settings) st.config = Object.assign({}, st.config || {}, boot.panelConfig || boot.config || boot.settings || {});
+        if(Array.isArray(boot.subscriptionPlans || boot.plans)){
+          st.plans = boot.subscriptionPlans || boot.plans;
+          st.loaded = false;
+        }
+        if(Array.isArray(boot.issueCategories || boot.categories)) st.supportCategories = boot.issueCategories || boot.categories;
+        if(boot.activeSubscription) st.active = boot.activeSubscription;
+        if(boot.currentPlan) st.currentPlan = boot.currentPlan;
+      }
+    }catch(e){}
+    if(Array.isArray(boot.subscriptionPlans || boot.plans)) window.__ARYANTA_DB_SUBSCRIPTION_PLANS = boot.subscriptionPlans || boot.plans;
+    if(Array.isArray(boot.issueCategories || boot.categories)) window.__ARYANTA_DB_SUPPORT_CATEGORIES = boot.issueCategories || boot.categories;
+    if(Array.isArray(boot.notifications)){
+      try{ window.adminNotifications = adminNotifications = boot.notifications; }catch(e){ window.adminNotifications = boot.notifications; }
+      try{ window.sellerNotifications = sellerNotifications = boot.notifications; }catch(e){}
+    }
+  }
+  async function loadWorkerPanelBoot(session){
+    const email = low(session && session.email);
+    const qs = email ? '?email=' + encodeURIComponent(email) : '';
+    const boot = await workerJson('/seller/panel-boot' + qs, { method:'GET', headers:authHeaders(session) });
+    mergeBootPayload(boot);
+    return boot;
+  }
+  async function loadWorkerDashboard(session){
+    const email = low(session && session.email);
+    const qs = email ? '?email=' + encodeURIComponent(email) : '';
+    const dash = await workerJson('/seller/dashboard' + qs, { method:'GET', headers:authHeaders(session) });
+    try{ window.sellerProducts = sellerProducts = dash.products || dash.inventory || []; }catch(e){ window.sellerProducts = dash.products || dash.inventory || []; }
+    try{ window.sellerOrders = sellerOrders = dash.orders || []; }catch(e){ window.sellerOrders = dash.orders || []; }
+    try{ window.sellerFines = sellerFines = dash.fines || []; }catch(e){}
+    try{ window.sellerPayouts = sellerPayouts = dash.payouts || []; }catch(e){}
+    try{ window.sellerWarranties = sellerWarranties = dash.warranties || []; }catch(e){}
+    try{ window.sellerSupportTickets = sellerSupportTickets = dash.support || dash.tickets || []; }catch(e){}
+    return dash;
+  }
+  async function paintAfterBoot(){
+    try{ if(typeof window.applySettingsToUI === 'function') window.applySettingsToUI(); }catch(e){}
+    try{ if(typeof window.renderDashboardStats === 'function') window.renderDashboardStats(); }catch(e){}
+    try{ if(typeof window.loadSubscriptionsUI === 'function') window.loadSubscriptionsUI(); }catch(e){}
+    try{ if(typeof window.applySettingLocksFinal === 'function') window.applySettingLocksFinal(); }catch(e){}
+    try{ if(typeof window.renderVersionInfo === 'function') window.renderVersionInfo(); }catch(e){}
+    try{ if(typeof window.renderSupportCategories === 'function') await window.renderSupportCategories(); }catch(e){}
+    const greet=$('sellerGreeting');
+    if(greet && window.activeSeller) greet.innerText = '| ' + (activeSeller.companyName || activeSeller.shopName || activeSeller.email || '');
+  }
+
+  window.handleLogin = async function(){
+    const id = $('loginId') ? $('loginId').value.trim() : '';
+    const pass = $('loginPass') ? $('loginPass').value.trim() : '';
+    const btn = $('loginBtn');
+    if(!id || !pass) return showToastSafe('Enter Email/Phone and Password.', 'error');
+    if(btn){ btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...'; }
+    setLoaderSafe('Checking seller login...', 15);
+    try{
+      let seller;
+      try{ seller = await loginViaWorker(id, pass); }
+      catch(workerErr){
+        console.warn('Worker login failed, trying Firestore fallback:', workerErr);
+        seller = await loginViaFirestoreFallback(id, pass);
+      }
+      const st = low(seller.status || seller.accountStatus || 'active');
+      if(st === 'blocked'){
+        hideLoaderSafe();
+        if(typeof window.renderStatusScreen === 'function') window.renderStatusScreen('Account Blocked','Your seller account is blocked by Admin.',false);
+        return;
+      }
+      if(st === 'suspended'){
+        hideLoaderSafe();
+        if(typeof window.renderStatusScreen === 'function') window.renderStatusScreen('Account Suspended','Your seller account is temporarily suspended by Admin.',true, Date.now()+7*24*60*60*1000);
+        return;
+      }
+      showToastSafe('Welcome back, ' + (seller.companyName || seller.shopName || 'Partner') + '!', 'success');
+      await window.checkSession();
+    }catch(e){
+      console.error('Seller login failed:', e);
+      hideLoaderSafe();
+      showLoginOnlySafe();
+      showToastSafe(e.message || 'Invalid Credentials or Account Not Found.', 'error');
+    }finally{
+      if(btn){ btn.disabled = false; btn.innerHTML = 'Login to Dashboard <i class="fas fa-arrow-right"></i>'; }
+    }
+  };
+
+  window.completeLoginProcess = function(sellerData){
+    saveSession(sellerData || {}, sellerData && sellerData.token);
+    showAppOnlySafe();
+    window.checkSession();
+  };
+
+  window.checkSession = async function(){
+    const session = readSession();
+    if(!session || !session.email) return showLoginOnlySafe();
+    saveSession(session, session.token || '');
+    setLoaderSafe('Loading seller account...', 10);
+    try{
+      await loadWorkerPanelBoot(session).catch(e => { console.warn('Panel boot from worker skipped:', e); });
+      setLoaderSafe('Loading dashboard, orders and inventory...', 45);
+      await loadWorkerDashboard(readSession() || session).catch(e => { console.warn('Dashboard from worker skipped:', e); });
+      setLoaderSafe('Applying seller subscription and settings...', 75);
+      try{
+        if(typeof window.refreshDynamicAdminControls === 'function') await window.refreshDynamicAdminControls(false);
+      }catch(e){ console.warn('Dynamic controls refresh skipped:', e); }
+      await paintAfterBoot();
+      showAppOnlySafe();
+      setLoaderSafe('Opening seller panel...', 100);
+      setTimeout(hideLoaderSafe, 250);
+    }catch(e){
+      console.error('Seller session boot failed:', e);
+      showAppOnlySafe();
+      hideLoaderSafe();
+      showToastSafe('Seller panel opened with saved session. Some live data may need refresh.', 'warning');
+    }
+  };
+
+  const oldRefresh = window.refreshDynamicAdminControls || window.forceRefreshDynamicAdminControls;
+  window.refreshDynamicAdminControls = window.forceRefreshDynamicAdminControls = async function(force){
+    const session = readSession();
+    if(!session || !session.email){ showLoginOnlySafe(); showToastSafe('Please login first.', 'warning'); return false; }
+    setLoaderSafe('Refreshing admin seller settings...', 25);
+    try{
+      await loadWorkerPanelBoot(session);
+      if(typeof oldRefresh === 'function') {
+        try{
+          const r = oldRefresh(false);
+          if(r && typeof r.then === 'function') await r;
+        }catch(e){ console.warn('Old dynamic refresh skipped:', e); }
+      }
+      await paintAfterBoot();
+      hideLoaderSafe();
+      showToastSafe('Admin seller settings refreshed.', 'success');
+      return true;
+    }catch(e){
+      console.error('Refresh admin settings failed:', e);
+      hideLoaderSafe();
+      showToastSafe('Could not refresh admin settings.', 'error');
+      return false;
+    }
+  };
+
+  window.handleLogout = function(){
+    localStorage.removeItem('sellerToken');
+    sessionStorage.removeItem('temp_auth');
+    window.location.reload();
+  };
+})();
