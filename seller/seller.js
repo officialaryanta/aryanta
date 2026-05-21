@@ -3,9 +3,9 @@ var updateBrandingLimitText = window.updateBrandingLimitText || function(){
     const el=document.getElementById("brandingLimitText")||document.getElementById("brandLimitText")||document.getElementById("currentPlanBadge");
     if(!el||!window.activeSeller&&!activeSeller)return;
     const s=(typeof activeSeller!=="undefined"&&activeSeller)?activeSeller:{};
-    const plan=String(s.subscription||"Basic / Free");
+    const plan=String(s.subscription||"No DB plan active");
     if(el.id==="currentPlanBadge")el.textContent=plan;
-    else el.textContent=plan.includes("Ultra")?"Unlimited branding tools enabled.":plan.includes("Pro")?"Pro branding tools enabled.":"Basic branding tools enabled.";
+    else el.textContent=plan.includes("Ultra")?"Unlimited branding tools enabled.":plan.includes("Pro")?"Pro branding tools enabled.":"Branding tools are controlled by admin DB.";
 };
 window.updateBrandingLimitText=updateBrandingLimitText;
 const PROJECT_ID="aryanta-mart-a8893";
@@ -2774,111 +2774,33 @@ async function syncPayoutToAdmin(totalGross,totalFines,finalUpcoming){
 }
 
 window.togglePlanDuration=function(type){
-    currentPlanDuration=type;
-    const btnM=document.getElementById('btnPlanMonth');const btnY=document.getElementById('btnPlanYear');
-    if(type==='year'){
-        if(btnY) { btnY.style.background='var(--primary)';btnY.style.color='white'; }
-        if(btnM) { btnM.style.background='transparent';btnM.style.color='var(--text-light)'; }
-        const pGo = document.getElementById('priceGo'); if(pGo) pGo.innerText='1999';
-        const pPro = document.getElementById('pricePro'); if(pPro) pPro.innerText='4999';
-        document.querySelectorAll('.txtDuration').forEach(el=>el.innerText='year');
-    }else{
-        if(btnM) { btnM.style.background='var(--primary)';btnM.style.color='white'; }
-        if(btnY) { btnY.style.background='transparent';btnY.style.color='var(--text-light)'; }
-        const pGo = document.getElementById('priceGo'); if(pGo) pGo.innerText='199';
-        const pPro = document.getElementById('pricePro'); if(pPro) pPro.innerText='499';
-        document.querySelectorAll('.txtDuration').forEach(el=>el.innerText='month');
-    }
-    validatePayoutButtons();
-}
+    currentPlanDuration=type==='year'?'year':'month';
+    if(window.loadSubscriptionsUI) window.loadSubscriptionsUI();
+};
 
 function validatePayoutButtons(){
-    const costGo=currentPlanDuration==='year'?1999:199;
-    const costPro=currentPlanDuration==='year'?4999:499;
-    const btnGo=document.getElementById('btnSubPayoutGo');
-    const btnPro=document.getElementById('btnSubPayoutPro');
-    const btnAd=document.getElementById('btnAdPayout');
-    const btnB2b=document.getElementById('b2bPayoutBtn');
-    if(btnGo){if(cachedTotalUpcoming>=costGo){btnGo.disabled=false;btnGo.innerHTML='<i class="fas fa-wallet"></i> Pay from Payout';}else{btnGo.disabled=true;btnGo.innerHTML='<i class="fas fa-exclamation-circle"></i> Insufficient Payout';}}
-    if(btnPro){if(cachedTotalUpcoming>=costPro){btnPro.disabled=false;btnPro.innerHTML='<i class="fas fa-wallet"></i> Pay from Payout';}else{btnPro.disabled=true;btnPro.innerHTML='<i class="fas fa-exclamation-circle"></i> Insufficient Payout';}}
-    if(btnAd){if(cachedTotalUpcoming>=70){btnAd.disabled=false;btnAd.innerHTML='<i class="fas fa-wallet"></i> Pay via Upcoming Payout';}else{btnAd.disabled=true;btnAd.innerHTML='<i class="fas fa-exclamation-circle"></i> Insufficient Payout';}}
-    if(btnB2b){if(cachedTotalUpcoming>0){btnB2b.disabled=false;btnB2b.innerHTML='<i class="fas fa-wallet"></i> Pay via Upcoming Payout';}else{btnB2b.disabled=true;btnB2b.innerHTML='<i class="fas fa-exclamation-circle"></i> Insufficient Payout Balance';}}
+    if(window.validateStrictPayoutButtons) return window.validateStrictPayoutButtons();
 }
 
-window.loadSubscriptionsUI=function(){
-    validatePayoutButtons();
-    if(activeSeller.subscription&&activeSeller.subscription!=='None'){
-        showToast(`You are currently on the ${activeSeller.subscription} Plan.`,'success');
-    }
+window.loadSubscriptionsUI=async function(){
+    if(window.loadStrictSubscriptionsUI) return window.loadStrictSubscriptionsUI();
+    const grid=document.getElementById('subscriptionPlansGrid');
+    if(grid)grid.innerHTML='<div class="panel-box" style="grid-column:1/-1;text-align:center;font-weight:800;color:var(--danger);">Subscription plans are not loaded from admin database.</div>';
+};
+
+window.processSubscription=async function(planId,method){
+    if(window.processStrictSubscription) return window.processStrictSubscription(planId,method);
+    showToast('Subscription plans are not loaded from admin database. Ask admin to add active plans.','error');
+};
+
+async function activateSubscription(){
+    showToast('Old built-in subscription activator is disabled. Admin DB plan is required.','error');
 }
 
-window.processSubscription=async function(planName,method){
-    const cost=planName==='Go'?(currentPlanDuration==='year'?1999:199):(currentPlanDuration==='year'?4999:499);
-    if(method==='payout'){
-        if(cachedTotalUpcoming<cost)return showToast("Insufficient funds in upcoming payout.","error");
-        if(!confirm(`Deduct ₹${cost} from your upcoming payout for ${planName} Plan?`))return;
-        try{
-            await db.collection("fines").add({email:activeSeller.email,amount:cost,reason:`Subscription Auto-Deduct: ${planName} (${currentPlanDuration})`,timestamp:new Date().toISOString()});
-            activateSubscription(planName);
-        }catch(e){showToast("Failed to process.","error");}
-    }else{
-        if(!API_KEYS.RAZORPAY)return showToast("Razorpay Key missing. Online payments disabled.","error");
-        showToast("Initializing Razorpay Gateway...","info");
-        var options={
-            "key":API_KEYS.RAZORPAY,"amount":cost*100,"currency":"INR","name":"Aryanta Enterprise","description":`${planName} Plan Subscription`,
-            "handler":function(response){activateSubscription(planName);},
-            "prefill":{"name":activeSeller.companyName,"email":activeSeller.email,"contact":activeSeller.phone},"theme":{"color":"#059669"}
-        };
-        var rzp1=new Razorpay(options);rzp1.open();
-    }
-}
-
-async function activateSubscription(planName){
-    const end=new Date();if(currentPlanDuration==='year')end.setFullYear(end.getFullYear()+1);else end.setMonth(end.getMonth()+1);
-    const subRecord={plan:planName,duration:currentPlanDuration,method:'Online / Payout',cost:planName==='Go'?(currentPlanDuration==='year'?1999:199):(currentPlanDuration==='year'?4999:499),startDate:new Date().toISOString(),endDate:end.toISOString()};
-    activeSeller.subscription=planName;activeSeller.subEndDate=end.toISOString();
-    if(!activeSeller.subHistory)activeSeller.subHistory=[];activeSeller.subHistory.push(subRecord);
-    localStorage.setItem('sellerToken',JSON.stringify(activeSeller));
-    try{await db.collection("sellers").doc(activeSeller.email).update({subscription:planName,subEndDate:end.toISOString(),subHistory:activeSeller.subHistory});showToast("Plan Activated!","success");loadProfile();}
-    catch(e){showToast("Failed to update database.","error");}
-}
-
-// --- INJECTED: Store Branding (Logo & Banner) limits logic ---
-window.uploadStoreBranding = function(type) {
-    const fileInp = type === 'logo' ? document.getElementById('storeLogoInput') : document.getElementById('storeBannerInput');
-    if(!fileInp || !fileInp.files[0]) return showToast("Select an image first", "warning");
-    const file = fileInp.files[0];
-
-    const plan = activeSeller.subscription || 'Free';
-    const currentUploads = activeSeller[`${type}UploadsThisMonth`] || 0;
-    
-    let limit = type === 'logo' ? 1 : 2; 
-    if (plan === 'Go') limit = type === 'logo' ? 2 : 4;
-    if (plan === 'Pro') limit = 9999; 
-
-    if(currentUploads >= limit) {
-        return showToast(`Monthly limit reached for your ${plan} Plan.`, "error");
-    }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const b64 = e.target.result;
-        let updateData = {};
-        updateData[`store${type.charAt(0).toUpperCase() + type.slice(1)}`] = b64;
-        updateData[`${type}UploadsThisMonth`] = currentUploads + 1;
-
-        db.collection('sellers').doc(activeSeller.email).update(updateData)
-          .then(() => {
-              showToast(`${type.toUpperCase()} Updated! Old image deleted securely.`, "success");
-              fileInp.value = '';
-              activeSeller[`store${type.charAt(0).toUpperCase() + type.slice(1)}`] = b64;
-              activeSeller[`${type}UploadsThisMonth`] = currentUploads + 1;
-              localStorage.setItem('sellerToken', JSON.stringify(activeSeller));
-          }).catch(err => {
-              showToast("Failed to upload branding", "error");
-          });
-    };
-    reader.readAsDataURL(file);
+// --- Store Branding is controlled by admin DB plan limits. Final uploader is defined later. ---
+window.uploadStoreBranding = async function(type){
+    if(window.uploadStoreBrandingStrict) return window.uploadStoreBrandingStrict(type);
+    showToast('Branding upload is admin-database controlled. Load seller plan first.','warning');
 }
 
 window.loadAds=function(){
@@ -4371,32 +4293,16 @@ window.loadTutorials = function() {
         if(cachedTotalUpcoming < 70) return showToast('Insufficient payout balance.', 'error');
         try{ await addFineOnce('sponsored_ad_' + id + '_' + Date.now(), 70, 'Sponsored Ad Fee'); await savePaymentLedger({type:'sponsored_ad_payout', productId:id, amount:70, status:'Deducted from payout'}); closeModal('adPaymentModal'); executeAd(id); }catch(e){ showToast('Failed to process sponsored payment.', 'error'); }
     };
-
-    window.processSubscription = async function(planName, method){
-        const prices = {Basic:0, Go:(currentPlanDuration==='year'?1999:199), Pro:(currentPlanDuration==='year'?4999:499), Ultra:(currentPlanDuration==='year'?9999:999)};
-        const cost = prices[planName] ?? 0;
-        if(method === 'free' || cost === 0){ await activateSubscription('Basic'); await savePaymentLedger({type:'subscription', planName:'Basic', amount:0, status:'Activated'}); return; }
-        if(method === 'payout'){
-            if(cachedTotalUpcoming < cost) return showToast('Insufficient funds in upcoming payout.', 'error');
-            await addFineOnce('subscription_' + planName + '_' + Date.now(), cost, `Subscription Deduction: ${planName}`);
-            await savePaymentLedger({type:'subscription_payout', planName, amount:cost, status:'Deducted from payout'});
-            return activateSubscription(planName);
-        }
-        if(!API_KEYS.RAZORPAY){ await savePaymentLedger({type:'subscription_payment_intent', planName, amount:cost, status:'Razorpay disabled'}); return showToast('Razorpay disabled. Payment intent saved in DB.', 'warning'); }
-        const options={key:API_KEYS.RAZORPAY, amount:cost*100, currency:'INR', name:'Aryanta Subscription', description:`${planName} Seller Plan`, handler:async function(res){ await savePaymentLedger({type:'subscription_online', planName, amount:cost, status:'Paid', razorpayPaymentId:res.razorpay_payment_id || ''}); activateSubscription(planName); }, prefill:{email:activeSeller.email, contact:activeSeller.phone}, theme:{color:'#111827'}};
-        new Razorpay(options).open();
+    window.processSubscription = async function(planId, method){
+        if(window.processStrictSubscription) return window.processStrictSubscription(planId, method);
+        showToast('Subscription is admin-database controlled. Add plans in Firestore first.','error');
     };
-    window.activateSubscription = activateSubscription = async function(planName){
-        const end = new Date(); end.setMonth(end.getMonth()+1);
-        const payload={subscription:planName, subStartDate:nowIso(), subEndDate:end.toISOString(), updatedAt:nowIso()};
-        try{ await db.collection('sellers').doc(activeSeller.email).update(payload); Object.assign(activeSeller,payload); localStorage.setItem('sellerToken',JSON.stringify(activeSeller)); const badge=$('currentPlanBadge'); if(badge) badge.textContent = planName; if(typeof updateBrandingLimitText === "function") updateBrandingLimitText(); showToast(`${planName} plan activated.`, 'success'); }catch(e){ showToast('Subscription update failed.', 'error'); }
+    window.activateSubscription = activateSubscription = async function(){
+        showToast('Old built-in subscription activation is removed. Admin DB plan is required.','error');
     };
-
-    const oldValidate = window.validatePayoutButtons;
     window.validatePayoutButtons = function(){
-        try{ if(oldValidate) oldValidate(); }catch(e){}
-        const ultra = $('btnSubPayoutUltra'); if(ultra) ultra.disabled = cachedTotalUpcoming < (currentPlanDuration==='year'?9999:999);
-        const badge=$('currentPlanBadge'); if(badge && activeSeller) badge.textContent = activeSeller.subscription || 'Basic / Free';
+        if(window.validateStrictPayoutButtons) return window.validateStrictPayoutButtons();
+        const badge=$('currentPlanBadge'); if(badge && activeSeller) badge.textContent = activeSeller.subscription || 'No DB plan active';
     };
 
     document.addEventListener('DOMContentLoaded', function(){
@@ -5108,10 +5014,14 @@ window.loadTutorials = function() {
     window.loadSettingsUI = loadSettingsUI = function(){ try{originalLoadSettingsFinal&&originalLoadSettingsFinal();}catch(e){} renderBrandingPreviewsFinal(); };
 
     function adPlanLimit(){
-        const plan=low(activeSeller && (activeSeller.subscription || activeSeller.plan || activeSeller.package));
-        if(plan.includes('ultra')||plan.includes('enterprise')||plan.includes('premium'))return 10;
-        if(plan.includes('pro')||plan.includes('growth'))return 6;
-        if(plan.includes('plus')||plan.includes('standard')||plan.includes('starter'))return 3;
+        try{
+            const plan=typeof window.getActiveSubscriptionPlanForSeller==='function'?window.getActiveSubscriptionPlanForSeller():null;
+            const direct=Number(plan&&plan.freeAds);
+            if(Number.isFinite(direct)&&direct>=0)return Math.floor(direct);
+            const sf=activeSeller&&activeSeller.subscriptionFeatures;
+            const feature=Number(sf&&(sf.freeAds||sf.sponsoredFreeAds||sf.freeSponsoredAds));
+            if(Number.isFinite(feature)&&feature>=0)return Math.floor(feature);
+        }catch(e){}
         return 1;
     }
     function adUsage(){
@@ -5165,4 +5075,923 @@ window.loadTutorials = function() {
         currentScanStep=step;
         ['scanStep1','scanStep2','scanStep3'].forEach(id=>{const el=$id(id);if(el)el.classList.toggle('active',id===('scanStep'+step));});
     };
+})();
+
+
+/* Aryanta Seller STRICT Dynamic Admin Control Patch - no built-in subscription/category defaults */
+(function(){
+    if(window.ARYANTA_SELLER_STRICT_DYNAMIC_2026_05_21)return;
+    window.ARYANTA_SELLER_STRICT_DYNAMIC_2026_05_21=true;
+
+    const MONTH_KEY=new Date().toISOString().slice(0,7);
+    const $=id=>document.getElementById(id);
+    const text=v=>String(v==null?'':v);
+    const low=v=>text(v).toLowerCase().trim();
+    const nowIso=()=>new Date().toISOString();
+    const money=n=>`₹${Number(n||0).toLocaleString('en-IN')}`;
+    const safe=v=>text(v).replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]));
+    const sellerEmail=()=>low(activeSeller&&activeSeller.email);
+    const sellerDocId=()=>text(activeSeller&&activeSeller.email).trim();
+
+    let adminConfig={};
+    let dynamicPlans=[];
+    let supportCategories=[];
+    let dynamicButtons={sidebar:[],settings:[],profile:[]};
+    let dynamicLedger=[];
+    let textOverrides=[];
+    let cfgFetchedAt=0;
+    let cfgPromise=null;
+
+    function arr(v){
+        if(Array.isArray(v))return v;
+        if(v&&typeof v==='object')return Object.keys(v).map(k=>Object.assign({id:k},v[k]));
+        return [];
+    }
+    function truthy(v,def=true){
+        if(v===undefined||v===null||v==='')return def;
+        if(typeof v==='boolean')return v;
+        const s=low(v);
+        if(['false','0','no','off','disabled','inactive','hide','hidden'].includes(s))return false;
+        if(['true','1','yes','on','enabled','active','show','visible'].includes(s))return true;
+        return def;
+    }
+    function deepMerge(target,source){
+        if(!source||typeof source!=='object')return target;
+        Object.keys(source).forEach(k=>{
+            if(source[k]&&typeof source[k]==='object'&&!Array.isArray(source[k])&&!(source[k] instanceof Date)){
+                if(!target[k]||typeof target[k]!=='object'||Array.isArray(target[k]))target[k]={};
+                deepMerge(target[k],source[k]);
+            }else if(source[k]!==undefined){target[k]=source[k];}
+        });
+        return target;
+    }
+    function iconClass(v,fallback='fas fa-link'){
+        const s=text(v||fallback).trim();
+        if(!s)return fallback;
+        if(s.includes('fa-'))return s;
+        return 'fas fa-'+s;
+    }
+    function isActiveDoc(d){return truthy(d.active,d.enabled!==undefined?truthy(d.enabled,true):true)&&truthy(d.visible,d.show!==undefined?truthy(d.show,true):true);}
+    async function getDocRows(refs){
+        const rows=[];
+        if(!db)return rows;
+        for(const [c,id] of refs){
+            try{const doc=await db.collection(c).doc(id).get();if(doc.exists)rows.push({id:doc.id,...doc.data(),__collection:c});}
+            catch(e){console.warn('Admin config skipped',c+'/'+id,e);}
+        }
+        return rows;
+    }
+    async function getCollectionRows(names){
+        const rows=[];
+        if(!db)return rows;
+        for(const name of names){
+            try{
+                let snap;
+                try{snap=await db.collection(name).orderBy('sortOrder','asc').get();}
+                catch(e){snap=await db.collection(name).get();}
+                snap.forEach(doc=>rows.push({id:doc.id,...doc.data(),__collection:name}));
+                if(rows.length)break;
+            }catch(e){console.warn('Admin collection skipped',name,e);}
+        }
+        return rows;
+    }
+    function normalizePlan(raw){
+        const name=text(raw.name||raw.title||raw.planName||raw.label||raw.id).trim();
+        const hasMonthly=raw.monthlyPrice!==undefined||raw.priceMonthly!==undefined||raw.monthPrice!==undefined||raw.price!==undefined||raw.amount!==undefined;
+        const hasYearly=raw.yearlyPrice!==undefined||raw.priceYearly!==undefined||raw.yearPrice!==undefined||raw.yearlyAmount!==undefined;
+        const monthly=hasMonthly?Number(raw.monthlyPrice??raw.priceMonthly??raw.monthPrice??raw.price??raw.amount):null;
+        const yearly=hasYearly?Number(raw.yearlyPrice??raw.priceYearly??raw.yearPrice??raw.yearlyAmount):null;
+        const settings=raw.settings||raw.enabledSettings||raw.allowedSettings||raw.settingAccess||null;
+        const features=arr(raw.features||raw.planFeatures||raw.benefits).map(f=>typeof f==='string'?f:(f.title||f.name||f.text||f.description)).filter(Boolean);
+        return {
+            ...raw,
+            id:text(raw.id||raw.planId||name).trim(),
+            name,
+            title:text(raw.title||raw.name||name).trim(),
+            description:text(raw.description||raw.subtitle||raw.shortDescription||''),
+            monthlyPrice:Number.isFinite(monthly)?monthly:null,
+            yearlyPrice:Number.isFinite(yearly)?yearly:null,
+            active:truthy(raw.active,truthy(raw.enabled,true)),
+            visible:truthy(raw.visible,truthy(raw.show,true)),
+            badge:text(raw.badge||raw.tag||''),
+            features,
+            freeAds:Number(raw.freeAds??raw.freeAdCount??raw.sponsoredAdsFree??raw.adCredits??0)||0,
+            logoLimit:Number(raw.logoLimit??raw.logoUploads??raw.brandLogoLimit??0)||0,
+            bannerLimit:Number(raw.bannerLimit??raw.bannerUploads??raw.brandBannerLimit??0)||0,
+            commissionPercent:Number(raw.commissionPercent??raw.platformFeePercent??adminConfig.platformCommissionPercent??0)||0,
+            durationDays:Number(raw.durationDays??raw.days??0)||0,
+            settings,
+            allowPayoutPayment:truthy(raw.allowPayoutPayment,truthy(raw.payoutPayment,true)),
+            freeFirstLimit:Number(raw.freeFirstLimit??raw.freeFirstMembers??raw.freeForFirstMembers??raw.firstFreeLimit??0)||0,
+            freeFirstEnabled:truthy(raw.freeFirstEnabled,(raw.freeFirstLimit||raw.freeFirstMembers||raw.freeForFirstMembers)?true:false),
+            isFree:truthy(raw.isFree,truthy(raw.free,false))
+        };
+    }
+    function normalizeCategory(raw){
+        return {
+            id:text(raw.id||raw.categoryId||raw.value||raw.title||raw.name).trim(),
+            title:text(raw.title||raw.name||raw.value||'').trim(),
+            description:text(raw.description||raw.desc||raw.subtitle||''),
+            active:truthy(raw.active,truthy(raw.enabled,true)),
+            visible:truthy(raw.visible,truthy(raw.show,true)),
+            sortOrder:Number(raw.sortOrder||raw.order||raw.sort||0)||0,
+            askForImage:truthy(raw.askForImage, truthy(raw.askImage, false)),
+            requireImage:truthy(raw.requireImage, truthy(raw.imageRequired, false)),
+            askForFile:truthy(raw.askForFile, truthy(raw.askFile, false)),
+            requireFile:truthy(raw.requireFile, truthy(raw.fileRequired, false)),
+            allowAttachment:truthy(raw.allowAttachment, truthy(raw.attachmentAllowed, false)),
+            attachmentRequired:truthy(raw.attachmentRequired, truthy(raw.requireAttachment, false)),
+            attachmentLabel:text(raw.attachmentLabel||raw.uploadLabel||'Upload proof / screenshot'),
+            attachmentHelp:text(raw.attachmentHelp||raw.uploadHelp||'Add a screenshot, invoice or file if admin asked for it.')
+        };
+    }
+    function normalizeButton(raw){
+        return {
+            id:text(raw.id||raw.buttonId||raw.title||raw.name||Math.random()).trim(),
+            location:low(raw.location||raw.place||raw.area||'settings'),
+            title:text(raw.title||raw.name||raw.text||'Open'),
+            description:text(raw.description||raw.desc||raw.subtitle||''),
+            icon:iconClass(raw.icon,'fas fa-link'),
+            image:text(raw.image||raw.imageUrl||raw.img||''),
+            url:text(raw.url||raw.link||raw.href||''),
+            section:text(raw.section||raw.targetSection||''),
+            action:low(raw.action||raw.type||(raw.section?'section':'url')),
+            active:truthy(raw.active,truthy(raw.enabled,true)),
+            visible:truthy(raw.visible,truthy(raw.show,true)),
+            sortOrder:Number(raw.sortOrder||raw.order||0)||0,
+            html:text(raw.html||'')
+        };
+    }
+    function normalizeTextOverride(raw){
+        const key=text(raw.key||raw.id||raw.selector||raw.target||raw.elementId||'').trim();
+        return {
+            key,
+            selector:text(raw.selector||raw.cssSelector||'').trim(),
+            elementId:text(raw.elementId||raw.elId||'').trim(),
+            text:raw.text??raw.value??raw.title??'',
+            html:raw.html??raw.innerHTML??null,
+            placeholder:raw.placeholder??null,
+            titleAttr:raw.titleAttr??raw.tooltip??null,
+            active:truthy(raw.active,truthy(raw.enabled,true)),
+            visible:truthy(raw.visible,truthy(raw.show,true))
+        };
+    }
+    function collectTextOverrides(cfg, collectionRows){
+        const rows=[];
+        const raw=cfg.textOverrides||cfg.uiText||cfg.texts||cfg.labels||{};
+        if(Array.isArray(raw))rows.push(...raw.map(normalizeTextOverride));
+        else Object.keys(raw).forEach(k=>{
+            const v=raw[k];
+            if(v&&typeof v==='object')rows.push(normalizeTextOverride({key:k,...v}));
+            else rows.push(normalizeTextOverride({key:k,text:v}));
+        });
+        rows.push(...collectionRows.map(normalizeTextOverride));
+        return rows.filter(r=>r.active&&r.visible&&(r.key||r.selector||r.elementId));
+    }
+    function basicPlanTemplate(){
+        return normalizePlan({
+            id:'basic',
+            planId:'basic',
+            name:'Basic',
+            title:'Basic',
+            description:'Free starter plan for every Aryanta seller.',
+            monthlyPrice:0,
+            yearlyPrice:0,
+            active:true,
+            visible:true,
+            badge:'Free',
+            sortOrder:-9999,
+            freeAds:1,
+            durationDays:30,
+            settings:{
+                theme:true,
+                darkTheme:true,
+                support:true,
+                supportTickets:true,
+                b2b:true,
+                buyB2b:true,
+                b2bSupplies:true,
+                ads:true,
+                sponsoredAds:true,
+                offline:false,
+                autoAcc:false,
+                vacation:false,
+                sms:false,
+                '2fa':false,
+                searchSuggestions:false,
+                bankEdit:false
+            },
+            features:[
+                'Dark Theme access',
+                'Support Tickets enabled',
+                'B2B Supplies access',
+                '1 free Sponsored Ad every month'
+            ]
+        });
+    }
+    function ensureBasicPlan(plans){
+        const clean=Array.isArray(plans)?plans.filter(Boolean):[];
+        const basic=basicPlanTemplate();
+        const idx=clean.findIndex(p=>low(p.id)==='basic'||low(p.name)==='basic'||low(p.title)==='basic');
+        if(idx>=0){
+            clean[idx]={...basic,...clean[idx],id:'basic',planId:'basic',name:'Basic',title:'Basic',monthlyPrice:0,yearlyPrice:0,isFree:true,freeAds:Number(clean[idx].freeAds||clean[idx].sponsoredAdsFree||1)||1,settings:{...basic.settings,...(clean[idx].settings||{})},features:(clean[idx].features&&clean[idx].features.length)?clean[idx].features:basic.features,sortOrder:Number(clean[idx].sortOrder??clean[idx].order??-9999)};
+        }else{
+            clean.unshift(basic);
+        }
+        return clean.sort((a,b)=>(Number(a.sortOrder??a.order??0)-Number(b.sortOrder??b.order??0)));
+    }
+    async function fetchAdminConfig(force=false){
+        if(cfgPromise&&!force)return cfgPromise;
+        if(!force&&cfgFetchedAt)return Promise.resolve(adminConfig);
+        cfgPromise=(async()=>{
+            const merged={};
+            try{
+                const workerUrl=(typeof API_BASE_URL!=='undefined'?API_BASE_URL:'')+'/seller/panel-boot?email='+encodeURIComponent(sellerEmail()||'');
+                if(typeof API_BASE_URL!=='undefined'&&API_BASE_URL){
+                    const res=await fetch(workerUrl,{cache:'no-store'});
+                    const data=await res.json().catch(()=>({}));
+                    const boot=data.data||data;
+                    if(boot.panelConfig)deepMerge(merged,boot.panelConfig);
+                    if(Array.isArray(boot.subscriptionPlans))merged.subscriptionPlans=boot.subscriptionPlans;
+                    if(Array.isArray(boot.issueCategories))merged.issueCategories=boot.issueCategories;
+                    if(Array.isArray(boot.buttons))merged.customButtons=boot.buttons;
+                    if(boot.texts)merged.textOverrides=boot.texts;
+                }
+            }catch(e){console.warn('Worker panel boot skipped, using Firestore/direct cache.',e);}
+            const docs=await getDocRows([
+                ['seller_panel_config','global'],['seller_config','global'],['admin_config','seller_panel'],['aryanta_config','seller_panel'],['site_config','seller_panel'],['site_config','global']
+            ]);
+            docs.forEach(d=>deepMerge(merged,d));
+            adminConfig=merged;
+
+            let plans=arr(merged.subscriptionPlans||merged.plans||merged.subscriptions).map(normalizePlan).filter(p=>p.id&&p.name&&p.visible&&p.active);
+            if(plans.length<=1){
+                const rows=await getCollectionRows(['subscription_plans','seller_subscription_plans','seller_subscriptions_plans','subscriptions_plans','seller_plans']);
+                const dbPlans=rows.map(normalizePlan).filter(p=>p.id&&p.name&&p.visible&&p.active);
+                if(dbPlans.length)plans=dbPlans;
+            }
+            dynamicPlans=ensureBasicPlan(plans);
+
+            let cats=arr(merged.supportCategories||merged.issueCategories||merged.ticketCategories).map(normalizeCategory).filter(c=>c.id&&c.title&&c.visible&&c.active);
+            if(!cats.length){
+                const rows=await getCollectionRows(['seller_issue_categories','support_categories','seller_support_categories','issue_categories']);
+                cats=rows.map(normalizeCategory).filter(c=>c.id&&c.title&&c.visible&&c.active);
+            }
+            supportCategories=cats.sort((a,b)=>a.sortOrder-b.sortOrder);
+
+            const btnMap={sidebar:[],settings:[],profile:[]};
+            const rawBtn=merged.customButtons||merged.buttons||{};
+            if(Array.isArray(rawBtn))rawBtn.forEach(b=>{const nb=normalizeButton(b);if(!btnMap[nb.location])btnMap[nb.location]=[];btnMap[nb.location].push(nb);});
+            else Object.keys(rawBtn||{}).forEach(loc=>arr(rawBtn[loc]).forEach(b=>{const nb=normalizeButton({...b,location:loc});if(!btnMap[nb.location])btnMap[nb.location]=[];btnMap[nb.location].push(nb);}));
+            const btnRows=await getCollectionRows(['seller_custom_buttons','seller_panel_buttons','seller_extra_buttons']);
+            btnRows.map(normalizeButton).forEach(b=>{if(!btnMap[b.location])btnMap[b.location]=[];btnMap[b.location].push(b);});
+            Object.keys(btnMap).forEach(k=>btnMap[k]=btnMap[k].filter(b=>b.active&&b.visible).sort((a,b)=>a.sortOrder-b.sortOrder));
+            dynamicButtons=btnMap;
+
+            const textRows=await getCollectionRows(['seller_panel_texts','seller_ui_texts','ui_text_overrides','admin_text_overrides']);
+            textOverrides=collectTextOverrides(merged,textRows);
+            cfgFetchedAt=Date.now();
+            window.__ARYANTA_ADMIN_CONFIG=adminConfig;
+            window.__ARYANTA_DB_SUBSCRIPTION_PLANS=dynamicPlans;
+            window.__ARYANTA_DB_SUPPORT_CATEGORIES=supportCategories;
+            return adminConfig;
+        })().finally(()=>{cfgPromise=null;});
+        return cfgPromise;
+    }
+
+    function findOverrideTargets(o){
+        if(o.selector)return Array.from(document.querySelectorAll(o.selector));
+        if(o.elementId)return [$(o.elementId)].filter(Boolean);
+        if(o.key){
+            const direct=$(o.key);
+            if(direct)return [direct];
+            try{return Array.from(document.querySelectorAll(o.key));}catch(e){return Array.from(document.querySelectorAll(`[data-admin-text="${CSS.escape(o.key)}"]`));}
+        }
+        return [];
+    }
+    function applyAdminTextOverrides(){
+        textOverrides.forEach(o=>{
+            findOverrideTargets(o).forEach(el=>{
+                if(o.html!==null&&o.html!==undefined)el.innerHTML=text(o.html);
+                else if(o.text!==undefined&&o.text!==null&&text(o.text)!==''){
+                    if(el.tagName==='INPUT'||el.tagName==='TEXTAREA')el.value=text(o.text);
+                    else el.textContent=text(o.text);
+                }
+                if(o.placeholder!==null&&o.placeholder!==undefined)el.setAttribute('placeholder',text(o.placeholder));
+                if(o.titleAttr!==null&&o.titleAttr!==undefined)el.setAttribute('title',text(o.titleAttr));
+            });
+        });
+    }
+    window.applyAdminTextOverrides=applyAdminTextOverrides;
+
+    function planYearlyBase(plan){
+        const monthly=Number(plan&&plan.monthlyPrice);
+        if(Number.isFinite(monthly))return monthly*12;
+        const yearly=Number(plan&&plan.yearlyPrice);
+        return Number.isFinite(yearly)?yearly:null;
+    }
+    function planPrice(plan,duration){
+        if(!plan)return null;
+        duration=duration==='year'?'year':'month';
+        if(duration==='year'){
+            const base=planYearlyBase(plan);
+            if(base===null)return null;
+            if(base<=0)return 0;
+            return Math.round(base*0.65);
+        }
+        const price=plan.monthlyPrice;
+        return Number.isFinite(Number(price))?Number(price):null;
+    }
+    function activePlan(){
+        if(!dynamicPlans.length)dynamicPlans=ensureBasicPlan([]);
+        const sub=low(activeSeller&&(activeSeller.subscriptionId||activeSeller.subscriptionPlanId||activeSeller.subscription||activeSeller.plan));
+        const found=dynamicPlans.find(p=>sub&&(low(p.id)===sub||low(p.name)===sub||low(p.title)===sub));
+        return found||dynamicPlans.find(p=>low(p.id)==='basic'||low(p.name)==='basic')||basicPlanTemplate();
+    }
+    window.getActiveSubscriptionPlanForSeller=function(){return activePlan();};
+    function planDurationDays(plan,duration){
+        if(plan&&low(plan.id)==='basic')return 30;
+        if(plan&&Number(plan.durationDays)>0&&duration!=='year')return Number(plan.durationDays);
+        return duration==='year'?365:30;
+    }
+    function subscriptionSetupMessage(){
+        return `<div class="strict-empty-state" style="grid-column:1/-1;"><i class="fas fa-crown"></i><h4>Basic plan is active</h4><p>Admin subscription plans were not found, so sellers can continue with the free Basic plan only.</p></div>`;
+    }
+    function renderSubscriptionPlans(){
+        const grid=$('subscriptionPlansGrid');
+        if(!grid)return;
+        const current=activePlan();
+        const duration=currentPlanDuration==='year'?'year':'month';
+        if(!dynamicPlans.length)dynamicPlans=ensureBasicPlan([]);
+        grid.innerHTML=dynamicPlans.map(plan=>{
+            const price=planPrice(plan,duration);
+            const yearlyBase=duration==='year'?planYearlyBase(plan):null;
+            const currentMatch=current&&(low(current.id)===low(plan.id)||low(current.name)===low(plan.name));
+            const priceMissing=price===null;
+            const isFree=!priceMissing&&(price<=0||plan.isFree);
+            const buttonText=currentMatch?'Current Plan':priceMissing?'Price not added by admin':(isFree?'Activate Free Plan':`Pay ${money(price)} & Get Now`);
+            const disabled=currentMatch||priceMissing;
+            const features=plan.features.length?plan.features:[];
+            const yearlySave=(duration==='year'&&!priceMissing&&yearlyBase&&yearlyBase>price)?`<span class="yearly-save"><del>${money(yearlyBase)}</del> 35% OFF</span>`:'';
+            return `<div class="dynamic-plan-card ${currentMatch?'current-plan-card':''} ${low(plan.id)==='basic'?'basic-plan-card':''}">
+                <div class="dynamic-plan-head"><div><div class="dynamic-plan-title">${safe(plan.title||plan.name)}</div>${plan.description?`<div class="dynamic-plan-desc">${safe(plan.description)}</div>`:''}</div>${plan.badge?`<div class="plan-badge">${safe(plan.badge)}</div>`:''}</div>
+                <p class="plan-price">${priceMissing?'<span class="missing-price">Admin price required</span>':(isFree?'₹<span>0</span>':`₹<span>${Number(price).toLocaleString('en-IN')}</span>`)} ${priceMissing?'':`<span>/ ${duration}</span>`}</p>
+                ${yearlySave}
+                <div class="dynamic-plan-meta">${plan.commissionPercent?`<span><i class="fas fa-percent"></i> ${Number(plan.commissionPercent)}% fee</span>`:''}${plan.freeAds?`<span><i class="fas fa-bullhorn"></i> ${plan.freeAds} free ad(s)/month</span>`:''}${plan.freeFirstEnabled&&plan.freeFirstLimit?`<span><i class="fas fa-gift"></i> First ${plan.freeFirstLimit} seller(s) free for 1 month</span>`:''}</div>
+                <ul class="plan-features">${features.map(f=>`<li><i class="fas fa-check-circle"></i> ${safe(f)}</li>`).join('') || '<li><i class="fas fa-info-circle"></i> Admin has not added feature text.</li>'}</ul>
+                <div class="dynamic-plan-actions">
+                    <button class="btn-prime w-100" ${disabled?'disabled':''} onclick="processStrictSubscription('${safe(plan.id)}','online')">${safe(buttonText)}</button>
+                    ${plan.allowPayoutPayment&&!isFree&&!currentMatch&&!priceMissing?`<button class="btn-outline w-100" id="btnSubPayout_${safe(plan.id)}" onclick="processStrictSubscription('${safe(plan.id)}','payout')"><i class="fas fa-wallet"></i> Pay from Payout</button>`:''}
+                </div>
+            </div>`;
+        }).join('');
+        const badge=$('currentPlanBadge');
+        if(badge)badge.textContent=current?current.name:'Basic';
+        validateStrictPayoutButtons();
+    }
+    window.renderStrictSubscriptionPlans=renderSubscriptionPlans;
+    async function freeFirstEligible(plan){
+        const price=planPrice(plan,currentPlanDuration);
+        if(price!==null&&price<=0)return true;
+        if(!plan.freeFirstEnabled||!plan.freeFirstLimit)return false;
+        const history=arr(activeSeller&&activeSeller.subHistory);
+        if(history.some(h=>truthy(h.freeOffer,false)&&low(h.planId||h.plan)===low(plan.id)))return false;
+        try{
+            const snap=await db.collection('seller_subscriptions').where('planId','==',plan.id).where('freeOffer','==',true).limit(plan.freeFirstLimit).get();
+            return snap.size<plan.freeFirstLimit;
+        }catch(e){console.warn('Free-first check failed; refusing free fallback.',e);return false;}
+    }
+    async function savePaymentLedger(row){
+        if(!db||!activeSeller)return;
+        const id=text(row.id||`${sellerEmail()}_${row.type||'entry'}_${row.reference||row.planId||Date.now()}`).replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,180);
+        const payload={sellerEmail:sellerEmail(),email:sellerEmail(),sellerName:activeSeller.companyName||activeSeller.name||activeSeller.email||'',timestamp:row.timestamp||nowIso(),createdAt:row.createdAt||nowIso(),updatedAt:nowIso(),...row};
+        await db.collection('seller_payment_ledger').doc(id).set(payload,{merge:true});
+    }
+    window.savePaymentLedger=savePaymentLedger;
+    async function activatePlan(plan,opts={}){
+        const duration=opts.duration||currentPlanDuration||'month';
+        const amount=Number(opts.amount??planPrice(plan,duration))||0;
+        const start=new Date();
+        const end=new Date(start.getTime()+planDurationDays(plan,duration)*86400000);
+        const record={planId:plan.id,plan:plan.name,duration,amount,method:opts.method||'online',status:'Active',freeOffer:!!opts.freeOffer,startDate:start.toISOString(),endDate:end.toISOString(),timestamp:nowIso(),features:plan.features||[],freeAds:plan.freeAds||0,commissionPercent:plan.commissionPercent||0};
+        if(!activeSeller.subHistory)activeSeller.subHistory=[];
+        activeSeller.subHistory.push(record);
+        activeSeller.subscription=plan.name;activeSeller.subscriptionId=plan.id;activeSeller.subEndDate=end.toISOString();
+        activeSeller.subscriptionFeatures={features:plan.features||[],freeAds:plan.freeAds||0,logoLimit:plan.logoLimit,bannerLimit:plan.bannerLimit,settings:plan.settings||null,commissionPercent:plan.commissionPercent||0};
+        localStorage.setItem('sellerToken',JSON.stringify(activeSeller));
+        await db.collection('sellers').doc(sellerDocId()).set({subscription:plan.name,subscriptionId:plan.id,subscriptionPlanId:plan.id,subEndDate:end.toISOString(),subscriptionFeatures:activeSeller.subscriptionFeatures,subHistory:activeSeller.subHistory,subscriptionUpdatedAt:nowIso()},{merge:true});
+        await db.collection('seller_subscriptions').add({...record,sellerEmail:sellerEmail(),email:sellerEmail(),sellerName:activeSeller.companyName||activeSeller.email});
+        await savePaymentLedger({type:amount<=0?'subscription_free':'subscription_payment',planId:plan.id,reference:plan.name,gross:amount,deductions:0,net:amount,amount,status:amount<=0?'Free Active':'Paid',method:record.method,freeOffer:record.freeOffer});
+        showToast(`${plan.name} activated successfully.`,'success');
+        renderSubscriptionPlans();
+        await loadSettingsUIDynamic();
+        await loadProfileDynamic();
+    }
+    window.processStrictSubscription=async function(planId,method){
+        await fetchAdminConfig(false);
+        const plan=dynamicPlans.find(p=>String(p.id)===String(planId)||String(p.name)===String(planId));
+        if(!plan)return showToast('Plan not found in admin database.','error');
+        const duration=currentPlanDuration==='year'?'year':'month';
+        const price=planPrice(plan,duration);
+        if(price===null)return showToast('Admin has not added this plan price for selected duration.','error');
+        const freeByAdmin=price<=0||plan.isFree;
+        const firstFree=await freeFirstEligible(plan);
+        if(method==='free'||freeByAdmin||firstFree){
+            if(firstFree&&!freeByAdmin)showToast('Admin first-member free offer applied for 1 month.','success');
+            return activatePlan(plan,{amount:0,method:'free',duration:'month',freeOffer:firstFree&&!freeByAdmin});
+        }
+        if(method==='payout'){
+            if(cachedTotalUpcoming<price)return showToast('Insufficient upcoming payout balance.','error');
+            if(!confirm(`Deduct ${money(price)} from upcoming payout for ${plan.name}?`))return;
+            await db.collection('fines').add({email:sellerEmail(),sellerEmail:sellerEmail(),amount:price,reason:`Subscription payout deduction: ${plan.name}`,timestamp:nowIso(),planId:plan.id});
+            await savePaymentLedger({type:'subscription_payout_deduction',planId:plan.id,reference:plan.name,gross:0,deductions:price,net:-price,amount:price,status:'Deducted from payout',method:'payout'});
+            return activatePlan(plan,{amount:price,method:'payout'});
+        }
+        if(!API_KEYS.RAZORPAY)return showToast('Razorpay key missing. Online payment disabled.','error');
+        const options={key:API_KEYS.RAZORPAY,amount:Math.round(price*100),currency:'INR',name:'Aryanta Enterprise',description:`${plan.name} Subscription`,handler:async function(res){await savePaymentLedger({type:'subscription_online_payment',planId:plan.id,reference:plan.name,gross:price,deductions:0,net:price,amount:price,status:'Paid',method:'online',razorpayPaymentId:res.razorpay_payment_id||''});await activatePlan(plan,{amount:price,method:'online'});},prefill:{name:activeSeller.companyName||'',email:activeSeller.email||'',contact:activeSeller.phone||''},theme:{color:'#0f172a'}};
+        new Razorpay(options).open();
+    };
+    window.processSubscription=window.processStrictSubscription;
+    window.loadStrictSubscriptionsUI=async function(){await fetchAdminConfig(false);renderSubscriptionPlans();applyAdminTextOverrides();};
+    window.refreshSellerPanelDynamicData=async function(){
+        try{
+            cfgFetchedAt=0;
+            const grid=$('subscriptionPlansGrid');
+            if(grid)grid.insertAdjacentHTML('afterbegin','<div class="admin-note-box refresh-note" style="grid-column:1/-1;"><i class="fas fa-sync fa-spin"></i> Refreshing admin data...</div>');
+            await fetchAdminConfig(true);
+            renderSubscriptionPlans();renderDynamicButtons();renderDownloadAppBox();renderVersionInfo();applyNavControls();await renderSupportCategories();await loadSettingsUIDynamic();applyAdminTextOverrides();
+            showToast('Admin seller settings refreshed.','success');
+        }catch(e){console.warn(e);showToast('Could not refresh admin settings. Basic plan remains active.','warning');renderSubscriptionPlans();}
+    };
+    window.loadSubscriptionsUI=window.loadStrictSubscriptionsUI;
+    try{loadSubscriptionsUI=window.loadSubscriptionsUI;}catch(e){}
+    window.togglePlanDuration=function(type){currentPlanDuration=type==='year'?'year':'month';const m=$('btnPlanMonth'),y=$('btnPlanYear');if(m)m.classList.toggle('active',currentPlanDuration==='month');if(y)y.classList.toggle('active',currentPlanDuration==='year');renderSubscriptionPlans();};
+    function validateStrictPayoutButtons(){
+        dynamicPlans.forEach(plan=>{const btn=$(`btnSubPayout_${plan.id}`);if(!btn)return;const price=planPrice(plan,currentPlanDuration||'month');if(price===null){btn.disabled=true;btn.innerHTML='<i class="fas fa-exclamation-circle"></i> Admin price required';return;}if(cachedTotalUpcoming>=price){btn.disabled=false;btn.innerHTML='<i class="fas fa-wallet"></i> Pay from Payout';}else{btn.disabled=true;btn.innerHTML='<i class="fas fa-exclamation-circle"></i> Insufficient Payout';}});
+        const adBtn=$('btnAdPayout');if(adBtn){if(cachedTotalUpcoming>=70){adBtn.disabled=false;adBtn.innerHTML='<i class="fas fa-wallet"></i> Pay via Upcoming Payout';}else{adBtn.disabled=true;adBtn.innerHTML='<i class="fas fa-exclamation-circle"></i> Insufficient Payout';}}
+    }
+    window.validateStrictPayoutButtons=validateStrictPayoutButtons;
+    window.validatePayoutButtons=validateStrictPayoutButtons;
+
+    function controlConfig(key){return (adminConfig.settingsControls||adminConfig.controls||{})[key]||{};}
+    function settingInputId(key){const map={offline:'settingOffline',theme:'settingTheme',autoAcc:'settingAutoAcc',vacation:'settingVacation',sms:'settingSms','2fa':'setting2fa',searchSuggestions:'settingSearchSuggestions'};return map[key]||('setting'+key.charAt(0).toUpperCase()+key.slice(1));}
+    function planAllowsSetting(key){
+        const p=activePlan();
+        const sellerFeature=(activeSeller&&activeSeller.subscriptionFeatures)||{};
+        const settings=(p&&p.settings)||sellerFeature.settings;
+        if(!settings)return true;
+        if(Array.isArray(settings))return settings.map(low).includes(low(key))||settings.map(low).includes(low(key==='theme'?'darkTheme':key));
+        if(typeof settings==='object'){
+            if(settings[key]!==undefined)return truthy(settings[key],true);
+            if(key==='theme'&&settings.darkTheme!==undefined)return truthy(settings.darkTheme,true);
+            return low((activePlan()||{}).id)==='basic'?false:true;
+        }
+        return low((activePlan()||{}).id)==='basic'?(key==='theme'):true;
+    }
+    function controlAllowsSetting(key){
+        const c=controlConfig(key);
+        if(truthy(c.enabled,true)===false)return false;
+        const req=c.requiredPlans||c.allowedPlans||c.plans;
+        if(Array.isArray(req)&&req.length){
+            const current=low(activeSeller&&(activeSeller.subscription||activeSeller.subscriptionId||activeSeller.plan));
+            if(!req.map(low).some(p=>p===current))return false;
+        }
+        return planAllowsSetting(key);
+    }
+    const settingIcons={offline:'fas fa-store-slash',theme:'fas fa-moon',autoAcc:'fas fa-bolt',vacation:'fas fa-umbrella-beach',sms:'fas fa-sms','2fa':'fas fa-shield-alt',searchSuggestions:'fas fa-search'};
+    function setSettingCardState(key){
+        const input=$(settingInputId(key));if(!input)return;
+        const card=input.closest('.setting-card-premium')||input.closest('.setting-card');
+        const c=controlConfig(key);
+        const visible=truthy(c.visible,true);
+        const enabled=controlAllowsSetting(key);
+        if(card){
+            card.style.display=visible?'flex':'none';
+            card.classList.toggle('admin-disabled',!enabled);
+            const icon=card.querySelector('.setting-icon i'); if(icon)icon.className=iconClass(c.icon,settingIcons[key]||'fas fa-sliders-h');
+            const title=card.querySelector('.setting-title'); if(title&&c.title)title.textContent=c.title;
+            const sub=card.querySelector('.setting-sub'); if(sub&&c.description)sub.textContent=c.description;
+        }
+        input.disabled=!enabled;
+        input.title=enabled?'':(c.disabledMessage||'This control is disabled by admin or unavailable for your current subscription.');
+    }
+    function renderDownloadAppBox(){
+        const box=$('downloadAppSettingsBox');if(!box)return;
+        const app=adminConfig.downloadApp||{};
+        if(!truthy(app.enabled,false)){box.style.display='none';box.innerHTML='';return;}
+        box.style.display='block';
+        box.innerHTML=`<h4><i class="fas fa-mobile-screen-button"></i> ${safe(app.title||'Download Our App')}</h4><p>${safe(app.description||'')}</p><button type="button" class="btn-prime" onclick="window.open('${safe(app.url||'#')}','_blank','noopener')"><i class="fas fa-download"></i> ${safe(app.buttonText||'Download App')}</button>`;
+    }
+    function renderVersionInfo(){
+        const box=$('versionInfoBox');if(!box)return;
+        const v=adminConfig.versionInfo||adminConfig.version||{};
+        const rows=[];
+        if(v.appVersion||v.app)rows.push(['App Version',v.appVersion||v.app]);
+        if(v.webVersion||v.web)rows.push(['Web Version',v.webVersion||v.web]);
+        if(v.panelType||v.type)rows.push(['Panel Type',v.panelType||v.type]);
+        arr(v.extra||v.items).forEach(x=>rows.push([x.label||x.title||'Info',x.value||x.text||'']));
+        if(!rows.length){
+            rows.push(['Panel','Aryanta Seller Panel']);
+            rows.push(['Sync Mode','One-time fetch; use Refresh to update']);
+            rows.push(['Default Plan','Basic Free']);
+        }
+        box.innerHTML=rows.map(([k,val])=>`<div class="version-card"><span>${safe(k)}</span><strong>${safe(val)}</strong></div>`).join('');
+    }
+    function runDynamicButton(btn){
+        if(!btn)return;
+        if(btn.action==='section'&&btn.section){showSection(btn.section);return;}
+        if(btn.action==='download'||btn.action==='app'){const url=btn.url||((adminConfig.downloadApp||{}).url); if(url)window.open(url,'_blank','noopener'); else showToast('Admin has not added the app link.','warning'); return;}
+        if(btn.html){openDynamicHtml(btn);return;}
+        if(btn.url){window.open(btn.url,'_blank','noopener');return;}
+        showToast('Admin enabled this button but did not add an action.','info');
+    }
+    window.runStrictDynamicButton=function(location,id){const b=(dynamicButtons[location]||[]).find(x=>String(x.id)===String(id));runDynamicButton(b);};
+    function openDynamicHtml(btn){
+        const modal=$('adminDynamicPopupModal'),body=$('adminDynamicPopupBody');
+        if(!modal||!body)return;
+        body.innerHTML=`<div class="dynamic-popup-hero"><h3>${safe(btn.title)}</h3><p>${safe(btn.description)}</p></div><div class="dynamic-popup-body">${btn.html}<div class="dynamic-popup-actions"><button class="btn-outline" onclick="closeDynamicAdminPopup()">Close</button></div></div>`;
+        modal.style.display='flex';setTimeout(()=>modal.classList.add('show'),10);
+    }
+    function renderDynamicButtons(){
+        const side=$('dynamicSidebarButtons');
+        if(side)side.innerHTML=(dynamicButtons.sidebar||[]).map(b=>`<div class="nav-item" onclick="runStrictDynamicButton('sidebar','${safe(b.id)}')"><i class="${safe(b.icon)}"></i> ${safe(b.title)}</div>`).join('');
+        const renderCards=(loc,el)=>{if(!el)return;const rows=dynamicButtons[loc]||[];el.innerHTML=rows.map(b=>`<div class="dynamic-action-card"><div style="display:flex;gap:12px;align-items:center;min-width:0;">${b.image?`<img src="${safe(b.image)}" alt="">`:`<div class="setting-icon"><i class="${safe(b.icon)}"></i></div>`}<div><strong>${safe(b.title)}</strong><span>${safe(b.description||'Admin added action')}</span></div></div><button class="btn-outline" type="button" onclick="runStrictDynamicButton('${loc}','${safe(b.id)}')">${safe(b.buttonText||'Open')}</button></div>`).join('');};
+        renderCards('settings',$('dynamicSettingsButtons'));renderCards('profile',$('profileDynamicButtons'));
+    }
+    function applyNavControls(){
+        const controls=adminConfig.navControls||adminConfig.sidebarControls||{};
+        document.querySelectorAll('.sidebar .nav-item').forEach(item=>{
+            const label=low(item.textContent);let key='';
+            const map={home:['dashboard'],profile:['profile'],notifications:['notifications'],inventory:['inventory'],newOrders:['new orders'],breached:['breached'],acceptedOrders:['accepted'],completedScan:['completed scan'],shippedOrders:['shipped'],deliveredOrders:['delivered'],history:['history'],returns:['returns'],warranty:['warranty'],payments:['payments'],ads:['sponsored'],subscription:['subscriptions'],qna:['q&a'],buyB2b:['b2b'],support:['support'],tutorial:['how to sell']};
+            Object.keys(map).some(k=>map[k].some(w=>label.includes(w))?(key=k,true):false);
+            const c=controls[key]; if(!c)return;
+            item.style.display=truthy(c.visible,true)?'flex':'none';
+            const enabled=truthy(c.enabled,true); item.style.pointerEvents=enabled?'':'none'; item.style.opacity=enabled?'':'0.45';
+            if(c.title){const i=item.querySelector('i');const b=item.querySelector('.nav-badge');item.innerHTML=(i?i.outerHTML+' ':'')+safe(c.title)+(b?b.outerHTML:'');}
+        });
+    }
+    async function loadSettingsUIDynamic(){
+        await fetchAdminConfig();
+        const s=(activeSeller&&activeSeller.settings)||{};
+        ['offline','theme','autoAcc','vacation','sms','2fa','searchSuggestions',...Object.keys(adminConfig.settingsControls||{})].forEach(key=>{
+            const input=$(settingInputId(key));
+            if(input)input.checked=key==='searchSuggestions'?s.searchSuggestions!==false:s[key]===true;
+            setSettingCardState(key);
+        });
+        if(typeof applySettingsToUI==='function')applySettingsToUI();
+        renderDynamicButtons();renderDownloadAppBox();renderVersionInfo();applyNavControls();applyAdminTextOverrides();
+    }
+    window.loadSettingsUI=async function(){try{await loadSettingsUIDynamic();}catch(e){console.warn(e);}};
+    try{loadSettingsUI=window.loadSettingsUI;}catch(e){}
+    const originalToggleSetting=window.toggleSetting;
+    window.toggleSetting=async function(key){
+        await fetchAdminConfig();
+        if(!controlAllowsSetting(key)){const input=$(settingInputId(key));if(input)input.checked=!!(activeSeller&&activeSeller.settings&&activeSeller.settings[key]);return showToast('This setting is disabled by admin or unavailable for your subscription.','warning');}
+        if(!activeSeller.settings)activeSeller.settings={};
+        const input=$(settingInputId(key));if(!input)return;
+        activeSeller.settings[key]=input.checked;
+        if(key==='searchSuggestions'){const box=$('searchSuggestions');if(box&&!input.checked)box.style.display='none';}
+        if(originalToggleSetting&&key!=='searchSuggestions')return originalToggleSetting(key);
+        await db.collection('sellers').doc(sellerDocId()).set({settings:activeSeller.settings},{merge:true});
+        localStorage.setItem('sellerToken',JSON.stringify(activeSeller));
+        showToast('Setting updated.','success');
+    };
+    const originalSearch=window.handleGlobalSearch;
+    window.handleGlobalSearch=function(){
+        if(activeSeller&&activeSeller.settings&&activeSeller.settings.searchSuggestions===false){const box=$('searchSuggestions');if(box)box.style.display='none';return;}
+        return originalSearch?originalSearch():undefined;
+    };
+
+    function pickSeller(paths){for(const p of paths){let v=activeSeller;for(const part of p.split('.'))v=v&&v[part];if(v!==undefined&&v!==null&&v!=='')return v;}return '';}
+    function detail(label,value){return `<div class="detail-box"><span>${safe(label)}</span><strong>${safe(value||'N/A')}</strong></div>`;}
+    function mediaCard(label,url){return url?`<div class="profile-media-card"><span>${safe(label)}</span><img src="${safe(url)}" alt="${safe(label)}" onclick="openImageViewer('${safe(url)}')"></div>`:'';}
+    function renderProfileHero(){
+        const hero=$('profileBrandHero');if(!hero||!activeSeller)return;
+        const logo=pickSeller(['storeLogo','storeLogoUrl','logo','logoUrl','shopLogo','companyLogo']);
+        const banner=pickSeller(['storeBanner','storeBannerUrl','banner','bannerUrl','shopBanner','coverImage']);
+        const name=pickSeller(['shopName','businessName','shopInfo.shopName','companyName','name'])||'Seller Store';
+        const cat=pickSeller(['shopCategory','category','shopInfo.category']);
+        hero.innerHTML=`<div class="profile-hero-banner" style="${banner?`background-image:url('${safe(banner)}')`:''}"><div class="profile-hero-overlay"></div></div><div class="profile-hero-body"><div class="profile-hero-logo">${logo?`<img src="${safe(logo)}" alt="Shop Logo">`:'<i class="fas fa-store"></i>'}</div><div class="profile-hero-info"><h3>${safe(name)}</h3><p>${safe(cat||activeSeller.email||'Aryanta Seller')}</p></div><button class="btn-outline" type="button" onclick="showSection('settings')"><i class="fas fa-pen"></i> Edit Branding</button></div>`;
+    }
+    async function loadProfileDynamic(){
+        await fetchAdminConfig();
+        const pg=$('profPersonalGrid'); if(!pg)return;
+        if(!activeSeller){pg.innerHTML='<h3>Seller data not found. Please login again.</h3>';return;}
+        if(truthy(adminConfig.profileEnabled,true)===false){pg.innerHTML='<div class="admin-note-box" style="grid-column:1/-1;">Profile details are disabled by admin.</div>';return;}
+        renderProfileHero();
+        const f=adminConfig.profileFields||{};
+        const isShown=(key,def=true)=>truthy(f[key],def);
+        let html='';
+        if(isShown('companyName')||isShown('name'))html+=detail('Company / Seller Name',pickSeller(['companyName','name','sellerName','ownerName']));
+        if(isShown('email'))html+=detail('Registered Email',pickSeller(['email']));
+        if(isShown('phone'))html+=detail('Phone Number',pickSeller(['phone','mobile']));
+        if(isShown('address'))html+=detail('Address',pickSeller(['address','sellerAddress','shopInfo.address']));
+        if(isShown('city'))html+=detail('City',pickSeller(['city','shopInfo.city']));
+        if(isShown('pincode'))html+=detail('Pincode',pickSeller(['pincode','pinCode','shopInfo.pincode']));
+        if(isShown('state'))html+=detail('State',pickSeller(['state','shopInfo.state']));
+        if(isShown('shopName'))html+=detail('Shop Name',pickSeller(['shopName','businessName','shopInfo.shopName','companyName']));
+        if(isShown('shopCategory'))html+=detail('Shop Category',pickSeller(['shopCategory','category','shopInfo.category']));
+        if(isShown('shopAddress'))html+=detail('Shop Address',pickSeller(['shopAddress','shopInfo.address','address']));
+        if(isShown('subscription')){const end=activeSeller.subEndDate?new Date(activeSeller.subEndDate).toLocaleDateString():'N/A';html+=detail('Current Subscription',`${activeSeller.subscription||'No DB plan active'} • Valid until ${end}`);}
+        if(isShown('bank'))html+=detail('Bank IFSC',activeSeller.bankIfsc||'N/A')+detail('Bank Account',activeSeller.bankAccount||'N/A');
+        arr(adminConfig.profileExtraFields||adminConfig.extraProfileFields).forEach(x=>{if(truthy(x.visible,true)!==false)html+=detail(x.title||x.label||x.field||'Info',pickSeller([x.field||x.path||''])||x.value||'');});
+        const mediaRows=[];
+        if(isShown('shopLogo'))mediaRows.push(mediaCard('Shop Logo',pickSeller(['storeLogo','storeLogoUrl','logo','shopLogo','companyLogo'])));
+        if(isShown('shopBanner'))mediaRows.push(mediaCard('Shop Banner',pickSeller(['storeBanner','storeBannerUrl','banner','shopBanner','coverImage'])));
+        if(isShown('kyc')){const k=activeSeller.kyc||{};mediaRows.push(mediaCard('Aadhaar / ID',k.aadhar||k.aadhaar||activeSeller.aadharImage));mediaRows.push(mediaCard('PAN',k.pan||activeSeller.panImage));mediaRows.push(mediaCard('GST / Business Proof',k.gst||activeSeller.gstImage));}
+        if(mediaRows.filter(Boolean).length)html+=`<div class="profile-media-grid">${mediaRows.join('')}</div>`;
+        pg.innerHTML=html||'<div class="admin-note-box" style="grid-column:1/-1;">No profile fields are enabled by admin.</div>';
+        const bankEnabled=truthy(adminConfig.bankEditEnabled,true);
+        const ifsc=$('profIfsc'),acc=$('profAcc'),btn=$('btnSaveBankInfo'),note=$('profileBankEditNote');
+        if(ifsc){ifsc.value=activeSeller.bankIfsc||'';ifsc.disabled=!bankEnabled;}
+        if(acc){acc.value=activeSeller.bankAccount||'';acc.disabled=!bankEnabled;}
+        if(btn){btn.disabled=!bankEnabled;btn.style.display=bankEnabled?'inline-flex':'none';}
+        if(note){note.style.display=bankEnabled?'none':'block';note.innerHTML='<strong>Bank edit disabled:</strong> Admin has locked bank detail editing for seller accounts.';}
+        const kyc=$('kycStatusBoxWrapper'); if(kyc)kyc.style.display=activeSeller.kycRequested?'block':'none';
+        renderDynamicButtons();applyAdminTextOverrides();
+    }
+    window.loadProfile=loadProfileDynamic;
+    try{loadProfile=loadProfileDynamic;}catch(e){}
+    window.updateBankDetails=async function(){
+        await fetchAdminConfig();
+        if(!truthy(adminConfig.bankEditEnabled,true))return showToast('Bank detail editing is disabled by admin.','warning');
+        const ifsc=$('profIfsc')?.value.trim();const acc=$('profAcc')?.value.trim();
+        if(!ifsc||!acc)return showToast('Both fields are required.','warning');
+        await db.collection('sellers').doc(sellerDocId()).set({bankIfsc:ifsc,bankAccount:acc,bankUpdatedAt:nowIso()},{merge:true});
+        activeSeller.bankIfsc=ifsc;activeSeller.bankAccount=acc;localStorage.setItem('sellerToken',JSON.stringify(activeSeller));showToast('Bank details updated successfully.','success');loadProfileDynamic();
+    };
+
+    async function renderSupportCategories(){
+        await fetchAdminConfig();
+        const sel=$('supCategory'); if(!sel)return;
+        if(!supportCategories.length){
+            sel.innerHTML='<option value="">Admin has not added issue categories</option>';
+            sel.disabled=true;
+            const info=$('supportCategoryInfo');if(info){info.style.display='block';info.innerHTML='<strong>Admin setup required</strong><br>No issue category was found in Firestore. Add categories in seller_issue_categories or support_categories.';}
+            return;
+        }
+        sel.disabled=false;
+        sel.innerHTML='<option value="">Select issue category added by admin</option>'+supportCategories.map(c=>`<option value="${safe(c.id)}" data-description="${safe(c.description)}">${safe(c.title)}</option>`).join('');
+        updateSupportCategoryInfo();
+        const h=document.querySelector('#supportSection h3'); if(h&&(adminConfig.supportTitle||adminConfig.supportHeading))h.innerHTML=`<i class="fas fa-headset"></i> ${safe(adminConfig.supportTitle||adminConfig.supportHeading)}`;
+    }
+    window.updateSupportCategoryInfo=function(){
+        const sel=$('supCategory'),info=$('supportCategoryInfo'); if(!sel||!info)return;
+        const c=supportCategories.find(x=>String(x.id)===String(sel.value));
+        if(c){info.style.display='block';info.innerHTML=`<strong>${safe(c.title)}</strong><br>${safe(c.description||'')}`;}
+        else{info.style.display='none';info.innerHTML='';}
+    };
+    window.submitSupportTicket=async function(){
+        await fetchAdminConfig();
+        const sel=$('supCategory');const catId=sel?sel.value:'';const cat=supportCategories.find(c=>String(c.id)===String(catId));
+        const phone=$('supPhone')?.value.trim();const desc=$('supDesc')?.value.trim();
+        if(!supportCategories.length)return showToast('Issue categories are not added by admin yet.','error');
+        if(!catId||!phone||!desc)return showToast('All fields are required.','warning');
+        await db.collection('seller_support_tickets').add({ticketId:'TKT-'+Math.random().toString(36).substr(2,6).toUpperCase(),email:sellerEmail(),sellerEmail:sellerEmail(),sellerName:activeSeller.companyName||activeSeller.email,phone,categoryId:catId,categoryTitle:cat?cat.title:catId,categoryDescription:cat?cat.description:'',subject:cat?cat.title:catId,message:desc,status:'Open',timestamp:nowIso(),source:'seller_panel'});
+        showToast('Support ticket submitted. Admin will review shortly.','success');
+        if($('supPhone'))$('supPhone').value=''; if($('supDesc'))$('supDesc').value=''; if(sel)sel.value=''; updateSupportCategoryInfo(); showSection('oldTickets');
+    };
+
+    function activePlanAdLimit(){
+        const p=activePlan();
+        const sellerFeature=(activeSeller&&activeSeller.subscriptionFeatures)||{};
+        return Number(sellerFeature.freeAds??(p&&p.freeAds)??0)||0;
+    }
+    function dynamicAdUsage(){const u=(activeSeller&&activeSeller.sponsoredAdUsage)||{};return u.month===MONTH_KEY ? (Number(u.used||0)||0) : 0;}
+    async function saveAdUsage(n){const usage={month:MONTH_KEY,used:n,updatedAt:nowIso()};activeSeller.sponsoredAdUsage=usage;localStorage.setItem('sellerToken',JSON.stringify(activeSeller));await db.collection('sellers').doc(sellerDocId()).set({sponsoredAdUsage:usage},{merge:true});}
+    window.startAd=async function(id){await fetchAdminConfig();const input=$('adProdId');if(input)input.value=id;const limit=activePlanAdLimit(),used=dynamicAdUsage(),left=Math.max(0,limit-used);const msg=$('adPlanMessage'),cost=$('adCostDisplay'),modal=$('adPaymentModal');if(msg)msg.innerHTML=left>0?`<i class="fas fa-circle-check"></i> Your admin plan gives <b>${limit}</b> free sponsored ad(s). <b>${left}</b> left this month.`:'<i class="fas fa-wallet"></i> No free sponsored ads left. Pay now or deduct from upcoming payout.';if(cost)cost.textContent=left>0?'FREE':'₹70';const online=modal&&modal.querySelector('button[onclick="payAdOnline()"]');if(online)online.innerHTML=left>0?'<i class="fas fa-bolt"></i> Use Free Sponsored Ad':'Pay Now (Online)';const payout=$('btnAdPayout');if(payout)payout.style.display=left>0?'none':'inline-flex';if(modal){modal.style.display='flex';setTimeout(()=>modal.classList.add('show'),10);}};
+    async function activateAd(id,isFree){const until=new Date(Date.now()+86400000).toISOString();await db.collection('products').doc(id).set({isAd:true,isSponsored:true,sponsored:true,adStatus:'Sponsored',sponsoredAt:nowIso(),sponsoredUntil:until},{merge:true});const p=(sellerProducts||[]).find(x=>String(x.id)===String(id));if(p)Object.assign(p,{isAd:true,isSponsored:true,sponsored:true,adStatus:'Sponsored',sponsoredUntil:until});if(isFree)await saveAdUsage(dynamicAdUsage()+1);await savePaymentLedger({type:isFree?'sponsored_ad_free':'sponsored_ad',productId:id,reference:id,gross:isFree?0:70,deductions:0,net:isFree?0:70,amount:isFree?0:70,status:isFree?'Free active':'Active'}).catch(()=>{});closeModal('adPaymentModal');if(typeof loadAds==='function')loadAds();showToast(isFree?'Free sponsored ad activated.':'Sponsored ad activated.','success');}
+    window.payAdOnline=async function(){const id=$('adProdId')?.value;if(!id)return;const left=Math.max(0,activePlanAdLimit()-dynamicAdUsage());if(left>0)return activateAd(id,true);if(!API_KEYS.RAZORPAY)return showToast('Razorpay disabled.','error');new Razorpay({key:API_KEYS.RAZORPAY,amount:7000,currency:'INR',name:'Aryanta Ads',description:'Sponsored Ad',handler:function(){activateAd(id,false);},prefill:{email:activeSeller.email,contact:activeSeller.phone||''},theme:{color:'#0f172a'}}).open();};
+    window.payAdUpcoming=async function(){const id=$('adProdId')?.value;if(!id)return;if(cachedTotalUpcoming<70)return showToast('Insufficient payout balance.','error');await db.collection('fines').add({email:sellerEmail(),sellerEmail:sellerEmail(),amount:70,reason:'Sponsored Ad Fee',timestamp:nowIso(),productId:id}).catch(()=>{});await savePaymentLedger({type:'sponsored_ad_payout_deduction',productId:id,reference:id,gross:0,deductions:70,net:-70,amount:70,status:'Deducted from payout'}).catch(()=>{});activateAd(id,false);};
+
+    function popupTargetOk(d){const target=low(d.target||d.sellerEmail||d.email||'all');return target==='all'||target==='sellers'||target===sellerEmail();}
+    function popupActive(d){if(!isActiveDoc(d))return false;const now=Date.now();const start=d.startAt||d.startDate,end=d.endAt||d.endDate;if(start&&new Date(start).getTime()>now)return false;if(end&&new Date(end).getTime()<now)return false;return true;}
+    async function fetchDynamicPopups(){const rows=[];for(const c of ['seller_popups','seller_panel_popups','admin_seller_popups']){try{const snap=await db.collection(c).limit(50).get();snap.forEach(doc=>{const d={id:doc.id,...doc.data(),__collection:c};if(popupTargetOk(d)&&popupActive(d))rows.push(d);});}catch(e){}}return rows.sort((a,b)=>Number(b.priority||0)-Number(a.priority||0));}
+    function popupSeenKey(p){return `aryanta_popup_${sellerEmail()}_${p.__collection}_${p.id}_${p.updatedAt||p.timestamp||''}`;}
+    window.closeDynamicAdminPopup=function(){const modal=$('adminDynamicPopupModal');if(modal){modal.classList.remove('show');modal.style.display='none';}if(window.__ARYANTA_CURRENT_DYNAMIC_POPUP&&!truthy(window.__ARYANTA_CURRENT_DYNAMIC_POPUP.showEveryLogin,false))localStorage.setItem(popupSeenKey(window.__ARYANTA_CURRENT_DYNAMIC_POPUP),'1');};
+    async function showDynamicPopupIfAny(force=false){const popups=await fetchDynamicPopups();const popup=popups.find(p=>force||truthy(p.forceShow,false)||truthy(p.showEveryLogin,false)||!localStorage.getItem(popupSeenKey(p)));if(!popup)return;window.__ARYANTA_CURRENT_DYNAMIC_POPUP=popup;const body=$('adminDynamicPopupBody'),modal=$('adminDynamicPopupModal');if(!body||!modal)return;const buttons=arr(popup.buttons||popup.actions).length?arr(popup.buttons||popup.actions):[{title:popup.buttonText||'Open',url:popup.buttonLink||popup.link||popup.url,action:'url'}];const btnHtml=buttons.filter(b=>truthy(b.visible,true)).map(b=>{const title=safe(b.title||b.text||b.label||'Open');const url=text(b.url||b.link||b.href||'');const section=text(b.section||'');if(section)return `<button class="btn-prime" onclick="closeDynamicAdminPopup();showSection('${safe(section)}')">${title}</button>`;if(url)return `<a class="btn-prime" href="${safe(url)}" target="_blank" rel="noopener" onclick="closeDynamicAdminPopup()">${title}</a>`;return `<button class="btn-outline" onclick="closeDynamicAdminPopup()">${title}</button>`;}).join('');body.innerHTML=`<div class="dynamic-popup-hero"><h3>${safe(popup.title||'Aryanta Notice')}</h3><p>${safe(popup.message||popup.text||popup.description||'')}</p></div><div class="dynamic-popup-body">${popup.image?`<img src="${safe(popup.image)}" style="width:100%;border-radius:18px;margin-bottom:14px;">`:''}${popup.html?text(popup.html):''}<div class="dynamic-popup-actions">${btnHtml}${truthy(popup.dismissible,true)?'<button class="btn-outline" onclick="closeDynamicAdminPopup()">Cancel</button>':''}</div></div>`;modal.style.display='flex';setTimeout(()=>modal.classList.add('show'),10);}
+
+    async function syncDerivedPaymentLedger(){
+        if(!db||!activeSeller||!Array.isArray(sellerOrders))return;
+        const p=activePlan();const commission=Number((p&&p.commissionPercent)||adminConfig.platformCommissionPercent||0)||0;
+        const jobs=[];
+        for(const o of sellerOrders){
+            const status=low(o.status);if(status!=='delivered'||o.sellerSettled)continue;
+            const items=typeof getSellerItemsFromOrder==='function'?getSellerItemsFromOrder(o):[];if(!items.length)continue;
+            const gross=items.reduce((s,i)=>s+(Number(i.price||i.amount||0)*Number(i.qty||i.quantity||1)),0);
+            const deductions=Math.round((gross*commission/100)*100)/100;const net=Math.max(0,gross-deductions);
+            const delivered=new Date(o.deliveredAt||o.delivered_date||o.timestamp||Date.now());const release=new Date(delivered.getTime()+7*86400000);const due=Date.now()>=release.getTime();
+            jobs.push(savePaymentLedger({id:`order_${sellerEmail()}_${o.id}`,type:'order_payout',reference:o.order_no||o.id,orderId:o.id,gross,deductions,net,amount:net,status:due?'Upcoming Transfer':'In Progress',deliveredDate:delivered.toISOString(),releaseDate:release.toISOString(),commissionPercent:commission}));
+            if(jobs.length>=12){await Promise.allSettled(jobs.splice(0));}
+        }
+        if(jobs.length)await Promise.allSettled(jobs);
+    }
+    async function ensureSellerPaymentsDynamic(force=false){
+        if(!db||!activeSeller)return;
+        await fetchAdminConfig();
+        if(typeof window.ensureSellerOrders==='function')await window.ensureSellerOrders(force);
+        await syncDerivedPaymentLedger();
+        const email=sellerEmail();
+        const [l1,l2,paySnap,fineSnap]=await Promise.all([
+            db.collection('seller_payment_ledger').where('sellerEmail','==',email).get().catch(()=>null),
+            db.collection('seller_payment_ledger').where('email','==',email).get().catch(()=>null),
+            db.collection('seller_payouts').where('sellerEmail','==',email).get().catch(()=>null),
+            db.collection('fines').where('email','==',email).get().catch(()=>null)
+        ]);
+        const map=new Map();[l1,l2].forEach(s=>s&&s.forEach(d=>map.set(d.id,{id:d.id,...d.data()})));
+        dynamicLedger=[...map.values()].sort((a,b)=>new Date(b.timestamp||b.createdAt||0)-new Date(a.timestamp||a.createdAt||0));
+        sellerPayouts=paySnap?paySnap.docs.map(d=>({id:d.id,...d.data()})):sellerPayouts;
+        sellerFines=fineSnap?fineSnap.docs.map(d=>({id:d.id,...d.data()})):sellerFines;
+    }
+    window.ensureSellerPayments=ensureSellerPaymentsDynamic;
+    function rowDate(v){const d=new Date(v||Date.now());return isNaN(d.getTime())?new Date():d;}
+    function renderLedgerRows(rows){return rows.map(r=>`<tr><td data-label="Date"><strong>${rowDate(r.timestamp||r.createdAt||r.releaseDate||r.date).toLocaleDateString()}</strong></td><td data-label="Type"><span class="badge-ui">${safe(r.type||'Ledger')}</span></td><td data-label="Reference"><strong style="font-family:monospace;">${safe(r.reference||r.orderId||r.planId||r.id)}</strong></td><td data-label="Gross">${money(r.gross||0)}</td><td data-label="Deductions" style="color:var(--danger);font-weight:900;">-${money(r.deductions||0)}</td><td data-label="Net / Amount" style="color:var(--success);font-weight:900;">${money(r.net??r.amount??0)}</td><td data-label="Status">${safe(r.status||'Saved')}</td></tr>`).join('');}
+    window.loadPayments=async function(){
+        await ensureSellerPaymentsDynamic();
+        const progress=$('payProgressList'),upcoming=$('payUpcomingList'),completed=$('payCompletedList'),fines=$('payFinesList'),all=$('payAllList');
+        const ledger=dynamicLedger||[];
+        const progressRows=ledger.filter(r=>low(r.status).includes('progress'));
+        const upcomingRows=ledger.filter(r=>low(r.status).includes('upcoming')||low(r.status).includes('processing'));
+        const completedRows=ledger.filter(r=>low(r.status).includes('paid')||low(r.status).includes('settled')||low(r.status).includes('completed'));
+        if(progress)progress.innerHTML=progressRows.length?progressRows.map(r=>`<tr><td><strong>${rowDate(r.deliveredDate||r.timestamp).toLocaleDateString()}</strong></td><td><span style="color:var(--warning);font-weight:900;">${rowDate(r.releaseDate).toLocaleDateString()}</span></td><td><strong style="font-family:monospace;color:var(--primary);">${safe(r.reference||r.orderId)}</strong></td><td><strong>${money(r.net||r.amount)}</strong><br><span style="font-size:11px;color:var(--text-light);">Gross ${money(r.gross)} - ${money(r.deductions)}</span></td></tr>`).join(''):`<tr><td colspan="4" style="text-align:center;font-weight:700;">No in-progress ledger.</td></tr>`;
+        if(upcoming)upcoming.innerHTML=upcomingRows.length?upcomingRows.map(r=>`<tr><td><strong>${rowDate(r.releaseDate||r.timestamp).toLocaleDateString()}</strong></td><td><strong style="font-family:monospace;color:var(--primary);">${safe(r.reference||r.orderId)}</strong></td><td>${safe(r.status)}</td><td style="color:var(--success);font-weight:900;">${money(r.net||r.amount)}</td></tr>`).join(''):`<tr><td colspan="4" style="text-align:center;font-weight:700;">No upcoming ledger.</td></tr>`;
+        if(completed)completed.innerHTML=completedRows.length?completedRows.map(r=>`<tr><td><strong>${rowDate(r.settledDate||r.timestamp).toLocaleDateString()}</strong></td><td><strong style="font-family:monospace;color:var(--primary);">${safe(r.reference||r.id)}</strong></td><td style="color:var(--success);font-weight:900;">${money(r.net||r.amount)}</td></tr>`).join(''):(sellerPayouts&&sellerPayouts.length?sellerPayouts.map(p=>`<tr class="clickable-row" onclick="viewSettledSlip('${safe(p.id)}')"><td><strong>${rowDate(p.date||p.settledDate).toLocaleDateString()}</strong></td><td><strong style="font-family:monospace;color:var(--primary);">${safe(p.id)}</strong></td><td style="color:var(--success);font-weight:900;">${money(p.netPayout||p.amount)}</td></tr>`).join(''):`<tr><td colspan="3" style="text-align:center;">No settlements yet.</td></tr>`);
+        if(fines)fines.innerHTML=(sellerFines&&sellerFines.length)?sellerFines.map(f=>`<tr><td><strong>${rowDate(f.timestamp).toLocaleDateString()}</strong></td><td><span style="font-weight:700;">${safe(f.reason||f.note||'Deduction')}</span></td><td style="color:var(--danger);font-weight:900;">-${money(f.amount)}</td></tr>`).join(''):`<tr><td colspan="3" style="text-align:center;font-weight:700;">No fines.</td></tr>`;
+        if(all)all.innerHTML=ledger.length?renderLedgerRows(ledger):`<tr><td colspan="7" style="text-align:center;font-weight:700;">No payment ledger saved yet.</td></tr>`;
+        const totalUpcoming=upcomingRows.reduce((s,r)=>s+Number(r.net??r.amount??0),0);const totalFines=(sellerFines||[]).reduce((s,f)=>s+Number(f.amount||0),0);cachedTotalUpcoming=Math.max(0,totalUpcoming-totalFines);const alert=$('upcomingAlertBox');if(alert){if(totalUpcoming||totalFines){alert.style.display='block';alert.innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span>DB upcoming ledger total:</span><strong>${money(totalUpcoming)}</strong></div><div style="display:flex;justify-content:space-between;margin-bottom:5px;color:var(--danger);"><span>DB fines/deductions:</span><strong>-${money(totalFines)}</strong></div><div style="border-top:2px solid #bfdbfe;margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:900;font-size:16px;color:#1e3a8a;">Final usable payout:</span><strong style="color:var(--primary);font-size:22px;">${money(cachedTotalUpcoming)}</strong></div>`;}else alert.style.display='none';}
+        validateStrictPayoutButtons();
+    };
+
+    const oldShowSection=window.showSection;
+    window.showSection=async function(section){
+        const r=oldShowSection?oldShowSection(section):undefined;
+        try{if(section==='subscription')await window.loadStrictSubscriptionsUI();if(section==='settings')await window.loadSettingsUI();if(section==='profile')await window.loadProfile();if(section==='support')await renderSupportCategories();if(section==='payments')await window.loadPayments();}catch(e){console.warn('Strict dynamic section refresh failed',section,e);}
+        return r;
+    };
+
+    async function strictBoot(){
+        if(!db||!activeSeller)return;
+        try{await fetchAdminConfig(false);renderSubscriptionPlans();renderDynamicButtons();renderDownloadAppBox();renderVersionInfo();applyNavControls();await renderSupportCategories();await loadSettingsUIDynamic();renderProfileHero();applyAdminTextOverrides();showDynamicPopupIfAny(false);}catch(e){console.warn('Dynamic boot skipped; Basic plan remains available.',e);dynamicPlans=ensureBasicPlan(dynamicPlans);renderSubscriptionPlans();}
+    }
+    document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>window.refreshDynamicAdminControls(false),1800);});
+    window.refreshDynamicAdminControls=async function(force=false){
+        try{
+            if(force){ cfgFetchedAt=0; cfgPromise=null; }
+            await fetchAdminConfig(!!force);
+            renderSubscriptionPlans();
+            renderDynamicButtons();
+            renderDownloadAppBox();
+            renderVersionInfo();
+            applyNavControls();
+            await renderSupportCategories();
+            await loadSettingsUIDynamic();
+            renderProfileHero();
+            applyAdminTextOverrides();
+            showDynamicPopupIfAny(false);
+            return true;
+        }catch(e){
+            console.warn('Admin control refresh failed', e);
+            dynamicPlans=ensureBasicPlan(dynamicPlans);
+            renderSubscriptionPlans();
+            return false;
+        }
+    };
+    window.forceRefreshDynamicAdminControls=function(){return window.refreshDynamicAdminControls(true);};
+})();
+
+
+/* Strict branding upload guard - DB plan limits only */
+(function(){
+    const $=id=>document.getElementById(id);
+    const low=v=>String(v==null?'':v).toLowerCase().trim();
+    const nowIso=()=>new Date().toISOString();
+    function currentDbPlan(){
+        const plans=window.__ARYANTA_DB_SUBSCRIPTION_PLANS||[];
+        const sub=low(activeSeller&&(activeSeller.subscriptionId||activeSeller.subscriptionPlanId||activeSeller.subscription||activeSeller.plan));
+        return plans.find(p=>low(p.id)===sub||low(p.name)===sub||low(p.title)===sub)||null;
+    }
+    function brandLimit(type){
+        const f=(activeSeller&&activeSeller.subscriptionFeatures)||{};
+        const p=currentDbPlan()||{};
+        const val= type==='logo' ? (f.logoLimit??p.logoLimit) : (f.bannerLimit??p.bannerLimit);
+        return Number(val||0)||0;
+    }
+    function monthKey(){return new Date().toISOString().slice(0,7);}
+    function brandUsed(type){
+        const usage=(activeSeller&&activeSeller.brandingUsageMonth===monthKey())?(activeSeller.brandingUsage||{}):{};
+        return Number(usage[type]??activeSeller?.[`${type}UploadsThisMonth`]??0)||0;
+    }
+    async function compress(file,type){
+        return new Promise((resolve,reject)=>{
+            const reader=new FileReader(); reader.onerror=reject;
+            reader.onload=()=>{const img=new Image(); img.onerror=reject; img.onload=()=>{const maxW=type==='banner'?1400:700,maxH=type==='banner'?500:700;let w=img.width,h=img.height;const r=Math.min(maxW/w,maxH/h,1);w=Math.round(w*r);h=Math.round(h*r);const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);resolve(canvas.toDataURL('image/jpeg',0.82));}; img.src=reader.result;};
+            reader.readAsDataURL(file);
+        });
+    }
+    window.uploadStoreBrandingStrict=async function(type){
+        const input=$(type==='logo'?'storeLogoInput':'storeBannerInput');
+        const file=input&&input.files&&input.files[0];
+        if(!file)return showToast(`Choose a ${type} image first.`,'warning');
+        if(window.refreshDynamicAdminControls)await window.refreshDynamicAdminControls();
+        const limit=brandLimit(type);
+        if(limit<=0)return showToast(`Admin DB plan does not allow ${type} uploads. Ask admin to set ${type==='logo'?'logoLimit':'bannerLimit'} in the subscription plan.`,'error');
+        const used=brandUsed(type);
+        if(used>=limit)return showToast(`Monthly ${type} upload limit reached (${used}/${limit}) for your DB plan.`,'error');
+        try{
+            const dataUrl=await compress(file,type);
+            const usageMonth=monthKey();
+            const usage=activeSeller.brandingUsageMonth===usageMonth?{...(activeSeller.brandingUsage||{})}:{};
+            usage[type]=used+1;
+            const del=firebase.firestore.FieldValue.delete();
+            const payload={brandingUsage:usage,brandingUsageMonth:usageMonth,brandingUpdatedAt:nowIso(),brandingUpdatedBy:'seller-panel'};
+            if(type==='logo')Object.assign(payload,{storeLogo:dataUrl,storeLogoUpdatedAt:nowIso(),storeLogoUrl:del,logo:del,logoUrl:del,shopLogo:del,companyLogo:del,logoUploadsThisMonth:used+1});
+            else Object.assign(payload,{storeBanner:dataUrl,storeBannerUpdatedAt:nowIso(),storeBannerUrl:del,banner:del,bannerUrl:del,shopBanner:del,coverImage:del,bannerUploadsThisMonth:used+1});
+            await db.collection('sellers').doc(activeSeller.email).set(payload,{merge:true});
+            if(type==='logo'){activeSeller.storeLogo=dataUrl;activeSeller.logoUploadsThisMonth=used+1;}
+            else{activeSeller.storeBanner=dataUrl;activeSeller.bannerUploadsThisMonth=used+1;}
+            activeSeller.brandingUsage=usage;activeSeller.brandingUsageMonth=usageMonth;
+            localStorage.setItem('sellerToken',JSON.stringify(activeSeller));
+            if(input)input.value='';
+            if(typeof renderBrandingPreviewsFinal==='function')renderBrandingPreviewsFinal();
+            showToast(`Store ${type} updated using DB plan limit (${used+1}/${limit}).`,'success');
+        }catch(e){console.error(e);showToast(`Could not upload ${type}. Try a smaller image or check network.`,'error');}
+    };
+    window.uploadStoreBranding=window.uploadStoreBrandingStrict;
+})();
+
+
+/* Aryanta Professional Runtime Stabilizer v4 - one-time fetch, plan locks, support uploads */
+(function(){
+  if(window.ARYANTA_PRO_RUNTIME_V4) return;
+  window.ARYANTA_PRO_RUNTIME_V4 = true;
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? '' : v).replace(/[&<>'"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]));
+  const truthy = (v, def=false) => {
+    if(v === undefined || v === null || v === '') return def;
+    if(typeof v === 'boolean') return v;
+    const s = String(v).toLowerCase().trim();
+    if(['1','true','yes','on','enabled','active','show','visible'].includes(s)) return true;
+    if(['0','false','no','off','disabled','inactive','hide','hidden'].includes(s)) return false;
+    return def;
+  };
+  const fileToDataUrl = file => new Promise((resolve,reject)=>{ const r=new FileReader(); r.onerror=reject; r.onload=()=>resolve(r.result); r.readAsDataURL(file); });
+  function selectedSupportCategory(){
+    try{
+      const sel=$('supCategory');
+      const id=sel && sel.value;
+      const rows=window.__ARYANTA_SUPPORT_CATEGORIES || [];
+      return rows.find(c=>String(c.id)===String(id)) || null;
+    }catch(e){ return null; }
+  }
+  const oldUpdate = window.updateSupportCategoryInfo;
+  window.updateSupportCategoryInfo = function(){
+    if(typeof oldUpdate === 'function') oldUpdate();
+    const box=$('supportAttachmentBox');
+    if(!box) return;
+    const cat=selectedSupportCategory();
+    if(!cat){ box.style.display='none'; box.innerHTML=''; return; }
+    const needs = truthy(cat.askForImage,false) || truthy(cat.requireImage,false) || truthy(cat.askForFile,false) || truthy(cat.requireFile,false) || truthy(cat.allowAttachment,false) || truthy(cat.attachmentRequired,false);
+    if(!needs){ box.style.display='none'; box.innerHTML=''; return; }
+    const required = truthy(cat.requireImage,false) || truthy(cat.requireFile,false) || truthy(cat.attachmentRequired,false);
+    const accept = (truthy(cat.askForImage,false)||truthy(cat.requireImage,false)) && !(truthy(cat.askForFile,false)||truthy(cat.requireFile,false)) ? 'image/*' : 'image/*,.pdf,.doc,.docx,.txt';
+    box.style.display='block';
+    box.innerHTML = `<label>${esc(cat.attachmentLabel || 'Upload proof / screenshot')}${required?' <span style="color:var(--danger);font-weight:900;">*</span>':''}</label><input type="file" id="supAttachment" class="input-field" accept="${accept}"><div class="admin-note-box" style="margin-top:8px;display:block;">${esc(cat.attachmentHelp || 'Upload screenshot, invoice, product image, or any proof requested by admin.')}</div>`;
+  };
+  const oldSubmit = window.submitSupportTicket;
+  window.submitSupportTicket = async function(){
+    const cat=selectedSupportCategory();
+    const fileInput=$('supAttachment');
+    const file=fileInput && fileInput.files && fileInput.files[0];
+    const required = cat && (truthy(cat.requireImage,false) || truthy(cat.requireFile,false) || truthy(cat.attachmentRequired,false));
+    if(required && !file){ return showToast('Admin requires an attachment for this issue. Upload proof first.','warning'); }
+    if(!file){ return oldSubmit ? oldSubmit() : undefined; }
+    if(file.size > 950000){ return showToast('Attachment is too large. Please upload an image/file under 950 KB.','warning'); }
+    const dataUrl = await fileToDataUrl(file);
+    const originalAdd = db && db.collection ? db.collection.bind(db) : null;
+    // The strict submitSupportTicket below writes directly; easiest safe route is to create the ticket here with attachment.
+    const sel=$('supCategory'); const phone=$('supPhone')?.value.trim(); const desc=$('supDesc')?.value.trim();
+    if(!sel?.value || !phone || !desc) return showToast('All fields are required.','warning');
+    try{
+      await db.collection('seller_support_tickets').add({
+        ticketId:'TKT-'+Math.random().toString(36).substr(2,6).toUpperCase(),
+        email:(activeSeller&&activeSeller.email)||'', sellerEmail:(activeSeller&&activeSeller.email)||'', sellerName:(activeSeller&&activeSeller.companyName)||((activeSeller&&activeSeller.email)||''),
+        phone, categoryId:sel.value, categoryTitle:cat?cat.title:sel.value, categoryDescription:cat?cat.description:'', subject:cat?cat.title:sel.value, message:desc,
+        attachment:{name:file.name,type:file.type,size:file.size,dataUrl}, attachmentName:file.name, attachmentType:file.type, hasAttachment:true,
+        status:'Open', timestamp:new Date().toISOString(), source:'seller_panel_professional'
+      });
+      showToast('Support ticket submitted with attachment.','success');
+      $('supPhone').value=''; $('supDesc').value=''; sel.value=''; if(fileInput)fileInput.value=''; window.updateSupportCategoryInfo(); showSection('oldTickets');
+    }catch(e){ console.error(e); showToast('Failed to submit ticket. Check Firestore rules.','error'); }
+  };
+  const oldLoadSubs = window.loadStrictSubscriptionsUI || window.loadSubscriptionsUI;
+  window.loadSubscriptionsUI = async function(){
+    if(typeof oldLoadSubs === 'function') await oldLoadSubs();
+    const grid=$('subscriptionPlansGrid');
+    if(grid && !$('refreshAdminPlansBtn')){
+      const wrap=document.createElement('div'); wrap.style.gridColumn='1/-1'; wrap.style.display='flex'; wrap.style.justifyContent='flex-end'; wrap.style.marginBottom='8px';
+      wrap.innerHTML='<button id="refreshAdminPlansBtn" class="btn-outline" type="button" onclick="forceRefreshDynamicAdminControls().then(()=>showToast(\'Admin seller settings refreshed\',\'success\'))"><i class="fas fa-rotate"></i> Refresh</button>';
+      grid.prepend(wrap);
+    }
+  };
+  try{ loadSubscriptionsUI=window.loadSubscriptionsUI; }catch(e){}
 })();
