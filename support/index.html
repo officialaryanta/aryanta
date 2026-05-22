@@ -2,749 +2,2924 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Concierge Support | Aryanta Prime</title>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>Support | Aryanta</title>
+
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#f5f5f7">
+    <link rel="apple-touch-icon" href="/android-chrome-192x192.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono&display=swap" rel="stylesheet">
-    
+
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
     <style>
-        /* --- MERGED ROOT VARIABLES --- */
         :root {
-            --primary: #0a0a0a; --primary-hover: #262626; --accent: #0f172a; --danger: #ef4444; --success: #10b981; --warning: #f59e0b;
-            --bg-color: #f8fafc; --surface: #ffffff; --text-main: #0f172a; --text-muted: #64748b; --border: #e2e8f0;
-            --shadow-sm: 0 4px 6px -1px rgba(0,0,0,0.05); 
-            --shadow-md: 0 10px 25px -5px rgba(0,0,0,0.08); 
-            --shadow-lg: 0 25px 50px -12px rgba(0,0,0,0.15);
-            --transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            --font-main: 'Plus Jakarta Sans', sans-serif; --font-mono: 'Space Mono', monospace;
+            --primary: #1d1d1f;
+            --primary-hover: #424245;
+            --accent: #0066cc;
+            --danger: #ff3b30;
+            --warning: #f59e0b;
+            --success: #34c759;
+            --bg-color: #f2f2f7;
+            --surface: rgba(255, 255, 255, 0.78);
+            --surface-solid: #ffffff;
+            --surface-soft: #f8fafc;
+            --text-main: #1d1d1f;
+            --text-muted: #6b7280;
+            --border: rgba(0, 0, 0, 0.08);
+            --shadow-sm: 0 4px 14px rgba(0,0,0,0.04);
+            --shadow-md: 0 12px 32px rgba(0,0,0,0.08);
+            --shadow-lg: 0 30px 60px rgba(0,0,0,0.12);
+            --transition: all 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+            --spring: all 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
-        html, body { margin: 0; padding: 0; height: 100vh; overflow: hidden; background: var(--bg-color); font-family: var(--font-main); -webkit-tap-highlight-color: transparent; }
-        * { box-sizing: border-box; }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary: #f5f5f7;
+                --primary-hover: #d2d2d7;
+                --accent: #2997ff;
+                --bg-color: #000000;
+                --surface: rgba(28, 28, 30, 0.78);
+                --surface-solid: #1c1c1e;
+                --surface-soft: #111113;
+                --text-main: #f5f5f7;
+                --text-muted: #a1a1aa;
+                --border: rgba(255,255,255,0.12);
+                --shadow-sm: 0 4px 14px rgba(0,0,0,0.3);
+                --shadow-md: 0 10px 30px rgba(0,0,0,0.4);
+                --shadow-lg: 0 30px 60px rgba(0,0,0,0.5);
+            }
+        }
 
-        /* ==========================================================================
-           1. PREMIUM TOP BAR & SIDEBAR
-           ========================================================================== */
-        .w-100 { width: 100%; } .text-center { text-align: center; } 
-        .flex-row-between { display: flex; justify-content: space-between; align-items: center; }
-        .glass-effect { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
-        .desktop-only { display: inline; }
-        
-        .top-bar { height: 75px; position: fixed; top: 0; left: 0; width: 100%; padding: 12px 5%; display: flex; align-items: center; justify-content: space-between; z-index: 5000; transition: top 0.3s ease; box-shadow: var(--shadow-sm); }
-        .nav-left { display: flex; align-items: center; gap: 15px; }
-        .menu-trigger { font-size: 22px; cursor: pointer; color: var(--primary); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .menu-trigger:hover { transform: scale(1.2) rotate(5deg); }
-        .brand-logo { display: flex; align-items: center; gap: 10px; font-size: 24px; font-weight: 800; cursor: pointer; letter-spacing: -1px; }
-        .brand-img { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); }
-        .prime-dot { color: var(--accent); }
-        
-        .nav-search { display: flex; align-items: center; background: var(--bg-color); border-radius: 12px; padding: 10px 15px; border: 1px solid var(--border); position: relative; }
-        .nav-search input { flex: 1; border: none; outline: none; background: transparent; font-size: 15px; width: 100%; padding-right: 65px; font-family: var(--font-main); }
-        .mic-btn, .search-clear { position: absolute; top: 50%; transform: translateY(-50%); cursor: pointer; z-index: 10; font-size: 16px; transition: 0.3s; }
-        .mic-btn { right: 40px; color: var(--primary); }
-        .mic-btn:hover { color: var(--danger); transform: translateY(-50%) scale(1.1); }
-        .search-clear { right: 12px; color: var(--text-muted); }
-        .search-clear:hover { color: var(--danger); }
-        .search-dropdown { position: absolute; top: 120%; left: 0; width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; max-height: 350px; overflow-y: auto; z-index: 99999; display: none; box-shadow: var(--shadow-lg);}
-        .search-item { padding: 12px 15px; font-size: 14px; cursor: pointer; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; transition: background 0.3s; }
-        .search-item:last-child { border-bottom: none; }
-        .search-item:hover { background: var(--bg-color); }
-        .desktop-search { width: 45%; max-width: 700px; display: flex; }
-        .mobile-only-search { display: none; }
-        .search-container { position: fixed; top: 75px; left: 0; width: 100%; padding: 10px 5%; z-index: 4999; transition: transform 0.4s ease; }
-        .search-container.hide-search { transform: translateY(-100%); }
-        
-        .nav-actions { display: flex; align-items: center; gap: 20px; }
-        .user-trigger { background: transparent; border: none; font-weight: 700; font-size: 15px; color: var(--primary); display: flex; align-items: center; cursor: pointer; outline: none; transition: 0.3s; font-family: var(--font-main);}
-        .user-trigger:hover { opacity: 0.7; }
-        .nav-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); margin-right: 8px;}
-        .cart-icon { position: relative; font-size: 22px; cursor: pointer; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .cart-icon:hover { transform: scale(1.15) rotate(-5deg); }
-        .badge { position: absolute; top: -8px; right: -8px; background: var(--accent); color: white; font-size: 11px; font-weight: bold; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 50%; opacity: 0; transform: scale(0); transition: 0.4s;}
-        .badge.show { opacity: 1 !important; transform: scale(1) !important; }
-        
-        .side-panel { position: fixed; left: 0; top: 0; width: 320px; height: 100%; background: var(--surface); z-index: 5500; transform: translateX(-100%); transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1); display: flex; flex-direction: column; box-shadow: var(--shadow-lg); }
-        .side-panel.open { transform: translateX(0); }
-        .panel-header { padding: 40px 30px 20px; border-bottom: 1px solid var(--border); position: relative;}
-        .close-sidebar { position: absolute; top: 20px; right: 20px; font-size: 20px; cursor: pointer; color: var(--text-muted); transition: 0.3s;}
-        .close-sidebar:hover { color: var(--danger); transform: rotate(90deg); }
-        .avatar-img { width: 55px; height: 55px; border-radius: 50%; border: 2px solid var(--border); object-fit: cover; }
-        .user-greeting span { font-weight: 800; font-size: 18px; display: block; margin-top: 10px;}
-        .user-greeting small { color: var(--accent); font-weight: 700; }
-        .panel-links { flex-grow: 1; padding: 20px 0; overflow-y: auto; overflow-x: hidden; }
-        .panel-links a { display: flex; align-items: center; gap: 15px; padding: 18px 30px; text-decoration: none; color: var(--text-main); font-weight: 600; font-size: 15px; transition: all 0.3s; opacity: 0; transform: translateX(-20px); }
-        .side-panel.open .panel-links a { opacity: 1; transform: translateX(0); }
-        .side-panel.open .panel-links a:nth-child(n) { transition-delay: 0.1s; }
-        .panel-links a:hover { background: var(--bg-color); color: var(--primary); padding-left: 40px; }
-        .sidebar-footer { padding: 25px 30px; border-top: 1px solid var(--border); text-align: center; }
-        .btn-sidebar-logout { width: 100%; padding: 15px; background: #fee2e2; color: var(--danger); border: 1px solid #fca5a5; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: var(--font-main); }
-        
-        .dimmer { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); z-index: 5400; cursor: pointer; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.4s ease, visibility 0.4s ease; }
-        .dimmer.show { opacity: 1; visibility: visible; pointer-events: auto; }
+        body.light-theme {
+            --primary: #1d1d1f;
+            --primary-hover: #424245;
+            --accent: #0066cc;
+            --bg-color: #f2f2f7;
+            --surface: rgba(255, 255, 255, 0.78);
+            --surface-solid: #ffffff;
+            --surface-soft: #f8fafc;
+            --text-main: #1d1d1f;
+            --text-muted: #6b7280;
+            --border: rgba(0,0,0,0.08);
+            --shadow-sm: 0 4px 14px rgba(0,0,0,0.04);
+            --shadow-md: 0 12px 32px rgba(0,0,0,0.08);
+            --shadow-lg: 0 30px 60px rgba(0,0,0,0.12);
+        }
 
-        /* ==========================================================================
-           2. CONCIERGE SUPPORT UI (Integrated Universal Chat)
-           ========================================================================== */
-        
-        .main-content { padding-top: 75px; height: 100vh; display: flex; flex-direction: column; }
-        
-        .support-wrapper { flex-grow: 1; max-width: 800px; margin: 0 auto; width: 100%; padding: 10px 5%; display: flex; flex-direction: column; max-height: calc(100vh - 75px); }
-        
-        .chat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; padding: 0 10px; }
-        .chat-header-text h1 { font-size: 22px; font-weight: 800; letter-spacing: -1px; margin: 0; display: flex; align-items: center; gap: 8px; }
-        .agent-status { font-size: 11px; font-weight: 700; color: var(--success); background: #ecfdf5; padding: 4px 10px; border-radius: 100px; border: 1px solid #a7f3d0; display: flex; align-items: center; gap: 5px; }
-        
-        .chat-container { flex-grow: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; overflow: hidden; position: relative; margin-bottom: 10px; }
-        
-        .chat-history { flex-grow: 1; padding: 20px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: #f8fafc; scroll-behavior: smooth; }
-        
-        .msg-row { display: flex; width: 100%; animation: chatPop 0.3s ease-out forwards; opacity: 0; transform: translateY(15px); }
-        .msg-bot { justify-content: flex-start; flex-direction: column; align-items: flex-start;}
-        .msg-user { justify-content: flex-end; }
-        
-        .bubble-container { display: flex; align-items: flex-end; width: 100%; }
-        .bubble { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.02); word-wrap: break-word; }
-        .msg-bot .bubble { background: var(--surface); color: var(--text-main); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
-        .msg-user .bubble { background: var(--primary); color: white; border-bottom-right-radius: 4px; }
-        
-        .bot-icon { width: 30px; height: 30px; border-radius: 50%; background: var(--primary); color: white; display: flex; justify-content: center; align-items: center; margin-right: 10px; font-size: 12px; flex-shrink: 0; box-shadow: var(--shadow-sm); }
+        body.dark-theme {
+            --primary: #f5f5f7;
+            --primary-hover: #d2d2d7;
+            --accent: #2997ff;
+            --bg-color: #000000;
+            --surface: rgba(28, 28, 30, 0.78);
+            --surface-solid: #1c1c1e;
+            --surface-soft: #111113;
+            --text-main: #f5f5f7;
+            --text-muted: #a1a1aa;
+            --border: rgba(255,255,255,0.12);
+            --shadow-sm: 0 4px 14px rgba(0,0,0,0.3);
+            --shadow-md: 0 10px 30px rgba(0,0,0,0.4);
+            --shadow-lg: 0 30px 60px rgba(0,0,0,0.5);
+        }
 
-        /* Embedded Dynamic UI inside Chat Bubbles */
-        .dynamic-ui-wrapper { margin-top: 10px; padding-left: 40px; display: flex; flex-direction: column; gap: 10px; width: 100%; animation: chatPop 0.4s ease forwards;}
-        
-        .interactive-card { display: flex; gap: 12px; align-items: center; border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: var(--surface); box-shadow: var(--shadow-sm); text-align: left; cursor: pointer; transition: 0.2s; width: 100%; max-width: 380px;}
-        .interactive-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.05); }
-        .interactive-card img { width: 65px; height: 65px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0; background: #fff; }
-        .interactive-card .card-details { flex: 1; min-width: 0; }
-        .interactive-card h4 { font-size: 13px; font-weight: 700; margin: 0 0 4px 0; color: var(--text-main); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
-        .interactive-card .price { font-size: 15px; font-weight: 800; margin: 0 0 4px 0; color: var(--primary); }
-        .interactive-card .meta { font-size: 11px; color: var(--text-muted); margin: 4px 0 0 0; font-family: monospace; }
-        
-        /* Product Info Styling */
-        .product-desc { font-size: 12px; color: var(--text-muted); margin-top: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-main);
+            -webkit-tap-highlight-color: transparent;
+        }
 
-        .order-detail-card { background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 15px; width: 100%; max-width: 380px; box-shadow: var(--shadow-sm); }
-        .order-detail-card img { width: 100%; height: 160px; object-fit: cover; border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--border); }
-        .order-detail-card h3 { font-size: 16px; font-weight: 800; margin: 0 0 5px 0; }
-        .order-detail-card p { font-size: 13px; margin: 4px 0; color: var(--text-muted); }
-        .order-detail-card .highlight { color: var(--primary); font-weight: 700; font-size: 14px;}
-        
-        .btn-pay-now { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; width: 100%; margin-top: 15px; font-size: 15px; font-family: var(--font-main); display: flex; align-items: center; justify-content: center; gap: 8px;}
-        .btn-pay-now:hover { background: var(--success); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3); }
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            color: var(--text-main);
+            overflow: hidden;
+        }
 
-        .btn-action-small { background: var(--bg-color); border: 1px solid var(--border); color: var(--text-main); padding: 10px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: 0.3s; width: 100%; margin-top: 10px; font-size: 13px;}
-        .btn-action-small:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        body {
+            min-height: 100dvh;
+            transition: background 0.45s ease, color 0.45s ease;
+        }
 
-        /* Universal AI Input Area */
-        .chat-actions { background: var(--surface); padding: 15px; flex-shrink: 0; border-top: 1px solid var(--border); }
-        .universal-input-area { display: flex; gap: 10px; align-items: center; }
-        .universal-input { flex: 1; padding: 14px 22px; border: 1.5px solid var(--border); border-radius: 100px; font-size: 14px; outline: none; background: var(--bg-color); transition: var(--transition); font-family: var(--font-main); height: 50px; }
-        .universal-input:focus { border-color: var(--primary); background: white; box-shadow: var(--shadow-sm);}
-        .btn-send { background: var(--primary); color: white; border: none; width: 50px; height: 50px; border-radius: 50%; font-weight: 700; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
-        .btn-send:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        button, input, textarea, select {
+            font: inherit;
+        }
 
-        @keyframes chatPop { to { opacity: 1; transform: translateY(0); } }
+        a {
+            color: inherit;
+        }
 
-        /* Typing Indicator */
-        .typing-indicator { display: flex; gap: 4px; padding: 4px; align-items: center; height: 15px; }
-        .dot { width: 6px; height: 6px; background: #94a3b8; border-radius: 50%; animation: blink 1.4s infinite both; }
-        .dot:nth-child(2) { animation-delay: 0.2s; }
-        .dot:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes blink { 0% { opacity: 0.2; transform: scale(0.8); } 20% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0.2; transform: scale(0.8); } }
-        
-        .custom-ui-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(5px); z-index: 9999; display: none; justify-content: center; align-items: center; animation: fadeIn 0.2s ease; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .custom-ui-box { background: var(--surface); padding: 30px; border-radius: 20px; max-width: 400px; width: 90%; text-align: center; box-shadow: var(--shadow-lg); animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .ui-btn-primary { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; width: 100%; font-family: var(--font-main); cursor: pointer;}
+        .glass-effect {
+            background: var(--surface);
+            backdrop-filter: saturate(190%) blur(34px);
+            -webkit-backdrop-filter: saturate(190%) blur(34px);
+            border-bottom: 1px solid var(--border);
+        }
 
-        @media (max-width: 768px) {
-            .desktop-only { display: none !important; }
-            .desktop-search { display: none; }
-            .mobile-only-search { display: block; }
-            .top-bar { padding: 10px 15px; height: 65px; }
-            .search-container { top: 65px; padding: 10px 15px; }
-            .main-content { padding-top: 140px; }
-            .support-wrapper { max-height: calc(100vh - 140px); padding: 10px 0 0 0; }
-            .chat-container { border-radius: 20px 20px 0 0; border-bottom: none; margin-bottom: 0; border-left: none; border-right: none;}
-            .bubble { max-width: 90%; font-size: 13px; }
-            .chat-history { padding: 15px 15px; }
-            .interactive-card { max-width: 100%; }
-            .order-detail-card { max-width: 100%; }
+        .top-bar {
+            height: calc(70px + env(safe-area-inset-top));
+            padding: env(safe-area-inset-top) max(18px, env(safe-area-inset-left)) 0 max(18px, env(safe-area-inset-right));
+            position: fixed;
+            inset: 0 0 auto 0;
+            z-index: 5000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0;
+        }
+
+        .menu-trigger,
+        .top-icon-btn {
+            border: none;
+            background: rgba(120,120,128,0.12);
+            color: var(--text-main);
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--spring);
+            flex-shrink: 0;
+        }
+
+        .menu-trigger:active,
+        .top-icon-btn:active {
+            transform: scale(0.92);
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 21px;
+            font-weight: 800;
+            letter-spacing: -0.6px;
+            color: var(--text-main);
+            text-decoration: none;
+            cursor: pointer;
+            min-width: 0;
+        }
+
+        .brand-img {
+            width: 35px;
+            height: 35px;
+            border-radius: 11px;
+            object-fit: cover;
+            box-shadow: var(--shadow-sm);
+            flex-shrink: 0;
+        }
+
+        .prime-dot {
+            color: var(--accent);
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .user-trigger {
+            background: rgba(120,120,128,0.12);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 7px 10px 7px 7px;
+            border-radius: 999px;
+            min-height: 42px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            max-width: 190px;
+            min-width: 42px;
+            transition: var(--spring);
+            overflow: hidden;
+        }
+
+        .user-trigger:active {
+            transform: scale(0.96);
+        }
+
+        .nav-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--surface-solid);
+            border: 2px solid var(--surface-solid);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+            flex-shrink: 0;
+        }
+
+        .user-trigger span {
+            font-size: 13px;
+            font-weight: 800;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 120px;
+        }
+
+        .cart-icon {
+            position: relative;
+            text-decoration: none;
+        }
+
+        .badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--danger);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 800;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--surface-solid);
+        }
+
+        .badge.show {
+            display: flex;
+        }
+
+        .main-content {
+            height: 100dvh;
+            padding-top: calc(70px + env(safe-area-inset-top));
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .support-wrapper {
+            flex: 1;
+            width: min(860px, 100%);
+            margin: 0 auto;
+            padding: 12px 18px calc(14px + env(safe-area-inset-bottom));
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-shrink: 0;
+            padding: 3px 2px;
+        }
+
+        .chat-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .back-btn {
+            border: 1px solid var(--border);
+            background: var(--surface-solid);
+            color: var(--text-main);
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: var(--spring);
+            flex-shrink: 0;
+        }
+
+        .back-btn:active {
+            transform: scale(0.92);
+        }
+
+        .chat-title-text {
+            min-width: 0;
+        }
+
+        .chat-title-text h1 {
+            font-size: clamp(21px, 4vw, 29px);
+            line-height: 1.05;
+            letter-spacing: -1px;
+            font-weight: 900;
+            color: var(--text-main);
+        }
+
+        .chat-title-text p {
+            color: var(--text-muted);
+            font-weight: 650;
+            font-size: 12px;
+            margin-top: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .agent-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 11px;
+            border-radius: 999px;
+            border: 1px solid rgba(52,199,89,0.35);
+            background: rgba(52,199,89,0.12);
+            color: var(--success);
+            font-size: 12px;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        .agent-status i {
+            font-size: 8px;
+        }
+
+        .chat-container {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            background: var(--surface-solid);
+            border: 1px solid var(--border);
+            border-radius: 26px;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .chat-history {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 20px;
+            background:
+                radial-gradient(circle at top left, rgba(0,102,204,0.07), transparent 28%),
+                radial-gradient(circle at bottom right, rgba(52,199,89,0.07), transparent 26%),
+                var(--surface-soft);
+            scroll-behavior: smooth;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            overscroll-behavior: contain;
+        }
+
+        .chat-history::-webkit-scrollbar,
+        .chat-actions::-webkit-scrollbar,
+        .panel-links::-webkit-scrollbar {
+            width: 7px;
+        }
+
+        .chat-history::-webkit-scrollbar-thumb,
+        .chat-actions::-webkit-scrollbar-thumb,
+        .panel-links::-webkit-scrollbar-thumb {
+            background: rgba(120,120,128,0.32);
+            border-radius: 999px;
+        }
+
+        .msg-row {
+            display: flex;
+            width: 100%;
+            animation: chatPop 0.24s ease-out both;
+        }
+
+        .msg-bot {
+            justify-content: flex-start;
+            align-items: flex-end;
+        }
+
+        .msg-user {
+            justify-content: flex-end;
+        }
+
+        .bot-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #7c3aed);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 9px;
+            font-size: 12px;
+            flex-shrink: 0;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .bubble {
+            max-width: min(82%, 620px);
+            padding: 13px 15px;
+            border-radius: 19px;
+            font-size: 14px;
+            line-height: 1.55;
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        .msg-bot .bubble {
+            background: var(--surface-solid);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 6px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .msg-user .bubble {
+            background: linear-gradient(135deg, var(--accent), #155eef);
+            color: white;
+            border-bottom-right-radius: 6px;
+            box-shadow: 0 8px 18px rgba(0,102,204,0.2);
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            height: 16px;
+            min-width: 38px;
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            animation: blink 1.2s infinite both;
+        }
+
+        .dot:nth-child(2) { animation-delay: 0.16s; }
+        .dot:nth-child(3) { animation-delay: 0.32s; }
+
+        @keyframes blink {
+            0%, 80%, 100% { opacity: 0.32; transform: scale(0.8); }
+            35% { opacity: 1; transform: scale(1.15); }
+        }
+
+        @keyframes chatPop {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chat-actions {
+            flex-shrink: 0;
+            padding: 12px;
+            border-top: 1px solid var(--border);
+            background: var(--surface-solid);
+            max-height: min(320px, 42dvh);
+            overflow-y: auto;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+        }
+
+        .quick-replies {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 9px;
+        }
+
+        .btn-reply,
+        .btn-prime,
+        .btn-soft,
+        .ui-btn {
+            border: none;
+            cursor: pointer;
+            transition: var(--spring);
+            min-height: 44px;
+        }
+
+        .btn-reply {
+            background: rgba(120,120,128,0.10);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 11px 10px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 800;
+            line-height: 1.25;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            text-align: center;
+            white-space: normal;
+            word-break: normal;
+            overflow-wrap: anywhere;
+        }
+
+        .btn-reply.primary,
+        .btn-prime {
+            background: linear-gradient(135deg, var(--accent), #155eef);
+            color: white;
+            box-shadow: 0 10px 20px rgba(0,102,204,0.18);
+        }
+
+        .btn-reply.danger {
+            background: rgba(255,59,48,0.10);
+            border-color: rgba(255,59,48,0.22);
+            color: var(--danger);
+        }
+
+        .btn-reply.warning {
+            background: rgba(245,158,11,0.12);
+            border-color: rgba(245,158,11,0.24);
+            color: var(--warning);
+        }
+
+        .btn-reply:active,
+        .btn-prime:active,
+        .btn-soft:active,
+        .interactive-card:active,
+        .link-card:active {
+            transform: scale(0.98);
+        }
+
+        .chat-input-wrapper {
+            display: grid;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .modern-input,
+        .modern-textarea,
+        .modern-select {
+            width: 100%;
+            min-width: 0;
+            background: rgba(120,120,128,0.10);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            outline: none;
+            padding: 13px 14px;
+            font-size: 15px;
+            font-weight: 650;
+            transition: var(--transition);
+        }
+
+        .modern-textarea {
+            min-height: 98px;
+            max-height: 190px;
+            resize: vertical;
+            overflow-y: auto;
+            line-height: 1.45;
+        }
+
+        .modern-input:focus,
+        .modern-textarea:focus,
+        .modern-select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(0,102,204,0.12);
+            background: var(--surface-solid);
+        }
+
+        .input-help {
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 650;
+            line-height: 1.45;
+        }
+
+        .input-error {
+            display: none;
+            color: var(--danger);
+            font-size: 12px;
+            font-weight: 800;
+            padding: 2px 4px 0;
+        }
+
+        .input-error.show {
+            display: block;
+        }
+
+        .input-actions {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 9px;
+        }
+
+        .btn-prime,
+        .btn-soft {
+            border-radius: 15px;
+            padding: 13px 16px;
+            font-weight: 850;
+            font-size: 14px;
+        }
+
+        .btn-soft {
+            background: rgba(120,120,128,0.12);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .file-box {
+            border: 1px dashed rgba(120,120,128,0.42);
+            background: rgba(120,120,128,0.08);
+            border-radius: 18px;
+            padding: 14px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .file-box input[type="file"] {
+            color: var(--text-main);
+            max-width: 100%;
+        }
+
+        .file-box input[type="file"]::file-selector-button {
+            border: none;
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-right: 10px;
+            background: var(--accent);
+            color: white;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .interactive-list {
+            display: grid;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .interactive-card {
+            width: 100%;
+            border: 1px solid var(--border);
+            background: var(--surface-solid);
+            border-radius: 18px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+            text-align: left;
+            color: var(--text-main);
+            transition: var(--spring);
+            overflow: hidden;
+        }
+
+        .interactive-card:hover {
+            border-color: rgba(0,102,204,0.38);
+            transform: translateY(-1px);
+        }
+
+        .interactive-card img {
+            width: 66px;
+            height: 66px;
+            border-radius: 14px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+            background: var(--surface-soft);
+            flex-shrink: 0;
+        }
+
+        .card-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,102,204,0.11);
+            color: var(--accent);
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        .card-details {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .card-details h4 {
+            font-size: 13px;
+            font-weight: 850;
+            line-height: 1.28;
+            color: var(--text-main);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 5px;
+        }
+
+        .price {
+            font-size: 14px;
+            font-weight: 900;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+
+        .meta {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            line-height: 1.35;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 8px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-top: 5px;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+        }
+
+        .status-green {
+            background: rgba(52,199,89,0.12);
+            color: var(--success);
+        }
+
+        .status-yellow {
+            background: rgba(245,158,11,0.14);
+            color: #d97706;
+        }
+
+        .status-red {
+            background: rgba(255,59,48,0.12);
+            color: var(--danger);
+        }
+
+        .status-blue {
+            background: rgba(0,102,204,0.12);
+            color: var(--accent);
+        }
+
+        .chat-card,
+        .notice-card {
+            border: 1px solid var(--border);
+            background: rgba(120,120,128,0.08);
+            border-radius: 18px;
+            padding: 14px;
+            margin-top: 10px;
+        }
+
+        .notice-card strong,
+        .chat-card strong {
+            color: var(--text-main);
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-row span:first-child {
+            color: var(--text-muted);
+            font-weight: 750;
+        }
+
+        .detail-row span:last-child {
+            font-weight: 850;
+            text-align: right;
+        }
+
+        .link-card {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--accent), #155eef);
+            color: white !important;
+            text-decoration: none;
+            font-weight: 900;
+            box-shadow: 0 10px 20px rgba(0,102,204,0.18);
+        }
+
+        .custom-ui-overlay,
+        .toast-wrap {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: rgba(15,23,42,0.55);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .custom-ui-overlay.show {
+            display: flex;
+        }
+
+        .custom-ui-box {
+            width: min(420px, 100%);
+            border-radius: 24px;
+            background: var(--surface-solid);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-lg);
+            padding: 24px;
+            text-align: center;
+            animation: modalIn 0.26s ease both;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(10px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .ui-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            margin: 0 auto 14px;
+            background: rgba(0,102,204,0.11);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .custom-ui-box h3 {
+            font-size: 20px;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+
+        .custom-ui-box p {
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.55;
+            margin-bottom: 18px;
+        }
+
+        .ui-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .ui-btn {
+            border-radius: 14px;
+            padding: 13px 14px;
+            font-size: 14px;
+            font-weight: 900;
+        }
+
+        .ui-btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .ui-btn-secondary {
+            background: rgba(120,120,128,0.12);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: calc(20px + env(safe-area-inset-bottom));
+            transform: translate(-50%, 110px);
+            z-index: 10000;
+            background: rgba(20,20,22,0.92);
+            color: white;
+            border-radius: 999px;
+            padding: 13px 18px;
+            font-size: 13px;
+            font-weight: 800;
+            box-shadow: var(--shadow-lg);
+            transition: transform 0.35s ease;
+            max-width: 92vw;
+            text-align: center;
+        }
+
+        .toast.show {
+            transform: translate(-50%, 0);
+        }
+
+        .dimmer {
+            position: fixed;
+            inset: 0;
+            z-index: 5400;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(7px);
+            -webkit-backdrop-filter: blur(7px);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: var(--transition);
+        }
+
+        .dimmer.show {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .side-panel {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: min(350px, 88vw);
+            z-index: 5500;
+            background: var(--surface);
+            backdrop-filter: saturate(180%) blur(40px);
+            -webkit-backdrop-filter: saturate(180%) blur(40px);
+            border-right: 1px solid var(--border);
+            box-shadow: var(--shadow-lg);
+            transform: translateX(-110%);
+            transition: transform 0.42s cubic-bezier(0.25, 1, 0.5, 1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .side-panel.open {
+            transform: translateX(0);
+        }
+
+        .panel-header {
+            padding: calc(28px + env(safe-area-inset-top)) 20px 18px;
+            border-bottom: 1px solid var(--border);
+            position: relative;
+        }
+
+        .close-sidebar {
+            position: absolute;
+            top: calc(12px + env(safe-area-inset-top));
+            right: 14px;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(120,120,128,0.12);
+            color: var(--text-main);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .user-profile-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px;
+            background: rgba(120,120,128,0.10);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            margin-top: 20px;
+            min-width: 0;
+        }
+
+        .avatar-wrapper {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .avatar-img {
+            width: 66px;
+            height: 66px;
+            border-radius: 50%;
+            border: 3px solid var(--surface-solid);
+            outline: 2px solid var(--accent);
+            object-fit: cover;
+            background: var(--surface-solid);
+            box-shadow: var(--shadow-sm);
+            display: block;
+        }
+
+        .prime-badge {
+            position: absolute;
+            right: -2px;
+            bottom: -2px;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: var(--warning);
+            color: white;
+            border: 2px solid var(--surface-solid);
+            font-size: 11px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+        }
+
+        .user-greeting {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .user-greeting span {
+            color: var(--text-main);
+            font-size: 17px;
+            font-weight: 900;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-greeting small {
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 750;
+            line-height: 1.35;
+        }
+
+        .panel-links {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px;
+        }
+
+        .panel-links a {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 15px 16px;
+            border-radius: 16px;
+            text-decoration: none;
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: 800;
+            transition: var(--transition);
+            margin-bottom: 4px;
+        }
+
+        .panel-links a:hover,
+        .panel-links a.active {
+            background: rgba(0,102,204,0.11);
+            color: var(--accent);
+        }
+
+        .sidebar-footer {
+            border-top: 1px solid var(--border);
+            padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+        }
+
+        .btn-sidebar-logout {
+            width: 100%;
+            border: none;
+            border-radius: 16px;
+            padding: 14px;
+            background: rgba(255,59,48,0.10);
+            color: var(--danger);
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        @media (max-width: 700px) {
+            .brand-logo .brand-text {
+                display: none;
+            }
+
+            .support-wrapper {
+                padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+            }
+
+            .chat-container {
+                border-radius: 22px;
+            }
+
+            .chat-history {
+                padding: 14px;
+                gap: 12px;
+            }
+
+            .chat-actions {
+                padding: 10px;
+                max-height: min(360px, 48dvh);
+            }
+
+            .quick-replies {
+                grid-template-columns: 1fr;
+            }
+
+            .bubble {
+                max-width: 91%;
+                font-size: 13px;
+                padding: 12px 13px;
+            }
+
+            .bot-icon {
+                width: 29px;
+                height: 29px;
+                margin-right: 7px;
+            }
+
+            .agent-status {
+                padding: 7px 9px;
+                font-size: 11px;
+            }
+
+            .chat-title-text p {
+                max-width: 160px;
+            }
+
+            .interactive-card {
+                align-items: flex-start;
+                padding: 10px;
+            }
+
+            .interactive-card img {
+                width: 58px;
+                height: 58px;
+                border-radius: 13px;
+            }
+
+            .card-icon {
+                width: 50px;
+                height: 50px;
+            }
+
+            .input-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .user-trigger {
+                padding: 6px;
+                max-width: 42px;
+            }
+
+            .user-trigger span {
+                display: none;
+            }
+
+            .nav-avatar {
+                width: 30px;
+                height: 30px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .top-bar {
+                padding-left: 12px;
+                padding-right: 12px;
+            }
+
+            .nav-left {
+                gap: 9px;
+            }
+
+            .chat-title-text h1 {
+                font-size: 20px;
+            }
+
+            .chat-title-text p {
+                display: none;
+            }
         }
     </style>
 </head>
 <body>
-
     <div class="custom-ui-overlay" id="customAlertOverlay">
         <div class="custom-ui-box">
-            <div id="alertIcon" style="font-size: 40px; color: var(--primary); margin-bottom: 15px;"><i class="fas fa-info-circle"></i></div>
-            <h3 id="customAlertTitle" style="font-size: 20px; font-weight: 800; margin-bottom: 10px;">Notice</h3>
-            <p id="customAlertMessage" style="font-size: 15px; color: var(--text-muted); margin-bottom: 25px; line-height: 1.5;"></p>
-            <button class="ui-btn-primary" id="customAlertOkBtn">Got it</button>
+            <div class="ui-icon" id="alertIcon"><i class="fas fa-info-circle"></i></div>
+            <h3 id="customAlertTitle">Notice</h3>
+            <p id="customAlertMessage">Message goes here.</p>
+            <div class="ui-actions" style="grid-template-columns:1fr;">
+                <button class="ui-btn ui-btn-primary" id="customAlertOkBtn">Got it</button>
+            </div>
         </div>
     </div>
-    
+
+    <div class="custom-ui-overlay" id="customConfirmOverlay">
+        <div class="custom-ui-box">
+            <div class="ui-icon"><i class="fas fa-question-circle"></i></div>
+            <h3 id="customConfirmTitle">Confirm Action</h3>
+            <p id="customConfirmMessage">Are you sure?</p>
+            <div class="ui-actions">
+                <button class="ui-btn ui-btn-secondary" id="customConfirmCancelBtn">Cancel</button>
+                <button class="ui-btn ui-btn-primary" id="customConfirmOkBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toastNotification">Action completed</div>
+
     <header class="top-bar glass-effect">
         <div class="nav-left">
-            <div class="menu-trigger" onclick="openSidebar()"><i class="fas fa-bars-staggered"></i></div>
-            <div class="brand-logo" onclick="location.href='https://aryanta.in/'">
+            <button class="menu-trigger" id="menuBtn" aria-label="Open menu"><i class="fas fa-bars-staggered"></i></button>
+            <a href="https://aryanta.in/" class="brand-logo" aria-label="Aryanta home">
                 <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta Logo" class="brand-img">
                 <span class="brand-text">ARYANTA<span class="prime-dot">.</span></span>
-            </div>
+            </a>
         </div>
-        
-        <div class="desktop-search nav-search">
-            <div class="search-divider" style="margin-left: 5px;"></div>
-            <input type="text" id="desktopSearchInput" autocomplete="off" spellcheck="false" placeholder="Search products, brands...">
-            <i class="fas fa-microphone mic-btn desktop-mic" onclick="startVoiceSearch('desktopSearchInput')" title="Voice Search"></i>
-            <div class="search-dropdown" id="desktopSearchDropdown"></div>
-        </div>
-
         <div class="nav-actions">
-            <button class="user-trigger" id="accountBtn"></button>
-            <div class="cart-icon" onclick="location.href='https://aryanta.in/cart/'">
+            <button class="user-trigger" id="accountBtn" aria-label="Account">
+                <img class="nav-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Guest" alt="avatar">
+                <span>Sign In</span>
+            </button>
+            <a href="https://aryanta.in/cart/" class="top-icon-btn cart-icon" aria-label="Cart">
                 <i class="fas fa-shopping-bag"></i>
                 <span class="badge" id="cartBadge">0</span>
-            </div>
+            </a>
         </div>
     </header>
 
-    <div class="search-container glass-effect mobile-only-search" id="searchContainer">
-        <div class="nav-search">
-            <div class="search-divider" style="margin-left: 5px;"></div>
-            <input type="text" id="mobileSearchInput" autocomplete="off" spellcheck="false" placeholder="Search products...">
-            <i class="fas fa-microphone mic-btn mobile-mic" onclick="startVoiceSearch('mobileSearchInput')" title="Voice Search"></i>
-            <div class="search-dropdown" id="mobileSearchDropdown"></div>
-        </div>
-    </div>
-
     <aside class="side-panel" id="sidebar">
         <div class="panel-header">
-            <i class="fas fa-times close-sidebar" onclick="closeAllModals()"></i>
-            <div class="user-profile">
-                <div style="position: relative;">
+            <button class="close-sidebar" id="closeSidebarBtn" aria-label="Close menu"><i class="fas fa-times"></i></button>
+            <div class="user-profile-card">
+                <div class="avatar-wrapper">
                     <img id="sidebarAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Guest" alt="avatar" class="avatar-img">
+                    <div id="sidebarPrimeBadge" class="prime-badge"><i class="fas fa-crown"></i></div>
                 </div>
                 <div class="user-greeting">
                     <span id="sidebarUser">Welcome Guest</span>
-                    <small id="sidebarRole">Store Member</small>
+                    <small id="sidebarRole">Sign in for personalized support</small>
                 </div>
             </div>
         </div>
         <nav class="panel-links">
             <a href="https://aryanta.in/"><i class="fas fa-compass"></i> Discover</a>
-            <a href="https://aryanta.in/profile/"><i class="fas fa-user-circle"></i> My Profile</a>
+            <a href="https://aryanta.in/settings/"><i class="fas fa-cog"></i> Settings</a>
             <a href="https://aryanta.in/cart/"><i class="fas fa-shopping-cart"></i> My Cart</a>
             <a href="https://aryanta.in/wishlist/"><i class="fas fa-heart"></i> My Wishlist</a>
             <a href="https://aryanta.in/track/"><i class="fas fa-box-open"></i> My Orders</a>
-            <a href="https://aryanta.in/warrenty/"><i class="fas fa-shield-alt"></i> Claim Warranty</a>
-            <a href="https://aryanta.in/vurify/"><i class="fas fa-store"></i> Sell on Our Platform</a>
-            <a href="https://aryanta.in/support/" style="color: var(--primary); background: var(--bg-color);"><i class="fas fa-headset"></i> Support</a>
+            <a href="https://aryanta.in/warrenty/"><i class="fas fa-shield-alt"></i> Check Warranty</a>
+            <a href="https://aryanta.in/vurify/"><i class="fas fa-store"></i> Sell on Aryanta</a>
+            <a href="https://aryanta.in/support/" class="active"><i class="fas fa-headset"></i> Support</a>
         </nav>
         <div class="sidebar-footer">
-            <button class="btn-sidebar-logout" id="sidebarLogoutBtn" onclick="logOut()" style="display:none;">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </button>
+            <button class="btn-sidebar-logout" id="sidebarLogoutBtn" style="display:none;"><i class="fas fa-sign-out-alt"></i> Secure Logout</button>
         </div>
     </aside>
 
-    <div class="dimmer" id="overlay" onclick="closeAllModals()"></div>
+    <div class="dimmer" id="overlay"></div>
 
     <main class="main-content">
-        <div class="support-wrapper">
+        <section class="support-wrapper">
             <div class="chat-header">
-                <div class="chat-header-text">
-                    <h1>Concierge</h1>
+                <div class="chat-title">
+                    <button class="back-btn" id="pageBackBtn" aria-label="Go back"><i class="fas fa-arrow-left"></i></button>
+                    <div class="chat-title-text">
+                        <h1>Support</h1>
+                        <p>Orders, refund, warranty and callback help</p>
+                    </div>
                 </div>
-                <div class="agent-status"><i class="fas fa-circle"></i> AI Assistant</div>
+                <div class="agent-status"><i class="fas fa-circle"></i> Live Assistant</div>
             </div>
 
             <div class="chat-container">
-                <div class="chat-history" id="chatHistory"></div>
-                
-                <div class="chat-actions">
-                    <div class="universal-input-area">
-                        <input type="text" id="universalChatInput" class="universal-input" placeholder="Ask me anything..." autocomplete="off">
-                        <button class="btn-send" onclick="sendToUniversalAI()"><i class="fas fa-paper-plane"></i></button>
-                    </div>
-                </div>
+                <div class="chat-history" id="chatHistory" aria-live="polite"></div>
+                <div class="chat-actions" id="chatActions"></div>
             </div>
-        </div>
+        </section>
     </main>
 
     <script>
-        // Core Globals
-        window.API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
-        window.cart = [];
-        window.allProducts = [];
-        window.API_KEYS = { RAZORPAY: "" };
+        const LOGO_URL = "https://aryanta.in/vurify/aryanta.jpeg";
+        const WARRANTY_URL = "https://aryanta.in/warrenty/";
+        const ORDERS_URL = "https://aryanta.in/track/";
+        const HOME_URL = "https://aryanta.in/";
+        const PROJECT_ID = "aryanta-mart-a8893";
 
-        // Core Dynamic System Prompt
-        let aiHistory = [];
-        let tempContext = { action: null, orderNo: null };
-
-        // UI Helpers
-        function sysAlert(message, title = "Notice", type = "info", callback = null) {
-            document.getElementById('customAlertTitle').innerText = title;
-            document.getElementById('customAlertMessage').innerText = message;
-            const iconEl = document.getElementById('alertIcon');
-            if(type === 'error') { iconEl.innerHTML = '<i class="fas fa-times-circle"></i>'; iconEl.style.color = 'var(--danger)'; }
-            else if(type === 'success') { iconEl.innerHTML = '<i class="fas fa-check-circle"></i>'; iconEl.style.color = 'var(--success)'; }
-            else { iconEl.innerHTML = '<i class="fas fa-info-circle"></i>'; iconEl.style.color = 'var(--primary)'; }
-            
-            const overlay = document.getElementById('customAlertOverlay');
-            overlay.style.display = 'flex';
-            document.getElementById('customAlertOkBtn').onclick = () => {
-                overlay.style.display = 'none';
-                if(callback) callback();
-            };
-        }
-
-        // Navigation
-        window.checkSession = function() {
-            const accBtn = document.getElementById('accountBtn');
-            const sessionStr = localStorage.getItem('active_session');
-            if (sessionStr) {
-                const sessionData = JSON.parse(sessionStr);
-                document.getElementById('sidebarUser').innerText = sessionData.name;
-                document.getElementById('sidebarRole').innerText = sessionData.isPrime ? "Prime Member" : "Store Member";
-                document.getElementById('sidebarLogoutBtn').style.display = "flex"; 
-                
-                let avatar = sessionData.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(sessionData.email)}`;
-                document.getElementById('sidebarAvatar').src = avatar;
-                accBtn.innerHTML = `<img src="${avatar}" class="nav-avatar"> <span class="desktop-only" style="font-weight:700;">${sessionData.name.split(' ')[0]}</span>`;
-                accBtn.onclick = () => location.href = 'https://aryanta.in/profile/';
-                return sessionData;
-            } else {
-                document.getElementById('sidebarUser').innerText = 'Welcome Guest'; 
-                document.getElementById('sidebarRole').innerText = `Sign in for deals`; 
-                document.getElementById('sidebarLogoutBtn').style.display = "none";
-                accBtn.innerHTML = `<i class="fas fa-user-circle" style="font-size:22px; margin-right:6px;"></i> <span class="desktop-only" style="font-weight:700;">Sign In</span>`;
-                accBtn.onclick = () => location.href = 'https://aryanta.in/login/'; 
-                return null;
-            }
-        };
-
-        window.updateCartBadge = function() {
-            const localCart = localStorage.getItem('local_cart');
-            if(localCart) window.cart = JSON.parse(localCart);
-            let count = window.cart.reduce((total, item) => total + (item.qty || 1), 0);
-            const badge = document.getElementById('cartBadge');
-            if(badge) {
-                badge.innerText = count;
-                count > 0 ? badge.classList.add('show') : badge.classList.remove('show');
-            }
-        };
-
-        window.openSidebar = function() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); };
-        window.closeAllModals = function() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); };
-        window.logOut = function() { localStorage.removeItem('active_session'); location.href = 'https://aryanta.in/login/'; };
-
-        // Search Handlers
-        window.setupSearchLogic = function(inputId, dropId) {
-            const input = document.getElementById(inputId);
-            const dropdown = document.getElementById(dropId);
-            let searchTimeout;
-            if(!input || !dropdown) return;
-            input.addEventListener("input", function () {
-                clearTimeout(searchTimeout);
-                const query = this.value.toLowerCase().trim();
-                if (query === "") { dropdown.style.display = "none"; return; }
-                searchTimeout = setTimeout(() => {
-                    const terms = query.split(' ');
-                    let filtered = window.allProducts.filter(p => !p.isDummy && terms.every(t => p.name.toLowerCase().includes(t) || (p.brand || "").toLowerCase().includes(t)));
-                    let htmlList = filtered.slice(0, 4).map(p => `
-                        <div class="search-item" onclick="window.location.href='https://aryanta.in/product?id=${p.id}'">
-                            <img src="${p.images && p.images.length > 0 ? p.images[0] : p.image}" style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px;">
-                            <div style="display:flex; flex-direction:column; overflow:hidden;">
-                                <span style="font-weight: 600; font-size: 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</span>
-                                <span style="font-weight: 800; font-size: 12px; color:var(--primary);">₹${Number(p.price).toLocaleString('en-IN')}</span>
-                            </div>
-                        </div>`).join("");
-                    if(filtered.length > 0) htmlList += `<div style="text-align:center; padding:10px; border-top:1px solid var(--border); color:var(--text-muted); font-size:12px; cursor:pointer;" onclick="this.parentElement.style.display='none'"><i class="fas fa-times"></i> Close Suggestions</div>`;
-                    dropdown.innerHTML = htmlList;
-                    dropdown.style.display = filtered.length > 0 ? "block" : "none";
-                }, 100); 
-            });
-            input.addEventListener("keypress", function(e) { if(e.key === "Enter") { e.preventDefault(); if(this.value.trim() !== "") window.location.href = `https://aryanta.in/?search=${encodeURIComponent(this.value.trim())}`; } });
-        };
-
-        // Firebase Setup
-        const firebaseConfig = { projectId: "aryanta-mart-a8893" };
+        const firebaseConfig = { projectId: PROJECT_ID };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        const chatHistory = document.getElementById('chatHistory');
-        const universalChatInput = document.getElementById('universalChatInput');
-        
+        const chatHistory = document.getElementById("chatHistory");
+        const chatActions = document.getElementById("chatActions");
+
+        let appSettings = { theme: "system", notifications: true, searchSuggestions: true };
         let currentUser = null;
         let allMyOrders = [];
+        let allMyRefunds = [];
+        let allMyClaims = [];
+        let unsubscribers = [];
+        let botSpeed = 220;
+        let toastTimer = null;
+        let modalOpen = false;
 
-        function scrollToBottom() { setTimeout(() => { chatHistory.scrollTo({ top: chatHistory.scrollHeight, behavior: 'smooth' }); }, 100); }
+        const MENU_MAIN = [
+            { text: "Where is my order?", action: "track_order", icon: "fa-location-dot", primary: true },
+            { text: "Cancel my order", action: "start_cancel", icon: "fa-ban" },
+            { text: "Replace delivered item", action: "start_replace", icon: "fa-right-left" },
+            { text: "Refunds & Claims", action: "show_menu_claims", icon: "fa-rotate-left" },
+            { text: "Get a call back", action: "call_back", icon: "fa-phone", primary: true },
+            { text: "Question not found?", action: "not_found_question", icon: "fa-circle-question", warning: true }
+        ];
 
-        async function initChat() {
-            currentUser = window.checkSession();
-            window.updateCartBadge();
-            
-            // Build Initial AI Context
-            let uInfoStr = currentUser ? `Name: ${currentUser.name}, Email: ${currentUser.email}, Phone: ${currentUser.phone || 'Not provided'}` : "Guest User";
-            let uFirstName = currentUser ? currentUser.name.split(' ')[0] : "Guest";
+        const MENU_CLAIMS = [
+            { text: "Check Refund Status", action: "refund_status", icon: "fa-money-bill-transfer", primary: true },
+            { text: "Check Warranty", action: "warranty_status", icon: "fa-shield-halved" },
+            { text: "Claim Warranty", action: "claim_warranty", icon: "fa-file-shield" },
+            { text: "Payment issue", action: "payment_issue", icon: "fa-credit-card" },
+            { text: "Exchange policy", action: "exchange_policy", icon: "fa-repeat" },
+            { text: "← Main Menu", action: "show_main", icon: "fa-arrow-left" }
+        ];
 
-            aiHistory.push({
-                role: "system", 
-                content: `You are the Aryanta E-commerce AI Concierge. You are talking to: ${uInfoStr}. Be concise, varied, and friendly. Vary your responses so they don't sound robotic. Do NOT use markdown.
-                
-                CRITICAL RULES (You MUST follow these):
-                1. If user mentions a prank, fake orders, or not picking up calls, say EXACTLY: "That's an interesting plan, ${uFirstName}. However, please remember to only use this for harmless reasons and not to inconvenience others. If you need assistance with placing an order or have any issues with tracking, I'm here to help."
-                2. If the user wants to update their name, email, or profile details, tell them EXACTLY: "Please visit the 'My Profile' section from the side menu to update your details securely."
-                3. If asked general questions you don't know, say exactly: 'I don't have the latest information about it. Please contact us at support@aryanta.in, Phone: 06414054676, Address: Bhagalpur, Bihar, India - 812002.'
-                
-                ACTION TAGS (Must output tags exactly at the end of your message if applicable):
-                - Find, track, locate, or status of an order: [ACTION:TRACK]
-                - Pay for an order: [ACTION:PAY]
-                - Cancel an order: [ACTION:CANCEL]
-                - Check refund status: [ACTION:REFUND]
-                - Claim warranty: [ACTION:WARRANTY]
-                - Execute cancellation (when valid reason given): [ACTION:EXECUTE_CANCEL:reason]
-                - If they ask to search, explain, review, or describe any product: [ACTION:SEARCH_PRODUCT:product_name]
-                - If they ask about an issue, resolution, or refund you can't process, ask for a brief description. Once provided, output: [ACTION:RAISE_TICKET:description]
-                
-                Always output your conversational text FIRST, then the tags at the very end.`
-            });
+        const MENU_MORE = [
+            { text: "My Wallet Amount", action: "check_wallet", icon: "fa-wallet" },
+            { text: "Modify Shipping Address", action: "mod_address", icon: "fa-location-pen" },
+            { text: "Add Delivery Instructions", action: "add_delivery_instr", icon: "fa-truck-fast" },
+            { text: "Update Phone Number", action: "update_phone", icon: "fa-mobile-screen" },
+            { text: "Delete My Account", action: "delete_account", icon: "fa-user-slash", danger: true },
+            { text: "← Main Menu", action: "show_main", icon: "fa-arrow-left" }
+        ];
 
-            try {
-                const keyRes = await fetch(`${window.API_BASE_URL}/get-api-keys`);
-                const kData = await keyRes.json();
-                window.API_KEYS.RAZORPAY = kData.razorpayKey || "";
-            } catch(e) {}
+        function makeReadyState() {
+            let resolver;
+            const promise = new Promise(resolve => resolver = resolve);
+            return { promise, resolver, done: false };
+        }
 
-            fetch(`${window.API_BASE_URL}/products`).then(res => res.json()).then(data => { window.allProducts = data; }).catch(e => {});
+        let ordersReady = makeReadyState();
+        let refundsReady = makeReadyState();
+        let claimsReady = makeReadyState();
 
-            window.setupSearchLogic("desktopSearchInput", "desktopSearchDropdown");
-            window.setupSearchLogic("mobileSearchInput", "mobileSearchDropdown");
-            document.addEventListener('click', function(e) { if (!e.target.closest('.nav-search')) document.querySelectorAll('.search-dropdown').forEach(d => d.style.display = 'none'); });
-            
-            universalChatInput.addEventListener("keypress", function(e) {
-                if (e.key === "Enter") { e.preventDefault(); sendToUniversalAI(); }
-            });
-
-            if(currentUser) {
-                db.collection("orders").where("user_email", "==", currentUser.email).onSnapshot(s => {
-                    allMyOrders = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
-                });
-                
-                // Varied Initial Greetings
-                const greetings = [
-                    `Hello ${uFirstName}, I am your Aryanta AI Concierge. How can I help you today?`,
-                    `Welcome back, ${uFirstName}! I'm the Aryanta Concierge. What can I do for you?`,
-                    `Hi ${uFirstName}! I'm your virtual assistant. Do you need help tracking an order or something else?`
-                ];
-                await botSpeak(greetings[Math.floor(Math.random() * greetings.length)]);
-            } else {
-                await botSpeak(`Welcome to Aryanta Support. <button class="btn-action-small" onclick="window.location.href='https://aryanta.in/login/'">Sign In Securely</button>`);
+        function resolveReady(state) {
+            if (!state.done) {
+                state.done = true;
+                state.resolver();
             }
         }
 
-        async function botSpeak(htmlContent, uiHtml = null, delayOverride = 250) {
-            return new Promise(resolve => {
-                const typingId = "typing-" + Date.now();
-                chatHistory.innerHTML += `<div class="msg-row msg-bot" id="${typingId}"><div class="bubble-container"><div class="bot-icon"><i class="fas fa-robot"></i></div><div class="bubble"><div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></div></div>`;
-                scrollToBottom();
+        function waitFor(state, ms = 1300) {
+            return Promise.race([
+                state.promise,
+                new Promise(resolve => setTimeout(resolve, ms))
+            ]);
+        }
 
-                setTimeout(() => {
-                    const typingElem = document.getElementById(typingId);
-                    if(typingElem) typingElem.remove();
-                    
-                    let finalHtml = `<div class="msg-row msg-bot"><div class="bubble-container"><div class="bot-icon"><i class="fas fa-robot"></i></div><div class="bubble">${htmlContent}</div></div>`;
-                    if (uiHtml) finalHtml += `<div class="dynamic-ui-wrapper">${uiHtml}</div>`;
-                    finalHtml += `</div>`;
-                    
-                    chatHistory.innerHTML += finalHtml;
-                    
-                    const images = chatHistory.querySelectorAll('img');
-                    images.forEach(img => img.onload = scrollToBottom);
-                    scrollToBottom();
-                    resolve();
-                }, delayOverride);
+        function escapeHtml(value) {
+            return String(value ?? "").replace(/[&<>"']/g, char => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            }[char]));
+        }
+
+        function textOnly(value, fallback = "") {
+            const val = String(value ?? "").trim();
+            return val || fallback;
+        }
+
+        function normalizeEmail(value) {
+            return String(value || "").trim().toLowerCase();
+        }
+
+        function parseDate(value) {
+            if (!value) return null;
+            if (value && typeof value.toDate === "function") return value.toDate();
+            const d = new Date(value);
+            return Number.isNaN(d.getTime()) ? null : d;
+        }
+
+        function formatDate(value) {
+            const d = parseDate(value);
+            if (!d) return "N/A";
+            return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+        }
+
+        function formatDateTime(value) {
+            const d = parseDate(value);
+            if (!d) return "N/A";
+            return d.toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+        }
+
+        function money(value) {
+            const num = Number(value || 0);
+            return "₹" + num.toLocaleString("en-IN");
+        }
+
+        function firstDefined(...values) {
+            return values.find(v => v !== undefined && v !== null && String(v).trim() !== "");
+        }
+
+        function getUserName() {
+            return textOnly(currentUser?.name || currentUser?.displayName || currentUser?.username, "Aryanta Customer");
+        }
+
+        function getFirstName() {
+            return getUserName().split(/\s+/)[0] || "there";
+        }
+
+        function getUserAvatar(user = currentUser) {
+            const email = normalizeEmail(user?.email);
+            return firstDefined(
+                user?.avatar,
+                user?.photoURL,
+                user?.photoUrl,
+                user?.profileImage,
+                user?.profilePic,
+                user?.image,
+                user?.picture,
+                email ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}` : "https://api.dicebear.com/7.x/avataaars/svg?seed=Guest"
+            );
+        }
+
+        function readSession() {
+            try {
+                return JSON.parse(localStorage.getItem("active_session") || "null");
+            } catch (err) {
+                return null;
+            }
+        }
+
+        function readSettings() {
+            try {
+                const stored = JSON.parse(localStorage.getItem("aryanta_settings") || "{}");
+                appSettings = { ...appSettings, ...stored };
+                if (stored.darkMode === true) appSettings.theme = "dark";
+                if (stored.darkMode === false) appSettings.theme = "light";
+            } catch (err) {}
+            if (!appSettings.theme) appSettings.theme = "system";
+        }
+
+        function applyTheme() {
+            document.body.classList.remove("dark-theme", "light-theme");
+            if (appSettings.theme === "dark") {
+                document.body.classList.add("dark-theme");
+                document.querySelector("meta[name='theme-color']").setAttribute("content", "#000000");
+            } else if (appSettings.theme === "light") {
+                document.body.classList.add("light-theme");
+                document.querySelector("meta[name='theme-color']").setAttribute("content", "#f5f5f7");
+            } else {
+                const dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+                document.querySelector("meta[name='theme-color']").setAttribute("content", dark ? "#000000" : "#f5f5f7");
+            }
+        }
+
+        function syncThemeFromIndexSettings() {
+            readSettings();
+            applyTheme();
+        }
+
+        function renderProfile() {
+            currentUser = readSession();
+
+            const accountBtn = document.getElementById("accountBtn");
+            const sidebarAvatar = document.getElementById("sidebarAvatar");
+            const sidebarUser = document.getElementById("sidebarUser");
+            const sidebarRole = document.getElementById("sidebarRole");
+            const logoutBtn = document.getElementById("sidebarLogoutBtn");
+            const primeBadge = document.getElementById("sidebarPrimeBadge");
+
+            if (!currentUser) {
+                accountBtn.innerHTML = `<img class="nav-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Guest" alt="avatar"><span>Sign In</span>`;
+                accountBtn.onclick = () => location.href = "https://aryanta.in/login/";
+                sidebarAvatar.src = "https://api.dicebear.com/7.x/avataaars/svg?seed=Guest";
+                sidebarUser.textContent = "Welcome Guest";
+                sidebarRole.textContent = "Sign in for personalized support";
+                logoutBtn.style.display = "none";
+                primeBadge.style.display = "none";
+                return;
+            }
+
+            const avatar = getUserAvatar(currentUser);
+            const firstName = getFirstName();
+
+            accountBtn.innerHTML = `<img class="nav-avatar" src="${escapeHtml(avatar)}" alt="avatar"><span>${escapeHtml(firstName)}</span>`;
+            accountBtn.onclick = () => location.href = "https://aryanta.in/settings/";
+            sidebarAvatar.src = avatar;
+            sidebarUser.textContent = getUserName();
+            sidebarRole.textContent = currentUser.email ? currentUser.email : "Aryanta member";
+            logoutBtn.style.display = "block";
+            primeBadge.style.display = currentUser.prime || currentUser.isPrime ? "flex" : "none";
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById("toastNotification");
+            toast.innerHTML = message;
+            toast.classList.add("show");
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.remove("show"), 2800);
+        }
+
+        function sysAlert(message, title = "Notice", type = "info", callback = null) {
+            document.getElementById("customAlertTitle").textContent = title;
+            document.getElementById("customAlertMessage").textContent = message;
+            const iconEl = document.getElementById("alertIcon");
+            if (type === "error") {
+                iconEl.innerHTML = `<i class="fas fa-times-circle"></i>`;
+                iconEl.style.color = "var(--danger)";
+            } else if (type === "success") {
+                iconEl.innerHTML = `<i class="fas fa-check-circle"></i>`;
+                iconEl.style.color = "var(--success)";
+            } else {
+                iconEl.innerHTML = `<i class="fas fa-info-circle"></i>`;
+                iconEl.style.color = "var(--accent)";
+            }
+
+            const overlay = document.getElementById("customAlertOverlay");
+            overlay.classList.add("show");
+            modalOpen = true;
+            document.getElementById("customAlertOkBtn").onclick = () => {
+                overlay.classList.remove("show");
+                modalOpen = false;
+                if (callback) callback();
+            };
+        }
+
+        function sysConfirm(message, title = "Confirm Action", callback) {
+            document.getElementById("customConfirmTitle").textContent = title;
+            document.getElementById("customConfirmMessage").textContent = message;
+            const overlay = document.getElementById("customConfirmOverlay");
+            overlay.classList.add("show");
+            modalOpen = true;
+
+            document.getElementById("customConfirmCancelBtn").onclick = () => {
+                overlay.classList.remove("show");
+                modalOpen = false;
+            };
+            document.getElementById("customConfirmOkBtn").onclick = () => {
+                overlay.classList.remove("show");
+                modalOpen = false;
+                if (callback) callback(true);
+            };
+        }
+
+        window.alert = function(message) {
+            sysAlert(message);
+        };
+
+        function openSidebar() {
+            document.getElementById("sidebar").classList.add("open");
+            document.getElementById("overlay").classList.add("show");
+        }
+
+        function closeSidebar() {
+            document.getElementById("sidebar").classList.remove("open");
+            document.getElementById("overlay").classList.remove("show");
+        }
+
+        function logOut() {
+            unsubscribers.forEach(unsub => {
+                try { unsub(); } catch (err) {}
             });
+            localStorage.removeItem("active_session");
+            showToast("Logged out securely");
+            setTimeout(() => location.href = HOME_URL, 500);
+        }
+
+        function scrollToBottom() {
+            requestAnimationFrame(() => {
+                chatHistory.scrollTo({ top: chatHistory.scrollHeight, behavior: "smooth" });
+            });
+        }
+
+        async function botSpeak(htmlContent, delayOverride = null) {
+            const delay = delayOverride ?? botSpeed;
+            const typingId = "typing_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+            chatHistory.insertAdjacentHTML("beforeend", `
+                <div class="msg-row msg-bot" id="${typingId}">
+                    <div class="bot-icon"><i class="fas fa-robot"></i></div>
+                    <div class="bubble">
+                        <div class="typing-indicator">
+                            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                        </div>
+                    </div>
+                </div>
+            `);
+            scrollToBottom();
+
+            await new Promise(resolve => setTimeout(resolve, delay));
+
+            const typing = document.getElementById(typingId);
+            if (typing) typing.remove();
+
+            chatHistory.insertAdjacentHTML("beforeend", `
+                <div class="msg-row msg-bot">
+                    <div class="bot-icon"><i class="fas fa-robot"></i></div>
+                    <div class="bubble">${htmlContent}</div>
+                </div>
+            `);
+
+            chatHistory.querySelectorAll("img").forEach(img => {
+                img.addEventListener("load", scrollToBottom, { once: true });
+                img.addEventListener("error", () => {
+                    if (!img.dataset.fallbackApplied) {
+                        img.dataset.fallbackApplied = "1";
+                        img.src = LOGO_URL;
+                    }
+                }, { once: true });
+            });
+
+            scrollToBottom();
         }
 
         function userSpeak(text) {
-            chatHistory.innerHTML += `<div class="msg-row msg-user"><div class="bubble">${text}</div></div>`;
+            chatHistory.insertAdjacentHTML("beforeend", `
+                <div class="msg-row msg-user"><div class="bubble">${escapeHtml(text)}</div></div>
+            `);
             scrollToBottom();
         }
 
-        // --- UNIVERSAL AI CHAT ---
-        window.sendToUniversalAI = async function(hiddenPayload = null, displayMsg = null) {
-            let val = hiddenPayload || universalChatInput.value.trim();
-            if(!val) return;
+        function optionIcon(icon) {
+            return icon ? `<i class="fas ${icon}"></i>` : "";
+        }
 
-            if(!hiddenPayload) {
-                universalChatInput.value = '';
-                userSpeak(val);
-                aiHistory.push({ role: "user", content: val });
-            } else {
-                if(displayMsg) userSpeak(displayMsg);
-                aiHistory.push({ role: "system", content: val });
-            }
+        function showOptions(optionsArray) {
+            const buttons = optionsArray.map(opt => {
+                const cls = [
+                    "btn-reply",
+                    opt.primary ? "primary" : "",
+                    opt.danger ? "danger" : "",
+                    opt.warning ? "warning" : ""
+                ].filter(Boolean).join(" ");
+                return `<button class="${cls}" data-action="${escapeHtml(opt.action)}" data-text="${escapeHtml(opt.text)}">${optionIcon(opt.icon)}<span>${escapeHtml(opt.text)}</span></button>`;
+            }).join("");
 
-            const typingId = "typing-" + Date.now();
-            chatHistory.innerHTML += `<div class="msg-row msg-bot" id="${typingId}"><div class="bubble-container"><div class="bot-icon"><i class="fas fa-robot"></i></div><div class="bubble"><div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></div></div>`;
+            const moreButton = optionsArray === MENU_MAIN
+                ? `<button class="btn-reply" data-action="show_more" data-text="More Options"><i class="fas fa-grid-2"></i><span>More Options</span></button>`
+                : "";
+
+            chatActions.innerHTML = `<div class="quick-replies">${buttons}${moreButton}</div>`;
             scrollToBottom();
+        }
 
-            try {
-                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "Authorization": "Bearer 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" },
-                    body: JSON.stringify({ model: "llama-3.1-8b-instant", messages: aiHistory })
-                });
+        function showCustomInput(config) {
+            const type = config.type || "text";
+            const required = config.required !== false;
+            const value = config.value ? escapeHtml(config.value) : "";
+            const placeholder = escapeHtml(config.placeholder || "");
+            const help = config.help ? `<div class="input-help">${config.help}</div>` : "";
+            const accept = config.accept ? ` accept="${escapeHtml(config.accept)}"` : "";
+            const buttonText = escapeHtml(config.buttonText || "Submit");
+            const skipText = config.allowSkip ? escapeHtml(config.skipText || "Skip") : "";
+            const maxLength = config.maxLength ? ` maxlength="${Number(config.maxLength)}"` : "";
 
-                document.getElementById(typingId)?.remove();
-
-                if(response.ok) {
-                    const data = await response.json();
-                    let aiReply = data.choices[0].message.content;
-
-                    // Extractor Regex for parameters: [ACTION:COMMAND:PARAM]
-                    const actionRegex = /\[ACTION:([A-Z_]+)(?::([^\]]+))?\]/g;
-                    let match;
-                    let actionsToTrigger = [];
-
-                    while ((match = actionRegex.exec(aiReply)) !== null) {
-                        actionsToTrigger.push({ type: match[1], param: match[2] ? match[2].trim() : null });
-                    }
-
-                    // Clean tags entirely from reply text before showing
-                    aiReply = aiReply.replace(actionRegex, "").trim();
-                    aiHistory.push({ role: "assistant", content: aiReply });
-                    
-                    // Await Text rendering natively
-                    let dynamicUI = null;
-
-                    // Execute Intercepted Actions silently mapping to dynamicUI
-                    for (let act of actionsToTrigger) {
-                        if(act.type === "TRACK") dynamicUI = await getOrderCards("track");
-                        else if(act.type === "CANCEL") dynamicUI = await getOrderCards("cancel");
-                        else if(act.type === "REFUND") dynamicUI = await getOrderCards("refund");
-                        else if(act.type === "WARRANTY") dynamicUI = await getOrderCards("warranty");
-                        else if(act.type === "PAY") dynamicUI = await getOrderCards("pay");
-                        else if(act.type === "EXECUTE_CANCEL") executeAICancel(act.param);
-                        else if(act.type === "EXECUTE_WARRANTY") executeAIWarranty(act.param);
-                        else if(act.type === "SEARCH_PRODUCT") dynamicUI = await executeProductSearch(act.param);
-                        else if(act.type === "RAISE_TICKET") executeAITicket(act.param);
-                    }
-
-                    if(aiReply !== "" || dynamicUI) {
-                        await botSpeak(aiReply !== "" ? aiReply : "Here is what I found:", dynamicUI, 50);
-                    }
-                    
-                } else {
-                    document.getElementById(typingId)?.remove();
-                    const errorText = await response.text();
-                    console.error("API Error Details:", response.status, errorText);
-                    await botSpeak("I'm sorry, my brain is temporarily offline. Please try again later.");
-                }
-            } catch(error) {
-                document.getElementById(typingId)?.remove();
-                console.error(error);
-                await botSpeak("Connection lost. Please check your internet connection.");
-            }
-        };
-
-        // --- DYNAMIC DATABASE QUERIES & UI GENERATION ---
-        async function getOrderCards(purpose) {
-            const lastMsg = aiHistory[aiHistory.length - 2]?.content || "";
-            const orderMatch = lastMsg.match(/ARY-\d+/i);
-            let matchedOrders = [];
-            
-            if (orderMatch) {
-                let orderIdStr = orderMatch[0].toUpperCase();
-                const snapshot = await db.collection("orders").where("order_no", "==", orderIdStr).get();
-                snapshot.forEach(doc => { matchedOrders.push({id: doc.id, ...doc.data()}); });
-                if(matchedOrders.length === 0) matchedOrders = allMyOrders; // fallback
+            let fieldHtml = "";
+            if (type === "textarea") {
+                fieldHtml = `<textarea id="chatInputVal" class="modern-textarea" placeholder="${placeholder}" data-input-type="textarea" ${maxLength}>${value}</textarea>`;
+            } else if (type === "file") {
+                fieldHtml = `
+                    <div class="file-box">
+                        <input id="chatInputVal" type="file" data-input-type="file"${accept}>
+                        <div class="input-help">Optional image proof. It will be compressed before saving.</div>
+                    </div>
+                `;
             } else {
-                matchedOrders = allMyOrders;
+                fieldHtml = `<input id="chatInputVal" type="${escapeHtml(type)}" class="modern-input" placeholder="${placeholder}" value="${value}" data-input-type="${escapeHtml(type)}" ${maxLength}>`;
             }
 
-            if(purpose === 'pay') {
-                matchedOrders = matchedOrders.filter(o => {
-                    const status = (o.status||"").toLowerCase();
-                    return status.includes('pending payment') || (o.payment_status||"").toLowerCase().includes('pending');
-                });
-            } else if (purpose === 'cancel') {
-                matchedOrders = matchedOrders.filter(o => !(o.status||"").toLowerCase().includes('cancel') && !(o.status||"").toLowerCase().includes('deliver'));
-            }
-
-            if(matchedOrders.length === 0) {
-                return `<div style="color:var(--danger); font-size:13px; padding:10px; background:#fef2f2; border-radius:8px; border:1px solid #fca5a5;">No relevant orders found in your account for this action.</div>`;
-            }
-
-            let cardsHtml = `<div style="display:flex; flex-direction:column; gap:10px; width:100%;">`;
-            matchedOrders.slice(0, 3).forEach(o => {
-                let item = o.items && o.items[0] ? o.items[0] : {};
-                let img = item.image || (item.images ? item.images[0] : "https://via.placeholder.com/60");
-                let price = o.financials?.grandTotal || item.price || 0;
-                cardsHtml += `
-                <div class="interactive-card" onclick="handleOrderSelect('${o.order_no}', '${purpose}')">
-                    <img src="${img}">
-                    <div class="card-details">
-                        <h4>${item.name || "Order Item"}</h4>
-                        <p class="price">₹${Number(price).toLocaleString('en-IN')}</p>
-                        <p class="meta">#${o.order_no} | ${o.status || 'Processing'}</p>
+            chatActions.innerHTML = `
+                <div class="chat-input-wrapper">
+                    ${help}
+                    ${fieldHtml}
+                    <div class="input-error" id="chatInputError">Please fill this field.</div>
+                    <div class="input-actions">
+                        <button class="btn-prime" data-submit-action="${escapeHtml(config.action)}">${buttonText} <i class="fas fa-check"></i></button>
+                        ${config.allowSkip ? `<button class="btn-soft" data-skip-action="${escapeHtml(config.action)}">${skipText}</button>` : ""}
                     </div>
-                </div>`;
-            });
-            cardsHtml += `</div>`;
-            return cardsHtml;
+                </div>
+            `;
+
+            setTimeout(() => {
+                const input = document.getElementById("chatInputVal");
+                if (input && type !== "file") input.focus();
+            }, 80);
+            scrollToBottom();
         }
 
-        window.handleOrderSelect = async function(orderNo, purpose) {
-            tempContext.orderNo = orderNo;
-            
-            if(purpose === 'track' || purpose === 'refund' || purpose === 'pay') {
-                const snap = await db.collection("orders").where("order_no", "==", orderNo).get();
-                if(snap.empty) return;
-                const order = {id: snap.docs[0].id, ...snap.docs[0].data()};
-                
-                let item = order.items && order.items[0] ? order.items[0] : {};
-                let img = item.image || (item.images ? item.images[0] : "https://via.placeholder.com/60");
-                let price = order.financials?.grandTotal || item.price || 0;
-                let payStatus = order.payment_status || "Pending";
-                let isPending = payStatus.toLowerCase().includes("pending");
+        function showInputError(message) {
+            const error = document.getElementById("chatInputError");
+            if (!error) return;
+            error.textContent = message || "Please fill this field.";
+            error.classList.add("show");
+        }
 
-                let detailHtml = `
-                <div class="order-detail-card">
-                    <img src="${img}">
-                    <h3>${item.name || 'Premium Item'}</h3>
-                    <p>Order ID: <span class="highlight">#${order.order_no}</span></p>
-                    <p>Status: <span class="highlight" style="color:var(--text-main);">${order.status || 'Processing'}</span></p>
-                    <p>Total: <span class="highlight">₹${Number(price).toLocaleString('en-IN')}</span></p>
-                    <p>Payment: <span class="highlight" style="color:${isPending ? 'var(--danger)' : 'var(--success)'};">${payStatus}</span></p>
-                    ${isPending ? `<button onclick="initiateRazorpay('${order.id}', ${price})" class="btn-pay-now"><i class="fas fa-lock"></i> Pay Securely Now</button>` : ''}
-                </div>`;
+        function clearInputError() {
+            const error = document.getElementById("chatInputError");
+            if (error) error.classList.remove("show");
+        }
 
-                aiHistory.push({ role: "system", content: `Context: Showed details for Order #${order.order_no}. Status: ${order.status}. Payment is ${payStatus}. Total: ${price}.` });
-                
-                let extraText = "Here are the details for that order.";
-                if (purpose === 'refund' && order.status.toLowerCase().includes('cancel')) {
-                    let cDate = new Date(order.timestamp);
-                    let eDate = new Date(cDate.getTime() + (7 * 24 * 60 * 60 * 1000));
-                    extraText = `This order was cancelled. Refund processing takes 7 days. Expected arrival: ${eDate.toLocaleDateString()}.`;
-                }
+        function ensureLogin() {
+            if (currentUser) return true;
+            botSpeak(`Please sign in first to access your orders, refunds, warranty and callback support.<br><a class="link-card" href="https://aryanta.in/login/"><i class="fas fa-right-to-bracket"></i> Sign In</a>`);
+            showOptions([{ text: "Sign In", action: "sign_in", primary: true }, { text: "Main Menu", action: "show_main" }]);
+            return false;
+        }
 
-                await botSpeak(extraText, detailHtml, 50);
+        function orderKey(order) {
+            return String(firstDefined(order?.order_no, order?.orderNo, order?.order_id, order?.orderId, order?.id, "") || "");
+        }
 
-            } else if (purpose === 'cancel') {
-                sendToUniversalAI(`Context: User selected Order #${orderNo} to cancel. Ask them for the exact reason for cancellation.`, `I want to cancel Order #${orderNo}`);
-            } else if (purpose === 'warranty') {
-                sendToUniversalAI(`Context: User selected Order #${orderNo} for warranty claim. Ask them to describe the defect or issue in detail.`, `I want to claim warranty for Order #${orderNo}`);
+        function statusText(order) {
+            return String(firstDefined(order?.status, order?.order_status, order?.delivery_status, "Pending") || "Pending");
+        }
+
+        function statusLower(order) {
+            return statusText(order).toLowerCase();
+        }
+
+        function isDelivered(order) {
+            const s = statusLower(order);
+            return s.includes("deliver") || s.includes("completed") || s.includes("received");
+        }
+
+        function isCancelled(order) {
+            const s = statusLower(order);
+            return s.includes("cancel") || s.includes("refund rejected");
+        }
+
+        function isShipped(order) {
+            const s = statusLower(order);
+            return s.includes("ship") || s.includes("out for delivery") || s.includes("transit");
+        }
+
+        function isCancellable(order) {
+            const s = statusLower(order);
+            return !isDelivered(order) && !isCancelled(order) && !s.includes("refund") && !s.includes("replace");
+        }
+
+        function isAddressEditable(order) {
+            const s = statusLower(order);
+            return !isDelivered(order) && !isCancelled(order) && !isShipped(order);
+        }
+
+        function statusClass(orderOrStatus) {
+            const s = typeof orderOrStatus === "string" ? orderOrStatus.toLowerCase() : statusLower(orderOrStatus);
+            if (s.includes("deliver") || s.includes("complete") || s.includes("approved") || s.includes("success")) return "status-green";
+            if (s.includes("cancel") || s.includes("reject") || s.includes("fail")) return "status-red";
+            if (s.includes("ship") || s.includes("progress") || s.includes("process") || s.includes("review")) return "status-blue";
+            return "status-yellow";
+        }
+
+        function statusPill(text, icon = "fa-circle") {
+            return `<span class="status-pill ${statusClass(text)}"><i class="fas ${icon}"></i>${escapeHtml(text || "Pending")}</span>`;
+        }
+
+        function firstItem(order) {
+            if (Array.isArray(order?.items) && order.items.length) return order.items[0] || {};
+            if (order?.item && typeof order.item === "object") return order.item;
+            return {};
+        }
+
+        function orderItems(order) {
+            if (Array.isArray(order?.items)) return order.items;
+            if (order?.item && typeof order.item === "object") return [order.item];
+            return [];
+        }
+
+        function itemName(order) {
+            const item = firstItem(order);
+            return firstDefined(item.name, item.title, item.productName, order.product_name, order.productName, "Order item");
+        }
+
+        function itemImage(order) {
+            const item = firstItem(order);
+            const fromImages = Array.isArray(item.images) ? item.images.find(Boolean) : "";
+            const orderImages = Array.isArray(order?.images) ? order.images.find(Boolean) : "";
+            return firstDefined(
+                item.image,
+                item.imageUrl,
+                item.img,
+                item.photo,
+                item.thumbnail,
+                item.productImage,
+                fromImages,
+                order.image,
+                order.imageUrl,
+                order.product_image,
+                order.productImage,
+                order.thumbnail,
+                orderImages,
+                LOGO_URL
+            );
+        }
+
+        function orderTotal(order) {
+            return Number(firstDefined(
+                order?.financials?.grandTotal,
+                order?.financials?.total,
+                order?.grandTotal,
+                order?.totalAmount,
+                order?.total,
+                order?.amount,
+                firstItem(order)?.price,
+                0
+            ) || 0);
+        }
+
+        function orderCreatedAt(order) {
+            return firstDefined(order?.timestamp, order?.createdAt, order?.date, order?.orderDate, order?.orderedAt);
+        }
+
+        function findOrderByActionKey(encodedKey) {
+            const key = decodeURIComponent(encodedKey || "");
+            return allMyOrders.find(o => orderKey(o) === key || String(o.id) === key);
+        }
+
+        function findRefundById(encodedId) {
+            const id = decodeURIComponent(encodedId || "");
+            return allMyRefunds.find(r => String(r.id) === id);
+        }
+
+        function findClaimById(encodedId) {
+            const id = decodeURIComponent(encodedId || "");
+            return allMyClaims.find(c => String(c.id) === id);
+        }
+
+        function sortByNewest(list) {
+            return list.sort((a, b) => {
+                const da = parseDate(firstDefined(a.timestamp, a.createdAt, a.date, a.orderDate))?.getTime() || 0;
+                const dbb = parseDate(firstDefined(b.timestamp, b.createdAt, b.date, b.orderDate))?.getTime() || 0;
+                return dbb - da;
+            });
+        }
+
+        function unsubscribeLiveData() {
+            unsubscribers.forEach(unsub => {
+                try { unsub(); } catch (err) {}
+            });
+            unsubscribers = [];
+        }
+
+        function resetReadyStates() {
+            ordersReady = makeReadyState();
+            refundsReady = makeReadyState();
+            claimsReady = makeReadyState();
+        }
+
+        function fetchUserDataLive() {
+            unsubscribeLiveData();
+            resetReadyStates();
+
+            if (!currentUser?.email) {
+                resolveReady(ordersReady);
+                resolveReady(refundsReady);
+                resolveReady(claimsReady);
+                return;
             }
-        };
 
-        // --- PRODUCT SEARCH ENGINE ---
-        async function executeProductSearch(term) {
-            if(!term) return null;
-            let filtered = window.allProducts.filter(p => !p.isDummy && (p.name.toLowerCase().includes(term.toLowerCase()) || (p.brand && p.brand.toLowerCase().includes(term.toLowerCase()))));
-            
-            if(filtered.length === 0) return `<div style="padding:10px; font-size:13px; color:var(--danger); border:1px solid #fca5a5; background:#fef2f2; border-radius:8px;">Sorry, no products found matching "${term}".</div>`;
+            const email = normalizeEmail(currentUser.email);
 
-            let html = `<div style="display:flex; flex-direction:column; gap:10px; width:100%;">`;
-            filtered.slice(0, 3).forEach(p => {
-                let img = p.images && p.images.length > 0 ? p.images[0] : p.image;
-                let desc = p.description || p.highlight || "A premium Aryanta product.";
-                html += `
-                <div class="interactive-card" onclick="window.open('https://aryanta.in/?product=${p.id}', '_blank')">
-                    <img src="${img}">
+            try {
+                const ordersUnsub = db.collection("orders").where("user_email", "==", email).onSnapshot(snapshot => {
+                    allMyOrders = sortByNewest(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                    resolveReady(ordersReady);
+                }, error => {
+                    console.error("orders listener error", error);
+                    allMyOrders = [];
+                    resolveReady(ordersReady);
+                });
+                unsubscribers.push(ordersUnsub);
+            } catch (error) {
+                console.error("orders setup error", error);
+                resolveReady(ordersReady);
+            }
+
+            try {
+                const refundsUnsub = db.collection("refunds").where("customer_email", "==", email).onSnapshot(snapshot => {
+                    allMyRefunds = sortByNewest(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                    resolveReady(refundsReady);
+                }, error => {
+                    console.error("refunds listener error", error);
+                    allMyRefunds = [];
+                    resolveReady(refundsReady);
+                });
+                unsubscribers.push(refundsUnsub);
+            } catch (error) {
+                console.error("refunds setup error", error);
+                resolveReady(refundsReady);
+            }
+
+            try {
+                const claimsUnsub = db.collection("warranty_claims").where("user_email", "==", email).onSnapshot(snapshot => {
+                    allMyClaims = sortByNewest(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                    resolveReady(claimsReady);
+                }, error => {
+                    console.error("claims listener error", error);
+                    allMyClaims = [];
+                    resolveReady(claimsReady);
+                });
+                unsubscribers.push(claimsUnsub);
+            } catch (error) {
+                console.error("claims setup error", error);
+                resolveReady(claimsReady);
+            }
+        }
+
+        function renderOrderCard(order, purpose) {
+            const key = encodeURIComponent(orderKey(order));
+            const name = itemName(order);
+            const img = itemImage(order);
+            const total = money(orderTotal(order));
+            const created = formatDate(orderCreatedAt(order));
+            const status = statusText(order);
+            const icon = purpose === "replace" ? "fa-right-left" : purpose === "cancel" ? "fa-ban" : "fa-chevron-right";
+
+            return `
+                <button class="interactive-card" data-action="${escapeHtml(purpose)}_select_${escapeHtml(key)}" data-text="Selected Order #${escapeHtml(orderKey(order))}">
+                    <img src="${escapeHtml(img)}" alt="${escapeHtml(name)}" loading="lazy">
                     <div class="card-details">
-                        <h4>${p.name}</h4>
-                        <p class="price">₹${Number(p.price).toLocaleString('en-IN')}</p>
-                        <p class="product-desc">${desc}</p>
+                        <h4>${escapeHtml(name)}</h4>
+                        <div class="price">${total}</div>
+                        <div class="meta">Order #${escapeHtml(orderKey(order))} · ${escapeHtml(created)}</div>
+                        ${statusPill(status)}
                     </div>
-                </div>`;
-            });
-            html += `</div>`;
-            return html;
+                    <i class="fas ${icon}" style="color:var(--text-muted); flex-shrink:0;"></i>
+                </button>
+            `;
         }
 
-        // --- TICKETS AND ACTIONS ---
-        async function executeAITicket(description) {
-            if(!description) return;
-            try {
-                // Generates Document matching the exact Admin Panel Requirements
-                await db.collection("support_tickets").add({
-                    user_email: currentUser?.email || "Guest",
-                    phone: currentUser?.phone || "9876543210",
-                    description: description,
-                    status: "Open",
-                    timestamp: new Date().toISOString()
-                });
-                aiHistory.push({role: "system", content: "Ticket successfully logged."});
-            } catch(e) { console.error("Ticket log fail:", e); }
+        async function showOrderSelection(page, purpose) {
+            if (!ensureLogin()) return;
+            await waitFor(ordersReady);
+
+            let filteredList = [...allMyOrders];
+
+            if (purpose === "cancel") {
+                filteredList = filteredList.filter(isCancellable);
+            } else if (purpose === "replace") {
+                filteredList = filteredList.filter(o => isDelivered(o) && !isCancelled(o));
+            } else if (purpose === "mod_address") {
+                filteredList = filteredList.filter(isAddressEditable);
+            } else if (purpose === "del_instr") {
+                filteredList = filteredList.filter(o => !isDelivered(o) && !isCancelled(o));
+            }
+
+            if (!filteredList.length) {
+                const messageMap = {
+                    cancel: "No cancellable order found. Delivered items cannot be cancelled; you can request a replacement instead.",
+                    replace: "No delivered item found for replacement. Replacement is available after delivery.",
+                    mod_address: "No eligible order found. Address can be changed only before shipping.",
+                    del_instr: "No active delivery found for instructions.",
+                    track: "No orders found in your account."
+                };
+                await botSpeak(messageMap[purpose] || "No relevant order found.");
+                return showOptions([
+                    { text: "Replace delivered item", action: "start_replace", icon: "fa-right-left", primary: purpose === "cancel" },
+                    { text: "Question not found?", action: "not_found_question", icon: "fa-circle-question", warning: true },
+                    { text: "Main Menu", action: "show_main", icon: "fa-house" }
+                ]);
+            }
+
+            const start = page * 4;
+            const slice = filteredList.slice(start, start + 4);
+            const cards = slice.map(order => renderOrderCard(order, purpose)).join("");
+
+            await botSpeak(`Please select an order:<div class="interactive-list">${cards}</div>`);
+
+            const nav = [];
+            if (start + 4 < filteredList.length) nav.push({ text: "Next orders", action: `${purpose}_page_${page + 1}`, icon: "fa-arrow-right", primary: true });
+            if (page > 0) nav.push({ text: "Previous", action: `${purpose}_page_${page - 1}`, icon: "fa-arrow-left" });
+            nav.push({ text: "← Main Menu", action: "show_main", icon: "fa-house" });
+            showOptions(nav);
         }
 
-        async function executeAICancel(reason) {
-            if(!tempContext.orderNo) return;
-            try {
-                const snap = await db.collection("orders").where("order_no", "==", tempContext.orderNo).get();
-                if(!snap.empty) {
-                    let doc = snap.docs[0];
-                    let data = doc.data();
-                    await db.collection("refunds").add({
-                        type: 'Order Cancellation', order_id: doc.id, order_no: data.order_no,
-                        customer_name: currentUser.name, customer_email: currentUser.email,
-                        refundAmount: data.financials?.grandTotal || 0, status: 'Pending', timestamp: new Date().toISOString()
-                    });
-                    await db.collection("orders").doc(doc.id).update({ status: "Cancelled", action_reason: reason || "AI Cancellation", action_notes: "Processed by Concierge" });
-                }
-                tempContext = {action: null, orderNo: null};
-            } catch(e) { console.error("Cancel failed:", e); }
+        function refundProgressText(refund) {
+            const status = String(refund?.status || "Pending").toLowerCase();
+            if (status.includes("complete") || status.includes("success")) return "Your refund is marked completed. Please check your original payment method or wallet.";
+            if (status.includes("reject") || status.includes("fail")) return "This refund was not approved. You can create a support ticket if you need a re-check.";
+            if (status.includes("process") || status.includes("approved")) return "Your refund is approved or processing. Bank settlement can take some time after approval.";
+            return "Your refund is pending review. Aryanta support/admin team needs to approve it first.";
         }
 
-        async function executeAIWarranty(issue) {
-            if(!tempContext.orderNo) return;
-            try {
-                await db.collection("warranty_claims").add({
-                    order_no: tempContext.orderNo, user_email: currentUser.email, issue: issue || "Not specified", status: 'Pending Review', timestamp: new Date().toISOString()
-                });
-                tempContext = {action: null, orderNo: null};
-            } catch(e) { console.error("Warranty failed:", e); }
+        function renderRefundCard(refund) {
+            const id = encodeURIComponent(String(refund.id));
+            const ref = firstDefined(refund.order_no, refund.orderNo, refund.claim_id, refund.order_id, refund.id);
+            const amount = money(firstDefined(refund.refundAmount, refund.amount, refund.total, 0));
+            const status = firstDefined(refund.status, "Pending");
+
+            return `
+                <button class="interactive-card" data-action="refund_select_${escapeHtml(id)}" data-text="Selected Refund #${escapeHtml(ref)}">
+                    <span class="card-icon"><i class="fas fa-money-bill-transfer"></i></span>
+                    <div class="card-details">
+                        <h4>Refund Ref: #${escapeHtml(ref)}</h4>
+                        <div class="price">${amount}</div>
+                        <div class="meta">Created: ${escapeHtml(formatDate(firstDefined(refund.timestamp, refund.createdAt)))}</div>
+                        ${statusPill(status, "fa-circle")}
+                    </div>
+                    <i class="fas fa-chevron-right" style="color:var(--text-muted); flex-shrink:0;"></i>
+                </button>
+            `;
         }
 
-        // --- PAYMENT ENGINE ---
-        window.initiateRazorpay = async function(docId, amount) {
-            if(!window.API_KEYS.RAZORPAY) return sysAlert("Gateway disconnected. Please try again.", "Error", "error");
-            
-            const options = {
-                "key": window.API_KEYS.RAZORPAY, 
-                "amount": Math.round(amount * 100), 
-                "currency": "INR", 
-                "name": "Aryanta",
-                "description": `Secure Payment for Order`,
-                "handler": async function (response) { 
-                    try {
-                        await db.collection("orders").doc(docId).update({
-                            payment_method: "Online Secure", payment_status: "Paid", status: "Processing", razorpay_id: response.razorpay_payment_id
-                        });
-                        sendToUniversalAI(`Context: User successfully paid for the order via Razorpay. Acknowledge the payment and thank them.`, `[SYSTEM: Payment Successful]`);
-                    } catch(e) {
-                        sysAlert("Payment successful but database sync delayed.", "Warning", "warning");
-                    }
-                },
-                "prefill": { "name": currentUser?.name || "", "email": currentUser?.email || "", "contact": currentUser?.phone || "" },
-                "theme": { "color": "#0a0a0a" }
+        async function showRefundSelection(page = 0) {
+            if (!ensureLogin()) return;
+            await waitFor(refundsReady);
+
+            if (!allMyRefunds.length) {
+                await botSpeak(`No refund request is currently linked with your account.<div class="notice-card">If you cancelled an order recently, the refund can appear after the cancellation is saved and reviewed.</div>`);
+                return showOptions([
+                    { text: "Cancel an order", action: "start_cancel", icon: "fa-ban", primary: true },
+                    { text: "Question not found?", action: "not_found_question", icon: "fa-circle-question", warning: true },
+                    { text: "← Back", action: "show_menu_claims", icon: "fa-arrow-left" }
+                ]);
+            }
+
+            const start = page * 4;
+            const slice = allMyRefunds.slice(start, start + 4);
+            await botSpeak(`Select a refund to view the latest status:<div class="interactive-list">${slice.map(renderRefundCard).join("")}</div>`);
+
+            const nav = [];
+            if (start + 4 < allMyRefunds.length) nav.push({ text: "Next refunds", action: `refund_page_${page + 1}`, icon: "fa-arrow-right", primary: true });
+            if (page > 0) nav.push({ text: "Previous", action: `refund_page_${page - 1}`, icon: "fa-arrow-left" });
+            nav.push({ text: "← Back", action: "show_menu_claims", icon: "fa-arrow-left" });
+            showOptions(nav);
+        }
+
+        function renderClaimCard(claim) {
+            const id = encodeURIComponent(String(claim.id));
+            const ref = firstDefined(claim.order_no, claim.orderNo, claim.claim_id, claim.id);
+            const status = firstDefined(claim.status, "Pending");
+            const title = firstDefined(claim.product_name, claim.productName, claim.item_name, claim.issue, "Warranty claim");
+
+            return `
+                <button class="interactive-card" data-action="warranty_select_${escapeHtml(id)}" data-text="Selected Warranty #${escapeHtml(ref)}">
+                    <span class="card-icon"><i class="fas fa-shield-halved"></i></span>
+                    <div class="card-details">
+                        <h4>${escapeHtml(title)}</h4>
+                        <div class="meta">Claim/Order: #${escapeHtml(ref)}</div>
+                        <div class="meta">Created: ${escapeHtml(formatDate(firstDefined(claim.timestamp, claim.createdAt)))}</div>
+                        ${statusPill(status, "fa-shield")}
+                    </div>
+                    <i class="fas fa-chevron-right" style="color:var(--text-muted); flex-shrink:0;"></i>
+                </button>
+            `;
+        }
+
+        async function showWarrantyStatus(page = 0) {
+            if (!ensureLogin()) return;
+            await waitFor(claimsReady);
+
+            await botSpeak(`You can check warranty status or claim warranty for eligible products here:<br><a class="link-card" href="${WARRANTY_URL}" target="_blank" rel="noopener"><i class="fas fa-up-right-from-square"></i> Open Warranty Check</a>`);
+
+            if (!allMyClaims.length) {
+                return showOptions([
+                    { text: "Claim Warranty", action: "claim_warranty", icon: "fa-file-shield", primary: true },
+                    { text: "Question not found?", action: "not_found_question", icon: "fa-circle-question", warning: true },
+                    { text: "← Back", action: "show_menu_claims", icon: "fa-arrow-left" }
+                ]);
+            }
+
+            const start = page * 4;
+            const slice = allMyClaims.slice(start, start + 4);
+            await botSpeak(`Your existing warranty claims:<div class="interactive-list">${slice.map(renderClaimCard).join("")}</div>`);
+
+            const nav = [];
+            if (start + 4 < allMyClaims.length) nav.push({ text: "Next claims", action: `warranty_page_${page + 1}`, icon: "fa-arrow-right", primary: true });
+            if (page > 0) nav.push({ text: "Previous", action: `warranty_page_${page - 1}`, icon: "fa-arrow-left" });
+            nav.push({ text: "← Back", action: "show_menu_claims", icon: "fa-arrow-left" });
+            showOptions(nav);
+        }
+
+        function buildTrackingReport(order) {
+            const orderNo = orderKey(order);
+            const expected = firstDefined(order.expected_delivery, order.expectedDelivery, order.delivery_date, order.deliveryDate, "Pending");
+            const address = firstDefined(order.delivery_address, order.address, order.shippingAddress, "N/A");
+            const phone = firstDefined(order.delivery_phone, order.phone, currentUser?.phone, "N/A");
+            const status = statusText(order);
+
+            return `
+                <strong>Tracking Report</strong>
+                <div class="chat-card">
+                    <div class="detail-row"><span>Order</span><span>#${escapeHtml(orderNo)}</span></div>
+                    <div class="detail-row"><span>Item</span><span>${escapeHtml(itemName(order))}</span></div>
+                    <div class="detail-row"><span>Status</span><span>${statusPill(status)}</span></div>
+                    <div class="detail-row"><span>Total</span><span>${money(orderTotal(order))}</span></div>
+                    <div class="detail-row"><span>Expected</span><span>${escapeHtml(formatDate(expected) === "N/A" ? expected : formatDate(expected))}</span></div>
+                    <div class="detail-row"><span>Phone</span><span>${escapeHtml(phone)}</span></div>
+                    <div class="detail-row"><span>Address</span><span>${escapeHtml(address)}</span></div>
+                </div>
+            `;
+        }
+
+        async function createSupportTicket(data) {
+            if (!currentUser?.email) throw new Error("Login required");
+
+            const now = new Date().toISOString();
+            const payload = {
+                source: "customer_support_bot",
+                channel: "support",
+                user_email: normalizeEmail(currentUser.email),
+                user_name: getUserName(),
+                phone: firstDefined(currentUser.phone, currentUser.mobile, ""),
+                status: "Pending",
+                priority: "Normal",
+                createdAt: now,
+                updatedAt: now,
+                timestamp: now,
+                ...data
             };
-            const rzp = new Razorpay(options); 
-            rzp.on('payment.failed', function () { sysAlert("Payment Failed.", "Error", "error"); });
-            rzp.open();
-        };
 
-        document.addEventListener('DOMContentLoaded', () => { setTimeout(initChat, 200); });
+            const ref = await db.collection("support_tickets").add(payload);
+            return ref.id;
+        }
+
+        async function createCallbackRequest() {
+            const now = new Date().toISOString();
+            const callbackData = {
+                user_email: normalizeEmail(currentUser.email),
+                user_name: getUserName(),
+                phone: window.tempCallbackPhone,
+                description: window.tempCallbackReason,
+                reason: window.tempCallbackReason,
+                status: "Pending",
+                source: "customer_support_bot",
+                timestamp: now,
+                createdAt: now
+            };
+
+            const results = await Promise.allSettled([
+                db.collection("callback_requests").add(callbackData),
+                createSupportTicket({
+                    type: "callback",
+                    title: "Customer callback request",
+                    description: window.tempCallbackReason,
+                    requestedPhone: window.tempCallbackPhone
+                })
+            ]);
+
+            const failed = results.every(r => r.status === "rejected");
+            if (failed) throw new Error("Could not create callback request");
+        }
+
+        async function createReplacementRequest(photoDataUrl = "") {
+            const order = window.tempReplaceOrder;
+            if (!order) throw new Error("Order not selected");
+
+            const now = new Date().toISOString();
+            const orderNo = orderKey(order);
+
+            const payload = {
+                user_email: normalizeEmail(currentUser.email),
+                user_name: getUserName(),
+                order_id: order.id,
+                order_no: orderNo,
+                item_name: itemName(order),
+                reason: window.tempReplaceReason,
+                proofImage: photoDataUrl || "",
+                status: "Pending",
+                source: "customer_support_bot",
+                timestamp: now,
+                createdAt: now,
+                updatedAt: now
+            };
+
+            const results = await Promise.allSettled([
+                db.collection("replacement_requests").add(payload),
+                createSupportTicket({
+                    type: "replacement",
+                    title: `Replacement request for order #${orderNo}`,
+                    description: window.tempReplaceReason,
+                    order_id: order.id,
+                    order_no: orderNo,
+                    item_name: itemName(order),
+                    proofImage: photoDataUrl || ""
+                }),
+                db.collection("orders").doc(order.id).update({
+                    replacement_requested: true,
+                    replacement_reason: window.tempReplaceReason,
+                    replacement_requested_at: now
+                })
+            ]);
+
+            const failed = results.every(r => r.status === "rejected");
+            if (failed) throw new Error("Could not create replacement request");
+        }
+
+        async function compressImageFile(file) {
+            if (!file) return "";
+            if (!file.type || !file.type.startsWith("image/")) throw new Error("Please choose an image file.");
+
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+
+                reader.onerror = () => reject(new Error("Could not read image."));
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onerror = () => reject(new Error("Invalid image file."));
+                    img.onload = () => {
+                        const maxSize = 900;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height && width > maxSize) {
+                            height = Math.round(height * maxSize / width);
+                            width = maxSize;
+                        } else if (height > maxSize) {
+                            width = Math.round(width * maxSize / height);
+                            height = maxSize;
+                        }
+
+                        const canvas = document.createElement("canvas");
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext("2d");
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL("image/jpeg", 0.62));
+                    };
+                    img.src = reader.result;
+                };
+
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function confirmCancelOrder() {
+            const order = window.tempCancelOrder;
+            if (!order) throw new Error("Order not selected");
+
+            const orderNo = orderKey(order);
+            const now = new Date().toISOString();
+            const refundAmount = orderTotal(order);
+
+            const refundPayload = {
+                order_id: order.id,
+                order_no: orderNo,
+                customer_name: getUserName(),
+                customer_email: normalizeEmail(currentUser.email),
+                refundAmount,
+                amount: refundAmount,
+                reason: window.tempCancelReason,
+                status: "Pending",
+                source: "support_bot_cancel",
+                timestamp: now,
+                createdAt: now
+            };
+
+            const results = await Promise.allSettled([
+                db.collection("refunds").add(refundPayload),
+                db.collection("orders").doc(order.id).update({
+                    status: "Cancelled",
+                    action_reason: window.tempCancelReason,
+                    cancel_reason: window.tempCancelReason,
+                    cancelledAt: now,
+                    action_notes: "Support Bot"
+                }),
+                createSupportTicket({
+                    type: "cancellation",
+                    title: `Cancel order #${orderNo}`,
+                    description: window.tempCancelReason,
+                    order_id: order.id,
+                    order_no: orderNo,
+                    refundAmount
+                })
+            ]);
+
+            const failed = results.every(r => r.status === "rejected");
+            if (failed) throw new Error("Cancellation failed");
+        }
+
+        async function submitCustomInput(action, skip = false) {
+            clearInputError();
+
+            const input = document.getElementById("chatInputVal");
+            if (!input && !skip) return;
+
+            const inputType = input?.dataset?.inputType || "text";
+            let value = "";
+
+            if (inputType === "file") {
+                if (!skip && input.files && input.files[0]) {
+                    try {
+                        value = await compressImageFile(input.files[0]);
+                    } catch (error) {
+                        showInputError(error.message || "Image upload failed.");
+                        return;
+                    }
+                }
+                userSpeak(skip ? "No photo added" : (value ? "Photo added" : "No photo selected"));
+            } else {
+                value = String(input.value || "").trim();
+                if (!value) {
+                    showInputError("Please enter the details first.");
+                    return;
+                }
+                userSpeak(value);
+            }
+
+            chatActions.innerHTML = "";
+
+            if (action === "submit_mod_address") {
+                await botSpeak("Updating your delivery address...", 350);
+                try {
+                    await db.collection("orders").doc(window.tempTargetOrder.id).update({
+                        delivery_address: value,
+                        address_updated_at: new Date().toISOString()
+                    });
+                    await botSpeak(`<strong style="color:var(--success);"><i class="fas fa-check-circle"></i> Address updated.</strong><br>Order #${escapeHtml(orderKey(window.tempTargetOrder))} now has the new delivery address.`);
+                } catch (error) {
+                    await botSpeak("I could not update the address. Please try again or create a support ticket.");
+                }
+                return showOptions(MENU_MAIN);
+            }
+
+            if (action === "submit_del_instr") {
+                await botSpeak("Saving delivery instructions...", 350);
+                try {
+                    await db.collection("orders").doc(window.tempTargetOrder.id).update({
+                        delivery_instructions: value,
+                        delivery_instructions_updated_at: new Date().toISOString()
+                    });
+                    await botSpeak(`<strong style="color:var(--success);"><i class="fas fa-check-circle"></i> Instructions saved.</strong><br>The logistics/support team can now see your note for Order #${escapeHtml(orderKey(window.tempTargetOrder))}.`);
+                } catch (error) {
+                    await botSpeak("I could not save delivery instructions. Please try again or create a support ticket.");
+                }
+                return showOptions(MENU_MAIN);
+            }
+
+            if (action === "submit_update_phone") {
+                await botSpeak("Updating your phone number...", 350);
+                try {
+                    const users = await db.collection("users").where("email", "==", normalizeEmail(currentUser.email)).get();
+                    const batch = db.batch();
+                    users.forEach(doc => batch.update(doc.ref, { phone: value, updatedAt: new Date().toISOString() }));
+                    await batch.commit();
+
+                    currentUser.phone = value;
+                    localStorage.setItem("active_session", JSON.stringify(currentUser));
+                    renderProfile();
+                    await botSpeak(`<strong style="color:var(--success);"><i class="fas fa-check-circle"></i> Phone updated.</strong><br>Your new phone number is ${escapeHtml(value)}.`);
+                } catch (error) {
+                    await botSpeak("I could not update your phone number. Please try again.");
+                }
+                return showOptions(MENU_MAIN);
+            }
+
+            if (action === "callback_phone") {
+                window.tempCallbackPhone = value;
+                await botSpeak("Please describe why you need a call back.");
+                return showCustomInput({
+                    type: "textarea",
+                    placeholder: "Example: Payment failed but money deducted, please call me.",
+                    action: "callback_reason",
+                    buttonText: "Continue",
+                    maxLength: 700
+                });
+            }
+
+            if (action === "callback_reason") {
+                window.tempCallbackReason = value;
+                await botSpeak(`
+                    Please confirm your callback request:
+                    <div class="chat-card">
+                        <div class="detail-row"><span>Phone</span><span>${escapeHtml(window.tempCallbackPhone)}</span></div>
+                        <div class="detail-row"><span>Reason</span><span>${escapeHtml(window.tempCallbackReason)}</span></div>
+                    </div>
+                `);
+                return showOptions([
+                    { text: "Confirm callback", action: "confirm_callback", icon: "fa-check", primary: true },
+                    { text: "Edit phone", action: "call_back", icon: "fa-pen" },
+                    { text: "Main Menu", action: "show_main", icon: "fa-house" }
+                ]);
+            }
+
+            if (action === "submit_ticket_question") {
+                window.tempTicketQuestion = value;
+                await botSpeak("Now describe the issue in detail so support can understand it clearly.");
+                return showCustomInput({
+                    type: "textarea",
+                    placeholder: "Describe the full issue, order number if any, and what help you need.",
+                    action: "submit_ticket_description",
+                    buttonText: "Create Ticket",
+                    maxLength: 1000
+                });
+            }
+
+            if (action === "submit_ticket_description") {
+                await botSpeak("Creating your support ticket...", 350);
+                try {
+                    const ticketId = await createSupportTicket({
+                        type: "question_not_found",
+                        title: window.tempTicketQuestion,
+                        description: value
+                    });
+                    await botSpeak(`<strong style="color:var(--success);"><i class="fas fa-check-circle"></i> Ticket created.</strong><br>Ticket ID: <strong>#${escapeHtml(ticketId.slice(-8).toUpperCase())}</strong><br>Support will review your question.`);
+                } catch (error) {
+                    await botSpeak("I could not create the ticket. Please try again.");
+                }
+                return showOptions(MENU_MAIN);
+            }
+
+            if (action === "submit_cancel_reason") {
+                window.tempCancelReason = value;
+                const order = window.tempCancelOrder;
+                await botSpeak(`
+                    Confirm cancellation for Order #${escapeHtml(orderKey(order))}?
+                    <div class="notice-card">
+                        The cancellation reason will be saved. If payment was already captured, a refund request will be created with pending status.
+                    </div>
+                `);
+                return showOptions([
+                    { text: "Yes, Cancel Item", action: "confirm_cancel", icon: "fa-check", danger: true },
+                    { text: "No, Go Back", action: "show_main", icon: "fa-arrow-left", primary: true }
+                ]);
+            }
+
+            if (action === "submit_replace_reason") {
+                window.tempReplaceReason = value;
+                await botSpeak("You can upload a product photo as proof. It is optional, but it helps the team verify the replacement faster.");
+                return showCustomInput({
+                    type: "file",
+                    accept: "image/*",
+                    action: "submit_replace_photo",
+                    buttonText: "Submit with photo",
+                    allowSkip: true,
+                    skipText: "Submit without photo"
+                });
+            }
+
+            if (action === "submit_replace_photo") {
+                await botSpeak("Submitting replacement request...", 350);
+                try {
+                    await createReplacementRequest(value || "");
+                    await botSpeak(`<strong style="color:var(--success);"><i class="fas fa-check-circle"></i> Replacement request created.</strong><br>Order #${escapeHtml(orderKey(window.tempReplaceOrder))} is now pending review.`);
+                } catch (error) {
+                    console.error(error);
+                    await botSpeak("I could not create the replacement request. Please try again or create a support ticket.");
+                }
+                return showOptions(MENU_MAIN);
+            }
+
+            if (action === "delete_reason") {
+                window.tempDeleteReason = value;
+                await botSpeak(`<strong style="color:var(--danger);">Warning:</strong> Account deletion is permanent. Your user profile, orders, refunds, claims and callback records linked with this email can be deleted from the database.`);
+                return showOptions([
+                    { text: "Yes, Delete Permanently", action: "confirm_delete_account", icon: "fa-trash", danger: true },
+                    { text: "Cancel", action: "show_main", icon: "fa-xmark", primary: true }
+                ]);
+            }
+        }
+
+        async function handleUserChoice(action, text = "") {
+            if (!action) return;
+
+            const silentActions = ["show_main", "show_menu_claims", "show_more"];
+            if (!silentActions.includes(action) && !action.includes("_page_")) {
+                userSpeak(text || action);
+            }
+
+            chatActions.innerHTML = "";
+
+            if (action === "sign_in") {
+                location.href = "https://aryanta.in/login/";
+                return;
+            }
+
+            if (action === "go_back") {
+                history.length > 1 ? history.back() : location.href = HOME_URL;
+                return;
+            }
+
+            if (action.startsWith("track_page_")) return showOrderSelection(Number(action.replace("track_page_", "")) || 0, "track");
+            if (action.startsWith("cancel_page_")) return showOrderSelection(Number(action.replace("cancel_page_", "")) || 0, "cancel");
+            if (action.startsWith("replace_page_")) return showOrderSelection(Number(action.replace("replace_page_", "")) || 0, "replace");
+            if (action.startsWith("mod_address_page_")) return showOrderSelection(Number(action.replace("mod_address_page_", "")) || 0, "mod_address");
+            if (action.startsWith("del_instr_page_")) return showOrderSelection(Number(action.replace("del_instr_page_", "")) || 0, "del_instr");
+            if (action.startsWith("refund_page_")) return showRefundSelection(Number(action.replace("refund_page_", "")) || 0);
+            if (action.startsWith("warranty_page_")) return showWarrantyStatus(Number(action.replace("warranty_page_", "")) || 0);
+
+            if (action.startsWith("track_select_")) {
+                const order = findOrderByActionKey(action.replace("track_select_", ""));
+                if (!order) {
+                    await botSpeak("Order details could not be found. Please refresh and try again.");
+                    return showOptions(MENU_MAIN);
+                }
+
+                await botSpeak(buildTrackingReport(order));
+
+                const opts = [];
+                if (isDelivered(order)) {
+                    opts.push({ text: "Replace this item", action: `replace_select_${encodeURIComponent(orderKey(order))}`, icon: "fa-right-left", primary: true });
+                } else if (isCancellable(order)) {
+                    opts.push({ text: "Cancel this item", action: `cancel_select_${encodeURIComponent(orderKey(order))}`, icon: "fa-ban", danger: true });
+                }
+                opts.push({ text: "Check Warranty", action: "warranty_status", icon: "fa-shield-halved" });
+                opts.push({ text: "Main Menu", action: "show_main", icon: "fa-house" });
+                return showOptions(opts);
+            }
+
+            if (action.startsWith("cancel_select_")) {
+                const order = findOrderByActionKey(action.replace("cancel_select_", ""));
+                if (!order) {
+                    await botSpeak("Order not found.");
+                    return showOptions(MENU_MAIN);
+                }
+                if (isDelivered(order)) {
+                    await botSpeak("This item is delivered, so cancellation is hidden. You can request a replacement instead.");
+                    return showOptions([
+                        { text: "Replace this item", action: `replace_select_${encodeURIComponent(orderKey(order))}`, icon: "fa-right-left", primary: true },
+                        { text: "Main Menu", action: "show_main", icon: "fa-house" }
+                    ]);
+                }
+                window.tempCancelOrder = order;
+                await botSpeak(`Please enter the reason for cancelling Order #${escapeHtml(orderKey(order))}.`);
+                return showCustomInput({
+                    type: "textarea",
+                    placeholder: "Enter cancellation reason...",
+                    action: "submit_cancel_reason",
+                    buttonText: "Continue",
+                    maxLength: 700
+                });
+            }
+
+            if (action.startsWith("replace_select_")) {
+                const order = findOrderByActionKey(action.replace("replace_select_", ""));
+                if (!order) {
+                    await botSpeak("Order not found.");
+                    return showOptions(MENU_MAIN);
+                }
+                if (!isDelivered(order)) {
+                    await botSpeak("Replacement can be requested after the item is delivered. For active orders, you can cancel or track it.");
+                    return showOptions([
+                        { text: "Track order", action: "track_order", icon: "fa-location-dot", primary: true },
+                        { text: "Cancel order", action: "start_cancel", icon: "fa-ban" },
+                        { text: "Main Menu", action: "show_main", icon: "fa-house" }
+                    ]);
+                }
+                window.tempReplaceOrder = order;
+                await botSpeak(`Tell us why you want to replace Order #${escapeHtml(orderKey(order))}.`);
+                return showCustomInput({
+                    type: "textarea",
+                    placeholder: "Example: item damaged, wrong product received, not working...",
+                    action: "submit_replace_reason",
+                    buttonText: "Continue",
+                    maxLength: 800
+                });
+            }
+
+            if (action.startsWith("mod_address_select_")) {
+                const order = findOrderByActionKey(action.replace("mod_address_select_", ""));
+                if (!order) return showOptions(MENU_MAIN);
+                window.tempTargetOrder = order;
+                await botSpeak(`Enter the new complete delivery address for Order #${escapeHtml(orderKey(order))}.`);
+                return showCustomInput({
+                    type: "textarea",
+                    placeholder: "Full new address with landmark, city, state and pincode...",
+                    action: "submit_mod_address",
+                    buttonText: "Update Address",
+                    maxLength: 900
+                });
+            }
+
+            if (action.startsWith("del_instr_select_")) {
+                const order = findOrderByActionKey(action.replace("del_instr_select_", ""));
+                if (!order) return showOptions(MENU_MAIN);
+                window.tempTargetOrder = order;
+                await botSpeak(`Enter delivery instructions for Order #${escapeHtml(orderKey(order))}.`);
+                return showCustomInput({
+                    type: "textarea",
+                    placeholder: "Example: Call before delivery, leave with guard, deliver after 5 PM...",
+                    action: "submit_del_instr",
+                    buttonText: "Save Instructions",
+                    maxLength: 600
+                });
+            }
+
+            if (action.startsWith("refund_select_")) {
+                const refund = findRefundById(action.replace("refund_select_", ""));
+                if (!refund) {
+                    await botSpeak("Refund request not found.");
+                    return showOptions(MENU_CLAIMS);
+                }
+
+                const ref = firstDefined(refund.order_no, refund.orderNo, refund.claim_id, refund.order_id, refund.id);
+                const status = firstDefined(refund.status, "Pending");
+                const amount = firstDefined(refund.refundAmount, refund.amount, refund.total, 0);
+
+                await botSpeak(`
+                    <strong>Refund Status</strong>
+                    <div class="chat-card">
+                        <div class="detail-row"><span>Reference</span><span>#${escapeHtml(ref)}</span></div>
+                        <div class="detail-row"><span>Amount</span><span>${money(amount)}</span></div>
+                        <div class="detail-row"><span>Status</span><span>${statusPill(status)}</span></div>
+                        <div class="detail-row"><span>Created</span><span>${escapeHtml(formatDateTime(firstDefined(refund.timestamp, refund.createdAt)))}</span></div>
+                    </div>
+                    <div class="notice-card">${escapeHtml(refundProgressText(refund))}</div>
+                `);
+                return showOptions([
+                    { text: "Question not found?", action: "not_found_question", icon: "fa-circle-question", warning: true },
+                    { text: "← Back", action: "refund_status", icon: "fa-arrow-left" }
+                ]);
+            }
+
+            if (action.startsWith("warranty_select_")) {
+                const claim = findClaimById(action.replace("warranty_select_", ""));
+                if (!claim) {
+                    await botSpeak("Warranty claim not found.");
+                    return showOptions(MENU_CLAIMS);
+                }
+
+                const ref = firstDefined(claim.order_no, claim.orderNo, claim.claim_id, claim.id);
+                const status = firstDefined(claim.status, "Pending");
+                const issue = firstDefined(claim.issue, claim.description, claim.reason, "N/A");
+
+                await botSpeak(`
+                    <strong>Warranty Claim Status</strong>
+                    <div class="chat-card">
+                        <div class="detail-row"><span>Reference</span><span>#${escapeHtml(ref)}</span></div>
+                        <div class="detail-row"><span>Status</span><span>${statusPill(status)}</span></div>
+                        <div class="detail-row"><span>Issue</span><span>${escapeHtml(issue)}</span></div>
+                        <div class="detail-row"><span>Created</span><span>${escapeHtml(formatDateTime(firstDefined(claim.timestamp, claim.createdAt)))}</span></div>
+                    </div>
+                    <a class="link-card" href="${WARRANTY_URL}" target="_blank" rel="noopener"><i class="fas fa-up-right-from-square"></i> Open Warranty Page</a>
+                `);
+                return showOptions([
+                    { text: "Question not found?", action: "not_found_question", icon: "fa-circle-question", warning: true },
+                    { text: "← Back", action: "warranty_status", icon: "fa-arrow-left" }
+                ]);
+            }
+
+            switch (action) {
+                case "show_main":
+                    return showOptions(MENU_MAIN);
+
+                case "show_more":
+                    return showOptions(MENU_MORE);
+
+                case "show_menu_claims":
+                    return showOptions(MENU_CLAIMS);
+
+                case "track_order":
+                    await botSpeak("Which order would you like to track?");
+                    return showOrderSelection(0, "track");
+
+                case "start_cancel":
+                    await botSpeak("Select the active order you want to cancel. Delivered items will show replacement instead of cancellation.");
+                    return showOrderSelection(0, "cancel");
+
+                case "start_replace":
+                    await botSpeak("Select the delivered item you want to replace.");
+                    return showOrderSelection(0, "replace");
+
+                case "mod_address":
+                    await botSpeak("Select an order that has not shipped yet.");
+                    return showOrderSelection(0, "mod_address");
+
+                case "add_delivery_instr":
+                    await botSpeak("Select an active order to add delivery instructions.");
+                    return showOrderSelection(0, "del_instr");
+
+                case "refund_status":
+                    await botSpeak("Fetching your refund records...");
+                    return showRefundSelection(0);
+
+                case "warranty_status":
+                    return showWarrantyStatus(0);
+
+                case "claim_warranty":
+                    await botSpeak(`You can claim warranty for eligible products from the warranty page.<br><a class="link-card" href="${WARRANTY_URL}" target="_blank" rel="noopener"><i class="fas fa-file-shield"></i> Claim / Check Warranty</a>`);
+                    return showOptions(MENU_CLAIMS);
+
+                case "payment_issue":
+                    await botSpeak(`If payment failed but money was deducted, it normally reverses through your bank/payment method after verification. If it is linked to an Aryanta order, create a ticket with the payment/order details.`);
+                    return showOptions([
+                        { text: "Create ticket", action: "not_found_question", icon: "fa-ticket", primary: true },
+                        { text: "Check refund", action: "refund_status", icon: "fa-money-bill-transfer" },
+                        { text: "← Back", action: "show_menu_claims", icon: "fa-arrow-left" }
+                    ]);
+
+                case "exchange_policy":
+                    await botSpeak(`Aryanta replacement/exchange depends on product eligibility, delivery status and issue proof. For delivered defective/wrong items, use <strong>Replace delivered item</strong> and add a photo if available.`);
+                    return showOptions([
+                        { text: "Replace delivered item", action: "start_replace", icon: "fa-right-left", primary: true },
+                        { text: "← Back", action: "show_menu_claims", icon: "fa-arrow-left" }
+                    ]);
+
+                case "check_wallet":
+                    if (!ensureLogin()) return;
+                    await botSpeak("Fetching wallet details...");
+                    try {
+                        const users = await db.collection("users").where("email", "==", normalizeEmail(currentUser.email)).get();
+                        let balance = 0;
+                        if (!users.empty) {
+                            const data = users.docs[0].data();
+                            balance = Number(firstDefined(data.walletBalance, data.wallet, data.balance, 0) || 0);
+                        }
+                        await botSpeak(`Your Aryanta Wallet Balance is <strong style="font-size:20px;color:var(--accent);">${money(balance)}</strong>.`);
+                    } catch (error) {
+                        await botSpeak("Wallet details could not be fetched right now.");
+                    }
+                    return showOptions(MENU_MAIN);
+
+                case "call_back":
+                    if (!ensureLogin()) return;
+                    await botSpeak("Confirm the phone number where Aryanta support should call you.");
+                    return showCustomInput({
+                        type: "tel",
+                        placeholder: "Enter phone number",
+                        value: firstDefined(currentUser.phone, currentUser.mobile, ""),
+                        action: "callback_phone",
+                        buttonText: "Continue",
+                        maxLength: 15
+                    });
+
+                case "confirm_callback":
+                    if (!ensureLogin()) return;
+                    await botSpeak("Submitting callback request...", 350);
+                    try {
+                        await createCallbackRequest();
+                        await botSpeak(`<strong style="color:var(--success);"><i class="fas fa-check-circle"></i> Callback request logged.</strong><br>Support will call you at <strong>${escapeHtml(window.tempCallbackPhone)}</strong>.`);
+                    } catch (error) {
+                        console.error(error);
+                        await botSpeak("Callback request could not be created. Please try again.");
+                    }
+                    return showOptions(MENU_MAIN);
+
+                case "update_phone":
+                    if (!ensureLogin()) return;
+                    await botSpeak("Enter your new primary phone number.");
+                    return showCustomInput({
+                        type: "tel",
+                        placeholder: "Example: 9876543210",
+                        value: firstDefined(currentUser.phone, currentUser.mobile, ""),
+                        action: "submit_update_phone",
+                        buttonText: "Update Phone",
+                        maxLength: 15
+                    });
+
+                case "not_found_question":
+                    if (!ensureLogin()) return;
+                    await botSpeak("Tell me the question that was not found.");
+                    return showCustomInput({
+                        type: "text",
+                        placeholder: "Enter your question...",
+                        action: "submit_ticket_question",
+                        buttonText: "Continue",
+                        maxLength: 180
+                    });
+
+                case "delete_account":
+                    if (!ensureLogin()) return;
+                    await botSpeak("Please enter the reason for deleting your account.");
+                    return showCustomInput({
+                        type: "textarea",
+                        placeholder: "Reason for account deletion...",
+                        action: "delete_reason",
+                        buttonText: "Continue",
+                        maxLength: 700
+                    });
+
+                case "confirm_delete_account":
+                    if (!ensureLogin()) return;
+                    await botSpeak("Deleting account-linked records...", 450);
+                    try {
+                        const email = normalizeEmail(currentUser.email);
+                        const batch = db.batch();
+
+                        const collections = [
+                            ["users", "email"],
+                            ["orders", "user_email"],
+                            ["refunds", "customer_email"],
+                            ["warranty_claims", "user_email"],
+                            ["callback_requests", "user_email"],
+                            ["support_tickets", "user_email"],
+                            ["replacement_requests", "user_email"]
+                        ];
+
+                        for (const [collectionName, field] of collections) {
+                            const docs = await db.collection(collectionName).where(field, "==", email).get();
+                            docs.forEach(doc => batch.delete(doc.ref));
+                        }
+
+                        await batch.commit();
+                        await botSpeak("Your account-linked records were deleted. Logging out now...");
+                        localStorage.removeItem("active_session");
+                        setTimeout(() => location.href = HOME_URL, 1200);
+                    } catch (error) {
+                        console.error(error);
+                        await botSpeak("Account deletion failed. Please contact support.");
+                        showOptions(MENU_MAIN);
+                    }
+                    return;
+
+                case "confirm_cancel":
+                    if (!ensureLogin()) return;
+                    await botSpeak("Cancelling the order and creating refund request...", 400);
+                    try {
+                        await confirmCancelOrder();
+                        await botSpeak(`<strong style="color:var(--success);"><i class="fas fa-check-circle"></i> Cancelled.</strong><br>Order #${escapeHtml(orderKey(window.tempCancelOrder))} has been cancelled and refund request is pending.`);
+                    } catch (error) {
+                        console.error(error);
+                        await botSpeak("Cancellation could not be completed. Please try again or create a support ticket.");
+                    }
+                    return showOptions(MENU_MAIN);
+
+                default:
+                    await botSpeak("I could not understand that action. Please choose an option below.");
+                    return showOptions(MENU_MAIN);
+            }
+        }
+
+        async function initChat() {
+            syncThemeFromIndexSettings();
+            renderProfile();
+            fetchUserDataLive();
+
+            if (!currentUser) {
+                await botSpeak(`Welcome to Aryanta Support. Please sign in to access personalized order, refund, warranty and callback features.`);
+                return showOptions([{ text: "Sign In", action: "sign_in", icon: "fa-right-to-bracket", primary: true }]);
+            }
+
+            await botSpeak(`Hello ${escapeHtml(getFirstName())}, I am your Aryanta support assistant. How can I help you today?`);
+            showOptions(MENU_MAIN);
+        }
+
+        document.getElementById("menuBtn").addEventListener("click", openSidebar);
+        document.getElementById("closeSidebarBtn").addEventListener("click", closeSidebar);
+        document.getElementById("overlay").addEventListener("click", closeSidebar);
+        document.getElementById("sidebarLogoutBtn").addEventListener("click", logOut);
+        document.getElementById("pageBackBtn").addEventListener("click", () => {
+            if (history.length > 1) history.back();
+            else location.href = HOME_URL;
+        });
+
+        chatActions.addEventListener("click", event => {
+            const submit = event.target.closest("[data-submit-action]");
+            if (submit) {
+                submitCustomInput(submit.dataset.submitAction, false);
+                return;
+            }
+
+            const skip = event.target.closest("[data-skip-action]");
+            if (skip) {
+                submitCustomInput(skip.dataset.skipAction, true);
+                return;
+            }
+
+            const actionButton = event.target.closest("[data-action]");
+            if (actionButton) {
+                handleUserChoice(actionButton.dataset.action, actionButton.dataset.text || actionButton.textContent.trim());
+            }
+        });
+
+        chatActions.addEventListener("keydown", event => {
+            if (event.key !== "Enter") return;
+            const target = event.target;
+            if (!target || target.dataset.inputType === "textarea") {
+                if (!event.ctrlKey && !event.metaKey) return;
+            }
+            event.preventDefault();
+            const submit = chatActions.querySelector("[data-submit-action]");
+            if (submit) submit.click();
+        });
+
+        chatHistory.addEventListener("click", event => {
+            const actionEl = event.target.closest("[data-action]");
+            if (actionEl) {
+                handleUserChoice(actionEl.dataset.action, actionEl.dataset.text || actionEl.textContent.trim());
+            }
+        });
+
+        window.addEventListener("storage", event => {
+            if (event.key === "aryanta_settings") {
+                syncThemeFromIndexSettings();
+            }
+            if (event.key === "active_session") {
+                renderProfile();
+                fetchUserDataLive();
+            }
+        });
+
+        if (window.matchMedia) {
+            window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+                if (appSettings.theme === "system") applyTheme();
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            setTimeout(initChat, 160);
+        });
     </script>
 </body>
 </html>
