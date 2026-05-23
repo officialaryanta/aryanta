@@ -5166,3 +5166,1002 @@ window.loadTutorials = function() {
         ['scanStep1','scanStep2','scanStep3'].forEach(id=>{const el=$id(id);if(el)el.classList.toggle('active',id===('scanStep'+step));});
     };
 })();
+
+
+/* Aryanta Seller Panel Rebuild 2026-05-23: admin-controlled subscriptions, ads, events, returns, metrics */
+(function(){
+    const PATCH='ARYANTA_SELLER_PANEL_REBUILD_2026_05_23';
+    if(window[PATCH]) return;
+    window[PATCH]=true;
+    const $=id=>document.getElementById(id);
+    const txt=v=>String(v==null?'':v);
+    const low=v=>txt(v).toLowerCase().trim();
+    const safe=v=>txt(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const nowIso=()=>new Date().toISOString();
+    const monthKey=()=>new Date().toISOString().slice(0,7);
+    const email=()=>low(activeSeller&&activeSeller.email);
+    const DEFAULT_CONFIG={
+        sponsorDurationHours:24,
+        paidSponsorCharge:0,
+        appDownload:{enabled:false,url:'https://aryanta.in/app'},
+        freeTrial:{enabled:true,days:30,plan:'Basic',allowAll:false},
+        plans:{
+            Basic:{name:'Basic',price:0,productLimit:30,freeAds:1,commissionPercent:7,deliveryChargePerProduct:25,features:{sponsoredAds:true,storeBranding:false,sellerControls:false,sendOrderEmail:false,events:true,loans:false,downloadApp:false},description:'Admin default free seller plan'},
+            Growth:{name:'Growth',price:0,productLimit:100,freeAds:3,commissionPercent:7,deliveryChargePerProduct:25,features:{sponsoredAds:true,storeBranding:true,sellerControls:true,sendOrderEmail:true,events:true,loans:false,downloadApp:true},description:'Admin-controlled paid/approved plan'},
+            Pro:{name:'Pro',price:0,productLimit:300,freeAds:6,commissionPercent:7,deliveryChargePerProduct:25,features:{sponsoredAds:true,storeBranding:true,sellerControls:true,sendOrderEmail:true,events:true,loans:true,downloadApp:true},description:'Admin-controlled premium plan'}
+        }
+    };
+    let ARY_CFG=null;
+    let lastSupportIssueConfig=[];
+    let activeEventRows=[];
+    let activeEventTab='live';
+
+    function toast(msg,type){ if(typeof showToast==='function')showToast(msg,type||'info'); else alert(msg); }
+    function asDate(v){ if(!v)return null; if(v&&typeof v.toDate==='function')return v.toDate(); const d=new Date(v); return Number.isFinite(d.getTime())?d:null; }
+    function dateMs(v){ const d=asDate(v); return d?d.getTime():0; }
+    function currentPlanName(){
+        const raw=txt(activeSeller&&(activeSeller.subscription||activeSeller.plan||activeSeller.package||activeSeller.subscriptionName)).trim();
+        const end=asDate(activeSeller&&activeSeller.subEndDate);
+        if(raw && !['none','free','basic / free','basic/free'].includes(raw.toLowerCase()) && end && end.getTime()<Date.now()) return 'Basic';
+        if(!raw || ['none','free','basic / free','basic/free'].includes(raw.toLowerCase())) return 'Basic';
+        return raw;
+    }
+    function normalizePlans(raw){
+        if(!raw)return {...DEFAULT_CONFIG.plans};
+        if(Array.isArray(raw)){
+            const out={}; raw.forEach(p=>{const n=txt(p.name||p.id||p.planName).trim(); if(n)out[n]={...p,name:n};}); return Object.keys(out).length?out:{...DEFAULT_CONFIG.plans};
+        }
+        const out={}; Object.keys(raw).forEach(k=>{const p=raw[k]||{}; out[p.name||k]={...p,name:p.name||k};}); return Object.keys(out).length?out:{...DEFAULT_CONFIG.plans};
+    }
+    async function fetchAdminConfig(force=false){
+        if(ARY_CFG&&!force) return ARY_CFG;
+        let cfg=JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        if(!db){ARY_CFG=cfg; return cfg;}
+        try{
+            const docs=[['site_config','seller_subscription_config'],['site_config','sellerPanelConfig'],['site_config','seller_settings']];
+            for(const [col,id] of docs){
+                const snap=await db.collection(col).doc(id).get();
+                if(snap.exists){
+                    const d=snap.data()||{};
+                    cfg={...cfg,...d,plans:normalizePlans(d.plans||d.subscriptionPlans||d.sellerPlans||cfg.plans),freeTrial:{...cfg.freeTrial,...(d.freeTrial||d.freeSubscription||{})},appDownload:{...cfg.appDownload,...(d.appDownload||d.downloadApp||{})}};
+                    break;
+                }
+            }
+        }catch(e){console.warn('Admin subscription config fallback used',e);}
+        ARY_CFG=cfg; return cfg;
+    }
+    async function planCfg(){ const cfg=await fetchAdminConfig(); const plans=cfg.plans||DEFAULT_CONFIG.plans; const name=currentPlanName(); return plans[name]||plans[Object.keys(plans).find(k=>low(k)===low(name))]||plans.Basic||DEFAULT_CONFIG.plans.Basic; }
+    function getSellerAccessOverride(key){
+        const a=activeSeller&&activeSeller.subscriptionAccess||activeSeller&&activeSeller.featureAccess||{};
+        if(a && Object.prototype.hasOwnProperty.call(a,key))return a[key]===true;
+        return null;
+    }
+    async function hasFeature(key){
+        const o=getSellerAccessOverride(key); if(o!==null)return o;
+        const p=await planCfg();
+        return !!(p.features&&p.features[key]);
+    }
+    async function getLimits(){
+        const p=await planCfg(); const cfg=await fetchAdminConfig();
+        return {plan:p,config:cfg,productLimit:Number(p.productLimit||30),freeAds:Number(p.freeAds||0),commissionPercent:Number(p.commissionPercent||7),deliveryChargePerProduct:Number(p.deliveryChargePerProduct||25),durationHours:Number(cfg.sponsorDurationHours||24)};
+    }
+    function sellerItems(order){ try{return typeof getSellerItemsFromOrder==='function'?getSellerItemsFromOrder(order):(Array.isArray(order.items)?order.items:[]);}catch(e){return [];} }
+    function itemAmount(i){return Number(i.price||i.sellingPrice||i.finalPrice||0)*Number(i.qty||i.quantity||1);}
+    function orderAmount(o){const it=sellerItems(o); return it.length?it.reduce((s,i)=>s+itemAmount(i),0):Number(o.finalAmount||o.totalPrice||o.amount||o.total||0);}
+    function productOfItem(i){
+        const id=txt(i.id||i.productId||i.product_id||i.productDocId).trim(), sku=low(i.sku), name=low(i.name||i.title);
+        return (sellerProducts||[]).find(p=>txt(p.id||p.productId).trim()===id || (sku&&low(p.sku)===sku) || (name&&low(p.name||p.title)===name));
+    }
+    function productStats(){
+        const map={};
+        (sellerProducts||[]).forEach(p=>{map[p.id]={product:p,totalQty:0,totalOrders:0,delivered:0,cancelled:0,returned:0,gross:0,views:Number(p.views||p.totalViews||p.clicks||p.totalClicks||0)}});
+        (sellerOrders||[]).forEach(o=>{
+            const status=low(o.status||o.orderStatus);
+            sellerItems(o).forEach(i=>{
+                const p=productOfItem(i); if(!p||!map[p.id])return;
+                const st=map[p.id], q=Number(i.qty||i.quantity||1);
+                st.totalQty+=q; st.totalOrders+=1; st.gross+=itemAmount(i);
+                if(status.includes('deliver'))st.delivered+=q;
+                if(status.includes('cancel'))st.cancelled+=q;
+                if(status.includes('return'))st.returned+=q;
+            });
+        });
+        return Object.values(map);
+    }
+    function updateText(id,v){const el=$(id); if(el)el.innerText=v;}
+    async function renderPlanBadges(){
+        const lim=await getLimits();
+        const badge=$('currentPlanBadge'); if(badge)badge.innerText=lim.plan.name||currentPlanName();
+        const verified=$('verifiedBadge'); if(verified)verified.style.display=currentPlanName()!=='Basic'?'inline':'none';
+    }
+    async function adUsage(){
+        const u=activeSeller&&activeSeller.sponsoredAdUsage||{};
+        return u.month===monthKey()?Number(u.used||0):0;
+    }
+    async function saveAdUsage(n){
+        const usage={month:monthKey(),used:n,updatedAt:nowIso()};
+        if(db&&activeSeller&&activeSeller.email) await db.collection('sellers').doc(activeSeller.email).set({sponsoredAdUsage:usage,sponsoredAdsUsedThisMonth:n},{merge:true});
+        activeSeller.sponsoredAdUsage=usage; activeSeller.sponsoredAdsUsedThisMonth=n; localStorage.setItem('sellerToken',JSON.stringify(activeSeller));
+    }
+    function isSponsoredLive(p){
+        const until=dateMs(p.sponsoredUntil||p.sponsorEndAt||p.adEndAt);
+        return !!(p.isSponsored||p.isAd||p.sponsored) && (!until || until>Date.now());
+    }
+    window.cleanupExpiredSponsoredAds=async function(manual){
+        if(!db||!activeSeller)return;
+        let changed=0;
+        try{
+            const now=Date.now();
+            for(const p of (sellerProducts||[])){
+                const until=dateMs(p.sponsoredUntil||p.sponsorEndAt||p.adEndAt);
+                if((p.isSponsored||p.isAd||p.sponsored) && until && until<=now){
+                    Object.assign(p,{isAd:false,isSponsored:false,sponsored:false,adStatus:'Expired'});
+                    await db.collection('products').doc(p.id).set({isAd:false,isSponsored:false,sponsored:false,adStatus:'Expired',sponsorStatus:'Expired',sponsoredExpiredAt:nowIso()},{merge:true});
+                    changed++;
+                }
+            }
+            if(manual)toast(changed?`${changed} expired ad(s) synced.`:'No expired sponsored ads found.','success');
+            if(changed && typeof loadAds==='function')loadAds();
+        }catch(e){console.warn(e); if(manual)toast('Could not sync expired ads.','error');}
+    };
+    async function activateSponsoredProduct(id,isFree){
+        const lim=await getLimits();
+        const start=nowIso(); const end=new Date(Date.now()+lim.durationHours*3600000).toISOString();
+        await db.collection('products').doc(id).set({isAd:true,isSponsored:true,sponsored:true,adStatus:'Sponsored',sponsorStatus:'Live',sponsoredAt:start,sponsoredStartAt:start,sponsoredUntil:end,sponsorEndAt:end,sponsoredBySeller:email(),sponsoredSource:isFree?'free-plan-slot':'admin-approved'},{merge:true});
+        const p=(sellerProducts||[]).find(x=>String(x.id)===String(id)); if(p)Object.assign(p,{isAd:true,isSponsored:true,sponsored:true,adStatus:'Sponsored',sponsoredAt:start,sponsoredUntil:end});
+        if(isFree)await saveAdUsage((await adUsage())+1);
+        try{await db.collection('seller_ad_logs').add({sellerEmail:email(),productId:id,type:isFree?'free_sponsor':'sponsor',startAt:start,endAt:end,status:'Live',createdAt:start});}catch(e){}
+        toast(`Sponsored ad active for ${lim.durationHours} hours.`,'success');
+        if(typeof loadAds==='function')loadAds();
+    }
+    window.startAd=async function(id){
+        if(!activeSeller)return toast('Login required.','error');
+        await fetchAdminConfig(); await cleanupExpiredSponsoredAds(false);
+        if(!(await hasFeature('sponsoredAds'))) return toast('Sponsored ads are locked. Admin must enable it in your subscription.','warning');
+        const lim=await getLimits(); const used=await adUsage(); const left=Math.max(0,lim.freeAds-used);
+        const p=(sellerProducts||[]).find(x=>String(x.id)===String(id))||{};
+        const msg=$('adPlanMessage'), cost=$('adCostDisplay'), input=$('adProdId'), modal=$('adPaymentModal');
+        if(input)input.value=id;
+        if(msg)msg.innerHTML=left>0?`<b>${safe(p.name||p.title||id)}</b><br>Use free highlight <b>${used+1}/${lim.freeAds}</b>. It will start now and end automatically after <b>${lim.durationHours}h</b>.`:`No free ad left for <b>${safe(lim.plan.name)}</b>. Upgrade your subscription or pay ₹70 for 24h sponsorship.`;
+        if(cost)cost.innerText=left>0?'FREE':'Admin approval needed';
+        const btn=modal&&modal.querySelector('button[onclick="payAdOnline()"]'); if(btn)btn.innerHTML=left>0?'<i class="fas fa-bolt"></i> Use Free Sponsored Slot':'Request Admin Access';
+        const payout=$('btnAdPayout'); if(payout)payout.style.display='none';
+        if(modal){modal.style.display='flex';setTimeout(()=>modal.classList.add('show'),10);}
+    };
+    window.payAdOnline=async function(){
+        const id=$('adProdId')&&$('adProdId').value; if(!id)return;
+        const lim=await getLimits(); const left=Math.max(0,lim.freeAds-(await adUsage()));
+        closeModal('adPaymentModal');
+        if(left>0)return activateSponsoredProduct(id,true);
+        try{await db.collection('sponsored_ad_requests').add({sellerEmail:email(),productId:id,status:'Pending Admin Approval',requestedAt:nowIso(),reason:'No free sponsored slot left'});toast('Request sent to admin for sponsored access.','success');}catch(e){toast('Could not send request.','error');}
+    };
+    window.payAdUpcoming=async function(){ return window.payAdOnline(); };
+    window.stopAd=async function(id){
+        try{
+            await db.collection('products').doc(id).set({isAd:false,isSponsored:false,sponsored:false,adStatus:'Stopped',sponsorStatus:'Stopped',sponsoredStoppedAt:nowIso()},{merge:true});
+            const p=(sellerProducts||[]).find(x=>String(x.id)===String(id)); if(p)Object.assign(p,{isAd:false,isSponsored:false,sponsored:false,adStatus:'Stopped'});
+            await db.collection('seller_ad_logs').add({sellerEmail:email(),productId:id,type:'stop_sponsor',status:'Stopped',createdAt:nowIso()}).catch(()=>{});
+            toast('Sponsored ad stopped immediately.','success'); loadAds();
+        }catch(e){toast('Could not stop sponsored ad.','error');}
+    };
+    window.loadAds=async function(){
+        const list=$('adsList'); if(!list)return; await fetchAdminConfig(); await cleanupExpiredSponsoredAds(false);
+        const lim=await getLimits(); const used=await adUsage(); const box=$('adsPlanBox');
+        if(box)box.innerHTML=`<b>${safe(lim.plan.name||currentPlanName())}</b> gives <b>${lim.freeAds}</b> free sponsored highlight(s)/month. Used: <b>${used}</b>. Duration: <b>${lim.durationHours}h</b>. Paid/fine sponsored ads are disabled unless admin enables access.`;
+        const rows=(sellerProducts||[]).map(p=>{
+            const live=isSponsoredLive(p); const start=asDate(p.sponsoredAt||p.sponsoredStartAt); const end=asDate(p.sponsoredUntil||p.sponsorEndAt);
+            return `<tr><td data-label="Product"><div style="display:flex;gap:10px;align-items:center;">${productImg(p)}<div><b>${safe(p.name||p.title||'Product')}</b><br><span style="font-family:monospace;font-size:11px;color:var(--text-light);">${safe(p.sku||p.id)}</span></div></div></td><td data-label="Status"><span class="${live?'ad-status-live':'ad-status-expired'}">${live?'Sponsored Live':'Not Sponsored'}</span></td><td data-label="24h Window">${start?start.toLocaleString():'-'}<br><b>${end?end.toLocaleString():'-'}</b></td><td data-label="Action">${live?`<button class="btn-sm" style="background:var(--danger);" onclick="stopAd('${safe(p.id)}')"><i class="fas fa-stop"></i> Stop Ad</button>`:`<button class="btn-sm" style="background:#ec4899;" onclick="startAd('${safe(p.id)}')"><i class="fas fa-bolt"></i> Sponsor</button>`}</td></tr>`;
+        });
+        list.innerHTML=rows.length?rows.join(''):`<tr><td colspan="4" style="text-align:center;font-weight:800;">No products found.</td></tr>`;
+    };
+    function productImg(p){ const imgs=Array.isArray(p.images)?p.images:(p.image?[p.image]:[]); return imgs[0]?`<img src="${safe(imgs[0])}" loading="lazy" style="width:48px;height:48px;object-fit:cover;border-radius:12px;border:1px solid var(--border-color);">`:`<div style="width:48px;height:48px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;"><i class="fas fa-box"></i></div>`; }
+
+    window.loadSubscriptionsUI=async function(){
+        const cfg=await fetchAdminConfig(true); const lim=await getLimits();
+        await renderPlanBadges();
+        const notice=$('subscriptionAdminNotice'), cards=$('subscriptionCards'); if(!cards)return;
+        const end=asDate(activeSeller&&activeSeller.subEndDate);
+        const freeEligible=freeTrialEligible(cfg);
+        if(notice)notice.innerHTML=`<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;"><div><b>Current plan:</b> ${safe(lim.plan.name||currentPlanName())}<br><span class="muted-line">${end?'Valid till '+end.toLocaleString():'Basic is active without expiry'}</span></div><div><button class="btn-prime" onclick="redeemFreeSubscription()" ${freeEligible?'':'disabled'}><i class="fas fa-gift"></i> Redeem 1 Month Free</button></div></div>`;
+        const plans=cfg.plans||{};
+        cards.innerHTML=Object.keys(plans).map(k=>{
+            const p=plans[k]||{}; const active=low(p.name||k)===low(currentPlanName());
+            const f=p.features||{};
+            return `<div class="admin-plan-card ${active?'active':''}"><div class="admin-plan-title"><strong>${safe(p.name||k)}</strong>${active?'<span class="ok-chip"><i class="fas fa-check"></i> Active</span>':'<span class="lock-chip"><i class="fas fa-user-shield"></i> Admin</span>'}</div><p class="muted-line">${safe(p.description||'Subscription details are controlled by admin.')}</p><div class="feature-list"><div class="feature-row"><span>Product listing</span><span>${Number(p.productLimit||30)} products</span></div><div class="feature-row"><span>Free sponsored ad</span><span>${Number(p.freeAds||0)}</span></div><div class="feature-row"><span>Commission</span><span>${Number(p.commissionPercent||7)}%</span></div><div class="feature-row"><span>Delivery charge</span><span>₹${Number(p.deliveryChargePerProduct||25)}/product</span></div><div class="feature-row"><span>Store branding</span><span>${f.storeBranding?'Allowed':'Admin locked'}</span></div><div class="feature-row"><span>Seller controls</span><span>${f.sellerControls?'Allowed':'Admin locked'}</span></div><div class="feature-row"><span>Order email</span><span>${f.sendOrderEmail?'Allowed':'Admin locked'}</span></div></div>${active?'<button class="btn-outline w-100" disabled>Already Active</button>':`<button class="btn-prime w-100" onclick="requestSubscriptionFromAdmin('${safe(p.name||k)}')"><i class="fas fa-paper-plane"></i> Request Admin Activation</button>`}</div>`;
+        }).join('');
+    };
+    function freeTrialEligible(cfg){
+        if(activeSeller&&activeSeller.freeSubscriptionRedeemedAt)return false;
+        return !!(activeSeller&&(activeSeller.freeSubscriptionEligible||activeSeller.freeTrialEligible||activeSeller.oneMonthFreeSubscription||activeSeller.freeSubscriptionOffer)||(cfg.freeTrial&&cfg.freeTrial.allowAll));
+    }
+    window.requestSubscriptionFromAdmin=async function(plan){
+        try{await db.collection('seller_subscription_requests').add({sellerEmail:email(),sellerName:activeSeller.companyName||activeSeller.shopName||'',planName:plan,status:'Pending Admin Approval',requestedAt:nowIso(),source:'seller-panel'});toast('Subscription request sent to admin.','success');}catch(e){toast('Could not send subscription request.','error');}
+    };
+    window.processSubscription=async function(planName,method){ return window.requestSubscriptionFromAdmin(planName||'Basic'); };
+    window.redeemFreeSubscription=async function(){
+        const cfg=await fetchAdminConfig(); if(!freeTrialEligible(cfg))return toast('Free month is not enabled for your account by admin.','warning');
+        const days=Number((cfg.freeTrial&&cfg.freeTrial.days)||30), plan=(cfg.freeTrial&&cfg.freeTrial.plan)||'Basic'; const end=new Date(Date.now()+days*86400000).toISOString();
+        try{await db.collection('sellers').doc(activeSeller.email).set({subscription:plan,subStartDate:nowIso(),subEndDate:end,freeSubscriptionActive:true,freeSubscriptionRedeemedAt:nowIso(),subscriptionSource:'admin-free-month'},{merge:true});Object.assign(activeSeller,{subscription:plan,subStartDate:nowIso(),subEndDate:end,freeSubscriptionActive:true,freeSubscriptionRedeemedAt:nowIso()});localStorage.setItem('sellerToken',JSON.stringify(activeSeller));showAdminPopup('1 Month Free Subscription Activated',`Your ${safe(plan)} plan is active till ${new Date(end).toLocaleDateString()}.`);loadSubscriptionsUI();}catch(e){toast('Could not activate free subscription.','error');}
+    };
+
+    const oldOpenItemModal=window.openItemModal;
+    window.openItemModal=async function(){
+        const lim=await getLimits();
+        if((sellerProducts||[]).length>=lim.productLimit)return toast(`Your ${lim.plan.name} plan allows ${lim.productLimit} product listings. Upgrade your subscription to increase access.`,'warning');
+        return oldOpenItemModal?oldOpenItemModal():null;
+    };
+    async function uniqueSku(base,editId){
+        let sku=txt(base).trim().toUpperCase().replace(/\s+/g,'-'); if(!sku)sku='ARY-'+Date.now().toString(36).toUpperCase();
+        for(let i=0;i<12;i++){
+            const test=i?`${sku}-${i+1}`:sku;
+            let dup=false;
+            try{const snap=await db.collection('products').where('sku','==',test).limit(2).get(); snap.forEach(d=>{if(String(d.id)!==String(editId||''))dup=true;});}catch(e){}
+            if(!dup && !(sellerProducts||[]).some(p=>low(p.sku)===low(test)&&String(p.id)!==String(editId||'')))return test;
+        }
+        return sku+'-'+Math.random().toString(36).slice(2,6).toUpperCase();
+    }
+    const oldSubmitItemForm=window.submitItemForm;
+    window.submitItemForm=async function(){
+        const lim=await getLimits(); const id=$('editId')&&$('editId').value.trim();
+        if(!id && (sellerProducts||[]).length>=lim.productLimit)return toast(`Product limit reached: ${lim.productLimit}. Admin must upgrade subscription.`,'warning');
+        const skuEl=$('itemSku'); if(skuEl)skuEl.value=await uniqueSku(skuEl.value||$('itemName')?.value||'',id);
+        const priceEl=$('itemPrice'), mrpEl=$('itemMrp');
+        if(priceEl&&mrpEl&&Number(priceEl.value)>Number(mrpEl.value))return toast('Selling price cannot be greater than MRP.','warning');
+        try{ if(oldSubmitItemForm) await oldSubmitItemForm(); }
+        finally{
+            try{const saved=(sellerProducts||[])[0]; if(saved&&db) await db.collection('products').doc(saved.id).set({commissionPercent:lim.commissionPercent,deliveryChargePerProduct:lim.deliveryChargePerProduct,subscriptionPlanAtListing:lim.plan.name||currentPlanName()},{merge:true});}catch(e){}
+        }
+    };
+
+    const oldLoadSettings=window.loadSettingsUI;
+    window.loadSettingsUI=async function(){ try{oldLoadSettings&&oldLoadSettings();}catch(e){} await fetchAdminConfig(); await enforceSettingAccess(); await renderDownloadAppSetting(); };
+    async function enforceSettingAccess(){
+        const sellerControls=await hasFeature('sellerControls');
+        ['settingAutoAcc','settingVacation','settingSms','setting2fa','settingSearchSuggestions'].forEach(id=>{const el=$(id); if(el){el.disabled=!sellerControls; const card=el.closest('.setting-card-premium'); if(card)card.classList.toggle('sub-disabled',!sellerControls);}});
+        const branding=await hasFeature('storeBranding');
+        ['storeLogoInput','storeBannerInput'].forEach(id=>{const el=$(id); if(el)el.disabled=!branding;});
+        document.querySelectorAll('.branding-edit-btn').forEach(btn=>{btn.disabled=!branding;});
+        if($('logoLimitText'))$('logoLimitText').innerText=branding?'Store branding enabled by subscription/admin.':'Store branding locked. Admin must enable subscription access.';
+        if($('bannerLimitText'))$('bannerLimitText').innerText=branding?'Banner branding enabled by subscription/admin.':'Banner branding locked. Admin must enable subscription access.';
+        const orderEmail=await hasFeature('sendOrderEmail'); ensureOrderEmailSetting(orderEmail);
+    }
+    const oldToggleSetting=window.toggleSetting;
+    window.toggleSetting=async function(key){
+        const adminKeys=['autoAcc','vacation','sms','2fa','searchSuggestions','sendOrderEmail'];
+        if(adminKeys.includes(key)&&!(await hasFeature(key==='sendOrderEmail'?'sendOrderEmail':'sellerControls'))){ const el=$('setting'+key.charAt(0).toUpperCase()+key.slice(1)); if(el)el.checked=false; return toast('This setting is locked by subscription/admin access.','warning'); }
+        return oldToggleSetting?oldToggleSetting(key):null;
+    };
+    function ensureOrderEmailSetting(allowed){
+        if($('settingSendOrderEmail')){ $('settingSendOrderEmail').disabled=!allowed; return; }
+        const grid=document.querySelector('.settings-grid-premium'); if(!grid)return;
+        const div=document.createElement('div'); div.className='setting-card-premium'+(allowed?'':' sub-disabled'); div.innerHTML=`<div class="setting-left"><div class="setting-icon"><i class="fas fa-envelope-open-text"></i></div><div><div class="setting-title">Send Order Email</div><div class="setting-sub">New order email notification to seller. Admin/subscription controlled.</div></div></div><label class="premium-switch"><input type="checkbox" id="settingSendOrderEmail" ${activeSeller?.settings?.sendOrderEmail?'checked':''} ${allowed?'':'disabled'} onchange="toggleSetting('sendOrderEmail')"><span class="switch-slider"></span></label>`; grid.appendChild(div);
+    }
+    async function renderDownloadAppSetting(){
+        const cfg=await fetchAdminConfig(); if(!(cfg.appDownload&&cfg.appDownload.enabled))return;
+        if($('downloadAppSettingBox'))return;
+        const sec=$('settingsSection'); if(!sec)return;
+        const box=document.createElement('div'); box.id='downloadAppSettingBox'; box.className='panel-box mt-20'; box.innerHTML=`<h4 style="font-size:18px;font-weight:900;margin-bottom:10px;"><i class="fas fa-mobile-screen"></i> Download Aryanta App</h4><p class="muted-line">Enabled by admin.</p><button class="btn-prime" onclick="window.open('${safe(cfg.appDownload.url||'https://aryanta.in/app')}','_blank','noopener')"><i class="fas fa-download"></i> Download App</button>`; sec.appendChild(box);
+    }
+
+    const oldRenderDashboard=window.renderDashboardStats;
+    window.renderDashboardStats=async function(){
+        try{oldRenderDashboard&&oldRenderDashboard();}catch(e){}
+        const lim=await getLimits(); const today=new Date().toDateString(), mon=new Date().getMonth(); let todayCount=0, monthCount=0, revenue=0, upcoming=0; const chart=[0,0,0,0,0,0,0];
+        (sellerOrders||[]).forEach(o=>{const items=sellerItems(o); if(!items.length)return; const amt=orderAmount(o); const d=asDate(o.timestamp||o.createdAt||o.orderDate)||new Date(); if(d.toDateString()===today)todayCount++; if(d.getMonth()===mon)monthCount++; if(low(o.status).includes('deliver')){revenue+=amt; chart[d.getDay()]+=amt;} if(low(o.status).includes('deliver')&&!o.sellerSettled){upcoming+=Math.max(0,amt-Math.round(amt*lim.commissionPercent/100));}});
+        updateText('smartDailyOrders',todayCount); updateText('smartMonthlyOrders',monthCount); updateText('stat-total-inventory',(sellerProducts||[]).length); updateText('stat-total-pay','₹'+revenue.toLocaleString('en-IN')); updateText('stat-pending-pay','₹'+upcoming.toLocaleString('en-IN')); updateText('stat-followers',activeSeller?.followers||0);
+        const reviews=(sellerReviews||[]); let avg=0; if(reviews.length)avg=reviews.reduce((s,r)=>s+Number(r.rating||r.stars||0),0)/reviews.length; updateText('topShopRating',reviews.length?`${avg.toFixed(1)}/5 (${Math.round(avg/5*100)}%)`:'N/A');
+        const stats=productStats(); const views=stats.reduce((s,x)=>s+x.views,0); updateText('stat-product-views',views.toLocaleString('en-IN'));
+        const top=[...stats].sort((a,b)=>b.delivered-a.delivered)[0]; const losing=[...stats].sort((a,b)=>(b.cancelled+b.returned)-(a.cancelled+a.returned))[0];
+        if(top){updateText('stat-top-selling',txt(top.product.name||top.product.title||'-').slice(0,22)); updateText('stat-top-selling-meta',`${top.delivered} delivered | ₹${top.gross.toLocaleString('en-IN')}`);} if(losing){updateText('stat-top-losing',txt(losing.product.name||losing.product.title||'-').slice(0,22)); updateText('stat-top-losing-meta',`${losing.cancelled} cancel | ${losing.returned} return`);} try{if(typeof renderSalesChart==='function')renderSalesChart(chart);}catch(e){}
+    };
+
+    const oldLoadInventory=window.loadInventory;
+    window.loadInventory=function(){
+        try{oldLoadInventory&&oldLoadInventory();}catch(e){}
+        const rows=$('inventoryList'); if(!rows)return; const stats=productStats();
+        setTimeout(()=>{document.querySelectorAll('#inventoryList tr').forEach(tr=>{
+            const sku=tr.querySelector('[data-label="SKU & Images"] strong')?.innerText||''; const p=(sellerProducts||[]).find(x=>txt(x.sku||x.id).includes(sku)||txt(sku).includes(txt(x.sku||x.id).slice(0,8))); if(!p)return; const st=stats.find(x=>x.product.id===p.id); if(!st)return; const title=tr.querySelector('[data-label="Product Title"]'); if(title&&!title.querySelector('.metric-mini')){const total=Math.max(1,st.totalOrders); title.innerHTML+=`<div class="metric-mini"><span>Orders ${st.totalOrders}</span><span>Return ${Math.round(st.returned/total*100)}%</span><span>Cancel ${Math.round(st.cancelled/total*100)}%</span><span>Views ${st.views}</span></div>`;}
+        });},0);
+    };
+    window.loadProductPerformance=function(){
+        const list=$('productPerformanceList'); if(!list)return; const rows=productStats();
+        if(!rows.length){list.innerHTML='<div class="panel-box">No products found.</div>';return;}
+        list.innerHTML=rows.map(st=>{const p=st.product,total=Math.max(1,st.totalOrders),ret=Math.round(st.returned/total*100),can=Math.round(st.cancelled/total*100),del=Math.round(st.delivered/Math.max(1,st.totalQty)*100);return `<div class="performance-card">${productImg(p)}<h4>${safe(p.name||p.title||'Product')}</h4><p class="muted-line">Code: <b>${safe(p.sku||p.id)}</b> | Price: <b>₹${Number(p.price||0).toLocaleString('en-IN')}</b></p><div class="tiny-metric-grid"><div class="tiny-metric"><span>Total Sell</span>${st.totalQty}</div><div class="tiny-metric"><span>Delivered</span>${st.delivered}</div><div class="tiny-metric"><span>Cancelled</span>${st.cancelled}</div></div><div class="perf-bars"><small>Delivered ${del}%</small><div class="perf-bar"><i style="width:${Math.min(100,del)}%"></i></div><small>Returns ${ret}%</small><div class="perf-bar"><i style="width:${Math.min(100,ret)}%"></i></div><small>Cancelled ${can}%</small><div class="perf-bar"><i style="width:${Math.min(100,can)}%"></i></div></div><button class="btn-outline w-100" onclick="editItem('${safe(p.id)}')"><i class="fas fa-edit"></i> Edit Product</button></div>`;}).join('');
+    };
+
+    async function fetchSupportIssues(){
+        if(!db)return [];
+        const out=[];
+        try{const snap=await db.collection('support_issue_categories').orderBy('sort','asc').get(); snap.forEach(d=>out.push({id:d.id,...d.data()}));}catch(e){}
+        if(!out.length){try{const d=await db.collection('site_config').doc('support_issue_categories').get(); const arr=d.exists?(d.data().categories||[]):[]; arr.forEach((x,i)=>out.push({id:x.id||String(i),...x}));}catch(e){}}
+        if(!out.length)out.push({id:'payment',title:'Payment/Payout Issue',description:'Payment or settlement issue',requireImage:false,requireDocument:false,allowSkip:true},{id:'listing',title:'Product Listing Error',description:'Listing/QC/update issue',requireImage:true,requireDocument:false,allowSkip:true},{id:'other',title:'Other / General Query',description:'General seller support',allowSkip:true});
+        lastSupportIssueConfig=out; return out;
+    }
+    async function renderSupportCategories(){
+        const sel=$('supCategory'); if(!sel)return; const arr=await fetchSupportIssues(); const selected=sel.value; sel.innerHTML='<option value="">-- Select Issue Type --</option>'+arr.map(c=>`<option value="${safe(c.id||c.title)}">${safe(c.title||c.name||c.id)}</option>`).join(''); if(selected)sel.value=selected;
+    }
+    window.handleSupportCategoryChange=function(){
+        const val=$('supCategory')?.value; const c=lastSupportIssueConfig.find(x=>txt(x.id||x.title)===val)||{}; const detail=$('supportIssueDetailBox'), attach=$('supportAttachmentBox');
+        if(detail){detail.style.display=val?'block':'none'; detail.innerHTML=`<b>${safe(c.title||c.name||val||'Issue')}</b><br><span class="muted-line">${safe(c.description||c.details||'Describe this issue in detail.')}</span>`;}
+        const img=$('supImage'), doc=$('supDoc'), il=$('supportImageLabel'), dl=$('supportDocLabel'), skip=$('supportSkipDocBtn');
+        if(attach){attach.style.display=(c.requireImage||c.requireDocument||c.askImage||c.askDocument)?'block':'none';}
+        if(img){img.style.display=(c.requireImage||c.askImage)?'block':'none'; img.required=!!c.requireImage&&!c.allowSkip;} if(il)il.style.display=img&&img.style.display==='block'?'block':'none';
+        if(doc){doc.style.display=(c.requireDocument||c.askDocument)?'block':'none'; doc.required=!!c.requireDocument&&!c.allowSkip;} if(dl)dl.style.display=doc&&doc.style.display==='block'?'block':'none';
+        if(skip)skip.style.display=c.allowSkip?'inline-flex':'none';
+    };
+    window.skipSupportDocument=function(){ const img=$('supImage'),doc=$('supDoc'); if(img)img.value=''; if(doc)doc.value=''; toast('Optional upload skipped.','info'); };
+    async function fileData(input){ const f=input&&input.files&&input.files[0]; if(!f)return null; return new Promise((resolve,reject)=>{const r=new FileReader(); r.onerror=reject; r.onload=()=>resolve({name:f.name,type:f.type,size:f.size,dataUrl:r.result}); r.readAsDataURL(f);}); }
+    window.submitSupportTicket=async function(){
+        const cat=$('supCategory')?.value, phone=$('supPhone')?.value.trim(), desc=$('supDesc')?.value.trim(); if(!cat||!phone||!desc)return toast('Fill support category, phone and detailed description.','warning');
+        const c=lastSupportIssueConfig.find(x=>txt(x.id||x.title)===cat)||{};
+        try{const [image,doc]=await Promise.all([fileData($('supImage')),fileData($('supDoc'))]); await db.collection('seller_support_tickets').add({email:email(),sellerEmail:email(),sellerName:activeSeller.companyName||activeSeller.shopName||'',category:cat,categoryTitle:c.title||cat,categoryDetail:c.description||'',phone,description:desc,image,document:doc,status:'Pending',timestamp:nowIso(),createdAt:nowIso(),source:'seller-panel'}); toast('Support ticket sent to admin.','success'); ['supDesc','supPhone','supImage','supDoc'].forEach(id=>{const el=$(id); if(el)el.value='';}); await renderSupportCategories(); }catch(e){toast('Could not submit support ticket.','error');}
+    };
+
+    async function requestCharge(type,amount,reason,extra={}){ try{await db.collection('seller_charge_requests').add({sellerEmail:email(),type,amount:Number(amount||0),reason,status:'Pending Admin Approval',createdAt:nowIso(),...extra});}catch(e){console.warn('charge request failed',e);} }
+    window.cancelOrder=async function(id){
+        if(!confirm('Cancel this order? Any fine/charge will go to admin approval first.'))return;
+        try{await db.collection('orders').doc(id).set({status:'Cancelled',cancelledAt:nowIso(),cancelledBySeller:true},{merge:true}); const o=(sellerOrders||[]).find(x=>String(x.id)===String(id)); if(o)o.status='Cancelled'; await requestCharge('seller_order_cancel',0,'Seller cancelled order - admin decides fine',{orderId:id}); toast('Order cancelled. Fine request sent to admin for approval, no direct fine added.','success'); renderDashboardStats(); if(typeof loadNewOrders==='function')loadNewOrders();}
+        catch(e){toast('Could not cancel order.','error');}
+    };
+    window.skipAndShip=async function(){
+        const id=$('scanOrderId')?.value||'';
+        if(!id)return toast('You must scan an invoice first.','warning');
+        if(!confirm('Skip scan and send admin approval request? No fine will be added directly.'))return;
+        await requestCharge('skip_scan',0,'Seller skipped dispatch/warranty scan - admin decides fine',{orderId:id});
+        try{if(html5QrcodeScanner){await html5QrcodeScanner.clear(); html5QrcodeScanner=null;}}catch(e){}
+        if(typeof executeDispatch==='function')executeDispatch(id,'SKIPPED_ADMIN_REVIEW','SKIPPED_ADMIN_REVIEW');
+        else toast('Skip request sent to admin.','success');
+    };
+
+    window.loadReturnTracking=function(){
+        const box=$('returnTrackingList'); if(!box)return; const rows=[]; const cutoff=15*86400000;
+        (sellerOrders||[]).forEach(o=>{const status=low(o.status); const afterDispatch=status.includes('deliver')||status.includes('ship')||status.includes('cancel'); if(!afterDispatch)return; const d=asDate(o.deliveredAt||o.shippedAt||o.timestamp)||new Date(); const deadline=asDate(o.returnDeadline||o.adminReturnDeadline)||new Date(d.getTime()+cutoff); sellerItems(o).forEach(i=>{const p=productOfItem(i)||{}; rows.push({o,i,p,d,deadline});});});
+        box.innerHTML=rows.length?rows.map(r=>`<div class="return-card"><h4>${safe(r.i.name||r.i.title||r.p.name||'Product')}</h4><p class="muted-line">Order: <b>${safe(r.o.order_no||r.o.id)}</b><br>Status: <b>${safe(r.o.status)}</b><br>Expected return window: <b>${r.deadline.toLocaleDateString()}</b></p><button class="btn-prime w-100" onclick="openReturnClaimModal('${safe(r.o.id)}','${safe(r.p.id||r.i.productId||'')}')"><i class="fas fa-paper-plane"></i> Claim Return</button><div id="claimStatus-${safe(r.o.id)}" class="muted-line" style="margin-top:8px;">Claim status fetched from admin DB when available.</div></div>`).join(''):'<div class="panel-box">No return tracking items found.</div>';
+        fetchReturnClaimStatuses();
+    };
+    window.openReturnClaimModal=function(orderId,productId){ if($('returnClaimOrderId'))$('returnClaimOrderId').value=orderId; if($('returnClaimProductId'))$('returnClaimProductId').value=productId; openModal('returnClaimModal'); };
+    window.submitReturnClaim=async function(){
+        const orderId=$('returnClaimOrderId')?.value, productId=$('returnClaimProductId')?.value, title=$('returnClaimTitle')?.value.trim(), message=$('returnClaimMessage')?.value.trim(); if(!title||!message)return toast('Add claim title and message.','warning');
+        try{const image=await fileData($('returnClaimImage')); await db.collection('seller_return_claims').add({sellerEmail:email(),orderId,productId,title,message,image,status:'Pending',createdAt:nowIso(),source:'seller-panel'}); closeModal('returnClaimModal'); toast('Return claim sent to admin.','success'); loadReturnTracking();}catch(e){toast('Could not send claim.','error');}
+    };
+    async function fetchReturnClaimStatuses(){
+        try{const snap=await db.collection('seller_return_claims').where('sellerEmail','==',email()).orderBy('createdAt','desc').limit(80).get(); snap.forEach(d=>{const c=d.data(); const el=$('claimStatus-'+c.orderId); if(el)el.innerHTML=`Latest claim: <b>${safe(c.status||'Pending')}</b>${c.adminMessage?' - '+safe(c.adminMessage):''}`;});}catch(e){}
+    }
+
+    async function fetchEventAds(){
+        const rows=[]; try{const snap=await db.collection('seller_events').orderBy('startAt','desc').limit(60).get(); snap.forEach(d=>rows.push({id:d.id,...d.data()}));}catch(e){}
+        activeEventRows=rows; return rows;
+    }
+    window.loadEventAds=async function(){ await fetchEventAds(); renderEventAds(activeEventTab); };
+    window.renderEventAds=function(tab){ activeEventTab=tab||'live'; ['live','expired'].forEach(t=>{const b=$('event-tab-'+t); if(b)b.classList.toggle('active',t===activeEventTab);}); const box=$('eventAdsList'); if(!box)return; const now=Date.now(); const rows=(activeEventRows||[]).filter(e=>{const start=dateMs(e.startAt||e.startDate)||0,end=dateMs(e.endAt||e.endDate)||0,live=(e.active!==false)&&(!start||start<=now)&&(!end||end>=now); return activeEventTab==='live'?live:!live;}); box.innerHTML=rows.length?rows.map(e=>{const img=e.image||e.imageUrl||e.banner||''; const cost=Number(e.cost||e.fee||0); return `<div class="event-card">${img?`<img src="${safe(img)}" loading="lazy" style="width:100%;height:150px;object-fit:cover;border-radius:16px;margin-bottom:12px;">`:''}<h4>${safe(e.title||e.name||'Aryanta Event')}</h4><p class="muted-line">${safe(e.description||e.desc||'Admin event')}<br>Cost: <b>${cost?('₹'+cost):'Free'}</b><br>Ends: <b>${asDate(e.endAt||e.endDate)?.toLocaleString()||'Admin controlled'}</b></p>${activeEventTab==='live'?`<button class="btn-prime w-100" onclick="openEventParticipate('${safe(e.id)}')"><i class="fas fa-plus"></i> Participate</button>`:`<button class="btn-outline w-100" onclick="viewExpiredEvent('${safe(e.id)}')"><i class="fas fa-eye"></i> View Details</button>`}</div>`;}).join(''):'<div class="panel-box">No events in this tab.</div>'; };
+    window.openEventParticipate=function(id){ const e=(activeEventRows||[]).find(x=>String(x.id)===String(id)); if(!e)return; if($('eventParticipateId'))$('eventParticipateId').value=id; if($('eventParticipateInfo'))$('eventParticipateInfo').innerHTML=`<b>${safe(e.title||e.name)}</b><br><span class="muted-line">Select max 5 inventory items.</span>`; const box=$('eventInventorySelect'); if(box)box.innerHTML=(sellerProducts||[]).map(p=>`<label class="event-product-option"><input type="checkbox" class="event-product-cb" value="${safe(p.id)}" onchange="limitEventProducts(this)">${productImg(p)}<span>${safe(p.name||p.title||p.sku||p.id)}</span></label>`).join(''); openModal('eventParticipateModal'); };
+    window.limitEventProducts=function(cb){ const checked=[...document.querySelectorAll('.event-product-cb:checked')]; if(checked.length>5){cb.checked=false;toast('Maximum 5 products allowed.','warning');} };
+    window.submitEventParticipation=async function(){ const eventId=$('eventParticipateId')?.value; const ids=[...document.querySelectorAll('.event-product-cb:checked')].map(x=>x.value); if(!ids.length)return toast('Select at least one product.','warning'); const e=(activeEventRows||[]).find(x=>String(x.id)===String(eventId))||{}; try{await db.collection('seller_event_participations').doc(eventId+'_'+email().replace(/[^a-z0-9]/g,'_')).set({eventId,sellerEmail:email(),productIds:ids,status:'Pending Admin Review',cost:Number(e.cost||e.fee||0),createdAt:nowIso()},{merge:true}); closeModal('eventParticipateModal'); toast('Event participation sent to admin.','success');}catch(err){toast('Could not submit event products.','error');} };
+    window.viewExpiredEvent=function(id){ const e=(activeEventRows||[]).find(x=>String(x.id)===String(id)); if(!e)return; showAdminPopup(e.title||'Expired Event',`${safe(e.description||'Event expired.')}<br><br>Your participation details are available in admin review if you joined this event.`); };
+
+    window.loadLoanSection=async function(){
+        const box=$('loanContent'); if(!box)return; const eligible=!!(activeSeller&&(activeSeller.loanEligible||activeSeller.loanAccess||activeSeller.loanActive));
+        if(!eligible){box.innerHTML='<h3 style="font-weight:900;">We will notify you when you are eligible.</h3><p class="muted-line">Loan access is controlled by admin based on seller profile, orders and settlement history.</p>';return;}
+        let loan={}; try{const s=await db.collection('seller_loans').where('sellerEmail','==',email()).limit(1).get(); if(!s.empty)loan=s.docs[0].data();}catch(e){}
+        box.innerHTML=`<h3 style="font-weight:900;color:var(--success);">Loan Access Active</h3><p class="muted-line">Limit: <b>₹${Number(loan.limit||activeSeller.loanLimit||0).toLocaleString('en-IN')}</b><br>Status: <b>${safe(loan.status||activeSeller.loanStatus||'Eligible')}</b></p><button class="btn-prime" onclick="requestSellerLoan()"><i class="fas fa-paper-plane"></i> Request Loan</button>`;
+    };
+    window.requestSellerLoan=async function(){ try{await db.collection('seller_loan_requests').add({sellerEmail:email(),sellerName:activeSeller.companyName||'',status:'Pending Admin Review',createdAt:nowIso()});toast('Loan request sent to admin.','success');}catch(e){toast('Could not send loan request.','error');} };
+
+    function showAdminPopup(title,msg){ const t=$('adminPopupTitle'),m=$('adminPopupMessage'),modal=$('adminPopupModal'); if(t)t.innerHTML=title; if(m)m.innerHTML=msg; if(modal){modal.style.display='flex';setTimeout(()=>modal.classList.add('show'),10);} else toast(txt(title).replace(/<[^>]*>/g,''),'info'); }
+    window.checkAdminPopups=async function(){
+        if(!db||!activeSeller)return; try{const seenKey='popupSeen_'+email(); const localSeen=JSON.parse(sessionStorage.getItem(seenKey)||'[]'); const snap=await db.collection('seller_popups').where('active','==',true).limit(20).get(); for(const d of snap.docs){const p=d.data(); const target=low(p.target||p.sellerEmail||'all'); if(!(target==='all'||target==='sellers'||target===email()))continue; if(localSeen.includes(d.id))continue; showAdminPopup(p.title||'Aryanta Notice',p.message||p.text||'New message from admin.'); localSeen.push(d.id); sessionStorage.setItem(seenKey,JSON.stringify(localSeen)); try{await db.collection('seller_popup_reads').doc(d.id+'_'+email().replace(/[^a-z0-9]/g,'_')).set({popupId:d.id,sellerEmail:email(),readAt:nowIso()},{merge:true});}catch(e){} break; }}catch(e){}
+    };
+    async function checkFirstOrderPopup(){ if(!activeSeller||activeSeller.firstOrderPopupShown)return; if((sellerOrders||[]).length>0){showAdminPopup('Congratulations 🎉','You received your first Aryanta order. Please accept and dispatch it on time.'); try{await db.collection('sellers').doc(activeSeller.email).set({firstOrderPopupShown:true,firstOrderPopupAt:nowIso()},{merge:true}); activeSeller.firstOrderPopupShown=true;}catch(e){}} }
+
+    window.fetchNotifications=async function(){
+        if(!db||!activeSeller)return; const rows=[]; try{const b=await db.collection('admin_broadcasts').orderBy('timestamp','desc').limit(40).get(); b.forEach(doc=>{const d=doc.data(); const target=low(d.target||d.sellerEmail||'all'); if(target==='all'||target==='sellers'||target===email())rows.push({id:doc.id,text:d.message||d.text||d.title||'Notice',title:d.title||'Aryanta Notice',time:d.timestamp||d.createdAt||nowIso(),link:d.link||d.url||''});});}catch(e){} try{const s=await db.collection('seller_notifications').where('sellerEmail','==',email()).orderBy('timestamp','desc').limit(30).get(); s.forEach(doc=>{const d=doc.data(); rows.push({id:doc.id,text:d.text||d.message||d.title||'Notification',title:d.title||'Seller Notification',time:d.timestamp||d.createdAt||nowIso(),link:d.link||d.url||''});});}catch(e){} adminNotifications=rows.sort((a,b)=>dateMs(b.time)-dateMs(a.time)); const count=adminNotifications.length; ['notifBadge','topbarNotifBadge'].forEach(id=>{const el=$(id); if(el){el.innerText=count; el.style.display=count?'inline-block':'none';}}); const list=$('fullNotifList')||$('notifList'); if(list)list.innerHTML=count?adminNotifications.map((n,i)=>`<div class="return-card" onclick="openFullNotifFinal('${safe(n.id)}')" style="cursor:pointer;margin-bottom:10px;"><h4>${i+1}. ${safe(n.title||'Notification')}</h4><p class="muted-line">${safe(n.text)}<br>${asDate(n.time)?.toLocaleString()||''}</p>${n.link?'<span class="ok-chip"><i class="fas fa-link"></i> Link attached</span>':''}</div>`).join(''):'<div class="panel-box">No notifications.</div>'; };
+
+    const oldShow=window.showSection;
+    window.showSection=async function(section){
+        if(['returnTracking','productPerformance','eventAds','loan'].includes(section)){
+            document.querySelectorAll('.data-section').forEach(sec=>sec.classList.remove('active')); const el=$(section+'Section'); if(el)el.classList.add('active'); const sb=$('mobileSidebar'); if(sb)sb.classList.remove('open'); const ov=$('mobileSidebarOverlay'); if(ov)ov.style.display='none';
+            if(section==='returnTracking'){ if(typeof ensureSellerOrders==='function')await ensureSellerOrders(); loadReturnTracking(); }
+            if(section==='productPerformance'){ if(typeof ensureSellerOrders==='function')await ensureSellerOrders(); loadProductPerformance(); }
+            if(section==='eventAds'){ if(typeof ensureSellerProducts==='function')await ensureSellerProducts(); loadEventAds(); }
+            if(section==='loan')loadLoanSection();
+            return;
+        }
+        const res=oldShow?oldShow(section):null;
+        if(section==='subscription')setTimeout(()=>loadSubscriptionsUI(),80);
+        if(section==='ads')setTimeout(()=>loadAds(),80);
+        if(section==='support')setTimeout(()=>renderSupportCategories().then(handleSupportCategoryChange),80);
+        return res;
+    };
+    document.addEventListener('DOMContentLoaded',()=>{setTimeout(async()=>{try{await fetchAdminConfig(); await renderPlanBadges(); await renderSupportCategories(); await fetchNotifications(); await checkAdminPopups(); await checkFirstOrderPopup(); await cleanupExpiredSponsoredAds(false); setInterval(()=>cleanupExpiredSponsoredAds(false),60000);}catch(e){console.warn('rebuild boot skipped',e);}},1600);});
+})();
+
+/* Aryanta Prime Seller Panel Upgrade - 2026-05-23
+   Final override layer for subscriptions, notifications, sponsorship, support issues, breach fines and settings locks. */
+(function(){
+    const PATCH='ARYANTA_PRIME_SELLER_FINAL_2026_05_23';
+    if(window[PATCH]) return;
+    window[PATCH]=true;
+
+    const $=id=>document.getElementById(id);
+    const txt=v=>String(v==null?'':v);
+    const low=v=>txt(v).toLowerCase().trim();
+    const safe=v=>txt(v).replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]));
+    const nowIso=()=>new Date().toISOString();
+    const sellerEmail=()=>low(activeSeller && activeSeller.email);
+    const sellerDocId=()=>activeSeller && (activeSeller.email || activeSeller.id || activeSeller.uid);
+    const toast=(m,t='info')=>typeof showToast==='function'?showToast(m,t):alert(m);
+    const toDate=v=>{
+        if(!v) return null;
+        if(v && typeof v.toDate==='function') return v.toDate();
+        const d=new Date(v);
+        return Number.isFinite(d.getTime())?d:null;
+    };
+    const dateMs=v=>{const d=toDate(v);return d?d.getTime():0;};
+    const monthKey=()=>new Date().toISOString().slice(0,7);
+
+    const PRIME_PLANS={
+        Basic:{name:'Basic / Free',key:'Basic',price:0,monthlyPrice:0,commissionPercent:7,productLimit:30,freeAds:0,sponsoredAdPrice:70,sort:1,recommended:false,trial:false,features:{offlineMode:true,darkTheme:true,searchSuggestions:true,notifications:true,sponsoredAds:true,supportTickets:true,autoAcceptOrders:false,vacationMode:false,smsAlerts:false,sendOrderEmail:false,twoFactor:false,brandingTools:false,profileBranding:false,b2bSupplies:false,downloadApp:false,bankEdit:false,fineControl:false},benefits:['Free seller access','Search suggestions','Offline mode toggle','Dark theme toggle','Sponsored ad available by ₹70 payment only']},
+        Growth:{name:'Growth',key:'Growth',price:259,monthlyPrice:259,commissionPercent:6,productLimit:150,freeAds:2,sponsoredAdPrice:70,sort:2,recommended:true,trial:true,trialDays:30,features:{offlineMode:true,darkTheme:true,searchSuggestions:true,notifications:true,sponsoredAds:true,supportTickets:true,brandingTools:true,profileBranding:true,b2bSupplies:true,downloadApp:true,bankEdit:true,twoFactor:true,autoAcceptOrders:false,vacationMode:false,smsAlerts:false,sendOrderEmail:false,fineControl:false},benefits:['Recommended starter growth plan','1 month free once per seller','6% commission','Store branding access','No email notification access','Auto accept, vacation and SMS remain locked']},
+        Pro:{name:'Pro',key:'Pro',price:659,monthlyPrice:659,commissionPercent:5,productLimit:500,freeAds:6,sponsoredAdPrice:70,sort:3,recommended:false,trial:false,features:{offlineMode:true,darkTheme:true,searchSuggestions:true,notifications:true,sponsoredAds:true,supportTickets:true,brandingTools:true,profileBranding:true,b2bSupplies:true,downloadApp:true,bankEdit:true,twoFactor:true,autoAcceptOrders:true,vacationMode:true,smsAlerts:true,sendOrderEmail:true,fineControl:true},benefits:['5% commission','Auto accept orders','Vacation mode','SMS alerts','Email order notifications','Advanced seller controls','Higher sponsored ad allowance']}
+    };
+    window.ARYANTA_PRIME_PLANS=PRIME_PLANS;
+
+    const DEFAULT_ISSUES=[
+        ['payment-payout','Payment / Payout Issue','Settlement, UTR, payout delay or wrong deduction.'],
+        ['product-listing','Product Listing Error','Title, price, image, stock, category or QC listing problem.'],
+        ['order-acceptance','Order Acceptance Problem','Unable to accept, cancel, or process a new order.'],
+        ['slip-printing','Slip / Invoice Printing','Invoice, shipping label, barcode or packing slip not printing.'],
+        ['shipping-pickup','Shipping / Pickup Delay','Pickup failed, courier delay, pickup address problem.'],
+        ['return-claim','Return / RTO Claim','Return received damaged, missing, wrong, or RTO dispute.'],
+        ['warranty-claim','Warranty Claim','Warranty scan, warranty proof or warranty replacement issue.'],
+        ['fine-dispute','Fine / Breach Dispute','Request admin review of a fine or breach mark.'],
+        ['sponsored-ad','Sponsored Ad Payment','Ad payment, sponsorship activation or 24-hour boost issue.'],
+        ['subscription','Subscription / Free Month','Plan activation, free month, Pro/Growth benefit or renewal issue.'],
+        ['kyc-gst','KYC / GST Upload','PAN, Aadhaar, GST, shop proof or bank KYC issue.'],
+        ['bank-update','Bank Account Update','IFSC, account number, beneficiary or settlement bank issue.'],
+        ['app-login','App / Login Problem','Password, OTP, 2FA, session or device login issue.'],
+        ['inventory-stock','Inventory / Stock Issue','Stock mismatch, low stock, bulk update or item hidden issue.'],
+        ['pricing-commission','Pricing / Commission','MRP, selling price, listed price or commission calculation issue.'],
+        ['customer-message','Customer Message / Q&A','Customer question, review reply or message moderation issue.'],
+        ['b2b-supply','B2B Supply Order','Wholesale material, B2B order or supplier payment issue.'],
+        ['account-status','Account Block / Suspension','Seller account restricted, offline forced, or contact admin required.'],
+        ['technical-bug','Technical Bug / UI Error','Button not working, blank page, slow panel, or browser error.'],
+        ['other','Other Seller Help','Any other issue that needs Aryanta admin support.']
+    ].map((x,i)=>({id:x[0],title:x[1],name:x[1],description:x[2],sort:i+1,active:true,askImage:true,allowSkip:true,requireImage:false,attachmentLabel:'Upload picture / screenshot (optional)',attachmentHelp:'You can upload proof or skip it.'}));
+    window.ARYANTA_DEFAULT_ISSUES=DEFAULT_ISSUES;
+
+    function normalPlanName(v){
+        const p=low(v || (activeSeller && (activeSeller.subscription||activeSeller.plan||activeSeller.subscriptionPlan||activeSeller.subscriptionName)));
+        if(!p || ['none','free','basic','basic / free','basic/free','trial expired'].includes(p)) return 'Basic';
+        if(p.includes('growth') || p.includes('grow')) return 'Growth';
+        if(p.includes('pro')) return 'Pro';
+        return PRIME_PLANS[p] ? p : 'Basic';
+    }
+    function activePlanName(){
+        const name=normalPlanName();
+        const end=toDate(activeSeller && (activeSeller.subEndDate||activeSeller.subscriptionEndDate));
+        if(name!=='Basic' && end && end.getTime()<Date.now()) return 'Basic';
+        return name;
+    }
+    function plan(){return PRIME_PLANS[activePlanName()] || PRIME_PLANS.Basic;}
+    function sellerAccessOverride(feature){
+        const a=(activeSeller && (activeSeller.subscriptionAccess||activeSeller.featureAccess||activeSeller.adminFeatureAccess)) || {};
+        if(Object.prototype.hasOwnProperty.call(a,feature)) return a[feature]===true;
+        return null;
+    }
+    function featureAllowed(feature){
+        const direct=sellerAccessOverride(feature);
+        if(direct!==null) return direct;
+        const p=plan();
+        return !!(p.features && p.features[feature]);
+    }
+    window.aryantaCurrentPlan=plan;
+    window.aryantaFeatureAllowed=featureAllowed;
+    window.getAryantaCommissionPercent=()=>Number(plan().commissionPercent||7);
+    window.getAryantaCommissionRate=()=>window.getAryantaCommissionPercent()/100;
+
+    function itemList(order){
+        try{ if(typeof getSellerItemsFromOrder==='function') return getSellerItemsFromOrder(order)||[]; }catch(e){}
+        return Array.isArray(order&&order.items)?order.items:[];
+    }
+    function itemAmount(i){return Number(i.sellingPrice||i.price||i.finalPrice||0)*Number(i.qty||i.quantity||1);}
+    function orderAmount(o){const items=itemList(o);return items.length?items.reduce((s,i)=>s+itemAmount(i),0):Number(o&& (o.finalAmount||o.totalPrice||o.amount||o.total)||0);}
+    function productImage(p){
+        const img=p && (p.image||p.mainImage||p.imageUrl||p.thumbnail||(Array.isArray(p.images)&&p.images[0]));
+        return img?`<img src="${safe(img)}" loading="lazy" style="width:100%;height:150px;object-fit:cover;border-radius:16px;margin-bottom:12px;">`:`<div class="prime-image-fallback"><i class="fas fa-box-open"></i></div>`;
+    }
+    function productMatch(item){
+        const id=txt(item.id||item.productId||item.product_id||item.productDocId).trim();
+        const sku=low(item.sku), name=low(item.name||item.title);
+        return (sellerProducts||[]).find(p=>txt(p.id||p.productId).trim()===id || (sku&&low(p.sku)===sku) || (name&&low(p.name||p.title)===name));
+    }
+    function productStats(){
+        const map={};
+        (sellerProducts||[]).forEach(p=>{const id=txt(p.id||p.productId||p.sku||p.name); if(id) map[id]={product:p,totalQty:0,totalOrders:0,delivered:0,cancelled:0,returned:0,gross:0,views:Number(p.views||p.totalViews||p.clicks||p.totalClicks||0)};});
+        (sellerOrders||[]).forEach(o=>{
+            const status=low(o.status||o.orderStatus);
+            itemList(o).forEach(i=>{
+                const p=productMatch(i); if(!p) return;
+                const id=txt(p.id||p.productId||p.sku||p.name); if(!map[id]) return;
+                const st=map[id], q=Number(i.qty||i.quantity||1);
+                st.totalQty+=q; st.totalOrders+=1; st.gross+=itemAmount(i);
+                if(status.includes('deliver')) st.delivered+=q;
+                if(status.includes('cancel')||status.includes('breach')) st.cancelled+=q;
+                if(status.includes('return')||status.includes('rto')) st.returned+=q;
+            });
+        });
+        return Object.values(map);
+    }
+    async function saveLedger(entry){
+        if(!db || !activeSeller) return;
+        const payload={sellerEmail:sellerEmail(),sellerName:activeSeller.companyName||activeSeller.shopName||activeSeller.email||'',createdAt:nowIso(),month:monthKey(),...entry};
+        try{await db.collection('seller_payment_ledger').add(payload);}catch(e){console.warn('seller_payment_ledger failed',e);}
+    }
+    async function addFineOnce(key, amount, reason, extra={}){
+        if(!db || !activeSeller) return false;
+        const id=(sellerEmail()+'_'+key).replace(/[^a-zA-Z0-9_-]/g,'_');
+        const payload={email:sellerEmail(),sellerEmail:sellerEmail(),sellerName:activeSeller.companyName||activeSeller.shopName||'',amount:Number(amount||0),reason,key,status:'Pending Payment',timestamp:nowIso(),createdAt:nowIso(),source:'seller-panel-auto',...extra};
+        try{
+            const ref=db.collection('seller_fine_events').doc(id);
+            const doc=await ref.get();
+            if(doc.exists) return false;
+            await ref.set(payload,{merge:true});
+            await db.collection('fines').add(payload);
+            await saveLedger({type:'fine',amount:-Number(amount||0),status:'Fine Added',reason,reference:key});
+            sellerFines=sellerFines||[]; sellerFines.push({id,...payload});
+            return true;
+        }catch(e){console.warn('addFineOnce failed',e); return false;}
+    }
+    window.aryantaAddFineOnce=addFineOnce;
+    window.aryantaSavePaymentLedger=saveLedger;
+
+    function decorateStaticUI(){
+        document.querySelectorAll('.nav-item').forEach(n=>{
+            const t=low(n.textContent);
+            if(t.includes('seller loan') || t.includes('event ads')) n.remove();
+        });
+        ['loanSection','eventAdsSection','eventParticipateModal'].forEach(id=>{const el=$(id); if(el) el.remove();});
+        ['stat-top-selling','stat-top-selling-meta','stat-top-losing','stat-top-losing-meta'].forEach(id=>{const el=$(id); const card=el&&el.closest('.stat-card'); if(card) card.remove();});
+        const perfBtn=document.querySelector('#inventorySection button[onclick*="productPerformance"]');
+        if(perfBtn) perfBtn.remove();
+        document.body.classList.add('aryanta-prime-ui');
+    }
+
+    const oldShowSection=window.showSection;
+    window.showSection=function(section){
+        if(section==='loan' || section==='eventAds'){
+            toast('This function has been removed from the seller panel.','warning');
+            return oldShowSection ? oldShowSection('home') : null;
+        }
+        const res=oldShowSection?oldShowSection(section):null;
+        if(section==='settings') setTimeout(loadSettingsUI,80);
+        if(section==='subscription') setTimeout(loadSubscriptionsUI,80);
+        if(section==='notifications') setTimeout(fetchNotifications,80);
+        if(section==='support') setTimeout(()=>{renderSupportCategories(); handleSupportCategoryChange();},80);
+        if(section==='productPerformance') setTimeout(loadProductPerformance,80);
+        if(['acceptedOrders','newOrders','breached','home'].includes(section)) setTimeout(auditAcceptedSlipBreaches,900);
+        return res;
+    };
+
+    function settingFeatureKey(key){
+        const m={offline:'offlineMode',dark:'darkTheme',darkTheme:'darkTheme',searchSuggestions:'searchSuggestions',autoAcc:'autoAcceptOrders',autoAcceptOrders:'autoAcceptOrders',vacation:'vacationMode',vacationMode:'vacationMode',sms:'smsAlerts',smsAlerts:'smsAlerts','2fa':'twoFactor',twoFactor:'twoFactor',sendOrderEmail:'sendOrderEmail',bankEdit:'bankEdit'};
+        return m[key]||key;
+    }
+    function settingInputIds(key){
+        const cap=key.charAt(0).toUpperCase()+key.slice(1);
+        const ids=[`setting${cap}`];
+        if(key==='autoAcc') ids.push('settingAutoAcceptOrders');
+        if(key==='autoAcceptOrders') ids.push('settingAutoAcc');
+        if(key==='sms') ids.push('settingSmsAlerts');
+        if(key==='smsAlerts') ids.push('settingSms');
+        if(key==='darkTheme') ids.push('settingDark');
+        if(key==='dark') ids.push('settingDarkTheme');
+        return ids;
+    }
+    function setSettingControl(key, checked){
+        settingInputIds(key).forEach(id=>{const el=$(id); if(el) el.checked=!!checked;});
+    }
+    function lockSettingControl(key, allowed){
+        settingInputIds(key).forEach(id=>{
+            const el=$(id); if(!el) return;
+            el.disabled=!allowed;
+            const card=el.closest('.setting-card-premium')||el.closest('.setting-card');
+            if(card){card.classList.toggle('sub-disabled',!allowed); card.dataset.lockReason=allowed?'':`${plan().name} does not include this feature`;}
+        });
+    }
+    const oldLoadSettingsUI=window.loadSettingsUI;
+    window.loadSettingsUI=async function(){
+        try{oldLoadSettingsUI&&oldLoadSettingsUI();}catch(e){}
+        if(!activeSeller) return;
+        if(!activeSeller.settings) activeSeller.settings={};
+        if(activeSeller.settings.searchSuggestions===undefined) activeSeller.settings.searchSuggestions=true;
+        const controlled=['offline','darkTheme','searchSuggestions','autoAcc','autoAcceptOrders','vacation','sms','smsAlerts','2fa','sendOrderEmail'];
+        controlled.forEach(key=>{
+            const f=settingFeatureKey(key);
+            const allowed=featureAllowed(f);
+            lockSettingControl(key,allowed);
+            if(!allowed){
+                setSettingControl(key,false);
+                if(f==='autoAcceptOrders') activeSeller.settings.autoAcc=activeSeller.settings.autoAcceptOrders=false;
+                else if(f==='vacationMode') activeSeller.settings.vacation=false;
+                else if(f==='smsAlerts') activeSeller.settings.sms=activeSeller.settings.smsAlerts=false;
+                else if(f==='sendOrderEmail') activeSeller.settings.sendOrderEmail=false;
+            }
+        });
+        setSettingControl('searchSuggestions', activeSeller.settings.searchSuggestions!==false);
+        setSettingControl('offline', !!activeSeller.settings.offline);
+        setSettingControl('darkTheme', !!(activeSeller.settings.darkTheme||activeSeller.settings.dark));
+        const noticeId='settingPlanAccessNotice';
+        let notice=$(noticeId);
+        const sec=$('settingsSection');
+        if(sec && !notice){notice=document.createElement('div'); notice.id=noticeId; notice.className='panel-box mini-plan-box prime-plan-notice'; sec.insertBefore(notice, sec.firstElementChild?.nextSibling||sec.firstChild);}
+        if(notice) notice.innerHTML=`<b><i class="fas fa-crown"></i> Current Plan:</b> ${safe(plan().name)} · Commission <b>${plan().commissionPercent}%</b><br><span class="muted-line">Free users can use Offline Mode, Dark Theme and Search Suggestions. Growth locks Auto Accept, Vacation, SMS and Email notifications. Pro unlocks all seller controls.</span>`;
+    };
+    const oldToggleSetting=window.toggleSetting;
+    window.toggleSetting=async function(key){
+        if(!activeSeller) return toast('Login required.','error');
+        const feature=settingFeatureKey(key);
+        if(!featureAllowed(feature)){
+            settingInputIds(key).forEach(id=>{const el=$(id); if(el) el.checked=false;});
+            return toast(`${plan().name} does not include this setting. Upgrade to Pro to unlock it.`, 'warning');
+        }
+        if(!activeSeller.settings) activeSeller.settings={};
+        const el=settingInputIds(key).map(id=>$(id)).find(Boolean);
+        const checked=el ? !!el.checked : !activeSeller.settings[key];
+        if(key==='dark' || key==='darkTheme'){
+            activeSeller.settings.darkTheme=checked; activeSeller.settings.dark=checked;
+            document.body.classList.toggle('dark-theme',checked);
+        }else if(key==='autoAcc' || key==='autoAcceptOrders'){
+            activeSeller.settings.autoAcc=checked; activeSeller.settings.autoAcceptOrders=checked;
+        }else if(key==='sms' || key==='smsAlerts'){
+            activeSeller.settings.sms=checked; activeSeller.settings.smsAlerts=checked;
+        }else activeSeller.settings[key]=checked;
+        if(key==='searchSuggestions') activeSeller.settings.searchSuggestions=checked;
+        try{await db.collection('sellers').doc(sellerDocId()).set({settings:activeSeller.settings,updatedAt:nowIso()},{merge:true});}catch(e){console.warn(e);}
+        localStorage.setItem('sellerToken',JSON.stringify(activeSeller));
+        toast('Setting updated.','success');
+        try{ if(oldToggleSetting && !['dark','darkTheme','autoAcc','autoAcceptOrders','sms','smsAlerts','searchSuggestions'].includes(key)) return oldToggleSetting(key); }catch(e){}
+        loadSettingsUI();
+    };
+
+    const oldHandleSearch=window.handleGlobalSearch;
+    window.handleGlobalSearch=function(){
+        if(activeSeller && activeSeller.settings && activeSeller.settings.searchSuggestions===false){const box=$('searchSuggestions'); if(box){box.style.display='none'; box.innerHTML='';} return;}
+        return oldHandleSearch?oldHandleSearch():null;
+    };
+
+    function freeTrialUsed(){
+        const hist=Array.isArray(activeSeller&&activeSeller.subHistory)?activeSeller.subHistory:[];
+        return !!(activeSeller&&(activeSeller.freeTrialRedeemed||activeSeller.freeSubscriptionRedeemedAt||activeSeller.freeSubscriptionActive)) || hist.some(h=>h && (h.freeTrial || low(h.method).includes('free') || low(h.status).includes('free')));
+    }
+    function planCardHtml(p){
+        const current=activePlanName()===p.key;
+        const canFree=p.key==='Growth' && p.trial && !freeTrialUsed();
+        const lockedNotes=p.key==='Growth'?'<span class="lock-chip"><i class="fas fa-lock"></i> No Email/SMS/Auto Accept/Vacation</span>':'';
+        return `<div class="admin-plan-card prime-sub-card ${current?'active':''}">
+            <div class="admin-plan-title"><strong>${safe(p.name)}</strong>${p.recommended?'<span class="recommended-chip">Recommended</span>':''}${current?'<span class="ok-chip"><i class="fas fa-check"></i> Active</span>':''}</div>
+            <div class="prime-price">₹${p.price}<span>/month</span></div>
+            <div class="feature-list">
+                <div class="feature-row"><span>Commission</span><span>${p.commissionPercent}%</span></div>
+                <div class="feature-row"><span>Product Limit</span><span>${p.productLimit}</span></div>
+                <div class="feature-row"><span>Free 24h Sponsored Slots</span><span>${p.freeAds}/month</span></div>
+                <div class="feature-row"><span>Paid Sponsored Price</span><span>₹${p.sponsoredAdPrice}/24hr</span></div>
+            </div>
+            <div class="prime-benefits">${p.benefits.map(b=>`<div><i class="fas fa-circle-check"></i> ${safe(b)}</div>`).join('')}${lockedNotes}</div>
+            <div class="prime-plan-actions">
+                ${p.key==='Basic'?`<button class="btn-outline w-100" onclick="activateFreeBasicPlan()"><i class="fas fa-leaf"></i> Use Free Plan</button>`:''}
+                ${canFree?`<button class="btn-prime w-100" onclick="redeemGrowthFreeMonth()"><i class="fas fa-gift"></i> Redeem 1 Month Free</button>`:''}
+                ${p.price>0?`<button class="btn-prime w-100" onclick="processSubscription('${p.key}','online')"><i class="fas fa-credit-card"></i> Pay ₹${p.price} / Month</button><button class="btn-outline w-100" onclick="processSubscription('${p.key}','payout')"><i class="fas fa-wallet"></i> Deduct from Payout</button>`:''}
+            </div>
+        </div>`;
+    }
+    window.loadSubscriptionsUI=async function(){
+        const box=$('subscriptionCards');
+        const notice=$('subscriptionAdminNotice');
+        if(notice) notice.innerHTML=`<b>Current plan:</b> ${safe(plan().name)} · Commission <b>${plan().commissionPercent}%</b> · ${freeTrialUsed()?'Free month already used':'Growth has one-time 1 month free trial'}.`;
+        if(box) box.innerHTML=Object.values(PRIME_PLANS).sort((a,b)=>a.sort-b.sort).map(planCardHtml).join('');
+        renderSubscriptionHistory(false);
+        const badge=$('currentPlanBadge'); if(badge) badge.textContent=plan().name;
+    };
+    async function activatePlan(planKey, method, amount, paymentMeta={}){
+        if(!activeSeller || !db) return;
+        const p=PRIME_PLANS[planKey]||PRIME_PLANS.Basic;
+        const start=nowIso();
+        const endDate=new Date(); endDate.setMonth(endDate.getMonth()+1);
+        const record={plan:p.key,planName:p.name,amount:Number(amount||0),commissionPercent:p.commissionPercent,duration:'month',startDate:start,endDate:endDate.toISOString(),method,status:amount?'Paid':'Activated',...paymentMeta};
+        const hist=Array.isArray(activeSeller.subHistory)?activeSeller.subHistory:[]; hist.push(record);
+        const payload={subscription:p.key,subscriptionName:p.name,subStartDate:start,subEndDate:endDate.toISOString(),subscriptionCommissionPercent:p.commissionPercent,subscriptionFeatures:p.features,subHistory:hist,updatedAt:start};
+        if(method==='free_month') payload.freeTrialRedeemed=true, payload.freeSubscriptionRedeemedAt=start;
+        await db.collection('sellers').doc(sellerDocId()).set(payload,{merge:true});
+        await db.collection('seller_subscription_payments').add({sellerEmail:sellerEmail(),sellerName:activeSeller.companyName||'',...record,createdAt:start});
+        await saveLedger({type:'subscription',planName:p.name,amount:Number(amount||0),status:record.status,method,commissionPercent:p.commissionPercent,razorpayPaymentId:paymentMeta.razorpayPaymentId||''});
+        Object.assign(activeSeller,payload);
+        localStorage.setItem('sellerToken',JSON.stringify(activeSeller));
+        toast(`${p.name} plan activated.`, 'success');
+        loadSubscriptionsUI(); loadSettingsUI();
+    }
+    window.activateFreeBasicPlan=()=>activatePlan('Basic','free',0);
+    window.redeemGrowthFreeMonth=function(){
+        if(freeTrialUsed()) return toast('You have already used your one-time free subscription.','warning');
+        return activatePlan('Growth','free_month',0,{freeTrial:true,status:'1 Month Free'});
+    };
+    window.processSubscription=function(planKey,method='online'){
+        const p=PRIME_PLANS[planKey]||PRIME_PLANS.Growth;
+        if(method==='payout') return paySubscriptionFromPayout(p);
+        if(!API_KEYS || !API_KEYS.RAZORPAY){ saveLedger({type:'subscription_payment_intent',planName:p.name,amount:p.price,status:'Razorpay key missing'}); return toast('Razorpay key missing from Cloudflare Worker. Payment intent saved.','error'); }
+        const options={key:API_KEYS.RAZORPAY,amount:p.price*100,currency:'INR',name:'Aryanta Subscription',description:`${p.name} Seller Plan`,handler:res=>activatePlan(p.key,'razorpay',p.price,{razorpayPaymentId:res.razorpay_payment_id||''}),prefill:{name:activeSeller.companyName||'',email:activeSeller.email||'',contact:activeSeller.phone||''},theme:{color:'#111827'}};
+        new Razorpay(options).open();
+    };
+    async function paySubscriptionFromPayout(p){
+        const upcoming=Number(window.cachedTotalUpcoming||cachedTotalUpcoming||0);
+        if(upcoming<p.price) return toast('Insufficient upcoming payout balance. Use online payment.','error');
+        await addFineOnce('subscription_deduction_'+p.key+'_'+Date.now(),p.price,`Subscription payout deduction: ${p.name}`,{type:'subscription_payout',planName:p.name});
+        return activatePlan(p.key,'upcoming_payout',p.price);
+    }
+    function renderSubscriptionHistory(show=true){
+        const box=$('subscriptionHistoryBox'); if(!box) return;
+        const hist=Array.isArray(activeSeller&&activeSeller.subHistory)?activeSeller.subHistory:[];
+        if(show) box.style.display='block';
+        if(!show && box.style.display!=='block') return;
+        box.innerHTML=`<div class="section-head-row"><div><h3><i class="fas fa-receipt"></i> Subscription Details</h3><p class="muted-line">All previous subscriptions and free-month redemption history.</p></div></div>` + (hist.length?`<div class="table-container"><table class="admin-table"><thead><tr><th>Plan</th><th>Amount</th><th>Commission</th><th>Method</th><th>Start</th><th>End</th><th>Status</th></tr></thead><tbody>${hist.slice().reverse().map(h=>`<tr><td data-label="Plan"><b>${safe(h.planName||h.plan||'-')}</b></td><td data-label="Amount">₹${Number(h.amount||h.cost||0).toLocaleString('en-IN')}</td><td data-label="Commission">${safe(h.commissionPercent||'')}%</td><td data-label="Method">${safe(h.method||'-')}</td><td data-label="Start">${toDate(h.startDate)?.toLocaleDateString()||'-'}</td><td data-label="End">${toDate(h.endDate)?.toLocaleDateString()||'-'}</td><td data-label="Status"><span class="ok-chip">${safe(h.status||'Active')}</span></td></tr>`).join('')}</tbody></table></div>`:'<div class="admin-empty">No subscription history yet.</div>');
+    }
+    window.showSubscriptionDetails=function(){renderSubscriptionHistory(true); const box=$('subscriptionHistoryBox'); if(box) box.scrollIntoView({behavior:'smooth',block:'start'});};
+
+    async function sponsorUsage(){
+        const u=(activeSeller&&activeSeller.sponsoredAdUsage)||{};
+        return u.month===monthKey()?Number(u.used||0):0;
+    }
+    async function saveSponsorUsage(n){
+        const usage={month:monthKey(),used:n,updatedAt:nowIso()};
+        activeSeller.sponsoredAdUsage=usage; activeSeller.sponsoredAdsUsedThisMonth=n;
+        try{await db.collection('sellers').doc(sellerDocId()).set({sponsoredAdUsage:usage,sponsoredAdsUsedThisMonth:n},{merge:true});}catch(e){}
+        localStorage.setItem('sellerToken',JSON.stringify(activeSeller));
+    }
+    async function activateSponsor(productId,isFree,paymentInfo={}){
+        const p=plan();
+        const start=nowIso();
+        const end=new Date(Date.now()+24*3600000).toISOString();
+        const payload={isAd:true,isSponsored:true,sponsored:true,adStatus:'Sponsored',sponsorStatus:'Live',sponsoredAt:start,sponsoredStartAt:start,sponsoredUntil:end,sponsorEndAt:end,sponsoredBySeller:sellerEmail(),sponsoredPlan:p.key,sponsoredPayment:isFree?'free_slot':'paid'};
+        await db.collection('products').doc(productId).set(payload,{merge:true});
+        await db.collection('seller_ad_logs').add({sellerEmail:sellerEmail(),productId,amount:isFree?0:70,status:'Live',startAt:start,endAt:end,plan:p.key,...paymentInfo,createdAt:start});
+        await saveLedger({type:'sponsored_ad',productId,amount:isFree?0:70,status:'Live 24hr',method:isFree?'free_slot':'razorpay',...paymentInfo});
+        if(isFree) await saveSponsorUsage((await sponsorUsage())+1);
+        const prod=(sellerProducts||[]).find(x=>String(x.id)===String(productId)); if(prod) Object.assign(prod,payload);
+        toast('Sponsored ad active for 24 hours.','success');
+        if(typeof closeModal==='function') closeModal('adPaymentModal');
+        if(typeof loadAds==='function') loadAds();
+    }
+    window.startAd=async function(productId){
+        const p=plan();
+        const used=await sponsorUsage();
+        const freeLeft=Math.max(0,Number(p.freeAds||0)-used);
+        const prod=(sellerProducts||[]).find(x=>String(x.id)===String(productId))||{};
+        const modal=$('adPaymentModal'), msg=$('adPlanMessage'), cost=$('adCostDisplay'), input=$('adProdId'), payout=$('btnAdPayout');
+        if(input) input.value=productId;
+        if(cost) cost.textContent=freeLeft>0?'FREE':'₹70';
+        if(msg) msg.innerHTML=freeLeft>0?`<b>${safe(prod.name||prod.title||'This product')}</b> can use a free 24-hour sponsored slot from your ${safe(p.name)} plan. Remaining this month: <b>${freeLeft}</b>.`:`No active free sponsored slot found for this product. Pay <b>₹70</b> and sponsor it for <b>24 hours</b>.`;
+        const online=modal&&modal.querySelector('button[onclick="payAdOnline()"]');
+        if(online) online.innerHTML=freeLeft>0?'<i class="fas fa-bolt"></i> Use Free Sponsored Slot':'<i class="fas fa-credit-card"></i> Pay ₹70 with Razorpay';
+        if(payout) payout.style.display=freeLeft>0?'none':'inline-flex';
+        if(modal){modal.style.display='flex'; setTimeout(()=>modal.classList.add('show'),10);}
+    };
+    window.payAdOnline=async function(){
+        const productId=$('adProdId')&&$('adProdId').value; if(!productId) return;
+        const p=plan(), freeLeft=Math.max(0,Number(p.freeAds||0)-(await sponsorUsage()));
+        if(freeLeft>0) return activateSponsor(productId,true);
+        if(!API_KEYS || !API_KEYS.RAZORPAY){await saveLedger({type:'sponsored_ad_payment_intent',productId,amount:70,status:'Razorpay key missing'}); return toast('Razorpay key missing from Cloudflare Worker. Payment intent saved.','error');}
+        new Razorpay({key:API_KEYS.RAZORPAY,amount:7000,currency:'INR',name:'Aryanta Sponsored Ads',description:'Sponsored product placement for 24 hours',handler:res=>activateSponsor(productId,false,{razorpayPaymentId:res.razorpay_payment_id||''}),prefill:{name:activeSeller.companyName||'',email:activeSeller.email||'',contact:activeSeller.phone||''},theme:{color:'#111827'}}).open();
+    };
+    window.payAdUpcoming=async function(){
+        const productId=$('adProdId')&&$('adProdId').value; if(!productId) return;
+        await addFineOnce('sponsored_ad_payout_'+productId+'_'+Date.now(),70,'Sponsored Ad Fee',{type:'sponsored_ad_payout',productId});
+        return activateSponsor(productId,false,{method:'upcoming_payout'});
+    };
+
+    async function readIds(){
+        const ids=new Set();
+        if(!db || !sellerEmail()) return ids;
+        try{const snap=await db.collection('seller_notification_reads').where('sellerEmail','==',sellerEmail()).limit(500).get(); snap.forEach(d=>ids.add(String((d.data()||{}).notificationId||d.id).split('_'+sellerEmail().replace(/[^a-z0-9]/g,'_'))[0]));}catch(e){}
+        return ids;
+    }
+    function notificationTargetMatches(d){
+        const target=low(d.target||d.sellerEmail||d.email||'all');
+        return target==='all'||target==='sellers'||target===sellerEmail();
+    }
+    window.fetchNotifications=async function(){
+        if(!db||!activeSeller) return;
+        const reads=await readIds();
+        const rows=[];
+        try{const b=await db.collection('admin_broadcasts').orderBy('timestamp','desc').limit(80).get(); b.forEach(doc=>{const d=doc.data()||{}; if(notificationTargetMatches(d)) rows.push({id:doc.id,collection:'admin_broadcasts',title:d.title||'Aryanta Notice',text:d.message||d.text||d.title||'Notice',time:d.timestamp||d.createdAt||nowIso(),link:d.link||d.url||d.actionUrl||'',read:reads.has(doc.id)});});}catch(e){console.warn('admin_broadcasts notifications failed',e);}
+        try{const s=await db.collection('seller_notifications').where('sellerEmail','==',sellerEmail()).orderBy('timestamp','desc').limit(80).get(); s.forEach(doc=>{const d=doc.data()||{}; rows.push({id:doc.id,collection:'seller_notifications',title:d.title||'Seller Notification',text:d.message||d.text||d.title||'Notification',time:d.timestamp||d.createdAt||nowIso(),link:d.link||d.url||'',read:reads.has(doc.id)});});}catch(e){console.warn('seller_notifications failed',e);}
+        adminNotifications=rows.sort((a,b)=>dateMs(b.time)-dateMs(a.time));
+        const unread=adminNotifications.filter(n=>!n.read).length;
+        ['notifBadge','topbarNotifBadge'].forEach(id=>{const el=$(id); if(el){el.textContent=unread; el.style.display=unread?'inline-block':'none';}});
+        const list=$('fullNotifList')||$('notifList');
+        if(list) list.innerHTML=adminNotifications.length?adminNotifications.map(n=>`<div class="notification-card ${n.read?'read':'unread'}" onclick="openFullNotif('${safe(n.id)}')"><div><h4>${n.read?'<i class="fas fa-envelope-open"></i>':'<i class="fas fa-envelope"></i>'} ${safe(n.title)}</h4><p>${safe(n.text)}</p><small><i class="fas fa-clock"></i> ${toDate(n.time)?.toLocaleString()||''}</small></div>${n.link?'<span class="ok-chip"><i class="fas fa-link"></i> Link</span>':''}</div>`).join(''):'<div class="panel-box">No notifications.</div>';
+    };
+    async function markNotificationRead(n){
+        if(!db||!n||!activeSeller) return;
+        const readId=(n.id+'_'+sellerEmail()).replace(/[^a-zA-Z0-9_-]/g,'_');
+        await db.collection('seller_notification_reads').doc(readId).set({notificationId:n.id,collection:n.collection,sellerEmail:sellerEmail(),title:n.title,text:n.text,link:n.link||'',readAt:nowIso(),storedBeforeDelete:true},{merge:true});
+        n.read=true;
+        if(n.collection==='seller_notifications'){
+            try{await db.collection('seller_notifications').doc(n.id).delete(); n.deleted=true;}catch(e){console.warn('delete seller notification failed',e);}
+        }
+    }
+    window.openFullNotif=window.openFullNotifFinal=async function(id){
+        const n=(adminNotifications||[]).find(x=>String(x.id)===String(id));
+        if(!n) return;
+        await markNotificationRead(n);
+        const cont=$('notifDetailContent'), modal=$('notificationDetailModal');
+        if(cont) cont.innerHTML=`<div class="prime-notif-detail"><h3>${safe(n.title)}</h3><p>${safe(n.text)}</p><div class="muted-line"><i class="fas fa-clock"></i> ${toDate(n.time)?.toLocaleString()||''}</div>${n.link?`<a class="btn-prime" style="text-decoration:none;margin-top:15px;display:inline-flex;" target="_blank" rel="noopener" href="${safe(/^https?:\/\//.test(n.link)?n.link:'https://'+n.link)}"><i class="fas fa-external-link-alt"></i> Open Link</a>`:''}<div class="ok-chip" style="margin-top:14px;"><i class="fas fa-check-double"></i> Marked as read and stored</div></div>`;
+        if(modal){modal.style.display='flex'; setTimeout(()=>modal.classList.add('show'),10);} else toast(n.title,'info');
+        fetchNotifications();
+    };
+
+    let supportIssues=[...DEFAULT_ISSUES];
+    async function getSupportIssues(){
+        const out=[];
+        if(db){
+            try{const snap=await db.collection('seller_issue_categories').orderBy('sort','asc').get(); snap.forEach(d=>{const x=d.data()||{}; if(x.active!==false) out.push({id:d.id,...x});});}catch(e){}
+            if(!out.length){try{const snap=await db.collection('support_issue_categories').orderBy('sort','asc').get(); snap.forEach(d=>{const x=d.data()||{}; if(x.active!==false) out.push({id:d.id,...x});});}catch(e){}}
+        }
+        supportIssues=out.length?out.map((x,i)=>({...x,askImage:true,allowSkip:x.allowSkip!==false,sort:x.sort||i+1})):DEFAULT_ISSUES;
+        return supportIssues;
+    }
+    window.renderSupportCategories=async function(){
+        const sel=$('supCategory'); if(!sel) return;
+        const arr=await getSupportIssues();
+        sel.innerHTML='<option value="">Select issue</option>'+arr.map(c=>`<option value="${safe(c.id)}">${safe(c.title||c.name||c.id)}</option>`).join('');
+        sel.style.display='none';
+        let grid=$('supportIssueCards');
+        const host=$('supportIssueDetailBox')?.parentElement || sel.parentElement;
+        if(host && !grid){grid=document.createElement('div'); grid.id='supportIssueCards'; grid.className='issue-card-grid'; host.insertBefore(grid,$('supportIssueDetailBox')||sel.nextSibling);}
+        if(grid) grid.innerHTML=arr.map(c=>`<button type="button" class="issue-card" data-issue="${safe(c.id)}" onclick="selectSupportIssueCard('${safe(c.id)}')"><i class="fas ${safe(c.icon||'fa-circle-info')}"></i><strong>${safe(c.title||c.name||c.id)}</strong><span>${safe(c.description||'Upload picture or skip if not needed.')}</span></button>`).join('');
+    };
+    window.selectSupportIssueCard=function(id){
+        const sel=$('supCategory'); if(sel) sel.value=id;
+        document.querySelectorAll('.issue-card').forEach(b=>b.classList.toggle('active',b.dataset.issue===id));
+        handleSupportCategoryChange();
+    };
+    window.handleSupportCategoryChange=function(){
+        const val=$('supCategory')?.value||''; const c=supportIssues.find(x=>String(x.id)===String(val))||{};
+        const detail=$('supportIssueDetailBox'), attach=$('supportAttachmentBox'), img=$('supImage'), doc=$('supDoc'), imgLabel=$('supportImageLabel'), docLabel=$('supportDocLabel'), skip=$('supportSkipDocBtn');
+        if(detail){detail.style.display=val?'block':'none'; detail.innerHTML=val?`<b>${safe(c.title||c.name||val)}</b><br><span class="muted-line">${safe(c.description||'Describe the issue and upload a picture or skip it.')}</span>`:'';}
+        if(attach) attach.style.display=val?'block':'none';
+        if(img){img.style.display=val?'block':'none'; img.required=false;}
+        if(imgLabel){imgLabel.style.display=val?'block':'none'; imgLabel.textContent='Upload picture / screenshot (optional)';}
+        if(doc){doc.style.display=val?'block':'none'; doc.required=false;}
+        if(docLabel){docLabel.style.display=val?'block':'none'; docLabel.textContent='Upload document (optional)';}
+        if(skip){skip.style.display=val?'inline-flex':'none'; skip.innerHTML='<i class="fas fa-forward"></i> Skip upload';}
+    };
+    window.skipSupportDocument=function(){['supImage','supDoc'].forEach(id=>{const el=$(id); if(el) el.value='';}); toast('Upload skipped. You can submit without a picture.','info');};
+    function fileData(input){
+        const f=input&&input.files&&input.files[0]; if(!f) return Promise.resolve(null);
+        return new Promise((resolve,reject)=>{const r=new FileReader(); r.onerror=reject; r.onload=()=>resolve({name:f.name,type:f.type,size:f.size,dataUrl:r.result}); r.readAsDataURL(f);});
+    }
+    window.submitSupportTicket=async function(){
+        const cat=$('supCategory')?.value, phone=$('supPhone')?.value.trim(), desc=$('supDesc')?.value.trim();
+        if(!cat||!phone||!desc) return toast('Select issue category, phone and write details.','warning');
+        const c=supportIssues.find(x=>String(x.id)===String(cat))||{};
+        try{
+            const [image,documentFile]=await Promise.all([fileData($('supImage')),fileData($('supDoc'))]);
+            await db.collection('seller_support_tickets').add({email:sellerEmail(),sellerEmail:sellerEmail(),sellerName:activeSeller.companyName||activeSeller.shopName||'',category:cat,categoryTitle:c.title||c.name||cat,categoryDetail:c.description||'',phone,description:desc,image,document:documentFile,imageSkipped:!image,documentSkipped:!documentFile,status:'Pending',timestamp:nowIso(),createdAt:nowIso(),source:'seller-panel-prime'});
+            toast('Support ticket sent to admin.','success');
+            ['supDesc','supPhone','supImage','supDoc'].forEach(id=>{const el=$(id); if(el) el.value='';});
+            if($('supCategory')) $('supCategory').value='';
+            document.querySelectorAll('.issue-card').forEach(b=>b.classList.remove('active'));
+            handleSupportCategoryChange();
+        }catch(e){console.warn(e); toast('Could not submit ticket.','error');}
+    };
+
+    window.productPerformanceFilter=window.productPerformanceFilter||'all';
+    window.setProductPerformanceFilter=function(filter){
+        window.productPerformanceFilter=filter||'all';
+        ['all','top','loss'].forEach(f=>{const b=$('perf-filter-'+f); if(b) b.classList.toggle('active',f===window.productPerformanceFilter);});
+        loadProductPerformance();
+    };
+    window.loadProductPerformance=function(){
+        const list=$('productPerformanceList'); if(!list) return;
+        let rows=productStats();
+        const filter=window.productPerformanceFilter||'all';
+        if(filter==='top') rows=rows.filter(x=>x.delivered>0).sort((a,b)=>b.delivered-a.delivered||b.gross-a.gross);
+        else if(filter==='loss') rows=rows.filter(x=>(x.cancelled+x.returned)>0).sort((a,b)=>(b.cancelled+b.returned)-(a.cancelled+a.returned));
+        else rows=rows.sort((a,b)=>b.totalQty-a.totalQty);
+        if(!rows.length){list.innerHTML='<div class="panel-box">No products found for this filter.</div>';return;}
+        list.innerHTML=rows.map(st=>{const p=st.product,total=Math.max(1,st.totalOrders),loss=st.cancelled+st.returned,ret=Math.round(st.returned/total*100),can=Math.round(st.cancelled/total*100),del=Math.round(st.delivered/Math.max(1,st.totalQty||1)*100);return `<div class="performance-card prime-performance-card">${productImage(p)}<h4>${safe(p.name||p.title||'Product')}</h4><p class="muted-line">Code: <b>${safe(p.sku||p.id)}</b> · Price: <b>₹${Number(p.price||0).toLocaleString('en-IN')}</b></p><div class="tiny-metric-grid"><div class="tiny-metric"><span>Total Sell</span>${st.totalQty}</div><div class="tiny-metric"><span>Delivered</span>${st.delivered}</div><div class="tiny-metric"><span>Loss</span>${loss}</div></div><div class="perf-bars"><small>Delivered ${del}%</small><div class="perf-bar"><i style="width:${Math.min(100,del)}%"></i></div><small>Cancelled ${can}%</small><div class="perf-bar danger"><i style="width:${Math.min(100,can)}%"></i></div><small>Returns ${ret}%</small><div class="perf-bar warning"><i style="width:${Math.min(100,ret)}%"></i></div></div><button class="btn-outline w-100" onclick="editItem('${safe(p.id)}')"><i class="fas fa-edit"></i> Edit Product</button></div>`;}).join('');
+    };
+
+    const oldRenderDashboard=window.renderDashboardStats;
+    window.renderDashboardStats=async function(){
+        try{oldRenderDashboard&&oldRenderDashboard();}catch(e){}
+        const p=plan(), today=new Date().toDateString(), mon=new Date().getMonth();
+        let todayCount=0, monthCount=0, revenue=0, upcoming=0;
+        (sellerOrders||[]).forEach(o=>{
+            const d=toDate(o.timestamp||o.createdAt||o.orderDate)||new Date(); const amt=orderAmount(o);
+            if(d.toDateString()===today) todayCount++;
+            if(d.getMonth()===mon && d.getFullYear()===new Date().getFullYear()) monthCount++;
+            if(low(o.status).includes('deliver')) revenue+=amt;
+            if(low(o.status).includes('deliver') && !o.sellerSettled) upcoming+=Math.max(0,amt-Math.round(amt*p.commissionPercent/100));
+        });
+        const set=(id,v)=>{const el=$(id); if(el) el.textContent=v;};
+        set('smartDailyOrders',todayCount); set('smartMonthlyOrders',monthCount); set('stat-total-inventory',(sellerProducts||[]).length); set('stat-total-pay','₹'+revenue.toLocaleString('en-IN')); set('stat-pending-pay','₹'+upcoming.toLocaleString('en-IN'));
+        cachedTotalUpcoming=upcoming; window.cachedTotalUpcoming=upcoming;
+        ['stat-top-selling','stat-top-selling-meta','stat-top-losing','stat-top-losing-meta'].forEach(id=>{const el=$(id); const card=el&&el.closest('.stat-card'); if(card) card.remove();});
+        auditAcceptedSlipBreaches();
+    };
+
+    function hasPrintedBothSlips(o){
+        const invoice=o.invoicePrintedAt||o.sellerSlipPrintedAt||o.standardSlipPrintedAt||o.packingSlipPrintedAt||o.printedAt;
+        const shipping=o.shippingSlipPrintedAt||o.shiprocketSlipPrintedAt||o.shippingInvoicePrintedAt||o.labelPrintedAt||o.dispatchSlipPrintedAt;
+        return !!(invoice && shipping) || !!o.bothSlipsPrinted || !!o.slipsPrinted;
+    }
+    async function countBreaches(){
+        if(!db||!activeSeller) return 0;
+        try{const snap=await db.collection('seller_breach_records').where('sellerEmail','==',sellerEmail()).limit(1000).get(); return snap.size;}catch(e){return Number(activeSeller.breachCount||0);}
+    }
+    async function suspendForBreaches(count){
+        if(!db||!activeSeller) return;
+        const payload={status:'Suspended',suspendedAt:nowIso(),suspendReason:'More than 3 breach items. Contact admin.',settings:{...(activeSeller.settings||{}),offline:true},breachCount:count};
+        try{await db.collection('sellers').doc(sellerDocId()).set(payload,{merge:true});}catch(e){}
+        Object.assign(activeSeller,payload); localStorage.setItem('sellerToken',JSON.stringify(activeSeller));
+        toast('Account suspended due to more than 3 breach items. Contact admin.','error');
+        if(typeof renderStatusScreen==='function'){
+            const lo=$('loginOverlay'); if(lo) lo.style.display='flex';
+            renderStatusScreen('Account Suspended','More than 3 breach items found. Please contact Aryanta admin for reactivation.',true,Date.now()+7*24*3600000);
+        }
+    }
+    window.auditAcceptedSlipBreaches=async function(){
+        if(!db||!activeSeller||!(sellerOrders||[]).length) return;
+        const jobs=[];
+        for(const o of (sellerOrders||[])){
+            const st=low(o.status||o.orderStatus);
+            if(!st.includes('accept')) continue;
+            if(hasPrintedBothSlips(o)) continue;
+            const acceptedAt=dateMs(o.acceptedAt||o.sellerAcceptedAt||o.acceptTime||o.updatedAt||o.timestamp||o.createdAt);
+            if(!acceptedAt) continue;
+            const age=(Date.now()-acceptedAt)/3600000;
+            const items=Math.max(1,itemList(o).length||Number(o.itemCount||1));
+            if(age>=24 && !o.printSlipBreachProcessed){
+                const amount=items*50;
+                o.status='Breached'; o.sellerBreach=true; o.printSlipBreachProcessed=true;
+                jobs.push(db.collection('orders').doc(o.id).set({status:'Breached',sellerBreach:true,breachReason:'Accepted but both slips not printed within 24 hours',breachedAt:nowIso(),printSlipBreachProcessed:true,breachFineAmount:amount},{merge:true}));
+                jobs.push(addFineOnce('print_slip_breach_'+o.id,amount,`₹50/item slip breach: ${items} item(s) not printed within 24 hours`,{orderId:o.id,itemCount:items,breachType:'print_slip_24h'}));
+                jobs.push(db.collection('seller_breach_records').add({sellerEmail:sellerEmail(),orderId:o.id,itemCount:items,amount,breachType:'print_slip_24h',reason:'Accepted order slips not printed within 24 hours',createdAt:nowIso()}));
+            }else if(age>=12 && !o.printSlipWarningAt){
+                o.printSlipWarningAt=nowIso(); o.sellerPrintWarningStatus='Breaching Soon';
+                jobs.push(db.collection('orders').doc(o.id).set({printSlipWarningAt:o.printSlipWarningAt,sellerPrintWarningStatus:'Breaching Soon'},{merge:true}));
+                jobs.push(db.collection('seller_notifications').add({sellerEmail:sellerEmail(),title:'Breaching Soon',message:`Order ${o.order_no||o.id} will be breached if both slips are not printed before 24 hours.`,orderId:o.id,timestamp:nowIso(),createdAt:nowIso(),type:'breach_warning'}));
+            }
+        }
+        if(jobs.length){try{await Promise.allSettled(jobs);}catch(e){} const c=await countBreaches(); if(c>=3) await suspendForBreaches(c); if(typeof loadBreachedOrders==='function') loadBreachedOrders();}
+    };
+
+    const oldLoadAccepted=window.loadAcceptedOrders;
+    window.loadAcceptedOrders=async function(){await auditAcceptedSlipBreaches(); return oldLoadAccepted?oldLoadAccepted():null;};
+    const oldLoadBreached=window.loadBreachedOrders;
+    window.loadBreachedOrders=async function(){
+        await auditAcceptedSlipBreaches();
+        const res=oldLoadBreached?oldLoadBreached():null;
+        return res;
+    };
+
+    window.loadEventAds=function(){toast('Event function has been removed from this seller panel.','warning');};
+    window.loadLoanSection=function(){toast('Loan function has been removed from this seller panel.','warning');};
+    window.requestSellerLoan=function(){toast('Loan function has been removed. Contact admin for any financial query.','warning');};
+
+    async function seedPrimeConfigIfAdminAllowed(){
+        if(!db) return;
+        try{
+            await db.collection('seller_panel_config').doc('global').set({updatedAt:nowIso(),primeUpgrade:'2026-05-23',plans:PRIME_PLANS,freeTrial:{enabled:true,days:30,plan:'Growth',oneTimeOnly:true},settingsAccess:{Basic:PRIME_PLANS.Basic.features,Growth:PRIME_PLANS.Growth.features,Pro:PRIME_PLANS.Pro.features},sponsoredAdPrice:70,breachFinePerItem:50,breachSuspendAfter:3},{merge:true});
+            for(const issue of DEFAULT_ISSUES){await db.collection('seller_issue_categories').doc(issue.id).set(issue,{merge:true});}
+        }catch(e){console.warn('Prime config seed skipped',e);}
+    }
+    window.seedAryantaPrimeSellerConfig=seedPrimeConfigIfAdminAllowed;
+
+    document.addEventListener('DOMContentLoaded',()=>{
+        setTimeout(()=>{decorateStaticUI(); loadSettingsUI(); loadSubscriptionsUI(); renderSupportCategories(); fetchNotifications(); auditAcceptedSlipBreaches();},1800);
+        setTimeout(()=>seedPrimeConfigIfAdminAllowed(),3500);
+        setInterval(()=>{auditAcceptedSlipBreaches(); fetchNotifications();},120000);
+    });
+})();
