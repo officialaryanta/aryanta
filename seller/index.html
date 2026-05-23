@@ -449,9 +449,9 @@
                             <div id="supportIssueDetailBox" class="support-config-box" style="display:none;"></div>
                             <div id="supportAttachmentBox" class="support-attach-box" style="display:none;">
                                 <label id="supportImageLabel" style="display:none;">Upload Image / Screenshot</label>
-                                <input type="file" id="supImage" class="input-field" accept="image/*" style="display:none;">
+                                <input type="file" id="supImage" class="input-field" accept="image/*" multiple style="display:none;">
                                 <label id="supportDocLabel" style="display:none;">Upload Document</label>
-                                <input type="file" id="supDoc" class="input-field" accept="image/*,.pdf,.doc,.docx" style="display:none;">
+                                <input type="file" id="supDoc" class="input-field" accept="image/*,.pdf,.doc,.docx" multiple style="display:none;">
                                 <button type="button" id="supportSkipDocBtn" class="btn-outline" style="display:none; margin-bottom:10px;" onclick="skipSupportDocument()"><i class="fas fa-forward"></i> Skip optional upload</button>
                             </div>
                             <label>Callback Phone Number</label><input type="text" id="supPhone" class="input-field" required>
@@ -763,6 +763,17 @@
                     <div><label>Selling Price (₹)</label><input type="number" id="itemPrice" class="input-field" required></div>
                 </div>
 
+                <div class="package-dim-box">
+                    <div class="package-dim-title"><i class="fas fa-box"></i> Package Details for Shiprocket</div>
+                    <p class="muted-line">Required for Shiprocket invoice/label generation. Use packed parcel size, not only product size.</p>
+                    <div class="package-dim-grid">
+                        <div><label>Package weight in kg</label><input type="number" step="0.01" min="0.01" id="itemPackageWeightKg" class="input-field" placeholder="Example: 0.50" required></div>
+                        <div><label>Package length in cm</label><input type="number" step="0.1" min="1" id="itemPackageLengthCm" class="input-field" placeholder="Example: 20" required></div>
+                        <div><label>Package breadth in cm</label><input type="number" step="0.1" min="1" id="itemPackageBreadthCm" class="input-field" placeholder="Example: 15" required></div>
+                        <div><label>Package height in cm</label><input type="number" step="0.1" min="1" id="itemPackageHeightCm" class="input-field" placeholder="Example: 8" required></div>
+                    </div>
+                </div>
+
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
 
     <div>
@@ -1066,7 +1077,46 @@
         </div>
     </div>
 
-    <div id="printArea" style="display:none;"></div>
+    
+    <!-- Aryanta Shiprocket/support fixed UI mounts - 2026-05-23 -->
+    <div id="aryantaShiprocketSheet" class="shiprocket-bottom-sheet" aria-live="polite">
+        <div class="shiprocket-sheet-card">
+            <div class="shiprocket-sheet-head">
+                <div>
+                    <b><i class="fas fa-rocket"></i> Shiprocket Invoice</b>
+                    <small id="shiprocketSheetSub">Preparing secure PDF download</small>
+                </div>
+                <button type="button" class="shiprocket-sheet-close" onclick="hideShiprocketSheet()"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="shiprocketSheetBody" class="shiprocket-sheet-body"></div>
+            <div class="shiprocket-progress"><span id="shiprocketProgressBar"></span></div>
+            <div class="shiprocket-sheet-actions">
+                <button type="button" class="btn-outline" onclick="hideShiprocketSheet()"><i class="fas fa-minimize"></i> Keep Working</button>
+                <button type="button" id="shiprocketDownloadBtn" class="btn-prime" style="display:none;"><i class="fas fa-download"></i> Download PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="supportQuickModal">
+        <div class="modal-content support-quick-modal">
+            <span class="close-modal" onclick="closeModal('supportQuickModal')"><i class="fas fa-times"></i></span>
+            <h3><i class="fas fa-headset"></i> Admin Support Request</h3>
+            <p class="muted-line" id="supportQuickTitle">Describe your problem. Aryanta admin can call you back.</p>
+            <input type="hidden" id="supportModalCategory">
+            <label>Callback phone number</label>
+            <input type="text" id="supportModalPhone" class="input-field" placeholder="Seller phone number">
+            <label>Problem description</label>
+            <textarea id="supportModalDesc" class="input-field" style="height:130px;" placeholder="Explain the issue clearly for admin."></textarea>
+            <div class="support-upload-row">
+                <label class="support-upload-chip"><i class="fas fa-image"></i> Image <input type="file" id="supportModalImage" accept="image/*" multiple></label>
+                <label class="support-upload-chip"><i class="fas fa-file"></i> Document <input type="file" id="supportModalDoc" accept="image/*,pdf,doc,docx,.pdf,.doc,.docx" multiple></label>
+            </div>
+            <button class="btn-prime w-100" onclick="submitSupportTicket()"><i class="fas fa-paper-plane"></i> Send to Admin</button>
+        </div>
+    </div>
+    <!-- End Aryanta Shiprocket/support fixed UI mounts - 2026-05-23 -->
+
+<div id="printArea" style="display:none;"></div>
 
     <div id="toastContainer"></div>
 
