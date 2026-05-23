@@ -6165,3 +6165,1518 @@ window.loadTutorials = function() {
         setInterval(()=>{auditAcceptedSlipBreaches(); fetchNotifications();},120000);
     });
 })();
+
+
+/* ===== Aryanta Shiprocket Seller Final Fix 2026-05-23 ===== */
+(function(){
+    const PATCH='ARYANTA_SHIPROCKET_SELLER_FINAL_FIX_2026_05_23';
+    if(window[PATCH]) return;
+    window[PATCH]=true;
+
+    const $=id=>document.getElementById(id);
+    const txt=v=>(v===undefined||v===null?'':String(v));
+    const low=v=>txt(v).toLowerCase().trim();
+    const safe=v=>txt(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const norm=v=>txt(v).replace(/\s+/g,'').trim();
+    const num=v=>{const n=Number(String(v??0).replace(/[^\d.-]/g,''));return Number.isFinite(n)?n:0;};
+    const nowIso=()=>new Date().toISOString();
+    const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+    const sellerEmail=()=>low(activeSeller&&activeSeller.email);
+    const sellerDocId=()=>txt(activeSeller&&activeSeller.email||sellerEmail()).trim();
+    const oneMinuteMs=60000;
+
+    function readPath(obj, keys, fallback=''){
+        for(const key of keys){
+            const parts=String(key).split('.');
+            let cur=obj;
+            let ok=true;
+            for(const p of parts){
+                if(cur && Object.prototype.hasOwnProperty.call(cur,p)) cur=cur[p];
+                else {ok=false; break;}
+            }
+            if(ok && cur!==undefined && cur!==null && txt(cur).trim()!=='') return cur;
+        }
+        return fallback;
+    }
+
+    function orderItems(order){
+        try{
+            if(typeof getSellerItemsFromOrder==='function'){
+                const arr=getSellerItemsFromOrder(order);
+                if(Array.isArray(arr)&&arr.length) return arr;
+            }
+        }catch(e){}
+        return Array.isArray(order&&order.items)?order.items:[];
+    }
+
+    function productForItem(item){
+        const itemId=txt(item.id||item.productId||item.product_id||item.productDocId).trim();
+        const sku=low(item.sku||item.SKU||item.productSku);
+        return (sellerProducts||[]).find(p=>{
+            const pId=txt(p.id||p.productId||p.product_id).trim();
+            const pSku=low(p.sku||p.SKU||p.productSku);
+            return (itemId&&pId&&itemId===pId)||(sku&&pSku&&sku===pSku);
+        })||{};
+    }
+
+    function itemAmount(item){
+        const qty=Math.max(1,num(item.qty||item.quantity||item.count||1));
+        const price=num(item.sellingPrice||item.price||item.salePrice||item.mrp||item.totalPrice||0);
+        return qty*price;
+    }
+
+    function orderAmount(order){
+        const items=orderItems(order);
+        const itemTotal=items.reduce((s,i)=>s+itemAmount(i),0);
+        return itemTotal || num(order.totalAmount||order.total||order.finalAmount||order.amount||order.orderAmount||0);
+    }
+
+    function orderDate(order){
+        const raw=readPath(order,['timestamp','createdAt','orderDate','date','order_date','placedAt','created_at'],nowIso());
+        const d=new Date(raw);
+        return Number.isNaN(d.getTime())?new Date():d;
+    }
+
+    function hasShiprocketUrl(order){
+        return txt(order.shiprocketInvoicePdfUrl||order.shiprocketPdfUrl||order.shiprocket_invoice_pdf_url||order.shiprocketInvoiceUrl||order.shiprocket_invoice_url||order.shippingLabelUrl||order.label_url||'').trim();
+    }
+
+    function currentShiprocketStatus(order){
+        if(hasShiprocketUrl(order)) return 'ready';
+        return low(order.shiprocketInvoiceStatus||order.shiprocket_status||'');
+    }
+
+    function sanitizeDocId(v){
+        return txt(v||'').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,140)||('order_'+Date.now());
+    }
+
+    function fieldValueForMissing(data,path){
+        return readPath(data,[path],'');
+    }
+
+    function buildShiprocketPayload(order){
+        const seller=activeSeller||{};
+        const items=orderItems(order).map((item,idx)=>{
+            const p=productForItem(item);
+            const qty=Math.max(1,num(item.qty||item.quantity||item.count||1));
+            const price=num(item.sellingPrice||item.price||item.salePrice||p.price||p.sellingPrice||0);
+            return {
+                product_name:txt(item.name||item.title||p.name||p.title||'').trim(),
+                sku:txt(item.sku||item.SKU||item.productId||item.product_id||item.id||p.sku||p.id||'').trim(),
+                product_id:txt(item.productId||item.product_id||item.id||p.id||'').trim(),
+                quantity:qty,
+                selling_price:price,
+                discount:num(item.discount||item.discountAmount||0),
+                tax:num(item.tax||item.gst||item.gstPercent||p.tax||p.gst||0),
+                hsn:txt(item.hsn||item.hsnCode||p.hsn||p.hsnCode||'').trim(),
+                index:idx+1
+            };
+        });
+
+        const paymentMethod=low(readPath(order,['paymentMethod','payment_method','payMode','mode','payment.type'],''));
+        const isCod=paymentMethod.includes('cod') || low(order.paymentStatus).includes('cod') || low(order.cod).includes('true') || num(order.codAmount||order.cod_amount)>0;
+        const packageSources=orderItems(order).map(i=>({item:i||{},product:productForItem(i)||{}}));
+        function firstPackageValue(paths){
+            for(const src of packageSources){
+                const merged={...(src.product||{}),...(src.item||{})};
+                const v=readPath(merged,paths,'');
+                if(num(v)>0) return v;
+            }
+            return '';
+        }
+
+        const payload={
+            action:'create_invoice',
+            source:'aryanta-seller-panel',
+            sellerEmail:sellerEmail(),
+            orderId:txt(order.id).trim(),
+            orderNo:txt(order.order_no||order.orderNo||order.orderId||order.id).trim(),
+            pickup:{
+                seller_name:txt(seller.companyName||seller.shopName||seller.storeName||seller.name||seller.ownerName||'').trim(),
+                seller_phone:txt(seller.phone||seller.mobile||seller.contact||seller.pickupPhone||'').trim(),
+                pickup_address:txt(seller.pickupAddress||seller.address||seller.fullAddress||seller.storeAddress||seller.businessAddress||'').trim(),
+                city:txt(seller.pickupCity||seller.city||seller.storeCity||'').trim(),
+                state:txt(seller.pickupState||seller.state||seller.storeState||'').trim(),
+                pincode:txt(seller.pickupPincode||seller.pincode||seller.pinCode||seller.storePincode||'').trim(),
+                pickup_location_name:txt(seller.pickupLocationName||seller.pickup_location||seller.companyName||seller.shopName||'').trim()
+            },
+            delivery:{
+                customer_name:txt(order.delivery_name||order.customerName||order.name||order.userName||order.shippingName||order.address?.name||'').trim(),
+                phone:txt(order.delivery_phone||order.customerPhone||order.phone||order.mobile||order.address?.phone||'').trim(),
+                email:txt(order.delivery_email||order.customerEmail||order.email||order.userEmail||order.address?.email||'').trim(),
+                full_address:txt(order.delivery_address||order.addressLine||order.address||order.shippingAddress||order.address?.full||order.address?.address||'').trim(),
+                city:txt(order.delivery_city||order.city||order.shippingCity||order.address?.city||'').trim(),
+                state:txt(order.delivery_state||order.state||order.shippingState||order.address?.state||'').trim(),
+                pincode:txt(order.delivery_pincode||order.pincode||order.pinCode||order.shippingPincode||order.address?.pincode||'').trim(),
+                country:txt(order.country||order.delivery_country||order.shippingCountry||order.address?.country||'India').trim()
+            },
+            products:items,
+            payment:{
+                order_id:txt(order.order_no||order.orderNo||order.id).trim(),
+                order_date:orderDate(order).toISOString(),
+                payment_method:isCod?'COD':'Prepaid',
+                total_amount:orderAmount(order),
+                cod_amount:isCod?num(order.codAmount||order.cod_amount||order.cod||orderAmount(order)):0
+            },
+            package:{
+                weight_kg:num(order.weightKg||order.weight_kg||order.weight||order.package?.weight_kg||order.package?.weight||firstPackageValue(['packageWeightKg','package_weight_kg','weightKg','weight_kg','weight','package.weight_kg','package.weight'])||seller.defaultWeightKg||seller.packageWeightKg||0),
+                length_cm:num(order.lengthCm||order.length_cm||order.length||order.package?.length_cm||order.package?.length||firstPackageValue(['packageLengthCm','package_length_cm','lengthCm','length_cm','length','package.length_cm','package.length'])||seller.defaultLengthCm||seller.packageLengthCm||0),
+                breadth_cm:num(order.breadthCm||order.breadth_cm||order.breadth||order.widthCm||order.width||order.package?.breadth_cm||order.package?.breadth||order.package?.width||firstPackageValue(['packageBreadthCm','package_breadth_cm','breadthCm','breadth_cm','breadth','widthCm','width','package.breadth_cm','package.breadth','package.width'])||seller.defaultBreadthCm||seller.packageBreadthCm||0),
+                height_cm:num(order.heightCm||order.height_cm||order.height||order.package?.height_cm||order.package?.height||firstPackageValue(['packageHeightCm','package_height_cm','heightCm','height_cm','height','package.height_cm','package.height'])||seller.defaultHeightCm||seller.packageHeightCm||0)
+            },
+            rawOrder:order
+        };
+        return payload;
+    }
+
+    function validateShiprocketPayload(payload){
+        const missing=[];
+        const req=[
+            ['Pickup seller name','pickup.seller_name'],
+            ['Pickup seller phone','pickup.seller_phone'],
+            ['Pickup address','pickup.pickup_address'],
+            ['Pickup city','pickup.city'],
+            ['Pickup state','pickup.state'],
+            ['Pickup pincode','pickup.pincode'],
+            ['Pickup location name','pickup.pickup_location_name'],
+            ['Customer name','delivery.customer_name'],
+            ['Customer phone','delivery.phone'],
+            ['Customer full address','delivery.full_address'],
+            ['Customer city','delivery.city'],
+            ['Customer state','delivery.state'],
+            ['Customer pincode','delivery.pincode'],
+            ['Customer country','delivery.country'],
+            ['Order ID','payment.order_id'],
+            ['Order date','payment.order_date'],
+            ['Payment method','payment.payment_method'],
+            ['Total amount','payment.total_amount'],
+            ['Package weight in kg','package.weight_kg'],
+            ['Package length in cm','package.length_cm'],
+            ['Package breadth in cm','package.breadth_cm'],
+            ['Package height in cm','package.height_cm']
+        ];
+        req.forEach(([label,path])=>{
+            const value=fieldValueForMissing(payload,path);
+            if(value===undefined||value===null||txt(value).trim()===''||Number(value)===0 && path.startsWith('package.')) missing.push(label);
+        });
+        if(!Array.isArray(payload.products)||!payload.products.length) missing.push('At least one seller product item');
+        (payload.products||[]).forEach((p,i)=>{
+            if(!txt(p.product_name).trim()) missing.push(`Product ${i+1} name`);
+            if(!txt(p.sku||p.product_id).trim()) missing.push(`Product ${i+1} SKU / product id`);
+            if(!num(p.quantity)) missing.push(`Product ${i+1} quantity`);
+            if(!num(p.selling_price)) missing.push(`Product ${i+1} selling price`);
+        });
+        if(payload.payment.payment_method==='COD' && !num(payload.payment.cod_amount)) missing.push('COD amount');
+        return missing;
+    }
+
+    function ensureShiprocketSheet(){
+        let sheet=$('aryantaShiprocketSheet');
+        if(sheet) return sheet;
+        sheet=document.createElement('div');
+        sheet.id='aryantaShiprocketSheet';
+        sheet.className='shiprocket-bottom-sheet';
+        sheet.innerHTML=`
+            <div class="shiprocket-sheet-card">
+                <div class="shiprocket-sheet-head">
+                    <div>
+                        <b><i class="fas fa-rocket"></i> Shiprocket Invoice</b>
+                        <small id="shiprocketSheetSub">Preparing secure PDF download</small>
+                    </div>
+                    <button type="button" class="shiprocket-sheet-close" onclick="hideShiprocketSheet()"><i class="fas fa-times"></i></button>
+                </div>
+                <div id="shiprocketSheetBody" class="shiprocket-sheet-body"></div>
+                <div class="shiprocket-progress"><span id="shiprocketProgressBar"></span></div>
+                <div class="shiprocket-sheet-actions">
+                    <button type="button" class="btn-outline" onclick="hideShiprocketSheet()"><i class="fas fa-minimize"></i> Keep Working</button>
+                    <button type="button" id="shiprocketDownloadBtn" class="btn-prime" style="display:none;"><i class="fas fa-download"></i> Download PDF</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(sheet);
+        return sheet;
+    }
+
+    window.hideShiprocketSheet=function(){
+        const sheet=$('aryantaShiprocketSheet');
+        if(sheet) sheet.classList.remove('show');
+    };
+
+    function showShiprocketSheet(state,message,order,url,missing){
+        const sheet=ensureShiprocketSheet();
+        const sub=$('shiprocketSheetSub'), body=$('shiprocketSheetBody'), bar=$('shiprocketProgressBar'), btn=$('shiprocketDownloadBtn');
+        sheet.classList.add('show');
+        const orderText=order?`Order ${safe(order.order_no||order.orderNo||order.id)}`:'Selected order';
+        if(sub) sub.textContent=orderText;
+        if(bar){
+            bar.style.width=state==='ready'?'100%':(state==='error'?'100%':'58%');
+            bar.className=state==='error'?'error':(state==='ready'?'ready':'');
+        }
+        if(body){
+            let icon=state==='ready'?'fa-circle-check':(state==='error'?'fa-circle-exclamation':'fa-spinner fa-spin');
+            let cls=state==='ready'?'ready':(state==='error'?'error':'waiting');
+            body.innerHTML=`
+                <div class="shiprocket-status ${cls}">
+                    <i class="fas ${icon}"></i>
+                    <div>
+                        <h4>${safe(message||'Please wait, your Shiprocket invoice PDF is being generated.')}</h4>
+                        <p>${state==='waiting'?'This can take up to 1 minute. You can switch panels; this box will stay at the bottom.':state==='ready'?'Shiprocket PDF URL has been stored in DB. You can download it anytime from Accepted/Completed Scan orders.':'No fine will be created for this order because the Shiprocket PDF was requested but not generated/downloaded.'}</p>
+                    </div>
+                </div>
+                ${missing&&missing.length?`<div class="shiprocket-missing"><b>Missing required details:</b><ul>${missing.map(m=>`<li>${safe(m)}</li>`).join('')}</ul></div>`:''}
+            `;
+        }
+        if(btn){
+            if(url){
+                btn.style.display='inline-flex';
+                btn.onclick=()=>downloadShiprocketPdf(url, order);
+            }else{
+                btn.style.display='none';
+                btn.onclick=null;
+            }
+        }
+    }
+
+    function downloadShiprocketPdf(url, order){
+        if(!url) return;
+        try{
+            const a=document.createElement('a');
+            a.href=url;
+            a.target='_blank';
+            a.rel='noopener';
+            a.download=`Shiprocket_${txt(order&&order.order_no||order&&order.id||'invoice')}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(()=>a.remove(),400);
+        }catch(e){
+            window.open(url,'_blank','noopener');
+        }
+    }
+    window.downloadShiprocketPdfForOrder=function(orderId){
+        const order=(sellerOrders||[]).find(o=>String(o.id)===String(orderId));
+        const url=order&&hasShiprocketUrl(order);
+        if(url) downloadShiprocketPdf(url,order);
+        else showShiprocketSheet('error','Shiprocket PDF URL is not ready yet.',order,null);
+    };
+
+    function extractPdfUrl(data){
+        if(!data || typeof data!=='object') return '';
+        const direct=['pdf_url','pdfUrl','invoice_pdf_url','invoicePdfUrl','invoice_url','invoiceUrl','label_url','labelUrl','shipping_label_url','shippingLabelUrl','url','download_url','downloadUrl'];
+        for(const k of direct){
+            if(data[k] && /^https?:\/\//i.test(txt(data[k]))) return txt(data[k]).trim();
+        }
+        for(const k of ['data','result','response','invoice','payload','shiprocket']){
+            const v=data[k];
+            const found=extractPdfUrl(v);
+            if(found) return found;
+        }
+        if(Array.isArray(data)){
+            for(const item of data){const found=extractPdfUrl(item); if(found) return found;}
+        }
+        return '';
+    }
+
+    function extractRequestId(data){
+        if(!data || typeof data!=='object') return '';
+        return txt(data.requestId||data.request_id||data.jobId||data.job_id||data.invoiceId||data.shipment_id||data.shipmentId||data.awb_code||data.awb||data.data?.requestId||data.data?.invoiceId||'').trim();
+    }
+
+    async function callShiprocketEndpoint(payload, mode='create'){
+        const endpoints=[
+            `${API_BASE_URL}/shiprocket/invoice`,
+            `${API_BASE_URL}/shiprocket/generate-invoice`,
+            `${API_BASE_URL}/seller/shiprocket/invoice`
+        ];
+        let lastErr=null;
+        for(const url of endpoints){
+            try{
+                const res=await fetch(url,{
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({...payload, mode})
+                });
+                const textResp=await res.text();
+                let data={};
+                try{data=textResp?JSON.parse(textResp):{};}catch(e){data={raw:textResp};}
+                if(res.ok) return data;
+                lastErr=new Error(data.message||data.error||`Shiprocket API ${res.status}`);
+            }catch(e){lastErr=e;}
+        }
+        throw lastErr||new Error('Shiprocket API route not available.');
+    }
+
+    async function saveShiprocketStatus(order, fields){
+        if(!order||!order.id||!db) return;
+        const payload={...fields, sellerEmail:sellerEmail(), orderId:order.id, updatedAt:nowIso()};
+        try{await db.collection('orders').doc(order.id).set(payload,{merge:true});}catch(e){console.warn('order shiprocket status save failed',e);}
+        try{await db.collection('seller_shiprocket_invoices').doc(sanitizeDocId(order.id+'_'+sellerEmail())).set(payload,{merge:true});}catch(e){console.warn('seller shiprocket status save failed',e);}
+        Object.assign(order,payload);
+        try{
+            const idx=(sellerOrders||[]).findIndex(o=>String(o.id)===String(order.id));
+            if(idx>=0) Object.assign(sellerOrders[idx],payload);
+        }catch(e){}
+    }
+
+    async function pollShiprocketForUrl(order, requestId){
+        const start=Date.now();
+        while(Date.now()-start<oneMinuteMs){
+            await sleep(5000);
+            try{
+                const statusRes=await callShiprocketEndpoint({action:'status_invoice',orderId:order.id,orderNo:order.order_no||order.id,requestId},'status');
+                const found=extractPdfUrl(statusRes);
+                if(found) return found;
+            }catch(e){}
+            try{
+                const snap=await db.collection('orders').doc(order.id).get();
+                if(snap.exists){
+                    const d=snap.data()||{};
+                    const found=hasShiprocketUrl(d);
+                    if(found){Object.assign(order,d);return found;}
+                }
+            }catch(e){}
+        }
+        return '';
+    }
+
+    async function requestShiprocketForOrder(order){
+        const existing=hasShiprocketUrl(order);
+        if(existing){
+            showShiprocketSheet('ready','Shiprocket PDF is already generated.',order,existing);
+            downloadShiprocketPdf(existing,order);
+            return existing;
+        }
+        const payload=buildShiprocketPayload(order);
+        const missing=validateShiprocketPayload(payload);
+        if(missing.length){
+            await saveShiprocketStatus(order,{shiprocketInvoiceStatus:'missing_details',shiprocketInvoiceRequested:true,shiprocketInvoiceNoFine:true,shiprocketInvoiceLastError:'Missing: '+missing.join(', '),shiprocketInvoiceRequestedAt:nowIso()});
+            showShiprocketSheet('error','Shiprocket invoice cannot be requested until all required details are complete.',order,null,missing);
+            return '';
+        }
+
+        showShiprocketSheet('waiting','Please wait, your Shiprocket invoice PDF is being generated.',order,null);
+        await saveShiprocketStatus(order,{shiprocketInvoiceStatus:'generating',shiprocketInvoiceRequested:true,shiprocketInvoiceNoFine:true,shiprocketInvoiceRequestedAt:nowIso(),shiprocketPayloadPreview:{pickup:payload.pickup,delivery:payload.delivery,payment:payload.payment,package:payload.package,products:payload.products}});
+
+        let createRes={};
+        try{
+            createRes=await callShiprocketEndpoint(payload,'create');
+        }catch(e){
+            await saveShiprocketStatus(order,{shiprocketInvoiceStatus:'api_error',shiprocketInvoiceNoFine:true,shiprocketInvoiceLastError:e.message||String(e),shiprocketInvoiceErrorAt:nowIso()});
+            showShiprocketSheet('error','Oops, Shiprocket API route did not return a PDF. No fine will be created for this requested order.',order,null);
+            return '';
+        }
+
+        let url=extractPdfUrl(createRes);
+        const requestId=extractRequestId(createRes);
+        if(!url){
+            await saveShiprocketStatus(order,{shiprocketInvoiceStatus:'waiting_pdf',shiprocketRequestId:requestId,shiprocketInvoiceNoFine:true,shiprocketLastResponse:createRes});
+            url=await pollShiprocketForUrl(order,requestId);
+        }
+
+        if(url){
+            await saveShiprocketStatus(order,{shiprocketInvoiceStatus:'ready',shiprocketInvoicePdfUrl:url,shiprocketInvoiceGeneratedAt:nowIso(),shiprocketInvoiceNoFine:false,shiprocketRequestId:requestId||order.shiprocketRequestId||''});
+            showShiprocketSheet('ready','Shiprocket invoice PDF generated successfully.',order,url);
+            addLocalNotification({
+                id:'shiprocket_ready_'+order.id,
+                title:'Shiprocket invoice generated',
+                text:`Your Shiprocket invoice for order ${order.order_no||order.id} is successfully generated.`,
+                time:nowIso(),
+                link:url,
+                type:'shiprocket'
+            });
+            try{
+                await db.collection('seller_notifications').add({sellerEmail:sellerEmail(),title:'Shiprocket invoice generated',message:`Your Shiprocket invoice for order ${order.order_no||order.id} is successfully generated.`,link:url,orderId:order.id,type:'shiprocket_invoice_ready',timestamp:nowIso(),createdAt:nowIso()});
+            }catch(e){}
+            downloadShiprocketPdf(url,order);
+            if(typeof loadAcceptedOrders==='function') setTimeout(()=>loadAcceptedOrders(),250);
+            if(typeof loadCompletedScanOrders==='function') setTimeout(()=>loadCompletedScanOrders(),250);
+            return url;
+        }
+
+        await saveShiprocketStatus(order,{shiprocketInvoiceStatus:'timeout',shiprocketInvoiceNoFine:true,shiprocketInvoiceLastError:'PDF URL not ready within 1 minute',shiprocketInvoiceErrorAt:nowIso()});
+        showShiprocketSheet('error','Oops, something went wrong. Shiprocket PDF was not ready within 1 minute.',order,null);
+        return '';
+    }
+
+    window.downloadShippingInvoice=async function(orderId){
+        if(!activeSeller||!db) return showToast('Login/session not ready. Refresh and try again.','warning');
+        let ids=[];
+        if(orderId==='bulk'){
+            document.querySelectorAll('.cb-acc:checked').forEach(cb=>ids.push(cb.value));
+            if(!ids.length) return showToast('Select at least one accepted order.','warning');
+        }else ids=[orderId];
+
+        for(const id of ids){
+            const order=(sellerOrders||[]).find(o=>String(o.id)===String(id));
+            if(!order){showToast('Order not found. Refresh the panel.','error');continue;}
+            await requestShiprocketForOrder(order);
+        }
+    };
+
+    function renderShiprocketButton(order){
+        const url=hasShiprocketUrl(order);
+        const st=currentShiprocketStatus(order);
+        if(url){
+            return `<button class="btn-shiprocket shiprocket-ready-btn" onclick="event.stopPropagation(); downloadShiprocketPdfForOrder('${safe(order.id)}')"><i class="fas fa-download"></i> Download Shiprocket PDF</button>`;
+        }
+        if(['generating','waiting_pdf','api_error','timeout','missing_details'].includes(st)){
+            const label=st==='missing_details'?'Fix Missing Details':(st==='timeout'||st==='api_error'?'Retry Shiprocket':'Waiting Shiprocket PDF');
+            return `<button class="btn-shiprocket shiprocket-waiting-btn" onclick="event.stopPropagation(); downloadShippingInvoice('${safe(order.id)}')"><i class="fas ${st==='generating'||st==='waiting_pdf'?'fa-spinner fa-spin':'fa-rotate-right'}"></i> ${label}</button>`;
+        }
+        return `<button class="btn-shiprocket" onclick="event.stopPropagation(); downloadShippingInvoice('${safe(order.id)}')"><i class="fas fa-rocket"></i> Generate Shiprocket</button>`;
+    }
+
+    const oldLoadAcceptedOrders=window.loadAcceptedOrders;
+    window.loadAcceptedOrders=function(){
+        const list=$('acceptedOrdersList');
+        if(!list) return oldLoadAcceptedOrders?oldLoadAcceptedOrders():null;
+        const sa=$('selectAllAcc'); if(sa) sa.checked=false;
+        const accepted=(sellerOrders||[]).filter(o=>{
+            const s=low(o.status||o.orderStatus);
+            return ['accepted','processing','packed','ready to ship'].includes(s) || s.includes('accept');
+        });
+        if(!accepted.length){
+            list.innerHTML='<tr><td colspan="5" style="text-align:center;font-weight:800;padding:22px;">No orders to dispatch.</td></tr>';
+            return;
+        }
+        list.innerHTML=accepted.map(o=>{
+            const items=orderItems(o);
+            const itemHtml=items.length?items.map(i=>{
+                const p=productForItem(i);
+                return `<div class="order-product-line"><b>${safe(i.name||i.title||p.name||'Product')}</b><span>SKU: ${safe(i.sku||p.sku||i.productId||i.id||'N/A')} · Qty: ${safe(i.qty||i.quantity||1)} · ₹${num(i.price||i.sellingPrice||p.price).toLocaleString('en-IN')}</span></div>`;
+            }).join(''):'<span class="muted-line">No seller item found.</span>';
+            return `<tr class="clickable-row">
+                <td data-label="Select" style="text-align:center;"><input type="checkbox" class="custom-cb cb-acc" value="${safe(o.id)}" onclick="event.stopPropagation()"></td>
+                <td data-label="Order Date"><strong style="font-size:13px;">${orderDate(o).toLocaleString()}</strong></td>
+                <td data-label="Order Ref"><strong style="font-family:monospace;color:var(--primary);font-size:14px;">${safe(o.order_no||o.orderNo||o.id)}</strong></td>
+                <td data-label="Item Details" style="font-size:13px;">${itemHtml}${o.shiprocketInvoiceNoFine&&!hasShiprocketUrl(o)?'<div class="no-fine-note"><i class="fas fa-shield-heart"></i> Shiprocket requested: no fine until PDF is generated.</div>':''}</td>
+                <td data-label="Action"><div class="shiprocket-action-col">${renderShiprocketButton(o)}<button class="btn-outline btn-sm" onclick="event.stopPropagation(); viewOrderDetails('${safe(o.id)}')"><i class="fas fa-eye"></i> Details</button></div></td>
+            </tr>`;
+        }).join('');
+    };
+
+    const oldAcceptOrder=window.acceptOrder;
+    window.acceptOrder=async function(id,isBreached){
+        const res=oldAcceptOrder?await oldAcceptOrder(id,isBreached):null;
+        const o=(sellerOrders||[]).find(x=>String(x.id)===String(id));
+        if(o&&hasShiprocketUrl(o)){
+            showShiprocketSheet('ready','This order already has a Shiprocket PDF ready to download.',o,hasShiprocketUrl(o));
+        }else if(o){
+            showToast('Order accepted. Generate Shiprocket PDF from Accepted Orders before dispatch.','info');
+        }
+        return res;
+    };
+
+    const oldAudit=window.auditAcceptedSlipBreaches;
+    window.auditAcceptedSlipBreaches=async function(){
+        if(!oldAudit) return;
+        const original=sellerOrders;
+        try{
+            sellerOrders=(sellerOrders||[]).filter(o=>!(o.shiprocketInvoiceRequested && !hasShiprocketUrl(o) && o.shiprocketInvoiceNoFine));
+            return await oldAudit();
+        }finally{
+            sellerOrders=original;
+        }
+    };
+
+    function sevenDayKeys(){
+        const out=[];
+        for(let i=6;i>=0;i--){
+            const d=new Date();
+            d.setHours(0,0,0,0);
+            d.setDate(d.getDate()-i);
+            const key=d.toISOString().slice(0,10);
+            out.push({key,label:d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}),value:0});
+        }
+        return out;
+    }
+
+    function computeSevenDayTrend(){
+        const days=sevenDayKeys();
+        const map=new Map(days.map(d=>[d.key,d]));
+        (sellerOrders||[]).forEach(o=>{
+            const st=low(o.status||o.orderStatus);
+            if(st.includes('cancel')||st.includes('return')) return;
+            const d=orderDate(o);
+            d.setHours(0,0,0,0);
+            const key=d.toISOString().slice(0,10);
+            if(map.has(key)) map.get(key).value+=orderAmount(o);
+        });
+        return days;
+    }
+
+    function renderSevenDaySalesTrend(){
+        const ctx=$('salesChart');
+        if(!ctx||typeof Chart==='undefined') return;
+        const trend=computeSevenDayTrend();
+        try{ if(salesChartInstance) salesChartInstance.destroy(); }catch(e){}
+        try{
+            const gradient=ctx.getContext('2d').createLinearGradient(0,0,0,250);
+            gradient.addColorStop(0,'rgba(17,24,39,0.28)');
+            gradient.addColorStop(1,'rgba(17,24,39,0.02)');
+            salesChartInstance=new Chart(ctx,{
+                type:'line',
+                data:{labels:trend.map(x=>x.label),datasets:[{label:'Order Sales (₹)',data:trend.map(x=>Math.round(x.value)),borderColor:'#111827',backgroundColor:gradient,fill:true,tension:.35,borderWidth:3,pointRadius:4,pointBackgroundColor:'#fff',pointBorderColor:'#111827',pointBorderWidth:2}]},
+                options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'₹'+Number(c.parsed.y||0).toLocaleString('en-IN')}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'₹'+Number(v).toLocaleString('en-IN')}},x:{grid:{display:false}}}}
+            });
+        }catch(e){console.warn('7-day trend render failed',e);}
+    }
+
+    const oldRenderDashboardStats=window.renderDashboardStats;
+    window.renderDashboardStats=async function(){
+        const res=oldRenderDashboardStats?await oldRenderDashboardStats():null;
+        renderSevenDaySalesTrend();
+        return res;
+    };
+
+    function localNotifications(){
+        const arr=[];
+        if(activeSeller){
+            arr.push({id:'built_joined',title:'Welcome to Aryanta Seller Network',text:'You have successfully joined the Aryanta seller subscription/network. Keep your store details complete for faster payouts and shipping.',time:activeSeller.createdAt||activeSeller.joinedAt||nowIso(),type:'builtin'});
+            if(activeSeller.subscription&&activeSeller.subscription!=='None'){
+                arr.push({id:'built_subscription',title:'Subscription active',text:`Your ${activeSeller.subscription} subscription is active. Tap See Subscription Details to view plan benefits and history.`,time:activeSeller.subStartDate||activeSeller.createdAt||nowIso(),type:'builtin'});
+            }
+            if((sellerOrders||[]).length){
+                const first=[...(sellerOrders||[])].sort((a,b)=>orderDate(a)-orderDate(b))[0];
+                arr.push({id:'built_first_order',title:'Congratulations on your first order',text:`You got your first order on Aryanta. Accept, generate Shiprocket PDF, scan and dispatch on time.`,time:first.timestamp||first.createdAt||nowIso(),type:'builtin'});
+            }
+            const ready=(sellerOrders||[]).find(o=>hasShiprocketUrl(o));
+            if(ready) arr.push({id:'built_shiprocket_any',title:'Shiprocket invoice ready',text:'One or more Shiprocket invoice PDFs are generated successfully for your orders.',time:ready.shiprocketInvoiceGeneratedAt||nowIso(),link:hasShiprocketUrl(ready),type:'builtin'});
+            arr.push({id:'built_support',title:'Support available for seller problems',text:'For payout, order, listing, shipping partner delay, customer dispute, B2B supply and other problems, open Admin Support and submit a quick ticket.',time:nowIso(),type:'builtin'});
+            arr.push({id:'built_b2b',title:'B2B supply support',text:'Aryanta can support seller B2B supply requirements from the Buy B2B Supplies section.',time:nowIso(),type:'builtin'});
+        }
+        return arr;
+    }
+    function addLocalNotification(n){
+        adminNotifications=[n,...(adminNotifications||[]).filter(x=>x.id!==n.id)];
+        renderNotificationList();
+    }
+
+    function renderNotificationList(){
+        const list=$('fullNotifList')||$('notifList');
+        if(!list) return;
+        const rows=[...localNotifications(),...(adminNotifications||[])];
+        const dedup=[]; const seen=new Set();
+        rows.forEach(n=>{if(!seen.has(n.id)){seen.add(n.id); dedup.push(n);}});
+        adminNotifications=dedup;
+        const unread=dedup.filter(n=>!n.read).length;
+        ['notifBadge','topbarNotifBadge'].forEach(id=>{const el=$(id); if(el){el.textContent=unread; el.style.display=unread?'inline-block':'none';}});
+        list.innerHTML=dedup.length?dedup.map(n=>`<div class="notification-card ${n.read?'read':'unread'}" onclick="openFullNotif('${safe(n.id)}')"><div><h4>${n.read?'<i class="fas fa-envelope-open"></i>':'<i class="fas fa-envelope"></i>'} ${safe(n.title||'Aryanta Notice')}</h4><p>${safe(n.text||n.message||'Notification')}</p><small><i class="fas fa-clock"></i> ${new Date(n.time||Date.now()).toLocaleString()}</small></div>${n.link?'<span class="ok-chip"><i class="fas fa-link"></i> Link</span>':''}</div>`).join(''):'<div class="panel-box">No notifications.</div>';
+    }
+
+    const oldFetchNotifications=window.fetchNotifications;
+    window.fetchNotifications=async function(){
+        try{if(oldFetchNotifications) await oldFetchNotifications();}catch(e){console.warn('base notification fetch failed',e);}
+        renderNotificationList();
+    };
+
+    const oldOpenFullNotif=window.openFullNotif||window.openFullNotifFinal;
+    window.openFullNotif=window.openFullNotifFinal=async function(id){
+        const n=(adminNotifications||[]).find(x=>String(x.id)===String(id));
+        if(!n) return oldOpenFullNotif?oldOpenFullNotif(id):null;
+        n.read=true;
+        const cont=$('notifDetailContent'), modal=$('notificationDetailModal');
+        if(cont){
+            cont.innerHTML=`<div class="prime-notif-detail"><h3>${safe(n.title||'Aryanta Notice')}</h3><p>${safe(n.text||n.message||'Notification')}</p><div class="muted-line"><i class="fas fa-clock"></i> ${new Date(n.time||Date.now()).toLocaleString()}</div>${n.link?`<a class="btn-prime" style="text-decoration:none;margin-top:15px;display:inline-flex;" target="_blank" rel="noopener" href="${safe(/^https?:\/\//.test(n.link)?n.link:'https://'+n.link)}"><i class="fas fa-external-link-alt"></i> Open Link</a>`:''}</div>`;
+        }
+        if(modal){modal.style.display='flex';setTimeout(()=>modal.classList.add('show'),10);} else showToast(n.title||'Notification','info');
+        try{
+            if(db&&activeSeller&&!n.type?.includes('builtin')){
+                const readId=(n.id+'_'+sellerEmail()).replace(/[^a-zA-Z0-9_-]/g,'_');
+                await db.collection('seller_notification_reads').doc(readId).set({notificationId:n.id,sellerEmail:sellerEmail(),title:n.title||'',text:n.text||'',readAt:nowIso()},{merge:true});
+            }
+        }catch(e){}
+        renderNotificationList();
+    };
+
+    function ensureSupportModal(){
+        let modal=$('supportQuickModal');
+        if(modal) return modal;
+        modal=document.createElement('div');
+        modal.className='modal';
+        modal.id='supportQuickModal';
+        modal.innerHTML=`
+            <div class="modal-content support-quick-modal">
+                <span class="close-modal" onclick="closeModal('supportQuickModal')"><i class="fas fa-times"></i></span>
+                <h3><i class="fas fa-headset"></i> Admin Support Request</h3>
+                <p class="muted-line" id="supportQuickTitle">Describe your problem. Aryanta admin can call you back.</p>
+                <input type="hidden" id="supportModalCategory">
+                <label>Callback phone number</label>
+                <input type="text" id="supportModalPhone" class="input-field" placeholder="Seller phone number">
+                <label>Problem description</label>
+                <textarea id="supportModalDesc" class="input-field" style="height:130px;" placeholder="Explain the issue clearly for admin."></textarea>
+                <div class="support-upload-row">
+                    <label class="support-upload-chip"><i class="fas fa-image"></i> Image <input type="file" id="supportModalImage" accept="image/*"></label>
+                    <label class="support-upload-chip"><i class="fas fa-file"></i> Document <input type="file" id="supportModalDoc" accept="image/*,pdf,doc,docx"></label>
+                </div>
+                <button class="btn-prime w-100" onclick="submitSupportTicket()"><i class="fas fa-paper-plane"></i> Send to Admin</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        return modal;
+    }
+
+    async function fileData(input){
+        const f=input&&input.files&&input.files[0];
+        if(!f) return null;
+        return new Promise((resolve,reject)=>{const r=new FileReader();r.onerror=reject;r.onload=()=>resolve({name:f.name,type:f.type,size:f.size,dataUrl:r.result});r.readAsDataURL(f);});
+    }
+
+    const defaultIssueList=[
+        {id:'payment',title:'Payment/Payout Issue',description:'Payout, settlement, deduction, payment hold or bank problem.',icon:'fa-wallet'},
+        {id:'cancel',title:'Order Cancellation Dispute',description:'Wrong cancellation, charge/fine dispute or order status problem.',icon:'fa-ban'},
+        {id:'listing',title:'Product Listing Error',description:'Product upload, pricing, stock, image or listing visibility problem.',icon:'fa-tags'},
+        {id:'shipping',title:'Shipping Partner Delay',description:'Pickup, Shiprocket, label, courier delay or failed pickup issue.',icon:'fa-truck-fast'},
+        {id:'fraud',title:'Customer Fraud / Dispute',description:'Customer claim, return fraud, wrong item or support investigation.',icon:'fa-user-shield'},
+        {id:'b2b',title:'B2B Supply Support',description:'Wholesale supply, bulk purchase, material or sourcing support.',icon:'fa-boxes-stacked'},
+        {id:'other',title:'Other / General Query',description:'Anything else. Admin will review and call you if needed.',icon:'fa-circle-question'}
+    ];
+    let issueList=defaultIssueList;
+
+    window.openSupportIssueModal=function(id){
+        ensureSupportModal();
+        const issue=(issueList||defaultIssueList).find(x=>String(x.id)===String(id)||String(x.title)===String(id))||defaultIssueList.find(x=>x.id==='other');
+        const cat=$('supportModalCategory'), ph=$('supportModalPhone'), desc=$('supportModalDesc'), title=$('supportQuickTitle');
+        if(cat) cat.value=issue.id;
+        if(ph) ph.value=txt(activeSeller&&activeSeller.phone||activeSeller&&activeSeller.mobile||activeSeller&&activeSeller.contact||'');
+        if(desc) desc.value='';
+        if(title) title.innerHTML=`<b>${safe(issue.title)}</b><br>${safe(issue.description||'Describe this issue in detail.')}`;
+        document.querySelectorAll('.issue-card').forEach(b=>b.classList.toggle('active',b.dataset.issue===issue.id));
+        const modal=$('supportQuickModal');
+        if(modal){modal.style.display='flex';setTimeout(()=>modal.classList.add('show'),10);}
+    };
+
+    const oldRenderSupportCategories=window.renderSupportCategories;
+    window.renderSupportCategories=async function(){
+        try{if(oldRenderSupportCategories) await oldRenderSupportCategories();}catch(e){}
+        let fromSelect=[];
+        const sel=$('supCategory');
+        if(sel){
+            fromSelect=[...sel.options].filter(o=>o.value).map(o=>({id:o.value,title:o.textContent,description:'Tap to describe this problem and request admin callback.',icon:'fa-circle-info'}));
+        }
+        issueList=fromSelect.length?fromSelect:defaultIssueList;
+        const host=$('supportSection')?.querySelector('.panel-box') || $('supportIssueDetailBox')?.parentElement || $('supportSection');
+        if(!host) return;
+        let grid=$('supportIssueCards');
+        if(!grid){grid=document.createElement('div');grid.id='supportIssueCards';grid.className='issue-card-grid support-popup-grid';host.insertBefore(grid,host.firstChild);}
+        grid.innerHTML=issueList.map(c=>`<button type="button" class="issue-card" data-issue="${safe(c.id)}" onclick="openSupportIssueModal('${safe(c.id)}')"><i class="fas ${safe(c.icon||'fa-circle-info')}"></i><strong>${safe(c.title||c.name||c.id)}</strong><span>${safe(c.description||'Click to open popup.')}</span></button>`).join('');
+        if(sel) sel.style.display='none';
+        const form=host.querySelector('form');
+        if(form) form.classList.add('support-inline-hidden-form');
+    };
+
+    window.selectSupportIssueCard=function(id){openSupportIssueModal(id);};
+    window.handleSupportCategoryChange=function(){
+        const val=$('supCategory')?.value;
+        if(val) openSupportIssueModal(val);
+    };
+
+    window.submitSupportTicket=async function(){
+        const modal=$('supportQuickModal');
+        const modalOpen=modal && modal.style.display==='flex';
+        const cat=modalOpen?$('supportModalCategory')?.value:$('supCategory')?.value;
+        const phone=modalOpen?$('supportModalPhone')?.value.trim():$('supPhone')?.value.trim();
+        const desc=modalOpen?$('supportModalDesc')?.value.trim():$('supDesc')?.value.trim();
+        if(!cat||!phone||!desc) return showToast('Select problem, callback phone and description.','warning');
+        const issue=(issueList||defaultIssueList).find(x=>String(x.id)===String(cat))||{id:cat,title:cat};
+        try{
+            const image=await fileData(modalOpen?$('supportModalImage'):$('supImage'));
+            const documentFile=await fileData(modalOpen?$('supportModalDoc'):$('supDoc'));
+            await db.collection('seller_support_tickets').add({
+                ticketId:'TKT-'+Math.random().toString(36).slice(2,8).toUpperCase(),
+                email:sellerEmail(),
+                sellerEmail:sellerEmail(),
+                sellerName:activeSeller?.companyName||activeSeller?.shopName||activeSeller?.name||sellerEmail(),
+                category:cat,
+                categoryTitle:issue.title||issue.name||cat,
+                categoryDetail:issue.description||'',
+                phone,
+                callbackPhone:phone,
+                description:desc,
+                message:desc,
+                image,
+                document:documentFile,
+                status:'Pending',
+                timestamp:nowIso(),
+                createdAt:nowIso(),
+                source:'seller-panel-support-popup'
+            });
+            showToast('Support request sent. Admin will review and can call you back.','success');
+            if(modalOpen){closeModal('supportQuickModal'); ['supportModalDesc','supportModalImage','supportModalDoc'].forEach(id=>{const el=$(id); if(el) el.value='';});}
+            ['supDesc','supPhone','supImage','supDoc'].forEach(id=>{const el=$(id); if(el) el.value='';});
+            try{await fetchSupportTicketBadges();}catch(e){}
+        }catch(e){console.warn(e);showToast('Could not submit support ticket.','error');}
+    };
+
+    function ensureSubscriptionDetailsPage(){
+        let sec=$('subscriptionDetailsSection');
+        if(sec) return sec;
+        const content=document.querySelector('.content-padding')||document.querySelector('.main-content')||document.body;
+        sec=document.createElement('section');
+        sec.id='subscriptionDetailsSection';
+        sec.className='data-section subscription-details-page';
+        content.appendChild(sec);
+        return sec;
+    }
+
+    window.showSubscriptionDetails=function(){
+        const sec=ensureSubscriptionDetailsPage();
+        const plan=activeSeller?.subscription||'Basic / Free';
+        const start=activeSeller?.subStartDate||activeSeller?.subscriptionStart||activeSeller?.createdAt||'Not available';
+        const end=activeSeller?.subEndDate||activeSeller?.subscriptionEnd||'Not available';
+        const history=Array.isArray(activeSeller?.subHistory)?activeSeller.subHistory:[];
+        sec.innerHTML=`
+            <div class="section-head-row">
+                <div>
+                    <h3 style="font-size:24px;font-weight:950;color:var(--warning);"><i class="fas fa-receipt"></i> Subscription Details</h3>
+                    <p class="muted-line">Only subscription data is shown on this page.</p>
+                </div>
+                <button class="btn-outline" onclick="showSection('subscription')"><i class="fas fa-arrow-left"></i> Back to Subscription</button>
+            </div>
+            <div class="subscription-detail-hero">
+                <div><span>Current plan</span><strong>${safe(plan)}</strong></div>
+                <div><span>Started</span><strong>${safe(start)}</strong></div>
+                <div><span>Ends / renews</span><strong>${safe(end)}</strong></div>
+            </div>
+            <div class="panel-box">
+                <h4><i class="fas fa-crown"></i> Plan Benefits</h4>
+                <div class="prime-benefits">
+                    <div><i class="fas fa-check-circle"></i> Store access and seller tools based on admin-enabled settings.</div>
+                    <div><i class="fas fa-check-circle"></i> Subscription status is stored in seller DB and shown here.</div>
+                    <div><i class="fas fa-check-circle"></i> Ads, branding, commission and delivery rules can be controlled from admin configuration.</div>
+                </div>
+            </div>
+            <div class="panel-box">
+                <h4><i class="fas fa-history"></i> Subscription History</h4>
+                ${history.length?history.map(h=>`<div class="subscription-history-row"><b>${safe(h.plan||h.name||'Plan')}</b><span>${safe(h.date||h.createdAt||h.startDate||'')}</span><small>${safe(h.status||h.method||'')}</small></div>`).join(''):'<p class="muted-line">No subscription history found in seller profile.</p>'}
+            </div>
+        `;
+        document.querySelectorAll('.data-section').forEach(s=>s.classList.remove('active'));
+        sec.classList.add('active');
+        window.scrollTo({top:0,behavior:'smooth'});
+    };
+
+    function primeUiBoot(){
+        document.body.classList.add('aryanta-prime-ui');
+        ensureShiprocketSheet();
+        ensureSupportModal();
+        renderSevenDaySalesTrend();
+        try{renderSupportCategories();}catch(e){}
+        try{fetchNotifications();}catch(e){}
+    }
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(primeUiBoot,700));
+    else setTimeout(primeUiBoot,700);
+})();
+/* ===== End Aryanta Shiprocket Seller Final Fix 2026-05-23 ===== */
+
+/* ===== Aryanta Seller Stability Patch v2 - package/product-performance/support/subscription/select-all ===== */
+(function(){
+    const PATCH='ARYANTA_SELLER_STABILITY_PATCH_V2_2026_05_23';
+    if(window[PATCH]) return;
+    window[PATCH]=true;
+
+    const $=id=>document.getElementById(id);
+    const txt=v=>(v===undefined||v===null?'':String(v));
+    const low=v=>txt(v).toLowerCase().trim();
+    const safe=v=>txt(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const num=v=>{const n=Number(String(v??0).replace(/[^\d.-]/g,''));return Number.isFinite(n)?n:0;};
+    const nowIso=()=>new Date().toISOString();
+    const toast=(m,t='info')=>typeof showToast==='function'?showToast(m,t):alert(m);
+    const sellerEmail=()=>low(activeSeller&&activeSeller.email);
+    const sellerDocId=()=>txt((activeSeller&&activeSeller.email)||sellerEmail()).trim();
+    function orderDate(o){const raw=o&&(o.timestamp||o.createdAt||o.orderDate||o.date||o.order_date||o.placedAt||o.created_at); const d=new Date(raw||Date.now()); return Number.isNaN(d.getTime())?new Date():d;}
+    function sellerItems(o){try{if(typeof getSellerItemsFromOrder==='function'){const arr=getSellerItemsFromOrder(o); if(Array.isArray(arr)&&arr.length) return arr;}}catch(e){} return Array.isArray(o&&o.items)?o.items:[];}
+    function itemPrice(i,p={}){return num(i.sellingPrice||i.price||i.salePrice||i.finalPrice||p.price||p.sellingPrice||0);}
+    function itemQty(i){return Math.max(1,num(i.qty||i.quantity||i.count||1));}
+    function itemAmount(i,p={}){return itemPrice(i,p)*itemQty(i);}
+    function productOfItem(i){
+        const id=txt(i&& (i.id||i.productId||i.product_id||i.productDocId)).trim();
+        const sku=low(i&& (i.sku||i.SKU||i.productSku));
+        return (sellerProducts||[]).find(p=>{
+            const pid=txt(p.id||p.productId||p.product_id).trim();
+            const psku=low(p.sku||p.SKU||p.productSku);
+            return (id&&pid&&id===pid)||(sku&&psku&&sku===psku);
+        })||{};
+    }
+    function orderAmount(o){const items=sellerItems(o); const itemTotal=items.reduce((s,i)=>s+itemAmount(i,productOfItem(i)),0); return itemTotal||num(o&& (o.totalAmount||o.finalAmount||o.totalPrice||o.total||o.amount||o.orderAmount));}
+    function isRealOrder(o){
+        if(!o) return false;
+        if(o.isDemo===true||o.demo===true||o.test===true||o.isTest===true) return false;
+        const ref=low(o.order_no||o.orderNo||o.orderId||o.id||'');
+        if(ref.includes('demo')||ref.includes('sample')||ref.includes('test-order')) return false;
+        const st=low(o.status||o.orderStatus||'');
+        if(st.includes('draft')||st.includes('fake')) return false;
+        return sellerItems(o).length>0;
+    }
+    function isNonCancelledOrder(o){const st=low(o.status||o.orderStatus||''); return !st.includes('cancel')&&!st.includes('return')&&!st.includes('refund')&&!st.includes('failed');}
+
+    function ensurePackageFields(){
+        const form=$('itemForm'); if(!form) return;
+        if(!$('itemPackageWeightKg')){
+            const anchor=$('itemDesc')?.closest('div[style*="grid"]') || $('itemWarranty')?.closest('div[style*="grid"]') || form.querySelector('button[type="submit"]');
+            const box=document.createElement('div');
+            box.className='package-dim-box';
+            box.innerHTML=`<div class="package-dim-title"><i class="fas fa-box"></i> Package Details for Shiprocket</div><p class="muted-line">Required for Shiprocket invoice/label generation. Use packed parcel size, not only product size.</p><div class="package-dim-grid"><div><label>Package weight in kg</label><input type="number" step="0.01" min="0.01" id="itemPackageWeightKg" class="input-field" placeholder="Example: 0.50" required></div><div><label>Package length in cm</label><input type="number" step="0.1" min="1" id="itemPackageLengthCm" class="input-field" placeholder="Example: 20" required></div><div><label>Package breadth in cm</label><input type="number" step="0.1" min="1" id="itemPackageBreadthCm" class="input-field" placeholder="Example: 15" required></div><div><label>Package height in cm</label><input type="number" step="0.1" min="1" id="itemPackageHeightCm" class="input-field" placeholder="Example: 8" required></div></div>`;
+            if(anchor && anchor.parentElement) anchor.parentElement.insertBefore(box,anchor);
+            else form.insertBefore(box,form.querySelector('button[type="submit"]'));
+        }
+        ['itemPackageWeightKg','itemPackageLengthCm','itemPackageBreadthCm','itemPackageHeightCm'].forEach(id=>{const el=$(id); if(el) el.required=true;});
+    }
+    function setPackageFieldsFromProduct(p={}){
+        ensurePackageFields();
+        const map={
+            itemPackageWeightKg:['packageWeightKg','package_weight_kg','weightKg','weight_kg','weight','package.weight_kg','package.weight'],
+            itemPackageLengthCm:['packageLengthCm','package_length_cm','lengthCm','length_cm','length','package.length_cm','package.length'],
+            itemPackageBreadthCm:['packageBreadthCm','package_breadth_cm','breadthCm','breadth_cm','breadth','widthCm','width','package.breadth_cm','package.breadth','package.width'],
+            itemPackageHeightCm:['packageHeightCm','package_height_cm','heightCm','height_cm','height','package.height_cm','package.height']
+        };
+        Object.entries(map).forEach(([id,keys])=>{const el=$(id); if(!el) return; let val=''; for(const k of keys){const parts=k.split('.'); let cur=p; let ok=true; for(const part of parts){if(cur && Object.prototype.hasOwnProperty.call(cur,part)) cur=cur[part]; else {ok=false; break;}} if(ok && cur!==undefined && cur!==null && txt(cur).trim()!==''){val=cur;break;}} el.value=val||'';});
+    }
+    function readPackageFields(){
+        ensurePackageFields();
+        return {
+            packageWeightKg:num($('itemPackageWeightKg')?.value),
+            packageLengthCm:num($('itemPackageLengthCm')?.value),
+            packageBreadthCm:num($('itemPackageBreadthCm')?.value),
+            packageHeightCm:num($('itemPackageHeightCm')?.value)
+        };
+    }
+    function validatePackageFields(){
+        const p=readPackageFields();
+        const missing=[];
+        if(!(p.packageWeightKg>0)) missing.push('Package weight in kg');
+        if(!(p.packageLengthCm>0)) missing.push('Package length in cm');
+        if(!(p.packageBreadthCm>0)) missing.push('Package breadth in cm');
+        if(!(p.packageHeightCm>0)) missing.push('Package height in cm');
+        if(missing.length){toast('Please fill: '+missing.join(', '),'warning'); return false;}
+        return true;
+    }
+
+    const oldOpenItemModal=window.openItemModal;
+    window.openItemModal=function(){ensurePackageFields(); setPackageFieldsFromProduct({}); return oldOpenItemModal?oldOpenItemModal.apply(this,arguments):null;};
+    const oldEditItem=window.editItem;
+    window.editItem=function(id){const res=oldEditItem?oldEditItem.apply(this,arguments):null; const p=(sellerProducts||[]).find(x=>String(x.id)===String(id))||{}; setTimeout(()=>setPackageFieldsFromProduct(p),60); return res;};
+    const oldSubmitItemForm=window.submitItemForm;
+    window.submitItemForm=async function(){
+        ensurePackageFields();
+        if(!validatePackageFields()) return;
+        const pkg=readPackageFields();
+        const editId=txt($('editId')?.value).trim();
+        const sku=txt($('itemSku')?.value).trim();
+        const beforeIds=new Set((sellerProducts||[]).map(p=>String(p.id)));
+        const res=oldSubmitItemForm?await oldSubmitItemForm.apply(this,arguments):null;
+        try{
+            let productId=editId;
+            if(!productId && db){
+                const email=sellerEmail();
+                if(sku){
+                    const snap=await db.collection('products').where('sellerEmail','==',email).where('sku','==',sku).limit(3).get();
+                    snap.forEach(d=>{if(!productId) productId=d.id;});
+                }
+                if(!productId){
+                    const latest=(sellerProducts||[]).find(p=>!beforeIds.has(String(p.id)));
+                    if(latest) productId=latest.id;
+                }
+            }
+            if(productId && db){
+                const payload={...pkg,package:{weight_kg:pkg.packageWeightKg,length_cm:pkg.packageLengthCm,breadth_cm:pkg.packageBreadthCm,height_cm:pkg.packageHeightCm},shiprocketPackageReady:true,updatedAt:nowIso()};
+                await db.collection('products').doc(productId).set(payload,{merge:true});
+                const local=(sellerProducts||[]).find(p=>String(p.id)===String(productId)); if(local) Object.assign(local,payload);
+            }
+        }catch(e){console.warn('package details save failed',e); toast('Product saved, but package details sync failed. Edit once and save again.','warning');}
+        return res;
+    };
+
+    window.toggleSelectAll=function(selectorOrSource, maybeSource){
+        let selector='.cb-new'; let source=selectorOrSource;
+        if(typeof selectorOrSource==='string'){selector=selectorOrSource; source=maybeSource;}
+        if(!source || typeof source.checked==='undefined') return;
+        document.querySelectorAll(selector).forEach(cb=>{if(!cb.disabled) cb.checked=!!source.checked;});
+    };
+    window.toggleSelectAllNew=source=>window.toggleSelectAll('.cb-new',source);
+    window.toggleSelectAllAcc=source=>window.toggleSelectAll('.cb-acc',source);
+    window.toggleSelectAllByClass=(cls,source)=>window.toggleSelectAll(cls&&cls.startsWith('.')?cls:'.'+cls,source);
+
+    function ensureSidebarItem(section,label,icon,afterText){
+        const side=$('mobileSidebar'); if(!side) return;
+        if(side.querySelector(`.nav-item[onclick*="${section}"]`)) return;
+        const div=document.createElement('div');
+        div.className='nav-item';
+        div.setAttribute('onclick',`showSection('${section}')`);
+        div.innerHTML=`<i class="fas ${icon}"></i> ${label}`;
+        const items=[...side.querySelectorAll('.nav-item')];
+        const after=items.find(x=>low(x.textContent).includes(low(afterText||'')));
+        if(after&&after.parentElement) after.parentElement.insertBefore(div,after.nextSibling); else side.appendChild(div);
+    }
+    function activateSidebar(section){
+        document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active','selected'));
+        const item=[...document.querySelectorAll('.nav-item')].find(x=>txt(x.getAttribute('onclick')).includes(`'${section}'`)||txt(x.getAttribute('onclick')).includes(`"${section}"`));
+        if(item) item.classList.add('active','selected');
+    }
+    function showOnlySection(section){
+        document.querySelectorAll('.data-section').forEach(sec=>sec.classList.remove('active'));
+        const el=$(section+'Section'); if(el) el.classList.add('active');
+        const sb=$('mobileSidebar'); if(sb) sb.classList.remove('open'); const ov=$('mobileSidebarOverlay'); if(ov) ov.style.display='none';
+        activateSidebar(section);
+    }
+    function productStats(){
+        const map={};
+        (sellerProducts||[]).forEach(p=>{map[p.id]={product:p,totalQty:0,totalOrders:0,delivered:0,cancelled:0,returned:0,gross:0,views:num(p.views||p.totalViews||p.clicks||p.totalClicks)}});
+        (sellerOrders||[]).filter(isRealOrder).forEach(o=>{
+            const st=low(o.status||o.orderStatus);
+            sellerItems(o).forEach(i=>{
+                const p=productOfItem(i); if(!p||!map[p.id]) return;
+                const q=itemQty(i), row=map[p.id];
+                row.totalQty+=q; row.totalOrders+=1; row.gross+=itemAmount(i,p);
+                if(st.includes('deliver')) row.delivered+=q;
+                else if(st.includes('cancel')) row.cancelled+=q;
+                else if(st.includes('return')||st.includes('refund')) row.returned+=q;
+            });
+        });
+        return Object.values(map);
+    }
+    window.setProductPerformanceFilter=function(filter){
+        window.productPerformanceFilter=filter||'all';
+        ['all','top','loss'].forEach(f=>{const b=$('perf-filter-'+f); if(b) b.classList.toggle('active',f===window.productPerformanceFilter);});
+        window.loadProductPerformance();
+    };
+    window.loadProductPerformance=function(){
+        const list=$('productPerformanceList'); if(!list) return;
+        let rows=productStats(); const filter=window.productPerformanceFilter||'all';
+        if(filter==='top') rows=rows.filter(x=>x.delivered>0||x.totalQty>0).sort((a,b)=>b.delivered-a.delivered||b.totalQty-a.totalQty||b.gross-a.gross);
+        else if(filter==='loss') rows=rows.filter(x=>(x.cancelled+x.returned)>0).sort((a,b)=>(b.cancelled+b.returned)-(a.cancelled+a.returned));
+        else rows=rows.sort((a,b)=>b.totalQty-a.totalQty||b.views-a.views);
+        if(!rows.length){list.innerHTML='<div class="panel-box"><b>No product performance data yet.</b><br><span class="muted-line">Only real seller orders are counted. Demo/test orders are ignored.</span></div>';return;}
+        list.innerHTML=rows.map(st=>{const p=st.product,total=Math.max(1,st.totalOrders),loss=st.cancelled+st.returned,ret=Math.round(st.returned/total*100),can=Math.round(st.cancelled/total*100),del=Math.round(st.delivered/Math.max(1,st.totalQty||1)*100); const img=(Array.isArray(p.images)&&p.images[0])||p.image||''; return `<div class="performance-card prime-performance-card">${img?`<img src="${safe(img)}" loading="lazy" class="perf-img">`:''}<h4>${safe(p.name||p.title||'Product')}</h4><p class="muted-line">SKU: <b>${safe(p.sku||p.id)}</b> · Price: <b>₹${num(p.price).toLocaleString('en-IN')}</b></p><div class="tiny-metric-grid"><div class="tiny-metric"><span>Sold</span>${st.totalQty}</div><div class="tiny-metric"><span>Delivered</span>${st.delivered}</div><div class="tiny-metric"><span>Loss</span>${loss}</div></div><div class="perf-bars"><small>Delivered ${del}%</small><div class="perf-bar"><i style="width:${Math.min(100,del)}%"></i></div><small>Cancelled ${can}%</small><div class="perf-bar danger"><i style="width:${Math.min(100,can)}%"></i></div><small>Returns ${ret}%</small><div class="perf-bar warning"><i style="width:${Math.min(100,ret)}%"></i></div></div><button class="btn-outline w-100" onclick="editItem('${safe(p.id)}')"><i class="fas fa-edit"></i> Edit Product</button></div>`;}).join('');
+    };
+    window.loadReturnTracking=window.loadReturnTracking||function(){const box=$('returnTrackingList'); if(box) box.innerHTML='<div class="panel-box">Return tracking will appear when return/cancelled-after-dispatch orders exist.</div>';};
+
+    function sevenDayRows(){const rows=[]; for(let i=6;i>=0;i--){const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i); rows.push({date:d,key:d.toISOString().slice(0,10),label:d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}),value:0,count:0});} return rows;}
+    function renderRealSevenDayChart(){
+        const ctx=$('salesChart'); if(!ctx||typeof Chart==='undefined') return;
+        const rows=sevenDayRows(); const map=new Map(rows.map(r=>[r.key,r]));
+        (sellerOrders||[]).filter(isRealOrder).filter(isNonCancelledOrder).forEach(o=>{const d=orderDate(o); d.setHours(0,0,0,0); const key=d.toISOString().slice(0,10); const row=map.get(key); if(row){row.value+=orderAmount(o); row.count+=1;}});
+        try{if(window.salesChartInstance) window.salesChartInstance.destroy(); else if(typeof salesChartInstance!=='undefined'&&salesChartInstance) salesChartInstance.destroy();}catch(e){}
+        const gradient=ctx.getContext('2d').createLinearGradient(0,0,0,250); gradient.addColorStop(0,'rgba(15,23,42,.24)'); gradient.addColorStop(1,'rgba(15,23,42,.02)');
+        try{window.salesChartInstance=new Chart(ctx,{type:'line',data:{labels:rows.map(r=>r.label),datasets:[{label:'Real order sales (₹)',data:rows.map(r=>Math.round(r.value)),backgroundColor:gradient,borderColor:'#0f172a',fill:true,tension:.35,borderWidth:3,pointRadius:4,pointBackgroundColor:'#fff',pointBorderColor:'#0f172a'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`₹${Number(c.parsed.y||0).toLocaleString('en-IN')} from ${rows[c.dataIndex]?.count||0} order(s)`}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'₹'+Number(v).toLocaleString('en-IN')}},x:{grid:{display:false}}}}});}catch(e){console.warn('chart render failed',e);}
+    }
+    window.renderSalesChart=function(){renderRealSevenDayChart();};
+    const oldRenderDashboardStats=window.renderDashboardStats;
+    window.renderDashboardStats=async function(){const res=oldRenderDashboardStats?await oldRenderDashboardStats.apply(this,arguments):null; renderRealSevenDayChart(); return res;};
+
+    function ensureSupportMultipleInputs(){
+        ['supportModalImage','supportModalDoc','supImage','supDoc'].forEach(id=>{const el=$(id); if(el) el.multiple=true;});
+        const img=$('supportModalImage'); if(img) img.accept='image/*';
+        const doc=$('supportModalDoc'); if(doc) doc.accept='image/*,.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    }
+    async function fileListData(input){
+        const files=[...(input&&input.files?input.files:[])];
+        return Promise.all(files.slice(0,8).map(f=>new Promise((resolve,reject)=>{const r=new FileReader(); r.onerror=reject; r.onload=()=>resolve({name:f.name,type:f.type,size:f.size,dataUrl:r.result}); r.readAsDataURL(f);} )));
+    }
+    const oldEnsureSupportModal=window.ensureSupportModal;
+    function makeSupportModalMultiple(){ensureSupportMultipleInputs(); document.querySelectorAll('.support-upload-chip').forEach(l=>{if(l.textContent.includes('Image')) l.childNodes[0].textContent=' Images '; if(l.textContent.includes('Document')) l.childNodes[0].textContent=' Documents ';});}
+    const oldOpenSupportIssueModal=window.openSupportIssueModal;
+    window.openSupportIssueModal=function(){const res=oldOpenSupportIssueModal?oldOpenSupportIssueModal.apply(this,arguments):null; setTimeout(makeSupportModalMultiple,30); return res;};
+    const oldRenderSupportCategories=window.renderSupportCategories;
+    window.renderSupportCategories=async function(){const res=oldRenderSupportCategories?await oldRenderSupportCategories.apply(this,arguments):null; makeSupportModalMultiple(); return res;};
+    window.submitSupportTicket=async function(){
+        ensureSupportMultipleInputs();
+        const modal=$('supportQuickModal'); const modalOpen=modal&&modal.style.display==='flex';
+        const cat=modalOpen?$('supportModalCategory')?.value:$('supCategory')?.value;
+        const phone=txt(modalOpen?$('supportModalPhone')?.value:$('supPhone')?.value).trim();
+        const desc=txt(modalOpen?$('supportModalDesc')?.value:$('supDesc')?.value).trim();
+        if(!cat||!phone||!desc) return toast('Select problem, callback phone and description.','warning');
+        try{
+            const images=await fileListData(modalOpen?$('supportModalImage'):$('supImage'));
+            const documents=await fileListData(modalOpen?$('supportModalDoc'):$('supDoc'));
+            await db.collection('seller_support_tickets').add({ticketId:'TKT-'+Math.random().toString(36).slice(2,8).toUpperCase(),email:sellerEmail(),sellerEmail:sellerEmail(),sellerName:activeSeller?.companyName||activeSeller?.shopName||activeSeller?.name||sellerEmail(),category:cat,categoryTitle:cat,phone,callbackPhone:phone,description:desc,message:desc,images,documents,image:images[0]||null,document:documents[0]||null,attachmentCount:images.length+documents.length,status:'Pending',timestamp:nowIso(),createdAt:nowIso(),source:'seller-panel-multi-upload'});
+            toast('Support request sent with attachments. Admin will review.','success');
+            if(modalOpen) closeModal('supportQuickModal');
+            ['supportModalDesc','supportModalImage','supportModalDoc','supDesc','supPhone','supImage','supDoc'].forEach(id=>{const el=$(id); if(el) el.value='';});
+            try{await fetchSupportTicketBadges();}catch(e){}
+        }catch(e){console.warn(e); toast('Could not submit support ticket.','error');}
+    };
+
+    function subscriptionHistory(){return Array.isArray(activeSeller?.subHistory)?activeSeller.subHistory:[];}
+    function invoiceRow(label,value){return `<div class="invoice-row"><span>${safe(label)}</span><b>${safe(value||'-')}</b></div>`;}
+    function ensureSubInvoiceModal(){
+        let modal=$('subscriptionInvoiceModal'); if(modal) return modal;
+        modal=document.createElement('div'); modal.className='modal'; modal.id='subscriptionInvoiceModal';
+        modal.innerHTML=`<div class="modal-content subscription-invoice-modal"><span class="close-modal" onclick="closeModal('subscriptionInvoiceModal')"><i class="fas fa-times"></i></span><div id="subscriptionInvoiceContent"></div></div>`;
+        document.body.appendChild(modal); return modal;
+    }
+    window.viewSubscriptionInvoice=function(index){
+        const hist=subscriptionHistory(); const h=hist[index]||hist.slice().reverse()[index]||{}; const modal=ensureSubInvoiceModal(); const cont=$('subscriptionInvoiceContent');
+        const plan=h.planName||h.plan||h.subscriptionName||activeSeller?.subscriptionName||activeSeller?.subscription||'Subscription';
+        const amount=num(h.amount||h.cost||h.price||0);
+        const method=h.method||h.paymentMethod||h.payment_mode||'Not recorded';
+        const paidBy=h.paymentBy||h.paidBy||activeSeller?.companyName||activeSeller?.shopName||activeSeller?.name||sellerEmail();
+        const paymentId=h.razorpayPaymentId||h.paymentId||h.transactionId||h.txnId||h.reference||'';
+        if(cont) cont.innerHTML=`<div class="invoice-title"><i class="fas fa-receipt"></i><div><h3>Aryanta Subscription Invoice</h3><p>${safe(plan)}</p></div></div><div class="invoice-box">${invoiceRow('Invoice No.',h.invoiceNo||h.invoiceId||('SUB-'+(h.startDate||h.createdAt||Date.now()).toString().replace(/[^0-9]/g,'').slice(0,12)))}${invoiceRow('Seller',paidBy)}${invoiceRow('Seller Email',sellerEmail())}${invoiceRow('Plan',plan)}${invoiceRow('Amount','₹'+amount.toLocaleString('en-IN'))}${invoiceRow('Commission',txt(h.commissionPercent||activeSeller?.subscriptionCommissionPercent||'' )+(h.commissionPercent||activeSeller?.subscriptionCommissionPercent?'%':''))}${invoiceRow('Payment Method',method)}${invoiceRow('Payment By',paidBy)}${invoiceRow('Payment ID',paymentId)}${invoiceRow('Start Date',h.startDate?new Date(h.startDate).toLocaleString():h.createdAt?new Date(h.createdAt).toLocaleString():'-')}${invoiceRow('End Date',h.endDate?new Date(h.endDate).toLocaleString():'-')}${invoiceRow('Status',h.status||'Active')}</div><button class="btn-prime w-100" onclick="window.print()"><i class="fas fa-print"></i> Print Invoice</button>`;
+        modal.style.display='flex'; setTimeout(()=>modal.classList.add('show'),10);
+    };
+    window.showSubscriptionDetails=function(){
+        let sec=$('subscriptionDetailsSection');
+        if(!sec){sec=document.createElement('section'); sec.id='subscriptionDetailsSection'; sec.className='data-section subscription-details-page'; (document.querySelector('.content-padding')||document.body).appendChild(sec);}
+        const hist=subscriptionHistory();
+        sec.innerHTML=`<div class="section-head-row"><div><h3 style="font-size:24px;font-weight:950;color:var(--warning);"><i class="fas fa-receipt"></i> Subscription Details</h3><p class="muted-line">Full plan, payment method, payment by, and invoice details.</p></div><button class="btn-outline" onclick="showSection('subscription')"><i class="fas fa-arrow-left"></i> Back to Subscription</button></div><div class="subscription-detail-hero"><div><span>Current plan</span><strong>${safe(activeSeller?.subscriptionName||activeSeller?.subscription||'Basic / Free')}</strong></div><div><span>Start</span><strong>${safe(activeSeller?.subStartDate?new Date(activeSeller.subStartDate).toLocaleDateString():'-')}</strong></div><div><span>End / renew</span><strong>${safe(activeSeller?.subEndDate?new Date(activeSeller.subEndDate).toLocaleDateString():'-')}</strong></div></div><div class="table-container"><table class="admin-table"><thead><tr><th>Plan</th><th>Amount</th><th>Payment Method</th><th>Payment By</th><th>Payment ID</th><th>Status</th><th>Invoice</th></tr></thead><tbody>${hist.length?hist.map((h,i)=>`<tr><td data-label="Plan"><b>${safe(h.planName||h.plan||'-')}</b><br><small>${safe(h.startDate?new Date(h.startDate).toLocaleDateString():'')}</small></td><td data-label="Amount">₹${num(h.amount||h.cost||h.price).toLocaleString('en-IN')}</td><td data-label="Payment Method">${safe(h.method||h.paymentMethod||'-')}</td><td data-label="Payment By">${safe(h.paymentBy||h.paidBy||activeSeller?.companyName||activeSeller?.shopName||sellerEmail())}</td><td data-label="Payment ID">${safe(h.razorpayPaymentId||h.paymentId||h.transactionId||'-')}</td><td data-label="Status"><span class="ok-chip">${safe(h.status||'Active')}</span></td><td data-label="Invoice"><button class="btn-sm" onclick="viewSubscriptionInvoice(${i})"><i class="fas fa-receipt"></i> View</button></td></tr>`).join(''):'<tr><td colspan="7" style="text-align:center;font-weight:800;">No subscription invoice/history found yet.</td></tr>'}</tbody></table></div>`;
+        document.querySelectorAll('.data-section').forEach(x=>x.classList.remove('active')); sec.classList.add('active'); activateSidebar('subscription'); window.scrollTo({top:0,behavior:'smooth'});
+    };
+
+    function showFirstOrderCelebration(){
+        if(!activeSeller||(activeSeller.firstOrderPopupShownV2||localStorage.getItem('firstOrderPopupV2_'+sellerEmail()))) return;
+        const orders=(sellerOrders||[]).filter(isRealOrder); if(!orders.length) return;
+        let modal=$('firstOrderCelebrationModal');
+        if(!modal){modal=document.createElement('div'); modal.className='modal'; modal.id='firstOrderCelebrationModal'; modal.innerHTML=`<div class="modal-content first-order-modal"><div class="confetti">🎉</div><h2>Congratulations!</h2><p>You received your first Aryanta order. Accept it, generate the Shiprocket PDF, scan, and dispatch on time.</p><button class="btn-prime w-100" onclick="closeModal('firstOrderCelebrationModal'); showSection('newOrders')"><i class="fas fa-box"></i> View Order</button></div>`; document.body.appendChild(modal);}
+        modal.style.display='flex'; setTimeout(()=>modal.classList.add('show'),10); localStorage.setItem('firstOrderPopupV2_'+sellerEmail(),'1');
+        try{db.collection('sellers').doc(sellerDocId()).set({firstOrderPopupShownV2:true,firstOrderPopupAt:nowIso()},{merge:true}); activeSeller.firstOrderPopupShownV2=true;}catch(e){}
+    }
+
+    const oldShowSection=window.showSection;
+    window.showSection=async function(section){
+        ensureSidebarItem('productPerformance','Product Performance','fa-chart-line','My Inventory');
+        ensureSidebarItem('returnTracking','Return Tracking','fa-route','Returns');
+        if(section==='productPerformance'||section==='returnTracking'){
+            showOnlySection(section);
+            try{if(typeof ensureSellerOrders==='function') await ensureSellerOrders(); if(section==='productPerformance'&&typeof ensureSellerProducts==='function') await ensureSellerProducts();}catch(e){}
+            if(section==='productPerformance') window.loadProductPerformance();
+            if(section==='returnTracking') window.loadReturnTracking();
+            return;
+        }
+        const res=oldShowSection?await oldShowSection.apply(this,arguments):null;
+        activateSidebar(section);
+        if(section==='home') setTimeout(renderRealSevenDayChart,150);
+        if(section==='support') setTimeout(()=>{makeSupportModalMultiple();},120);
+        return res;
+    };
+
+    function boot(){
+        ensurePackageFields(); ensureSupportMultipleInputs(); ensureSidebarItem('productPerformance','Product Performance','fa-chart-line','My Inventory'); ensureSidebarItem('returnTracking','Return Tracking','fa-route','Returns');
+        setTimeout(()=>{renderRealSevenDayChart(); showFirstOrderCelebration();},1200);
+    }
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+/* ===== End Aryanta Seller Stability Patch v2 ===== */
+
+/* Aryanta Seller Panel Final Bug-Fix Patch
+   Add this file's content at the END of your existing seller.js.
+   It is intentionally additive: it does not remove your existing logic, QC flow, auth, Shiprocket flow, or order matching logic.
+*/
+(function(){
+  'use strict';
+
+  const LOW_STOCK_LIMIT = 7;
+  const NOTICE_SETTING_KEY = 'showNotices';
+  const $ = (id) => document.getElementById(id);
+  const qsa = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+  const txt = (v) => (v === undefined || v === null) ? '' : String(v);
+  const lower = (v) => txt(v).toLowerCase().trim();
+  const nowIso = () => new Date().toISOString();
+  const toast = (m,t='info') => (typeof window.showToast === 'function' ? window.showToast(m,t) : console.log(t,m));
+  const activeEmail = () => lower(window.activeSeller && window.activeSeller.email || (typeof activeSeller !== 'undefined' && activeSeller && activeSeller.email) || '');
+  const getDb = () => window.db || (typeof db !== 'undefined' ? db : null);
+  const getSeller = () => window.activeSeller || (typeof activeSeller !== 'undefined' ? activeSeller : null);
+  const getProducts = () => window.sellerProducts || (typeof sellerProducts !== 'undefined' ? sellerProducts : []);
+  const setProducts = (arr) => { try{ window.sellerProducts = arr; if(typeof sellerProducts !== 'undefined') sellerProducts = arr; }catch(e){} };
+  const getOrders = () => window.sellerOrders || (typeof sellerOrders !== 'undefined' ? sellerOrders : []);
+
+  function esc(v){ return txt(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function num(v){ const n=Number(v); return Number.isFinite(n)?n:0; }
+  function firstImage(item){
+    if(!item) return '';
+    const candidates = [item.image, item.imageUrl, item.thumbnail, item.photo, item.mainImage, item.productImage, item.img];
+    if(Array.isArray(item.images)) candidates.unshift(item.images[0]);
+    if(Array.isArray(item.imageUrls)) candidates.unshift(item.imageUrls[0]);
+    if(item.product && Array.isArray(item.product.images)) candidates.unshift(item.product.images[0]);
+    if(item.product && item.product.image) candidates.unshift(item.product.image);
+    return candidates.find(x => txt(x).trim()) || '';
+  }
+  function fmtDate(v){
+    if(!v) return 'Not available';
+    let d = v;
+    if(v && typeof v.toDate === 'function') d = v.toDate();
+    else if(typeof v === 'number') d = new Date(v < 10000000000 ? v*1000 : v);
+    else d = new Date(v);
+    if(isNaN(d.getTime())) return 'Not available';
+    return d.toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  }
+  window.aryantaFormatDate = fmtDate;
+  window.aryantaProductImg = firstImage;
+
+  async function ensureProductsFresh(){
+    try{
+      if(typeof window.ensureSellerProducts === 'function') return await window.ensureSellerProducts(true);
+      if(typeof ensureSellerProducts === 'function') return await ensureSellerProducts(true);
+    }catch(e){}
+    return getProducts();
+  }
+
+  function injectLowStockNav(){
+    if($('nav-lowStock') || document.querySelector('[data-aryanta-low-stock-nav]')) return;
+    const inv = Array.from(document.querySelectorAll('.nav-item')).find(n => /my inventory/i.test(n.textContent||''));
+    if(!inv) return;
+    const div = document.createElement('div');
+    div.className = 'nav-item';
+    div.id = 'nav-lowStock';
+    div.setAttribute('data-aryanta-low-stock-nav','1');
+    div.setAttribute('onclick', "showSection('lowStock')");
+    div.innerHTML = '<i class="fas fa-battery-quarter" style="color:var(--danger);"></i> Low Stock Items <span id="badge-low-stock" class="nav-badge" style="background:var(--danger);">0</span>';
+    inv.insertAdjacentElement('afterend', div);
+  }
+
+  function injectLowStockSection(){
+    if($('lowStockSection')) return;
+    const content = document.querySelector('.content-padding') || document.querySelector('main .content') || document.querySelector('main') || document.body;
+    const section = document.createElement('section');
+    section.id = 'lowStockSection';
+    section.className = 'data-section';
+    section.innerHTML = `
+      <div class="ary-final-page-head">
+        <div>
+          <h3><i class="fas fa-battery-quarter"></i> Low Stock Items</h3>
+          <p>Products with stock less than ${LOW_STOCK_LIMIT}. Updating stock here directly modifies stock only and does not send the item to QC.</p>
+        </div>
+        <button class="btn-prime" type="button" onclick="aryantaRenderLowStock(true)"><i class="fas fa-sync-alt"></i> Refresh</button>
+      </div>
+      <div class="ary-low-stock-summary" id="lowStockSummary"></div>
+      <div id="lowStockGrid" class="ary-low-stock-grid"></div>
+    `;
+    content.appendChild(section);
+  }
+
+  function injectStockModal(){
+    if($('stockQuickEditModal')) return;
+    const modal = document.createElement('div');
+    modal.id = 'stockQuickEditModal';
+    modal.className = 'modal';
+    modal.style.display = 'none';
+    modal.innerHTML = `
+      <div class="modal-content ary-stock-modal">
+        <div class="modal-header">
+          <h3><i class="fas fa-boxes-stacked"></i> Direct Stock Update</h3>
+          <button type="button" class="modal-close" onclick="closeModal('stockQuickEditModal')">&times;</button>
+        </div>
+        <div id="stockQuickProductInfo" class="ary-stock-product-info"></div>
+        <label class="input-label">New Stock Quantity</label>
+        <input id="stockQuickQty" type="number" class="input-field" min="0" step="1" placeholder="Enter new stock">
+        <div class="ary-stock-note"><i class="fas fa-shield-check"></i> Only stock will update. QC status, approval, product title, price, image and live status will not be changed.</div>
+        <button class="btn-prime w-100" type="button" onclick="aryantaSaveQuickStock()"><i class="fas fa-save"></i> Update Stock Directly</button>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+
+  let activeStockProductId = '';
+  window.aryantaOpenStockEditor = function(productId){
+    const p = getProducts().find(x => String(x.id||x.productId||'') === String(productId));
+    if(!p) return toast('Product not found. Refresh inventory and try again.','error');
+    activeStockProductId = String(p.id || p.productId);
+    const img = firstImage(p);
+    const info = $('stockQuickProductInfo');
+    if(info) info.innerHTML = `
+      <div class="ary-stock-product-row">
+        ${img ? `<img src="${esc(img)}" onerror="this.style.display='none'">` : '<div class="ary-no-img"><i class="fas fa-image"></i></div>'}
+        <div><strong>${esc(p.name || p.title || 'Product')}</strong><span>SKU: ${esc(p.sku || p.productId || p.id || 'N/A')}</span><small>Current stock: ${esc(p.stock ?? 0)}</small></div>
+      </div>`;
+    const qty = $('stockQuickQty'); if(qty) qty.value = Number(p.stock || 0);
+    if(typeof window.openModal === 'function') openModal('stockQuickEditModal'); else { const m=$('stockQuickEditModal'); if(m)m.style.display='flex'; }
+  };
+
+  window.aryantaSaveQuickStock = async function(){
+    const db = getDb();
+    const qty = parseInt(($('stockQuickQty')||{}).value,10);
+    if(!db) return toast('Database not ready. Try again after panel loads.','error');
+    if(!activeStockProductId) return toast('Select a product first.','warning');
+    if(isNaN(qty) || qty < 0) return toast('Enter a valid stock number.','warning');
+    try{
+      const payload = { stock: qty, stockUpdatedAt: nowIso(), updatedAt: nowIso(), directStockUpdate: true, lastStockUpdateSource: 'seller_low_stock_page' };
+      await db.collection('products').doc(activeStockProductId).update(payload);
+      const products = getProducts().map(p => String(p.id||p.productId) === activeStockProductId ? {...p, ...payload} : p);
+      setProducts(products);
+      if(typeof window.closeModal === 'function') closeModal('stockQuickEditModal');
+      toast('Stock updated directly. Product was not sent to QC.','success');
+      window.aryantaRenderLowStock(false);
+      try{ if(typeof window.loadInventory === 'function') window.loadInventory(); }catch(e){}
+    }catch(e){ console.error(e); toast('Stock update failed. Check Firestore permission.','error'); }
+  };
+
+  window.aryantaRenderLowStock = async function(force){
+    if(force) await ensureProductsFresh();
+    const list = getProducts().filter(p => num(p.stock) < LOW_STOCK_LIMIT).sort((a,b)=>num(a.stock)-num(b.stock));
+    const badge = $('badge-low-stock');
+    if(badge){ badge.textContent = list.length; badge.style.display = list.length ? 'inline-block' : 'none'; }
+    const summary = $('lowStockSummary');
+    if(summary) summary.innerHTML = `
+      <div><strong>${list.length}</strong><span>Items below ${LOW_STOCK_LIMIT}</span></div>
+      <div><strong>${list.filter(p=>num(p.stock)<=0).length}</strong><span>Out of stock</span></div>
+      <div><strong>${list.filter(p=>num(p.stock)>0 && num(p.stock)<LOW_STOCK_LIMIT).length}</strong><span>Urgent restock</span></div>`;
+    const grid = $('lowStockGrid');
+    if(!grid) return;
+    if(!list.length){ grid.innerHTML = '<div class="ary-empty-state"><i class="fas fa-check-circle"></i><h3>All stock levels look good</h3><p>No products are below the low stock limit.</p></div>'; return; }
+    grid.innerHTML = list.map(p => {
+      const img = firstImage(p);
+      const stock = num(p.stock);
+      const id = esc(p.id || p.productId || '');
+      return `<div class="ary-low-stock-card ${stock<=0?'out':''}">
+        <div class="ary-product-img-wrap">${img ? `<img src="${esc(img)}" onerror="this.parentNode.innerHTML='<i class=&quot;fas fa-image&quot;></i>'">` : '<i class="fas fa-image"></i>'}</div>
+        <div class="ary-low-stock-body">
+          <strong>${esc(p.name || p.title || 'Unnamed Product')}</strong>
+          <span>SKU: ${esc(p.sku || p.productId || p.id || 'N/A')}</span>
+          <span>Last update: ${esc(fmtDate(p.stockUpdatedAt || p.updatedAt || p.createdAt))}</span>
+          <div class="ary-stock-pill ${stock<=0?'danger':'warn'}">${stock} left</div>
+        </div>
+        <div class="ary-low-stock-actions">
+          <button class="btn-prime" type="button" onclick="aryantaOpenStockEditor('${id}')"><i class="fas fa-pen"></i> Edit Stock</button>
+          ${typeof window.editItem === 'function' ? `<button class="btn-outline" type="button" onclick="editItem('${id}')"><i class="fas fa-eye"></i> Open Product</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  };
+
+  function injectSettingNoticeToggle(){
+    const settingsSection = $('settingsSection');
+    if(!settingsSection || $('settingShowNoticesFinal')) return;
+    const grid = settingsSection.querySelector('.settings-grid-premium') || settingsSection.querySelector('.settings-grid') || settingsSection;
+    const card = document.createElement('div');
+    card.className = 'setting-card-premium ary-setting-card-final';
+    card.innerHTML = `
+      <div class="setting-left"><div class="setting-icon"><i class="fas fa-bullhorn"></i></div><div><div class="setting-title">Show Notices</div><div class="setting-sub">Show Aryanta update notices and system notices. Available for all sellers including Free.</div></div></div>
+      <label class="premium-switch"><input type="checkbox" id="settingShowNoticesFinal" onchange="aryantaToggleShowNotices(this.checked)"><span class="switch-slider"></span></label>`;
+    grid.appendChild(card);
+    const seller = getSeller();
+    const cb = $('settingShowNoticesFinal');
+    if(cb) cb.checked = !(seller && seller.settings && seller.settings[NOTICE_SETTING_KEY] === false);
+  }
+
+  window.aryantaToggleShowNotices = async function(enabled){
+    const db = getDb(), seller = getSeller();
+    if(!seller) return;
+    seller.settings = seller.settings || {};
+    seller.settings[NOTICE_SETTING_KEY] = !!enabled;
+    try{
+      if(db && seller.email) await db.collection('sellers').doc(seller.email).set({settings:seller.settings, updatedAt:nowIso()},{merge:true});
+      localStorage.setItem('sellerToken', JSON.stringify(seller));
+      toast(enabled ? 'Notices enabled.' : 'Notices hidden. Only important alerts will show.','success');
+      if(typeof window.fetchNotifications === 'function') window.fetchNotifications();
+    }catch(e){ toast('Could not update notice setting.','error'); }
+  };
+
+  async function markNotificationRead(n){
+    if(!n || n.read) return;
+    const db = getDb();
+    n.read = true; n.isRead = true;
+    try{
+      if(db && n.collection && n.id && !String(n.id).startsWith('built-')){
+        await db.collection(n.collection).doc(n.id).set({read:true,isRead:true,readAt:nowIso()},{merge:true});
+      }
+      toast('Notification marked read.','success');
+    }catch(e){ console.warn('mark read failed',e); }
+    renderNotificationsClean();
+  }
+
+  function builtInNotices(){
+    const seller = getSeller() || {};
+    const notices = [];
+    if(!seller.__welcomeNoticeHidden) notices.push({id:'built-welcome',collection:'built',title:'Welcome to Aryanta Seller',text:'You have successfully joined Aryanta Seller Network. Keep your stock and orders updated.',time:seller.createdAt||nowIso(),read:true});
+    if(seller.subscription && !['none','basic / free','free'].includes(lower(seller.subscription))) notices.push({id:'built-sub',collection:'built',title:'Subscription Active',text:`Your ${seller.subscription} subscription is active. Check plan benefits in Subscription Details.`,time:seller.subStartDate||nowIso(),read:true});
+    if((getOrders()||[]).length>0) notices.push({id:'built-first-order',collection:'built',title:'Congrats on your first order',text:'You received orders on Aryanta. Accept only when stock and packing documents are ready.',time:(getOrders()[0]||{}).timestamp||nowIso(),read:true});
+    notices.push({id:'built-stock',collection:'built',title:'Low Stock Reminder',text:'Use the Low Stock page to update stock directly without sending the product to QC.',time:nowIso(),read:true});
+    return notices;
+  }
+
+  function normalizeNotif(doc, collection){
+    const d = doc.data ? doc.data() : (doc || {});
+    return {
+      id: doc.id || d.id || Math.random().toString(36).slice(2), collection,
+      title: d.title || d.heading || 'Aryanta Notice',
+      text: d.message || d.text || d.body || d.description || 'New update from Aryanta.',
+      time: d.createdAt || d.timestamp || d.time || nowIso(),
+      link: d.link || d.url || d.actionUrl || '',
+      target: lower(d.target || d.email || d.sellerEmail || 'all'),
+      read: d.read === true || d.isRead === true,
+      priority: d.priority || ''
+    };
+  }
+
+  async function fetchNotificationsClean(){
+    const db = getDb(), seller = getSeller();
+    if(!db || !seller) return renderNotificationsClean();
+    const email = activeEmail();
+    const rows = [];
+    try{
+      const snap = await db.collection('seller_notifications').limit(80).get();
+      snap.forEach(doc => { const n=normalizeNotif(doc,'seller_notifications'); if(['all','sellers',email,''].includes(n.target)) rows.push(n); });
+    }catch(e){}
+    try{
+      const snap = await db.collection('admin_broadcasts').limit(80).get();
+      snap.forEach(doc => { const n=normalizeNotif(doc,'admin_broadcasts'); if(['all','sellers',email,''].includes(n.target)) rows.push(n); });
+    }catch(e){}
+    const showNotices = !(seller.settings && seller.settings[NOTICE_SETTING_KEY] === false);
+    if(showNotices) rows.push(...builtInNotices());
+    const seen = new Set();
+    const deduped = rows.filter(n => {
+      const key = lower((n.collection||'')+'|'+(n.id||'')+'|'+(n.title||'')+'|'+(n.text||''));
+      if(seen.has(key)) return false;
+      seen.add(key); return true;
+    }).sort((a,b)=>new Date(b.time||0)-new Date(a.time||0)).slice(0,60);
+    window.adminNotifications = deduped;
+    try{ if(typeof adminNotifications !== 'undefined') adminNotifications = deduped; }catch(e){}
+    renderNotificationsClean();
+  }
+
+  function renderNotificationsClean(){
+    const list = window.adminNotifications || (typeof adminNotifications !== 'undefined' ? adminNotifications : []);
+    const unread = list.filter(n => !n.read && n.collection !== 'built').length;
+    ['notifBadge','topbarNotifBadge'].forEach(id => { const b=$(id); if(b){ b.textContent = unread || list.length || 0; b.style.display = list.length ? 'inline-flex' : 'none'; }});
+    const html = list.length ? list.map(n => {
+      const link = n.link ? `<a class="short-link-chip" href="${esc(String(n.link).startsWith('http')?n.link:'https://'+n.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()"><i class="fas fa-link"></i> Open Link</a>` : '';
+      return `<div class="notification-card ${n.read?'read':'unread'}" onclick="aryantaOpenNotification('${esc(n.id)}')">
+        <div class="ary-notif-top"><strong>${esc(n.title)}</strong>${n.read?'<span>Read</span>':'<span class="unread-chip">New</span>'}</div>
+        <p>${esc(n.text)}</p><small><i class="fas fa-clock"></i> ${esc(fmtDate(n.time))}</small>${link}
+      </div>`;
+    }).join('') : '<div class="ary-empty-state"><i class="fas fa-bell-slash"></i><h3>No notifications</h3><p>New Aryanta notices will appear here.</p></div>';
+    ['notifList','fullNotifList'].forEach(id => { const el=$(id); if(el) el.innerHTML=html; });
+  }
+
+  window.aryantaOpenNotification = async function(id){
+    const list = window.adminNotifications || (typeof adminNotifications !== 'undefined' ? adminNotifications : []);
+    const n = list.find(x => String(x.id) === String(id));
+    if(!n) return;
+    await markNotificationRead(n);
+    const cont = $('notifDetailContent');
+    const mod = $('notificationDetailModal');
+    const link = n.link ? `<a href="${esc(String(n.link).startsWith('http')?n.link:'https://'+n.link)}" target="_blank" rel="noopener" class="btn-prime"><i class="fas fa-external-link-alt"></i> Open Link</a>` : '';
+    if(cont && mod){
+      cont.innerHTML = `<div class="ary-notif-detail"><h3>${esc(n.title)}</h3><small><i class="fas fa-clock"></i> ${esc(fmtDate(n.time))}</small><p>${esc(n.text)}</p>${link}</div>`;
+      mod.style.display='flex'; setTimeout(()=>mod.classList.add('show'),10);
+    }else{
+      toast(n.title+': '+n.text,'info');
+      if(n.link) window.open(String(n.link).startsWith('http')?n.link:'https://'+n.link,'_blank','noopener');
+    }
+  };
+
+  function installNotificationOverrides(){
+    window.fetchNotifications = fetchNotificationsClean;
+    try{ fetchNotifications = fetchNotificationsClean; }catch(e){}
+    window.openFullNotif = window.aryantaOpenNotification;
+    window.openFullNotifFinal = window.aryantaOpenNotification;
+  }
+
+  async function applyOfflineMode(enabled){
+    const db = getDb(), seller = getSeller();
+    if(!db || !seller || !seller.email) return toast('Database or seller not ready.','error');
+    seller.settings = seller.settings || {};
+    seller.settings.offline = !!enabled;
+    try{
+      await db.collection('sellers').doc(seller.email).set({settings:seller.settings, offline:!!enabled, updatedAt:nowIso()},{merge:true});
+      const products = getProducts();
+      const batch = db.batch();
+      products.forEach(p => {
+        const approved = ['approved','live','qc pass','pass'].includes(lower(p.approvalStatus || p.qcStatus)) || p.isVisible === true;
+        if(p.id && (enabled || approved)) batch.update(db.collection('products').doc(p.id), {isVisible: enabled ? false : approved, sellerOffline:!!enabled, updatedAt:nowIso()});
+      });
+      await batch.commit().catch(()=>{});
+      products.forEach(p => { p.sellerOffline = !!enabled; if(enabled) p.isVisible=false; });
+      localStorage.setItem('sellerToken', JSON.stringify(seller));
+      toast(enabled ? 'Offline mode ON. Live products hidden from customers.' : 'Offline mode OFF. Approved products restored online.','success');
+    }catch(e){ console.error(e); toast('Offline mode update failed.','error'); }
+  }
+  window.aryantaApplyOfflineMode = applyOfflineMode;
+
+  function patchToggleSetting(){
+    const old = window.toggleSetting;
+    window.toggleSetting = async function(key){
+      const el = document.getElementById('setting'+String(key||'').charAt(0).toUpperCase()+String(key||'').slice(1)) || document.getElementById('settingOffline');
+      if(key === 'offline') return applyOfflineMode(!!(el && el.checked));
+      if(key === NOTICE_SETTING_KEY) return window.aryantaToggleShowNotices(!!(el && el.checked));
+      if(typeof old === 'function') return old.apply(this, arguments);
+    };
+  }
+
+  function orderSellerItems(order){
+    if(typeof window.getSellerItemsFromOrder === 'function') return window.getSellerItemsFromOrder(order);
+    try{ if(typeof getSellerItemsFromOrder === 'function') return getSellerItemsFromOrder(order); }catch(e){}
+    return Array.isArray(order && order.items) ? order.items : [];
+  }
+  function insufficientStock(order){
+    const products = getProducts();
+    return orderSellerItems(order).map(i => {
+      const p = products.find(pr => String(pr.id||pr.productId||'') === String(i.productId||i.id||i.product_id||'') || lower(pr.sku) === lower(i.sku));
+      const stock = p ? num(p.stock) : num(i.stock);
+      const qty = num(i.qty || i.quantity || 1);
+      return {item:i, product:p, stock, qty, low: stock < qty};
+    }).filter(x=>x.low);
+  }
+  async function cancelNoFineStock(order, missing){
+    const db = getDb(); if(!db || !order || !order.id) return;
+    const payload = {
+      status:'Cancelled', sellerCancelled:true, sellerCancelNoFine:true, noFineReason:'Stock lower than order quantity', noFineStockProtection:true,
+      cancelReason:'Seller stock is lower than order quantity. No fine should be recovered.', cancelledAt:nowIso(), updatedAt:nowIso(), stockShortItems: missing.map(x=>({name:x.item.name||x.item.title||'', sku:x.item.sku||'', orderedQty:x.qty, availableStock:x.stock}))
+    };
+    await db.collection('orders').doc(order.id).set(payload,{merge:true});
+    Object.assign(order,payload);
+    toast('Order cancelled with no-fine stock protection. Admin can see the reason.','success');
+    try{ if(typeof window.loadNewOrders==='function') window.loadNewOrders(); if(typeof window.loadAcceptedOrders==='function') window.loadAcceptedOrders(); }catch(e){}
+  }
+  function findOrderById(orderId){ return (getOrders()||[]).find(o => String(o.id||o.orderId||o.order_no) === String(orderId)); }
+  function patchOrderAcceptCancel(){
+    const names = ['acceptOrder','acceptOrderNow','markOrderAccepted','updateOrderStatus'];
+    names.forEach(name => {
+      const old = window[name];
+      if(typeof old !== 'function' || old.__aryStockPatched) return;
+      const patched = async function(orderId, status){
+        const isAccept = name !== 'updateOrderStatus' || ['accepted','accept'].includes(lower(status));
+        if(isAccept){
+          const order = findOrderById(orderId);
+          const missing = insufficientStock(order);
+          if(order && missing.length){
+            const msg = missing.map(x => `${x.item.name||x.item.title||x.item.sku||'Item'}: ordered ${x.qty}, stock ${x.stock}`).join('\n');
+            if(confirm('Stock is lower than received order quantity.\n\n'+msg+'\n\nCancel this order with NO FINE protection?')){
+              await cancelNoFineStock(order, missing);
+              return;
+            }
+          }
+        }
+        return old.apply(this, arguments);
+      };
+      patched.__aryStockPatched = true;
+      window[name] = patched;
+      try{ eval(name+'=window[name]'); }catch(e){}
+    });
+  }
+
+  function patchShowSection(){
+    const old = window.showSection;
+    if(old && old.__aryFinalPatched) return;
+    const patched = function(section){
+      injectLowStockNav(); injectLowStockSection(); injectStockModal(); injectSettingNoticeToggle();
+      if(section === 'lowStock'){
+        const sb=$('mobileSidebar'); if(sb) sb.classList.remove('open'); const ov=$('mobileSidebarOverlay'); if(ov) ov.style.display='none';
+        qsa('.data-section').forEach(sec=>sec.classList.remove('active'));
+        const target=$('lowStockSection'); if(target) target.classList.add('active');
+        qsa('.nav-item').forEach(n=>n.classList.remove('active'));
+        const nav=$('nav-lowStock'); if(nav) nav.classList.add('active');
+        window.aryantaRenderLowStock(true);
+        return;
+      }
+      const result = typeof old === 'function' ? old.apply(this, arguments) : undefined;
+      if(section === 'settings') setTimeout(injectSettingNoticeToggle,120);
+      return result;
+    };
+    patched.__aryFinalPatched = true;
+    window.showSection = patched;
+    try{ showSection = patched; }catch(e){}
+  }
+
+  function improveDatesAndImages(){
+    qsa('[data-date],[data-time]').forEach(el => { if(!el.textContent.trim()) el.textContent = fmtDate(el.getAttribute('data-date') || el.getAttribute('data-time')); });
+    qsa('.order-date,.date-cell,.created-at,.updated-at').forEach(el => { if(!el.textContent.trim() || /invalid date/i.test(el.textContent)) el.textContent = 'Not available'; });
+  }
+
+  function bootFinalPatch(){
+    injectLowStockNav(); injectLowStockSection(); injectStockModal(); injectSettingNoticeToggle();
+    installNotificationOverrides(); patchToggleSetting(); patchOrderAcceptCancel(); patchShowSection(); improveDatesAndImages();
+    setTimeout(()=>{ window.aryantaRenderLowStock(false); fetchNotificationsClean(); },700);
+    setInterval(()=>{ try{ window.aryantaRenderLowStock(false); improveDatesAndImages(); }catch(e){} },15000);
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootFinalPatch); else bootFinalPatch();
+})();
