@@ -86,6 +86,7 @@
             <div style="border-top: 1px solid var(--border-color); margin: 15px 20px;"></div>
             
             <div class="nav-item" onclick="showSection('inventory')"><i class="fas fa-box-open"></i> My Inventory</div>
+            <div class="nav-item" onclick="showSection('productPerformance')"><i class="fas fa-chart-line" style="color:#8b5cf6;"></i> Product Performance</div>
             <div class="nav-item" onclick="showSection('newOrders')"><i class="fas fa-bell" style="color: var(--warning);"></i> New Orders <span id="badge-new-orders" class="nav-badge" style="background:var(--warning);">0</span></div>
             <div class="nav-item" onclick="showSection('breached')"><i class="fas fa-triangle-exclamation" style="color: var(--danger);"></i> Breached <span id="badge-breached" class="nav-badge" style="background:var(--danger);">0</span></div>
             <div class="nav-item" onclick="showSection('acceptedOrders')"><i class="fas fa-check-square" style="color: #60a5fa;"></i> Accepted Orders <span id="badge-accepted" class="nav-badge" style="background:#3b82f6;">0</span></div>
@@ -99,6 +100,7 @@
             
             <div class="nav-item" onclick="showSection('history')" style="margin-top:15px;"><i class="fas fa-history"></i> Order History</div>
             <div class="nav-item" onclick="showSection('returns')"><i class="fas fa-undo" style="color: var(--danger);"></i> Returns/Cancels</div>
+            <div class="nav-item" onclick="showSection('returnTracking')"><i class="fas fa-route" style="color:#14b8a6;"></i> Return Tracking</div>
             
             <div style="border-top: 1px solid var(--border-color); margin: 15px 20px;"></div>
             
@@ -129,6 +131,9 @@
                             <div class="topbar-title mobile-hide">Hub <span id="sellerGreeting" style="color: var(--primary); font-size: 14px; font-weight:700;"></span></div>
                             <button type="button" class="topbar-icon-btn" onclick="showSection('settings')" aria-label="Settings" title="Settings">
                                 <i class="fas fa-cog"></i>
+                            </button>
+                            <button type="button" class="topbar-icon-btn" id="topbarNotifBtn" onclick="showSection('notifications')" aria-label="Notifications" title="Notifications">
+                                <i class="fas fa-bell"></i><span id="topbarNotifBadge" class="nav-badge">0</span>
                             </button>
                         </div>
                         <div class="topbar-actions">
@@ -188,6 +193,10 @@
                         <div class="stat-card"><h3 id="stat-pending-pay" style="color:#3b82f6;">₹0</h3><p>Upcoming Payouts</p></div>
                     </div>
                     
+                    <div class="stats-grid mt-20" id="dashboardProductIntelligence">
+                        <div class="stat-card"><div class="smart-badge" style="background:#8b5cf6;">VIEWS</div><h3 id="stat-product-views">0</h3><p>Total Product Views</p></div>
+                    </div>
+
                     <div class="panel-box mt-20">
                         <h4 style="margin-bottom: 20px; font-size:18px; font-weight:800;">7-Day Sales Trend</h4>
                         <div style="position: relative; height: 250px; width: 100%;"><canvas id="salesChart"></canvas></div>
@@ -225,7 +234,7 @@
                 <section id="inventorySection" class="data-section">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
                         <h3 style="font-size:24px; font-weight:800;"><i class="fas fa-box-open"></i> My Inventory</h3>
-                        <button class="btn-prime" onclick="openItemModal()"><i class="fas fa-plus"></i> Add New Product</button>
+                        <div class="header-button-row"><button class="btn-prime" onclick="openItemModal()"><i class="fas fa-plus"></i> Add New Product</button></div>
                     </div>
                     
                     
@@ -368,69 +377,32 @@
 
                 
                 <section id="adsSection" class="data-section">
-                    <h3 style="color: #ec4899; font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-bullhorn"></i> Sponsored Ads</h3>
-                    <div class="table-container"><table class="admin-table"><thead><tr><th>Product</th><th>Price</th><th>Ad Status</th><th>Action</th></tr></thead><tbody id="adsList"></tbody></table></div>
+                    <div class="section-head-row">
+                        <div>
+                            <h3 style="color:#ec4899; font-size:24px; font-weight:800; margin-bottom:6px;"><i class="fas fa-bullhorn"></i> Sponsored Ads</h3>
+                            <p class="muted-line">Sponsored ads are controlled by admin subscription settings. Basic includes only 1 free 24-hour highlight by default.</p>
+                        </div>
+                        <button class="btn-outline" onclick="cleanupExpiredSponsoredAds(true)"><i class="fas fa-rotate"></i> Sync Expired Ads</button>
+                    </div>
+                    <div id="adsPlanBox" class="panel-box mini-plan-box">Loading subscription ad rules...</div>
+                    <div class="table-container"><table class="admin-table"><thead><tr><th>Product</th><th>Current Ad Status</th><th>24h Window</th><th>Action</th></tr></thead><tbody id="adsList"></tbody></table></div>
                 </section>
 
                 
                 <section id="subscriptionSection" class="data-section">
-                    <h3 style="color: var(--warning); font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-crown"></i> Aryanta Store Subscriptions</h3>
-                    <div class="panel-box" style="margin-bottom:18px; background:var(--surface-2);">
-                        <strong>Current plan:</strong> <span id="currentPlanBadge" class="badge-ui">Basic / Free</span>
-                        <p style="margin-top:8px; color:var(--text-light); font-weight:700;">Payment records are saved to Firestore payment ledger. Sponsored and subscription payout deductions are also recorded.</p>
-                    </div>
-                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:22px;">
-                        <div class="plan-card">
-                            <div class="plan-badge" style="background:var(--surface-2); color:var(--text-main);">Free</div>
-                            <h3 style="font-size:24px; font-weight:900;">Basic Plan</h3>
-                            <p class="plan-price">₹<span>0</span> <span>/ forever</span></p>
-                            <ul class="plan-features">
-                                <li><i class="fas fa-check-circle"></i> Seller dashboard access</li>
-                                <li><i class="fas fa-check-circle"></i> QC product submission</li>
-                                <li><i class="fas fa-check-circle"></i> 1 logo + 1 banner update/month</li>
-                                <li><i class="fas fa-check-circle"></i> 7.5% commission logic</li>
-                            </ul>
-                            <button class="btn-outline w-100" onclick="processSubscription('Basic','free')">Use Basic</button>
+                    <div class="section-head-row">
+                        <div>
+                            <h3 style="color:var(--warning); font-size:24px; font-weight:900; margin-bottom:6px;"><i class="fas fa-crown"></i> Subscription Access</h3>
+                            <p class="muted-line">Plan details are fetched from admin settings. Sellers can request/activate only what admin allows.</p>
                         </div>
-                        <div class="plan-card">
-                            <h3 style="font-size:24px; font-weight:900;">Go Plan</h3>
-                            <p class="plan-price">₹<span id="priceGo">199</span> <span>/ <span class="txtDuration">month</span></span></p>
-                            <ul class="plan-features">
-                                <li><i class="fas fa-check-circle"></i> Verified Seller Badge</li>
-                                <li><i class="fas fa-check-circle"></i> 1 logo + 3 banner updates/month</li>
-                                <li><i class="fas fa-check-circle"></i> Sponsored ad support</li>
-                                <li><i class="fas fa-check-circle"></i> Priority review visibility</li>
-                            </ul>
-                            <button class="btn-prime w-100" onclick="processSubscription('Go','online')">Pay Now</button>
-                            <button class="btn-outline w-100" id="btnSubPayoutGo" onclick="processSubscription('Go','payout')">Pay from Payout</button>
-                        </div>
-                        <div class="plan-card pro">
-                            <div class="plan-badge">Popular</div>
-                            <h3 style="font-size:24px; font-weight:900; color:var(--primary);">Pro Plan</h3>
-                            <p class="plan-price">₹<span id="pricePro">499</span> <span>/ <span class="txtDuration">month</span></span></p>
-                            <ul class="plan-features">
-                                <li><i class="fas fa-check-circle"></i> Premium Seller Badge</li>
-                                <li><i class="fas fa-check-circle"></i> 3 logo + 6 banner updates/month</li>
-                                <li><i class="fas fa-check-circle"></i> Faster seller support</li>
-                                <li><i class="fas fa-check-circle"></i> Pro sponsored handling</li>
-                            </ul>
-                            <button class="btn-prime w-100" onclick="processSubscription('Pro','online')">Pay Now</button>
-                            <button class="btn-outline w-100" id="btnSubPayoutPro" onclick="processSubscription('Pro','payout')">Pay from Payout</button>
-                        </div>
-                        <div class="plan-card ultra">
-                            <div class="plan-badge" style="background:#111827; color:white;">Ultra</div>
-                            <h3 style="font-size:24px; font-weight:900; color:#111827;">Ultra Plan</h3>
-                            <p class="plan-price">₹<span id="priceUltra">999</span> <span>/ <span class="txtDuration">month</span></span></p>
-                            <ul class="plan-features">
-                                <li><i class="fas fa-check-circle"></i> Highest brand limits</li>
-                                <li><i class="fas fa-check-circle"></i> Premium sponsored workflow</li>
-                                <li><i class="fas fa-check-circle"></i> Advanced warranty support</li>
-                                <li><i class="fas fa-check-circle"></i> Top support routing</li>
-                            </ul>
-                            <button class="btn-prime w-100" onclick="processSubscription('Ultra','online')">Pay Now</button>
-                            <button class="btn-outline w-100" id="btnSubPayoutUltra" onclick="processSubscription('Ultra','payout')">Pay from Payout</button>
+                        <div class="header-button-row">
+                            <button class="btn-outline" onclick="loadSubscriptionsUI()"><i class="fas fa-sync"></i> Refresh Plan</button>
+                            <button class="btn-prime" onclick="showSubscriptionDetails()"><i class="fas fa-receipt"></i> See Subscription Details</button>
                         </div>
                     </div>
+                    <div id="subscriptionAdminNotice" class="panel-box mini-plan-box">Loading admin subscription settings...</div>
+                    <div id="subscriptionCards" class="admin-plan-grid"></div>
+                    <div id="subscriptionHistoryBox" class="panel-box mt-20" style="display:none;"></div>
                 </section>
 
                 
@@ -465,7 +437,7 @@
                     <div class="panel-box" style="max-width: 600px;">
                         <form onsubmit="event.preventDefault(); submitSupportTicket();">
                             <label>Issue Category</label>
-                            <select id="supCategory" class="input-field" required>
+                            <select id="supCategory" class="input-field" required onchange="handleSupportCategoryChange()">
                                 <option value="">-- Select Issue Type --</option>
                                 <option value="Payment/Payout Issue">Payment/Payout Issue</option>
                                 <option value="Order Cancellation Dispute">Order Cancellation Dispute</option>
@@ -474,6 +446,14 @@
                                 <option value="Customer Fraud">Customer Fraud / Dispute</option>
                                 <option value="Other">Other / General Query</option>
                             </select>
+                            <div id="supportIssueDetailBox" class="support-config-box" style="display:none;"></div>
+                            <div id="supportAttachmentBox" class="support-attach-box" style="display:none;">
+                                <label id="supportImageLabel" style="display:none;">Upload Image / Screenshot</label>
+                                <input type="file" id="supImage" class="input-field" accept="image/*" style="display:none;">
+                                <label id="supportDocLabel" style="display:none;">Upload Document</label>
+                                <input type="file" id="supDoc" class="input-field" accept="image/*,.pdf,.doc,.docx" style="display:none;">
+                                <button type="button" id="supportSkipDocBtn" class="btn-outline" style="display:none; margin-bottom:10px;" onclick="skipSupportDocument()"><i class="fas fa-forward"></i> Skip optional upload</button>
+                            </div>
                             <label>Callback Phone Number</label><input type="text" id="supPhone" class="input-field" required>
                             <label>Detailed Issue Description</label><textarea id="supDesc" class="input-field" style="height: 120px;" required></textarea>
                             <button type="submit" class="btn-prime w-100" style="background:var(--warning); font-size:16px; padding:15px;">Raise Ticket securely</button>
@@ -490,7 +470,22 @@
                 </section>
 
                 
-                <section id="settingsSection" class="data-section">
+
+                <section id="returnTrackingSection" class="data-section">
+                    <div class="section-head-row"><div><h3 style="font-size:24px;font-weight:900;color:#0f766e;"><i class="fas fa-route"></i> Return Tracking</h3><p class="muted-line">Delivered orders and cancelled-after-dispatch items appear here with 15-day/admin return window.</p></div><button class="btn-outline" onclick="loadReturnTracking()"><i class="fas fa-sync"></i> Refresh</button></div>
+                    <div id="returnTrackingList" class="return-grid"></div>
+                </section>
+
+                <section id="productPerformanceSection" class="data-section">
+                    <div class="section-head-row"><div><h3 style="font-size:24px;font-weight:900;color:#7c3aed;"><i class="fas fa-chart-line"></i> Product Performance</h3><p class="muted-line">Filter items from top-selling to loss-making, with delivered, cancelled, return and view stats.</p></div><button class="btn-outline" onclick="loadProductPerformance()"><i class="fas fa-sync"></i> Refresh</button></div>
+                    <div class="category-scroll-wrapper"><div class="category-filters">
+                        <button class="cat-pill active" id="perf-filter-all" onclick="setProductPerformanceFilter('all')"><i class="fas fa-layer-group"></i> All Products</button>
+                        <button class="cat-pill" id="perf-filter-top" onclick="setProductPerformanceFilter('top')"><i class="fas fa-arrow-trend-up"></i> Top Selling Items</button>
+                        <button class="cat-pill" id="perf-filter-loss" onclick="setProductPerformanceFilter('loss')"><i class="fas fa-arrow-trend-down"></i> All Loss / Loose Items</button>
+                    </div></div>
+                    <div id="productPerformanceList" class="performance-grid"></div>
+                </section>
+<section id="settingsSection" class="data-section">
 
     <div class="settings-hero">
         <h2><i class="fas fa-cog"></i> Hub Configuration</h2>
@@ -1050,6 +1045,27 @@
     </div>
 
     
+
+    <div class="modal" id="returnClaimModal">
+        <div class="modal-content" style="width:560px;">
+            <span class="close-modal" onclick="closeModal('returnClaimModal')"><i class="fas fa-times"></i></span>
+            <h3 style="font-size:24px;font-weight:900;margin-bottom:15px;"><i class="fas fa-undo"></i> Claim Return</h3>
+            <input type="hidden" id="returnClaimOrderId"><input type="hidden" id="returnClaimProductId">
+            <label>Claim Title</label><input id="returnClaimTitle" class="input-field" placeholder="Example: Product returned damaged" required>
+            <label>Message to Admin</label><textarea id="returnClaimMessage" class="input-field" style="height:110px;" placeholder="Explain the issue clearly" required></textarea>
+            <label>Upload Proof Image</label><input id="returnClaimImage" type="file" class="input-field" accept="image/*">
+            <button class="btn-prime w-100" onclick="submitReturnClaim()"><i class="fas fa-paper-plane"></i> Send Claim Request</button>
+        </div>
+    </div>
+    <div class="modal" id="adminPopupModal">
+        <div class="modal-content" style="width:520px;text-align:center;">
+            <span class="close-modal" onclick="closeModal('adminPopupModal')"><i class="fas fa-times"></i></span>
+            <h3 id="adminPopupTitle" style="font-size:24px;font-weight:900;margin-bottom:12px;">Aryanta Notice</h3>
+            <p id="adminPopupMessage" style="font-size:15px;line-height:1.7;font-weight:700;color:var(--text-light);"></p>
+            <button class="btn-prime w-100" onclick="closeModal('adminPopupModal')">Okay</button>
+        </div>
+    </div>
+
     <div id="printArea" style="display:none;"></div>
 
     <div id="toastContainer"></div>
