@@ -1785,11 +1785,6 @@ function loadAcceptedOrders(){
     list.innerHTML = rows.join("");
 }
 
-window.downloadShippingInvoice=async function(orderId){
-    showToast("Generating Aryanta Native Print Slip.","info");
-    processSlips('print',orderId==='bulk'?null:orderId);
-}
-
 
 window.processSlips = async function(mode, singleId = null) {
     let selectedIds = [];
@@ -7679,4 +7674,1606 @@ window.loadTutorials = function() {
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootFinalPatch); else bootFinalPatch();
+})();
+
+/* ============================================================
+   ARYANTA SELLER PANEL V4 FIX
+   Fixes: Firestore-only Shiprocket state, notification vanish,
+   Chart.js duplicate canvas crash, delete-product cleanup,
+   custom delete popup, subscription expiry/renewal, order popups,
+   return tracking, shipped/delivered/completed scans, warranty action.
+   Paste at the VERY END of seller.js.
+============================================================ */
+(function(){
+  if(window.__ARYANTA_SELLER_V4_PATCH__) return;
+  window.__ARYANTA_SELLER_V4_PATCH__ = true;
+
+  const $ = id => document.getElementById(id);
+  const qsa = sel => Array.from(document.querySelectorAll(sel));
+  const txt = v => String(v == null ? '' : v);
+  const low = v => txt(v).toLowerCase().trim();
+  const esc = v => txt(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+  const nowIso = () => new Date().toISOString();
+  const dayMs = 86400000;
+  const toastRaw = (m,t='info') => { try{ if(typeof window.__ARYANTA_ORIGINAL_TOAST_V4 === 'function') return window.__ARYANTA_ORIGINAL_TOAST_V4(m,t); if(typeof window.showToast === 'function') return window.showToast(m,t); }catch(e){} console.log(t,m); };
+  const dbx = () => { try{return db || window.db || null;}catch(e){return window.db || null;} };
+  const seller = () => { try{return activeSeller || window.activeSeller || null;}catch(e){return window.activeSeller || null;} };
+  const orders = () => { try{return sellerOrders || window.sellerOrders || [];}catch(e){return window.sellerOrders || [];} };
+  const products = () => { try{return sellerProducts || window.sellerProducts || [];}catch(e){return window.sellerProducts || [];} };
+  const warranties = () => { try{return sellerWarranties || window.sellerWarranties || [];}catch(e){return window.sellerWarranties || [];} };
+  const email = () => low((seller() || {}).email);
+  const sellerDocId = () => txt((seller() || {}).email || (seller() || {}).id || (seller() || {}).uid).trim();
+  const validDb = () => !!(dbx() && seller());
+  const safeId = v => txt(v || '').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,150) || ('doc_'+Date.now());
+  const dateOf = v => { if(!v) return null; if(v && typeof v.toDate === 'function') return v.toDate(); const d = new Date(v); return Number.isFinite(d.getTime()) ? d : null; };
+  const orderDate = o => dateOf(o && (o.timestamp || o.createdAt || o.orderDate || o.date || o.acceptedAt || o.updatedAt)) || new Date();
+  const isStatus = (o, arr) => arr.some(s => low(o && (o.status || o.orderStatus || o.fulfillmentStatus)).includes(s));
+
+  function sellerSetting(key, fallback){
+    const s = seller();
+    if(!s || !s.settings) return fallback;
+    return s.settings[key] === undefined ? fallback : s.settings[key];
+  }
+  function showNotices(){ return sellerSetting('showNotices', true) !== false; }
+  function isMinorNotice(message){
+    const m = low(message);
+    return m.includes('setting') || m.includes('offline') || m.includes('go live') || m.includes('saved') || m.includes('notice');
+  }
+
+  if(!window.__ARYANTA_ORIGINAL_TOAST_V4) window.__ARYANTA_ORIGINAL_TOAST_V4 = window.showToast;
+  window.showToast = function(msg,type='info'){
+    if(!showNotices() && ['success','info','warning'].includes(type) && isMinorNotice(msg)) return;
+    return window.__ARYANTA_ORIGINAL_TOAST_V4 ? window.__ARYANTA_ORIGINAL_TOAST_V4(msg,type) : console.log(type,msg);
+  };
+  try{ showToast = window.showToast; }catch(e){}
+
+  function injectStyle(){
+    if($('aryantaSellerV4Style')) return;
+    const style = document.createElement('style');
+    style.id = 'aryantaSellerV4Style';
+    style.textContent = `
+      .ary-v4-modal{position:fixed;inset:0;z-index:999999;background:rgba(15,23,42,.62);display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(10px)}
+      .ary-v4-card{width:min(560px,100%);max-height:88vh;overflow:auto;background:var(--white,#fff);color:var(--text-main,#111827);border-radius:24px;border:1px solid var(--border-color,#e5e7eb);box-shadow:0 30px 80px rgba(0,0,0,.28);padding:22px;animation:aryV4In .18s ease-out}
+      @keyframes aryV4In{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+      .ary-v4-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}.ary-v4-head h3{font-size:20px;font-weight:950;margin:0}.ary-v4-x{border:0;background:var(--surface-2,#f3f4f6);border-radius:12px;width:38px;height:38px;cursor:pointer;color:var(--text-main,#111827)}
+      .ary-v4-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:18px}.ary-v4-danger{background:var(--danger,#ef4444)!important;color:white!important}.ary-v4-grid{display:grid;gap:10px}.ary-v4-item{display:flex;gap:10px;align-items:center;border:1px solid var(--border-color,#e5e7eb);background:var(--surface-2,#f8fafc);border-radius:16px;padding:10px}.ary-v4-item img{width:58px;height:58px;border-radius:14px;object-fit:cover;background:#e5e7eb}.ary-v4-muted{color:var(--text-light,#64748b);font-size:12px;font-weight:750;line-height:1.5}.ary-v4-chip{display:inline-flex;gap:6px;align-items:center;border-radius:999px;padding:5px 10px;font-size:11px;font-weight:950;background:var(--surface-2,#f1f5f9);border:1px solid var(--border-color,#e2e8f0)}
+      .ary-v4-ok{background:#ecfdf5!important;color:#065f46!important;border-color:#a7f3d0!important}.ary-v4-warn{background:#fffbeb!important;color:#92400e!important;border-color:#fde68a!important}.ary-v4-bad{background:#fff1f2!important;color:#991b1b!important;border-color:#fecaca!important}
+      .shiprocket-action-col{display:flex;flex-direction:column;gap:8px;align-items:flex-end}.no-fine-note{margin-top:8px;display:inline-flex;gap:7px;align-items:center;border:1px solid #fde68a;background:#fffbeb;color:#92400e;border-radius:12px;padding:8px 10px;font-size:12px;font-weight:900}.ok-chip{margin-top:8px;display:inline-flex;gap:7px;align-items:center;border:1px solid #a7f3d0;background:#ecfdf5;color:#065f46;border-radius:12px;padding:8px 10px;font-size:12px;font-weight:900}.notification-card{padding:14px;border:1px solid var(--border-color);border-radius:16px;background:var(--white);margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow-sm)}.notification-card.unread{border-left:5px solid var(--primary);background:linear-gradient(135deg,var(--white),var(--surface-2))}.notification-card.read{opacity:.78}.ary-notif-top{display:flex;justify-content:space-between;align-items:center;gap:10px}.ary-notif-top strong{font-size:14px}.ary-notif-top span{font-size:11px;font-weight:950;border-radius:999px;padding:3px 8px;background:var(--primary);color:#fff}.notification-card p{margin:8px 0;color:var(--text-main);font-weight:750;line-height:1.45}.notification-card small{color:var(--text-light);font-weight:850}.return-track-card,.perf-card{border:1px solid var(--border-color);border-radius:18px;background:var(--white);padding:14px;margin-bottom:12px;box-shadow:var(--shadow-sm)}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function ensureModal(){
+    injectStyle();
+    let m = $('aryV4Modal');
+    if(m) return m;
+    m = document.createElement('div');
+    m.id = 'aryV4Modal';
+    m.className = 'ary-v4-modal';
+    m.innerHTML = `<div class="ary-v4-card"><div class="ary-v4-head"><h3 id="aryV4Title"></h3><button class="ary-v4-x" id="aryV4Close"><i class="fas fa-times"></i></button></div><div id="aryV4Body"></div><div class="ary-v4-actions" id="aryV4Actions"></div></div>`;
+    document.body.appendChild(m);
+    $('aryV4Close').onclick = () => m.style.display = 'none';
+    m.addEventListener('click', e => { if(e.target === m) m.style.display = 'none'; });
+    return m;
+  }
+  function customDialog({title, body, actions}){
+    const m = ensureModal();
+    $('aryV4Title').innerHTML = title;
+    $('aryV4Body').innerHTML = body;
+    $('aryV4Actions').innerHTML = actions || `<button class="btn-prime" onclick="document.getElementById('aryV4Modal').style.display='none'">OK</button>`;
+    m.style.display = 'flex';
+  }
+  function confirmDialog(title, body, yesText='Confirm'){
+    return new Promise(resolve => {
+      customDialog({
+        title,
+        body,
+        actions:`<button class="btn-outline" id="aryV4No">Cancel</button><button class="btn-prime ary-v4-danger" id="aryV4Yes">${esc(yesText)}</button>`
+      });
+      $('aryV4No').onclick = () => { $('aryV4Modal').style.display='none'; resolve(false); };
+      $('aryV4Yes').onclick = () => { $('aryV4Modal').style.display='none'; resolve(true); };
+    });
+  }
+
+  function imgForItem(item){
+    const ps = products();
+    const iid = txt(item && (item.productId || item.product_id || item.id || item.productDocId)).trim();
+    const isku = low(item && item.sku);
+    const iname = low(item && (item.name || item.title || item.productName));
+    const p = ps.find(x => {
+      const pid = txt(x.id || x.productId || x.product_id).trim();
+      const psku = low(x.sku);
+      const pname = low(x.name || x.title);
+      return (iid && pid && iid === pid) || (isku && psku && isku === psku) || (iname && pname && iname === pname);
+    }) || {};
+    const arr = Array.isArray(p.images) ? p.images : [];
+    return txt(item.image || item.img || item.productImage || p.image || p.img || p.photo || arr[0] || '').trim();
+  }
+  function orderItems(order){
+    let items = [];
+    try{ if(typeof window.getSellerItemsFromOrder === 'function') items = window.getSellerItemsFromOrder(order) || []; }catch(e){}
+    try{ if(!items.length && typeof getSellerItemsFromOrder === 'function') items = getSellerItemsFromOrder(order) || []; }catch(e){}
+    if(!items.length && Array.isArray(order && order.items)) items = order.items;
+    if(!items.length && order) items = [{name:order.productName || order.itemName || 'Product', qty:order.qty || order.quantity || 1, price:order.price || order.amount || order.total || order.finalAmount || 0}];
+    return items;
+  }
+  function itemLine(item){
+    const img = imgForItem(item);
+    const name = item.name || item.title || item.productName || 'Product';
+    const qty = item.qty || item.quantity || 1;
+    const price = num(item.sellingPrice || item.price || item.amount || 0);
+    return `<div class="ary-v4-item">${img ? `<img src="${esc(img)}" onerror="this.style.display='none'">` : `<img style="display:none">`}<div><b>${esc(name)}</b><div class="ary-v4-muted">SKU: ${esc(item.sku || item.productId || item.id || 'N/A')} · Qty: ${esc(qty)} · Seller Price: ₹${price.toLocaleString('en-IN')}</div></div></div>`;
+  }
+  function orderAmount(o){ return orderItems(o).reduce((s,i)=>s + num(i.sellingPrice || i.price || i.amount || 0) * Math.max(1,num(i.qty || i.quantity || 1)),0); }
+  function findOrder(id){ const key = txt(id); return orders().find(o => [o.id,o.orderId,o.order_no,o.orderNo,o.invoiceId].some(v => txt(v) === key)); }
+  function shipUrl(o){ return txt(o && (o.shiprocketInvoicePdfUrl || o.shiprocketPdfUrl || o.shiprocket_invoice_pdf_url || o.shiprocketInvoiceUrl || o.shiprocket_invoice_url || o.shippingLabelUrl || o.label_url || o.pdf_url || o.invoicePdfUrl)).trim(); }
+  function shipStatus(o){ if(shipUrl(o)) return 'ready'; return low(o && (o.shiprocketInvoiceStatus || o.shiprocket_status || o.shiprocketStatus)); }
+  function hasShipWork(o){ return !!(o && (shipUrl(o) || o.shiprocketInvoiceRequested || o.shiprocketInvoiceNoFine || shipStatus(o) || o.shiprocketRequestId || o.shiprocketInvoiceRequestedAt)); }
+  function absUrl(u){ u = txt(u).trim(); return u && !/^https?:\/\//i.test(u) ? 'https://' + u : u; }
+
+  async function hydrateShiprocketV4(){
+    if(!validDb() || !email()) return;
+    const database = dbx();
+    try{
+      const snap = await database.collection('seller_shiprocket_invoices').where('sellerEmail','==',email()).limit(500).get();
+      snap.forEach(doc => {
+        const d = doc.data() || {};
+        const oid = txt(d.orderId || d.order_id || d.id || d.orderNo || d.order_no).trim();
+        if(!oid) return;
+        orders().forEach(o => {
+          if([o.id,o.orderId,o.order_no,o.orderNo].some(v => txt(v) === oid)) Object.assign(o,d);
+        });
+      });
+    }catch(e){ console.warn('Shiprocket hydrate failed. Add seller_shiprocket_invoices rule.', e && e.message ? e.message : e); }
+  }
+
+  async function saveShipState(order, fields){
+    if(!validDb() || !order) return false;
+    const database = dbx();
+    const id = txt(order.id || order.orderId || order.order_no || order.orderNo).trim();
+    if(!id) return false;
+    const payload = Object.assign({}, fields, {orderId:id, sellerEmail:email(), updatedAt:nowIso()});
+    Object.assign(order,payload);
+    let ok = false;
+    try{ await database.collection('orders').doc(txt(order.id || id)).set(payload,{merge:true}); ok = true; }catch(e){ console.warn('orders ship state save failed',e && e.message ? e.message : e); }
+    try{ await database.collection('seller_shiprocket_invoices').doc(safeId(id+'_'+email())).set(payload,{merge:true}); ok = true; }catch(e){ console.warn('seller_shiprocket_invoices save failed. Add rule.',e && e.message ? e.message : e); }
+    return ok;
+  }
+
+  const originalDownloadShiprocket = window.downloadShippingInvoice;
+  window.downloadShippingInvoice = async function(orderId){
+    let ids = [];
+    if(orderId === 'bulk'){
+      qsa('.cb-acc:checked').forEach(cb => ids.push(cb.value));
+      if(!ids.length) return window.showToast('Select at least one accepted order.','warning');
+    }else ids = [orderId];
+
+    for(const id of ids){
+      const o = findOrder(id);
+      if(o) await saveShipState(o,{shiprocketInvoiceRequested:true,shiprocketInvoiceNoFine:true,shiprocketInvoiceStatus:shipStatus(o) || 'requested',shiprocketInvoiceRequestedAt:o.shiprocketInvoiceRequestedAt || nowIso()});
+    }
+    if(typeof window.loadAcceptedOrders === 'function') setTimeout(()=>window.loadAcceptedOrders(),80);
+
+    try{
+      if(typeof originalDownloadShiprocket === 'function') await originalDownloadShiprocket.apply(this, arguments);
+    }catch(e){
+      console.error(e);
+      window.showToast('Shiprocket request failed, but DB status is saved. Fix package/API and retry.','warning');
+    }
+
+    for(const id of ids){
+      const o = findOrder(id);
+      if(o) await saveShipState(o,{shiprocketInvoiceRequested:true,shiprocketInvoiceNoFine:shipUrl(o)?false:true,shiprocketInvoiceStatus:shipUrl(o)?'ready':(shipStatus(o) || 'requested'),shiprocketInvoicePdfUrl:shipUrl(o) || '',shiprocketInvoiceCheckedAt:nowIso()});
+    }
+    if(typeof window.loadAcceptedOrders === 'function') setTimeout(()=>window.loadAcceptedOrders(),120);
+  };
+  try{ downloadShippingInvoice = window.downloadShippingInvoice; }catch(e){}
+
+  function renderShipBtn(o){
+    const url = shipUrl(o), st = shipStatus(o);
+    if(url) return `<button class="btn-shiprocket shiprocket-ready-btn" onclick="event.stopPropagation(); window.open('${esc(absUrl(url))}','_blank','noopener')"><i class="fas fa-download"></i> Download Shiprocket PDF</button>`;
+    const label = st === 'missing_details' ? 'Fix Missing Details' : (st === 'api_error' || st === 'timeout' ? 'Retry Shiprocket' : (st === 'generating' || st === 'waiting_pdf' || st === 'requested' ? 'Waiting / Retry PDF' : 'Generate Shiprocket'));
+    return `<button class="btn-shiprocket" onclick="event.stopPropagation(); downloadShippingInvoice('${esc(o.id || o.order_no || o.orderNo)}')"><i class="fas ${st === 'generating' || st === 'waiting_pdf' ? 'fa-spinner fa-spin' : 'fa-rocket'}"></i> ${label}</button>`;
+  }
+
+  window.loadAcceptedOrders = async function(){
+    await hydrateShiprocketV4();
+    const list = $('acceptedOrdersList');
+    if(!list) return;
+    const rows = orders().filter(o => isStatus(o,['accepted','processing','packed','ready to ship','completed scan']) || hasShipWork(o));
+    if(!rows.length){ list.innerHTML = `<tr><td colspan="5" style="text-align:center;font-weight:800;padding:22px;">No accepted / Shiprocket pending orders.</td></tr>`; return; }
+    list.innerHTML = rows.map(o => {
+      const note = shipUrl(o) ? `<div class="ok-chip"><i class="fas fa-check-circle"></i> Shiprocket PDF saved in DB.</div>` : (hasShipWork(o) ? `<div class="no-fine-note"><i class="fas fa-shield-heart"></i> Shiprocket status saved in Firestore: <b>${esc(shipStatus(o) || 'requested')}</b>. Order will stay visible after refresh.</div>` : '');
+      const id = esc(o.id || o.orderId || o.order_no || o.orderNo);
+      return `<tr class="clickable-row" onclick="viewOrderDetails('${id}')">
+        <td data-label="Select" style="text-align:center;"><input type="checkbox" class="custom-cb cb-acc" value="${id}" onclick="event.stopPropagation()"></td>
+        <td data-label="Order Date"><strong style="font-size:13px;">${esc(orderDate(o).toLocaleString())}</strong></td>
+        <td data-label="Order Ref"><strong style="font-family:monospace;color:var(--primary);font-size:14px;">${esc(o.order_no || o.orderNo || o.id || 'N/A')}</strong><br><small class="ary-v4-muted">${esc(o.status || o.orderStatus || '')}</small></td>
+        <td data-label="Item Details">${orderItems(o).map(itemLine).join('')}${note}</td>
+        <td data-label="Action"><div class="shiprocket-action-col">${renderShipBtn(o)}<button class="btn-outline btn-sm" onclick="event.stopPropagation(); viewOrderDetails('${id}')"><i class="fas fa-eye"></i> Details</button></div></td>
+      </tr>`;
+    }).join('');
+  };
+  try{ loadAcceptedOrders = window.loadAcceptedOrders; }catch(e){}
+
+  function chartData7(){
+    const days = [];
+    for(let i=6;i>=0;i--){ const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i); days.push({key:d.toISOString().slice(0,10), label:d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}), value:0}); }
+    const map = new Map(days.map(d => [d.key,d]));
+    orders().forEach(o => {
+      if(isStatus(o,['cancel','return'])) return;
+      const d = orderDate(o); d.setHours(0,0,0,0);
+      const k = d.toISOString().slice(0,10);
+      if(map.has(k)) map.get(k).value += orderAmount(o);
+    });
+    return days;
+  }
+  function render7DayTrendSafe(){
+    const canvas = $('salesChart');
+    if(!canvas || typeof Chart === 'undefined') return;
+    try{ const old = Chart.getChart ? Chart.getChart(canvas) : null; if(old) old.destroy(); }catch(e){}
+    try{ if(window.salesChartInstance && typeof window.salesChartInstance.destroy === 'function') window.salesChartInstance.destroy(); }catch(e){}
+    try{ if(typeof salesChartInstance !== 'undefined' && salesChartInstance && typeof salesChartInstance.destroy === 'function') salesChartInstance.destroy(); }catch(e){}
+    const trend = chartData7();
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createLinearGradient(0,0,0,250);
+    gradient.addColorStop(0,'rgba(17,24,39,0.25)');
+    gradient.addColorStop(1,'rgba(17,24,39,0.02)');
+    const chart = new Chart(canvas,{type:'line',data:{labels:trend.map(x=>x.label),datasets:[{label:'7-Day Sales (₹)',data:trend.map(x=>Math.round(x.value)),borderColor:'#111827',backgroundColor:gradient,fill:true,tension:.35,borderWidth:3,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'₹'+Number(v).toLocaleString('en-IN')}},x:{grid:{display:false}}}}});
+    window.salesChartInstance = chart;
+    try{ salesChartInstance = chart; }catch(e){}
+  }
+  const oldRenderDash = window.renderDashboardStats;
+  window.renderDashboardStats = async function(){
+    const res = oldRenderDash ? await oldRenderDash.apply(this, arguments) : null;
+    setTimeout(render7DayTrendSafe,60);
+    return res;
+  };
+  try{ renderDashboardStats = window.renderDashboardStats; }catch(e){}
+
+  async function cleanupReadNotifications(){
+    if(!validDb() || !email()) return;
+    const database = dbx();
+    const cutoff = Date.now() - 7*dayMs;
+    try{
+      const snap = await database.collection('seller_notification_reads').where('sellerEmail','==',email()).limit(300).get();
+      const batch = database.batch(); let changed = 0;
+      snap.forEach(doc => {
+        const d = doc.data() || {}; const rd = dateOf(d.readAt);
+        if(rd && rd.getTime() < cutoff){ batch.delete(doc.ref); changed++; }
+      });
+      if(changed) await batch.commit();
+    }catch(e){}
+    try{
+      const snap = await database.collection('seller_notifications').where('sellerEmail','==',email()).where('readBySeller','==',true).limit(300).get();
+      const batch = database.batch(); let changed = 0;
+      snap.forEach(doc => {
+        const d = doc.data() || {}; const rd = dateOf(d.readAt || d.readAtSeller);
+        if(rd && rd.getTime() < cutoff){ batch.delete(doc.ref); changed++; }
+      });
+      if(changed) await batch.commit();
+    }catch(e){}
+  }
+  async function readNotificationMap(){
+    const map = new Map();
+    if(!validDb() || !email()) return map;
+    try{
+      const snap = await dbx().collection('seller_notification_reads').where('sellerEmail','==',email()).limit(500).get();
+      snap.forEach(doc => { const d = doc.data() || {}; if(d.notificationId) map.set(txt(d.notificationId), d); });
+    }catch(e){ console.warn('seller_notification_reads denied. Add rule.', e && e.message ? e.message : e); }
+    return map;
+  }
+  function normalizeNotif(doc, collection, readMap){
+    const d = doc.data ? doc.data() : doc;
+    const id = doc.id || d.id || safeId(d.title || d.message || Date.now());
+    const read = readMap.has(txt(id)) || d.readBySeller === true;
+    return {id, collection, title:d.title || d.heading || 'Aryanta Notice', text:d.message || d.text || d.body || d.description || 'New update from Aryanta.', time:d.timestamp || d.createdAt || d.time || nowIso(), link:d.link || d.url || d.actionUrl || d.buttonLink || '', target:low(d.target || d.email || d.sellerEmail || 'all'), read, readAt:readMap.get(txt(id)) && readMap.get(txt(id)).readAt};
+  }
+  function targetOk(n){ const e = email(); return !n.target || ['all','seller','sellers'].includes(n.target) || n.target === e; }
+  function renderNotifs(list){
+    window.adminNotifications = list;
+    try{ adminNotifications = list; }catch(e){}
+    const unread = list.filter(n => !n.read).length;
+    ['notifBadge','topbarNotifBadge'].forEach(id => { const b=$(id); if(b){ b.textContent = unread || list.length || 0; b.style.display = list.length ? 'inline-flex' : 'none'; } });
+    const html = list.length ? list.map(n => `<div class="notification-card ${n.read?'read':'unread'}" onclick="openFullNotif('${esc(n.id)}')"><div class="ary-notif-top"><strong>${esc(n.title)}</strong><span>${n.read?'Read':'New'}</span></div><p>${esc(n.text)}</p><small><i class="fas fa-clock"></i> ${esc((dateOf(n.time)||new Date()).toLocaleString())}</small>${n.link?`<br><a class="short-link-chip" onclick="event.stopPropagation()" href="${esc(absUrl(n.link))}" target="_blank" rel="noopener"><i class="fas fa-link"></i> Open Link</a>`:''}</div>`).join('') : `<div class="ary-empty-state" style="text-align:center;padding:28px;color:var(--text-light);font-weight:800;"><i class="fas fa-bell-slash" style="font-size:32px;"></i><br>No notifications.</div>`;
+    ['fullNotifList','notifList'].forEach(id => { const el=$(id); if(el) el.innerHTML = html; });
+  }
+  window.fetchNotifications = async function(){
+    if(!validDb()) return renderNotifs([]);
+    await cleanupReadNotifications();
+    if(!showNotices()) return renderNotifs([]);
+    const readMap = await readNotificationMap();
+    const out = [];
+    async function q(collection, fn){
+      try{ const snap = await fn(dbx().collection(collection)); snap.forEach(doc => { const n = normalizeNotif(doc,collection,readMap); if(targetOk(n)) out.push(n); }); }catch(e){}
+    }
+    await q('admin_broadcasts', c => c.orderBy('timestamp','desc').limit(100).get());
+    await q('seller_notifications', c => c.where('sellerEmail','==',email()).limit(100).get());
+    await q('seller_notifications', c => c.where('email','==',email()).limit(100).get());
+    const seen = new Set();
+    const final = out.filter(n => { const key = n.collection+'|'+n.id; if(seen.has(key)) return false; seen.add(key); const rd = dateOf(n.readAt); if(rd && Date.now()-rd.getTime() > 7*dayMs) return false; return true; }).sort((a,b)=>(dateOf(b.time)?.getTime()||0)-(dateOf(a.time)?.getTime()||0));
+    renderNotifs(final);
+  };
+  try{ fetchNotifications = window.fetchNotifications; }catch(e){}
+  window.openFullNotif = async function(id){
+    const n = (window.adminNotifications || []).find(x => txt(x.id) === txt(id));
+    if(!n) return;
+    n.read = true;
+    try{
+      await dbx().collection('seller_notification_reads').doc(safeId(n.id+'_'+email())).set({notificationId:n.id,collection:n.collection,sellerEmail:email(),readAt:nowIso(),title:n.title,text:n.text,link:n.link || ''},{merge:true});
+      if(n.collection === 'seller_notifications') await dbx().collection('seller_notifications').doc(n.id).set({readBySeller:true,readAt:nowIso()},{merge:true});
+    }catch(e){ console.warn('mark notification read failed',e && e.message ? e.message : e); }
+    customDialog({title:esc(n.title),body:`<div class="prime-notif-detail"><p>${esc(n.text)}</p><div class="ary-v4-muted"><i class="fas fa-clock"></i> ${esc((dateOf(n.time)||new Date()).toLocaleString())}</div>${n.link?`<a class="btn-prime" style="display:inline-flex;margin-top:14px;text-decoration:none" href="${esc(absUrl(n.link))}" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> Open Link</a>`:''}</div>`});
+    renderNotifs(window.adminNotifications || []);
+  };
+
+  async function deleteCollectionWhere(collection, field, value){
+    try{
+      const snap = await dbx().collection(collection).where(field,'==',value).limit(450).get();
+      if(snap.empty) return 0;
+      const batch = dbx().batch(); let c=0;
+      snap.forEach(doc => { batch.delete(doc.ref); c++; });
+      await batch.commit();
+      return c;
+    }catch(e){ console.warn('cleanup skipped',collection,field,e && e.message ? e.message : e); return 0; }
+  }
+  window.deleteItem = async function(id){
+    if(!id) return window.showToast('Product ID missing.','error');
+    const p = products().find(x => txt(x.id) === txt(id)) || {};
+    const ok = await confirmDialog('Delete product permanently?', `<p class="ary-v4-muted">Are you sure you want to delete this product.</p><div class="ary-v4-item">${imgForItem(p)?`<img src="${esc(imgForItem(p))}">`:''}<div><b>${esc(p.name || p.title || id)}</b><div class="ary-v4-muted">Orders are kept safe for accounting/history.</div></div></div>`, 'Delete Product');
+    if(!ok) return;
+    try{
+      await dbx().collection('seller_deleted_products').doc(safeId(id+'_'+Date.now())).set({sellerEmail:email(),productId:id,product:p,deletedAt:nowIso(),note:'Deleted from seller panel. Orders were not deleted.'},{merge:true}).catch(()=>{});
+      const collections = ['reviews','product_reviews','questions','product_questions','product_qna','qna','seller_qna','customer_questions'];
+      for(const c of collections){ await deleteCollectionWhere(c,'productId',id); await deleteCollectionWhere(c,'product_id',id); }
+      await dbx().collection('products').doc(id).delete();
+      try{ sellerProducts = products().filter(x => txt(x.id) !== txt(id)); window.sellerProducts = sellerProducts; }catch(e){}
+      if(typeof loadInventory === 'function') loadInventory();
+      if(typeof renderDashboardStats === 'function') renderDashboardStats();
+      window.showToast('Product, reviews and questions deleted. Orders were kept.','success');
+    }catch(e){ window.showToast('Delete failed: '+(e.message || e),'error'); }
+  };
+  try{ deleteItem = window.deleteItem; }catch(e){}
+
+  window.viewOrderDetails = function(id){
+    const o = findOrder(id);
+    if(!o) return window.showToast('Order not found. Refresh and try again.','error');
+    const items = orderItems(o);
+    const amount = orderAmount(o);
+    const slipBtn = shipUrl(o) ? `<button class="btn-prime" onclick="window.open('${esc(absUrl(shipUrl(o)))}','_blank','noopener')"><i class="fas fa-download"></i> Download Slip</button>` : `<button class="btn-prime" onclick="downloadShippingInvoice('${esc(o.id || o.order_no || o.orderNo)}')"><i class="fas fa-rocket"></i> Generate / Download Slip</button>`;
+    customDialog({
+      title:`Order ${esc(o.order_no || o.orderNo || o.id || '')}`,
+      body:`<div class="ary-v4-grid">${items.map(itemLine).join('')}<div class="ary-v4-item"><div><b>Status:</b> ${esc(o.status || o.orderStatus || 'N/A')}<br><b>Seller Amount:</b> ₹${amount.toLocaleString('en-IN')}<br><b>Payment:</b> ${esc(o.payment_method || o.paymentMethod || 'N/A')}<br><b>Date:</b> ${esc(orderDate(o).toLocaleString())}</div></div></div>`,
+      actions:`<button class="btn-outline" onclick="document.getElementById('aryV4Modal').style.display='none'">Close</button>${slipBtn}`
+    });
+  };
+
+  function loadOrderTable(listId, statusKeys, emptyText, amountCol=false){
+    const list = $(listId); if(!list) return;
+    const rows = orders().filter(o => isStatus(o,statusKeys));
+    if(!rows.length){ list.innerHTML = `<tr><td colspan="5" style="text-align:center;font-weight:800;padding:22px;">${esc(emptyText)}</td></tr>`; return; }
+    list.innerHTML = rows.map(o => {
+      const id = esc(o.id || o.order_no || o.orderNo);
+      const amount = orderAmount(o);
+      return `<tr class="clickable-row" onclick="viewOrderDetails('${id}')"><td data-label="Date"><strong>${esc(orderDate(o).toLocaleString())}</strong></td><td data-label="Order Ref"><strong style="font-family:monospace;color:var(--primary);">${esc(o.order_no || o.orderNo || o.id)}</strong></td><td data-label="Items">${orderItems(o).map(itemLine).join('')}</td>${amountCol?`<td data-label="Seller Amount"><b style="color:var(--success);">₹${amount.toLocaleString('en-IN')}</b></td>`:''}<td data-label="Status"><span class="ary-v4-chip ary-v4-ok">${esc(o.status || o.orderStatus || '')}</span></td></tr>`;
+    }).join('');
+  }
+  window.loadShippedOrders = function(){ loadOrderTable('shippedOrdersList',['shipped','near by warehouse','in transit'],'No shipped orders yet.',false); };
+  window.loadDeliveredOrders = function(){ loadOrderTable('deliveredOrdersList',['delivered'],'No delivered orders yet.',true); };
+  window.loadCompletedScanOrders = function(){ loadOrderTable('completedScanList',['completed scan','scanned','ready to ship'],'No completed scan orders yet.',false); };
+  try{ loadShippedOrders=window.loadShippedOrders; loadDeliveredOrders=window.loadDeliveredOrders; loadCompletedScanOrders=window.loadCompletedScanOrders; }catch(e){}
+
+  window.loadProductPerformance = function(){
+    const list = $('productPerformanceList') || $('productPerformanceGrid') || $('productPerformanceBody');
+    if(!list) return;
+    const rows = products().map(p => {
+      const pid = txt(p.id || p.productId); const sku = low(p.sku); const name = low(p.name || p.title);
+      let sold=0,revenue=0,returns=0;
+      orders().forEach(o => orderItems(o).forEach(i => {
+        const match = (pid && txt(i.productId || i.product_id || i.id) === pid) || (sku && low(i.sku) === sku) || (name && low(i.name || i.title) === name);
+        if(match){ const q = Math.max(1,num(i.qty || i.quantity || 1)); sold += q; revenue += q * num(i.sellingPrice || i.price || 0); if(isStatus(o,['return','cancel'])) returns += q; }
+      }));
+      return {p,sold,revenue,returns,views:num(p.views || p.viewCount || p.clicks || 0)};
+    }).sort((a,b)=>b.revenue-a.revenue);
+    if(!rows.length){ list.innerHTML = `<div class="panel-box">No product performance data yet.</div>`; return; }
+    list.innerHTML = rows.map(r => `<div class="perf-card" onclick="editItem && editItem('${esc(r.p.id)}')"><div class="ary-v4-item">${imgForItem(r.p)?`<img src="${esc(imgForItem(r.p))}">`:''}<div><b>${esc(r.p.name || r.p.title || 'Product')}</b><div class="ary-v4-muted">Sold: ${r.sold} · Sales: ₹${r.revenue.toLocaleString('en-IN')} · Returns: ${r.returns} · Views: ${r.views}</div></div></div></div>`).join('');
+  };
+  try{ loadProductPerformance=window.loadProductPerformance; }catch(e){}
+
+  async function createReplacementOrder(orderId){
+    const o = findOrder(orderId); if(!o || !validDb()) return;
+    const copy = Object.assign({}, o, {originalOrderId:o.id || orderId, replacementFor:o.id || orderId, status:'Placed', orderType:'Replacement Return Order', timestamp:nowIso(), createdAt:nowIso(), replacementCreatedAt:nowIso(), shiprocketInvoicePdfUrl:'', shiprocketInvoiceStatus:'', shiprocketInvoiceRequested:false});
+    delete copy.id;
+    try{ const ref = await dbx().collection('orders').add(copy); await dbx().collection('return_items').doc(safeId((o.id||orderId)+'_'+ref.id)).set({sellerEmail:email(),originalOrderId:o.id||orderId,replacementOrderId:ref.id,status:'Replacement order created',createdAt:nowIso()},{merge:true}); window.showToast('Replacement order created.','success'); if(typeof initDashboard==='function') initDashboard(); }catch(e){ window.showToast('Replacement order failed: '+(e.message||e),'error'); }
+  }
+  window.aryantaCreateReplacementOrder = createReplacementOrder;
+  window.loadReturnTracking = function(){
+    const box = $('returnTrackingList'); if(!box) return;
+    const rows = orders().filter(o => isStatus(o,['return','rto','cancel','replacement']));
+    if(!rows.length){ box.innerHTML = `<div class="panel-box">No return/cancel tracking yet.</div>`; return; }
+    box.innerHTML = rows.map(o => {
+      const cancelOnly = isStatus(o,['cancel']) && !isStatus(o,['return','rto']);
+      const title = cancelOnly ? 'Customer cancelled order' : 'Return request sent';
+      const desc = cancelOnly ? 'No claim return button is shown because this is only an order cancellation.' : 'Product will be expected back to you within 15 days after pickup/approval.';
+      const btn = cancelOnly ? '' : `<button class="btn-outline" onclick="aryantaCreateReplacementOrder('${esc(o.id || o.order_no || o.orderNo)}')"><i class="fas fa-plus"></i> Create Replacement Order</button>`;
+      return `<div class="return-track-card" onclick="viewOrderDetails('${esc(o.id || o.order_no || o.orderNo)}')"><h4>${esc(title)} · ${esc(o.order_no || o.orderNo || o.id)}</h4><div class="ary-v4-grid">${orderItems(o).map(itemLine).join('')}</div><p class="ary-v4-muted">${esc(desc)}</p><div class="ary-v4-actions">${btn}<button class="btn-prime" onclick="event.stopPropagation(); viewOrderDetails('${esc(o.id || o.order_no || o.orderNo)}')">View Details</button></div></div>`;
+    }).join('');
+  };
+  try{ loadReturnTracking=window.loadReturnTracking; }catch(e){}
+
+  async function addFineOnce(docId, amount, reason, extra){
+    try{ await dbx().collection('fines').doc(safeId(docId)).set(Object.assign({sellerEmail:email(),amount,reason,status:'Pending',createdAt:nowIso()},extra||{}),{merge:false}); }catch(e){}
+  }
+  async function acceptWarrantyClaim(wid){
+    const w = warranties().find(x => txt(x.id) === txt(wid));
+    if(!w || !validDb()) return;
+    try{
+      await dbx().collection('warranties').doc(wid).set({sellerAccepted:true,sellerAcceptedAt:nowIso(),status:'Seller Accepted'},{merge:true});
+      const order = findOrder(w.orderId || w.originalOrderId);
+      if(order){
+        const copy = Object.assign({}, order, {originalOrderId:order.id, warrantyId:wid, status:'Warranty Return Created', orderType:'Warranty Copy', timestamp:nowIso(), createdAt:nowIso()});
+        delete copy.id;
+        const ref = await dbx().collection('orders').add(copy);
+        await dbx().collection('return_items').doc(safeId(wid+'_'+ref.id)).set({sellerEmail:email(),warrantyId:wid,originalOrderId:order.id,copyOrderId:ref.id,status:'Warranty return copy created',createdAt:nowIso()},{merge:true});
+      }
+      window.showToast('Warranty claim accepted and copy created.','success');
+      if(typeof loadWarranty === 'function') loadWarranty();
+    }catch(e){ window.showToast('Warranty accept failed: '+(e.message||e),'error'); }
+  }
+  window.acceptWarrantyClaimV4 = acceptWarrantyClaim;
+  window.loadWarranty = async function(){
+    const list = $('warrantyList'); if(!list) return;
+    try{ if(typeof window.ensureSellerWarranty === 'function') await window.ensureSellerWarranty(); }catch(e){}
+    const rows = warranties();
+    if(!rows.length){ list.innerHTML = `<tr><td colspan="5" style="text-align:center;font-weight:800;padding:22px;">No warranty claims.</td></tr>`; return; }
+    for(const w of rows){
+      const assigned = dateOf(w.assignedAt || w.adminAcceptedAt || w.createdAt || w.timestamp);
+      if((w.status && low(w.status).includes('accepted')) || w.adminAccepted === true || w.status === 'Assigned to Seller'){
+        if(!w.sellerAccepted && assigned && Date.now()-assigned.getTime() > 48*3600000){
+          await addFineOnce('warranty_48h_'+(w.id || w.orderId),120,'Warranty claim not accepted within 48 hours',{warrantyId:w.id || '',orderId:w.orderId || ''});
+        }
+      }
+    }
+    list.innerHTML = rows.map(w => {
+      const o = findOrder(w.orderId || w.originalOrderId) || {};
+      const btn = !w.sellerAccepted && ((low(w.status).includes('accepted')) || w.adminAccepted === true || w.status === 'Assigned to Seller') ? `<button class="btn-prime" onclick="acceptWarrantyClaimV4('${esc(w.id)}')"><i class="fas fa-check"></i> Accept</button>` : `<span class="ary-v4-chip">${esc(w.status || 'Pending')}</span>`;
+      return `<tr><td data-label="Date">${esc((dateOf(w.createdAt || w.timestamp)||new Date()).toLocaleString())}</td><td data-label="Order">${esc(w.orderId || o.order_no || o.id || 'N/A')}</td><td data-label="Product">${orderItems(o).map(itemLine).join('') || esc(w.productName || 'Product')}</td><td data-label="Status">${esc(w.status || '')}</td><td data-label="Action">${btn}</td></tr>`;
+    }).join('');
+  };
+  try{ loadWarranty=window.loadWarranty; }catch(e){}
+
+  function subscriptionEndDate(){ return dateOf((seller() || {}).subEndDate || (seller() || {}).subscriptionEndDate); }
+  function currentPlan(){ return txt((seller() || {}).subscription || (seller() || {}).plan || (seller() || {}).subscriptionPlan || 'Basic'); }
+  window.aryantaRenewCurrentSubscription = async function(){
+    const s = seller(); if(!s || !validDb()) return;
+    const plan = currentPlan();
+    const price = num(s.subscriptionPrice || s.planPrice || 0);
+    const finish = async (meta) => {
+      const oldEnd = subscriptionEndDate();
+      const base = oldEnd && oldEnd.getTime() > Date.now() ? oldEnd : new Date();
+      base.setDate(base.getDate()+30);
+      const payload = {subscription:plan, subEndDate:base.toISOString(), subscriptionEndDate:base.toISOString(), updatedAt:nowIso()};
+      await dbx().collection('sellers').doc(sellerDocId()).set(payload,{merge:true});
+      await dbx().collection('seller_subscription_payments').add({sellerEmail:email(),planName:plan,amount:price,status:'Renewed 30 days',meta:meta||{},createdAt:nowIso()}).catch(()=>{});
+      Object.assign(s,payload);
+      try{ localStorage.setItem('sellerToken',JSON.stringify(s)); }catch(e){}
+      window.showToast('Subscription renewed for 30 more days.','success');
+      if(typeof loadSubscriptionsUI === 'function') loadSubscriptionsUI();
+    };
+    if(price <= 0 || !window.Razorpay || !window.API_KEYS || !API_KEYS.RAZORPAY){ return finish({method:'manual_or_free'}); }
+    new Razorpay({key:API_KEYS.RAZORPAY,amount:price*100,currency:'INR',name:'Aryanta Subscription Renewal',description:`Renew ${plan} for 30 days`,handler:r=>finish({razorpayPaymentId:r.razorpay_payment_id}),prefill:{name:s.companyName||'',email:s.email||'',contact:s.phone||''},theme:{color:'#111827'}}).open();
+  };
+  window.checkSubscriptionExpiry = function(){
+    const end = subscriptionEndDate(); if(!end) return;
+    const diff = Math.ceil((end.getTime()-Date.now())/dayMs);
+    if(diff <= 3 && diff >= 1){
+      customDialog({title:'Subscription ending soon',body:`<p>Your <b>${esc(currentPlan())}</b> subscription will end in <b>${diff} day${diff>1?'s':''}</b>. Please renew to avoid feature lock.</p>`,actions:`<button class="btn-outline" onclick="document.getElementById('aryV4Modal').style.display='none'">Cancel</button><button class="btn-prime" onclick="aryantaRenewCurrentSubscription()"><i class="fas fa-crown"></i> Renew Now</button>`});
+      try{ dbx().collection('seller_notifications').add({sellerEmail:email(),title:'Subscription ending soon',message:`Your ${currentPlan()} subscription will end in ${diff} day(s). Please renew.`,type:'subscription_expiry',timestamp:nowIso(),createdAt:nowIso()}); }catch(e){}
+    }
+  };
+  try{ checkSubscriptionExpiry=window.checkSubscriptionExpiry; }catch(e){}
+
+  const oldSubUI = window.loadSubscriptionsUI;
+  window.loadSubscriptionsUI = async function(){
+    try{ if(typeof oldSubUI === 'function') await oldSubUI.apply(this, arguments); }catch(e){}
+    const box = $('subscriptionHistoryBox') || $('currentSubscriptionDetails') || $('subscriptionSection');
+    const s = seller(); if(!box || !s) return;
+    const end = subscriptionEndDate();
+    const html = `<div class="panel-box" style="margin:14px 0;"><h3><i class="fas fa-crown"></i> Active Subscription Details</h3><p><b>Plan:</b> ${esc(currentPlan())}</p><p><b>End Date:</b> ${esc(end ? end.toLocaleString() : 'Not set')}</p><p><b>Commission:</b> ${esc(s.commissionPercent || s.subscriptionCommission || 'Default')}%</p><button class="btn-prime" onclick="aryantaRenewCurrentSubscription()"><i class="fas fa-rotate"></i> Renew / Add 30 Days</button></div>`;
+    if(box.id === 'subscriptionSection') box.insertAdjacentHTML('afterbegin',html); else box.innerHTML = html + box.innerHTML;
+  };
+  try{ loadSubscriptionsUI=window.loadSubscriptionsUI; }catch(e){}
+
+  const oldShowSection = window.showSection;
+  if(oldShowSection && !oldShowSection.__aryantaV4Wrapped){
+    const wrapped = async function(section){
+      const res = await oldShowSection.apply(this, arguments);
+      setTimeout(async () => {
+        if(section === 'notifications') await window.fetchNotifications();
+        if(section === 'acceptedOrders') await window.loadAcceptedOrders();
+        if(section === 'shippedOrders') window.loadShippedOrders();
+        if(section === 'deliveredOrders') window.loadDeliveredOrders();
+        if(section === 'completedScan') window.loadCompletedScanOrders();
+        if(section === 'history') { const f = window.loadOrderHistory; if(typeof f === 'function') f(); }
+        if(section === 'returnTracking') window.loadReturnTracking();
+        if(section === 'productPerformance') window.loadProductPerformance();
+        if(section === 'warranty') await window.loadWarranty();
+        if(section === 'subscription') await window.loadSubscriptionsUI();
+      },80);
+      return res;
+    };
+    wrapped.__aryantaV4Wrapped = true;
+    window.showSection = wrapped;
+    try{ showSection = wrapped; }catch(e){}
+  }
+
+  setTimeout(()=>{ injectStyle(); window.fetchNotifications().catch(()=>{}); hydrateShiprocketV4().then(()=>{ if($('acceptedOrdersSection') && $('acceptedOrdersSection').classList.contains('active')) window.loadAcceptedOrders(); }); try{ window.checkSubscriptionExpiry(); }catch(e){} },900);
+  setTimeout(render7DayTrendSafe,1200);
+})();
+/* ===== FIX: Dark Theme free for all users ===== */
+(function(){
+    if(window.ARYANTA_DARK_THEME_FREE_FIX) return;
+    window.ARYANTA_DARK_THEME_FREE_FIX = true;
+
+    function el(id){
+        return document.getElementById(id);
+    }
+
+    function getSellerSafe(){
+        try{
+            return activeSeller || window.activeSeller || null;
+        }catch(e){
+            return window.activeSeller || null;
+        }
+    }
+
+    function getDbSafe(){
+        try{
+            return db || window.db || null;
+        }catch(e){
+            return window.db || null;
+        }
+    }
+
+    function darkInputs(){
+        return [
+            el("settingTheme"),
+            el("settingDarkTheme"),
+            el("settingDark")
+        ].filter(Boolean);
+    }
+
+    function unlockDarkThemeControl(){
+        const seller = getSellerSafe();
+        const settings = seller && seller.settings ? seller.settings : {};
+
+        const isDark = settings.theme === true || settings.darkTheme === true || settings.dark === true;
+
+        darkInputs().forEach(input => {
+            input.disabled = false;
+            input.checked = isDark;
+            input.removeAttribute("disabled");
+            input.removeAttribute("title");
+
+            const card = input.closest(".setting-card-premium") || input.closest(".setting-card");
+            if(card){
+                card.classList.remove("sub-disabled");
+                card.removeAttribute("data-lock-reason");
+                card.style.opacity = "";
+                card.style.filter = "";
+                card.style.pointerEvents = "";
+            }
+        });
+
+        document.body.classList.toggle("dark-theme", isDark);
+    }
+
+    const oldLoadSettingsUI = window.loadSettingsUI;
+
+    window.loadSettingsUI = async function(){
+        try{
+            if(typeof oldLoadSettingsUI === "function"){
+                await oldLoadSettingsUI.apply(this, arguments);
+            }
+        }catch(e){}
+
+        unlockDarkThemeControl();
+    };
+
+    const oldToggleSetting = window.toggleSetting;
+
+    window.toggleSetting = async function(key){
+        key = String(key || "").trim();
+
+        if(key === "theme" || key === "darkTheme" || key === "dark"){
+            const seller = getSellerSafe();
+            const database = getDbSafe();
+            const input = el("settingTheme") || el("settingDarkTheme") || el("settingDark");
+
+            if(!seller){
+                if(typeof showToast === "function") showToast("Login required.", "error");
+                return;
+            }
+
+            if(!seller.settings) seller.settings = {};
+
+            const checked = input ? input.checked === true : !seller.settings.theme;
+
+            seller.settings.theme = checked;
+            seller.settings.darkTheme = checked;
+            seller.settings.dark = checked;
+
+            document.body.classList.toggle("dark-theme", checked);
+            unlockDarkThemeControl();
+
+            try{
+                if(database && seller.email){
+                    await database.collection("sellers").doc(seller.email).set({
+                        settings: seller.settings,
+                        updatedAt: new Date().toISOString()
+                    }, { merge: true });
+                }
+
+                if(typeof showToast === "function"){
+                    showToast(checked ? "Dark Theme enabled." : "Dark Theme disabled.", "success");
+                }
+            }catch(e){
+                console.error("Dark theme save failed:", e);
+                if(typeof showToast === "function"){
+                    showToast("Dark Theme changed, but save failed. Check Firestore permission.", "error");
+                }
+            }
+
+            return;
+        }
+
+        if(typeof oldToggleSetting === "function"){
+            return oldToggleSetting.apply(this, arguments);
+        }
+    };
+
+    document.addEventListener("DOMContentLoaded", function(){
+        setTimeout(unlockDarkThemeControl, 300);
+        setTimeout(unlockDarkThemeControl, 1200);
+        setTimeout(unlockDarkThemeControl, 2500);
+    });
+
+    setTimeout(unlockDarkThemeControl, 300);
+    setTimeout(unlockDarkThemeControl, 1200);
+})();
+/* ===== FIX: Search Suggestions only for subscribed sellers ===== */
+(function(){
+    if(window.ARYANTA_SEARCH_SUGGESTIONS_SUB_ONLY_FIX) return;
+    window.ARYANTA_SEARCH_SUGGESTIONS_SUB_ONLY_FIX = true;
+
+    function el(id){
+        return document.getElementById(id);
+    }
+
+    function sellerSafe(){
+        try{
+            return activeSeller || window.activeSeller || null;
+        }catch(e){
+            return window.activeSeller || null;
+        }
+    }
+
+    function dbSafe(){
+        try{
+            return db || window.db || null;
+        }catch(e){
+            return window.db || null;
+        }
+    }
+
+    function low(v){
+        return String(v || "").toLowerCase().trim();
+    }
+
+    function isSubscriptionActive(){
+        const s = sellerSafe();
+        if(!s) return false;
+
+        const plan = low(
+            s.subscription ||
+            s.plan ||
+            s.subscriptionPlan ||
+            s.subscriptionName ||
+            s.package ||
+            ""
+        );
+
+        if(!plan || plan === "none" || plan === "free" || plan === "basic" || plan === "basic / free"){
+            return false;
+        }
+
+        const endRaw = s.subEndDate || s.subscriptionEndDate || s.planEndDate || s.endDate;
+        if(endRaw){
+            const end = new Date(endRaw).getTime();
+            if(Number.isFinite(end) && end < Date.now()){
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function applySearchSuggestionLock(){
+        const s = sellerSafe();
+        const input = el("settingSearchSuggestions");
+
+        if(!s) return;
+
+        if(!s.settings) s.settings = {};
+
+        if(isSubscriptionActive()){
+            if(s.settings.searchSuggestions === undefined){
+                s.settings.searchSuggestions = true;
+            }
+
+            if(input){
+                input.disabled = false;
+                input.checked = s.settings.searchSuggestions !== false;
+
+                const card = input.closest(".setting-card-premium") || input.closest(".setting-card");
+                if(card){
+                    card.classList.remove("sub-disabled");
+                    card.removeAttribute("data-lock-reason");
+                }
+            }
+        }else{
+            s.settings.searchSuggestions = false;
+
+            if(input){
+                input.checked = false;
+                input.disabled = true;
+
+                const card = input.closest(".setting-card-premium") || input.closest(".setting-card");
+                if(card){
+                    card.classList.add("sub-disabled");
+                    card.dataset.lockReason = "Search Suggestions need active subscription";
+                }
+            }
+
+            const box = el("searchSuggestions");
+            if(box){
+                box.style.display = "none";
+                box.innerHTML = "";
+            }
+        }
+    }
+
+    const oldLoadSettingsUI = window.loadSettingsUI;
+
+    window.loadSettingsUI = async function(){
+        try{
+            if(typeof oldLoadSettingsUI === "function"){
+                await oldLoadSettingsUI.apply(this, arguments);
+            }
+        }catch(e){}
+
+        applySearchSuggestionLock();
+    };
+
+    const oldToggleSetting = window.toggleSetting;
+
+    window.toggleSetting = async function(key){
+        key = String(key || "").trim();
+
+        if(key === "searchSuggestions"){
+            const s = sellerSafe();
+            const database = dbSafe();
+            const input = el("settingSearchSuggestions");
+
+            if(!s){
+                if(typeof showToast === "function") showToast("Login required.", "error");
+                return;
+            }
+
+            if(!isSubscriptionActive()){
+                if(input) input.checked = false;
+                if(!s.settings) s.settings = {};
+                s.settings.searchSuggestions = false;
+
+                const box = el("searchSuggestions");
+                if(box){
+                    box.style.display = "none";
+                    box.innerHTML = "";
+                }
+
+                if(typeof showToast === "function"){
+                    showToast("Search Suggestions need active subscription.", "warning");
+                }
+
+                return;
+            }
+
+            if(!s.settings) s.settings = {};
+            const checked = input ? input.checked === true : !s.settings.searchSuggestions;
+            s.settings.searchSuggestions = checked;
+
+            try{
+                if(database && s.email){
+                    await database.collection("sellers").doc(s.email).set({
+                        settings: s.settings,
+                        updatedAt: new Date().toISOString()
+                    }, { merge: true });
+                }
+
+                if(typeof showToast === "function"){
+                    showToast(checked ? "Search Suggestions enabled." : "Search Suggestions disabled.", "success");
+                }
+            }catch(e){
+                console.error("Search Suggestions save failed:", e);
+                if(typeof showToast === "function"){
+                    showToast("Setting changed, but save failed.", "error");
+                }
+            }
+
+            applySearchSuggestionLock();
+            return;
+        }
+
+        if(typeof oldToggleSetting === "function"){
+            return oldToggleSetting.apply(this, arguments);
+        }
+    };
+
+    const oldHandleGlobalSearch = window.handleGlobalSearch;
+
+    window.handleGlobalSearch = function(){
+        if(!isSubscriptionActive()){
+            const box = el("searchSuggestions");
+            if(box){
+                box.style.display = "none";
+                box.innerHTML = "";
+            }
+            return;
+        }
+
+        const s = sellerSafe();
+        if(s && s.settings && s.settings.searchSuggestions === false){
+            const box = el("searchSuggestions");
+            if(box){
+                box.style.display = "none";
+                box.innerHTML = "";
+            }
+            return;
+        }
+
+        if(typeof oldHandleGlobalSearch === "function"){
+            return oldHandleGlobalSearch.apply(this, arguments);
+        }
+    };
+
+    document.addEventListener("DOMContentLoaded", function(){
+        setTimeout(applySearchSuggestionLock, 300);
+        setTimeout(applySearchSuggestionLock, 1200);
+        setTimeout(applySearchSuggestionLock, 2500);
+    });
+
+    setTimeout(applySearchSuggestionLock, 300);
+    setTimeout(applySearchSuggestionLock, 1200);
+})();
+/* ===== FIX: Stable Notifications + Badge Decrease ===== */
+(function(){
+    if(window.ARYANTA_STABLE_NOTIFICATION_FIX_V5) return;
+    window.ARYANTA_STABLE_NOTIFICATION_FIX_V5 = true;
+
+    let notifCache = [];
+    let notifFetchRunning = false;
+    let notifRenderLock = false;
+    let lastFetchAt = 0;
+
+    function el(id){
+        return document.getElementById(id);
+    }
+
+    function dbSafe(){
+        try{
+            return db || window.db || null;
+        }catch(e){
+            return window.db || null;
+        }
+    }
+
+    function sellerSafe(){
+        try{
+            return activeSeller || window.activeSeller || null;
+        }catch(e){
+            return window.activeSeller || null;
+        }
+    }
+
+    function sellerEmail(){
+        const s = sellerSafe();
+        return String((s && s.email) || "").toLowerCase().trim();
+    }
+
+    function safe(v){
+        return String(v == null ? "" : v).replace(/[&<>"']/g, function(c){
+            return {
+                "&":"&amp;",
+                "<":"&lt;",
+                ">":"&gt;",
+                '"':"&quot;",
+                "'":"&#39;"
+            }[c];
+        });
+    }
+
+    function dateMs(v){
+        if(!v) return 0;
+        if(v && typeof v.toDate === "function") return v.toDate().getTime();
+        const d = new Date(v);
+        return Number.isFinite(d.getTime()) ? d.getTime() : 0;
+    }
+
+    function fmtTime(v){
+        const ms = dateMs(v);
+        return ms ? new Date(ms).toLocaleString() : "Now";
+    }
+
+    function noticesAllowed(){
+        const s = sellerSafe();
+        if(!s || !s.settings) return true;
+        return s.settings.showNotices !== false;
+    }
+
+    function badgeUpdate(){
+        const unread = noticesAllowed() ? notifCache.filter(n => !n.read).length : 0;
+
+        ["notifBadge", "topbarNotifBadge"].forEach(function(id){
+            const b = el(id);
+            if(!b) return;
+
+            b.textContent = unread;
+
+            if(unread > 0){
+                b.style.display = "inline-flex";
+                b.style.alignItems = "center";
+                b.style.justifyContent = "center";
+            }else{
+                b.style.display = "none";
+            }
+        });
+    }
+
+    function targetOk(data){
+        const target = String(
+            data.target ||
+            data.sellerEmail ||
+            data.email ||
+            data.to ||
+            "all"
+        ).toLowerCase().trim();
+
+        const email = sellerEmail();
+
+        return (
+            target === "" ||
+            target === "all" ||
+            target === "seller" ||
+            target === "sellers" ||
+            target === email
+        );
+    }
+
+    function normalizeNotif(doc, collection, readIds){
+        const d = doc.data ? doc.data() : doc;
+        const id = doc.id || d.id || Math.random().toString(36).slice(2);
+
+        return {
+            id: String(id),
+            collection: collection,
+            title: d.title || d.heading || "Aryanta Notice",
+            text: d.message || d.text || d.body || d.description || d.title || "New notice from Aryanta.",
+            time: d.timestamp || d.createdAt || d.time || d.date || new Date().toISOString(),
+            link: d.link || d.url || d.actionUrl || d.buttonLink || "",
+            read: readIds.has(String(id))
+        };
+    }
+
+    async function getReadIds(){
+        const database = dbSafe();
+        const email = sellerEmail();
+        const ids = new Set();
+
+        if(!database || !email) return ids;
+
+        try{
+            const snap = await database
+                .collection("seller_notification_reads")
+                .where("sellerEmail", "==", email)
+                .limit(500)
+                .get();
+
+            snap.forEach(function(doc){
+                const d = doc.data() || {};
+                if(d.notificationId) ids.add(String(d.notificationId));
+            });
+        }catch(e){
+            console.warn("notification read-state load failed:", e);
+        }
+
+        return ids;
+    }
+
+    async function saveRead(n){
+        const database = dbSafe();
+        const email = sellerEmail();
+
+        if(!database || !email || !n || !n.id) return;
+
+        const readDocId = String(n.id + "_" + email).replace(/[^a-zA-Z0-9_-]/g, "_");
+
+        try{
+            await database.collection("seller_notification_reads").doc(readDocId).set({
+                notificationId: String(n.id),
+                collection: n.collection || "",
+                sellerEmail: email,
+                title: n.title || "",
+                text: n.text || "",
+                link: n.link || "",
+                readAt: new Date().toISOString()
+            }, { merge: true });
+        }catch(e){
+            console.warn("notification read-state save failed:", e);
+        }
+    }
+
+    function renderNotifications(){
+        if(notifRenderLock) return;
+        notifRenderLock = true;
+
+        try{
+            badgeUpdate();
+
+            const list1 = el("fullNotifList");
+            const list2 = el("notifList");
+
+            if(!noticesAllowed()){
+                const html = `
+                    <div class="ary-empty-state">
+                        <i class="fas fa-bell-slash"></i>
+                        <h3>Notices are off</h3>
+                        <p>You disabled Show Notices in Settings.</p>
+                    </div>
+                `;
+                if(list1) list1.innerHTML = html;
+                if(list2) list2.innerHTML = html;
+                return;
+            }
+
+            let html = "";
+
+            if(notifCache.length === 0){
+                html = `
+                    <div class="ary-empty-state">
+                        <i class="fas fa-bell-slash"></i>
+                        <h3>No notifications</h3>
+                        <p>New Aryanta notices will appear here.</p>
+                    </div>
+                `;
+            }else{
+                html = notifCache.map(function(n){
+                    const link = n.link
+                        ? `<a class="short-link-chip" href="${safe(String(n.link).startsWith("http") ? n.link : "https://" + n.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()"><i class="fas fa-link"></i> Open Link</a>`
+                        : "";
+
+                    return `
+                        <div class="notification-card ${n.read ? "read" : "unread"}" onclick="openFullNotif('${safe(n.id)}')">
+                            <div style="width:100%;">
+                                <div class="ary-notif-top">
+                                    <strong>${n.read ? '<i class="fas fa-envelope-open"></i>' : '<i class="fas fa-envelope"></i>'} ${safe(n.title)}</strong>
+                                    ${n.read ? '<span>Read</span>' : '<span class="unread-chip">New</span>'}
+                                </div>
+                                <p>${safe(n.text)}</p>
+                                <small><i class="fas fa-clock"></i> ${safe(fmtTime(n.time))}</small>
+                                ${link}
+                            </div>
+                        </div>
+                    `;
+                }).join("");
+            }
+
+            if(list1) list1.innerHTML = html;
+            if(list2) list2.innerHTML = html;
+        }finally{
+            notifRenderLock = false;
+        }
+    }
+
+    async function fetchStableNotifications(){
+        const database = dbSafe();
+        const email = sellerEmail();
+
+        if(!database || !email){
+            renderNotifications();
+            return notifCache;
+        }
+
+        if(notifFetchRunning){
+            renderNotifications();
+            return notifCache;
+        }
+
+        const now = Date.now();
+        if(now - lastFetchAt < 1200){
+            renderNotifications();
+            return notifCache;
+        }
+
+        notifFetchRunning = true;
+        lastFetchAt = now;
+
+        try{
+            if(!noticesAllowed()){
+                notifCache = [];
+                renderNotifications();
+                return notifCache;
+            }
+
+            const readIds = await getReadIds();
+            const rows = [];
+
+            async function readCollection(collection, builder){
+                try{
+                    const snap = await builder(database.collection(collection));
+                    snap.forEach(function(doc){
+                        const d = doc.data() || {};
+                        if(targetOk(d)){
+                            rows.push(normalizeNotif(doc, collection, readIds));
+                        }
+                    });
+                }catch(e){
+                    console.warn(collection + " notification fetch failed:", e);
+                }
+            }
+
+            await readCollection("admin_broadcasts", q => q.limit(100).get());
+            await readCollection("seller_notifications", q => q.where("sellerEmail", "==", email).limit(100).get());
+            await readCollection("seller_notifications", q => q.where("email", "==", email).limit(100).get());
+            await readCollection("notifications", q => q.where("sellerEmail", "==", email).limit(50).get());
+            await readCollection("notifications", q => q.where("email", "==", email).limit(50).get());
+
+            const seen = new Set();
+            const finalRows = rows.filter(function(n){
+                const key = n.collection + "_" + n.id;
+                if(seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            }).sort(function(a,b){
+                return dateMs(b.time) - dateMs(a.time);
+            });
+
+            notifCache = finalRows;
+            try{ adminNotifications = finalRows; }catch(e){}
+            window.adminNotifications = finalRows;
+
+            renderNotifications();
+            return notifCache;
+        }finally{
+            notifFetchRunning = false;
+        }
+    }
+
+    async function markAllVisibleRead(){
+        if(!noticesAllowed()) return;
+
+        let changed = false;
+
+        notifCache.forEach(function(n){
+            if(!n.read){
+                n.read = true;
+                changed = true;
+                saveRead(n);
+            }
+        });
+
+        if(changed){
+            try{ adminNotifications = notifCache; }catch(e){}
+            window.adminNotifications = notifCache;
+            renderNotifications();
+        }
+    }
+
+    window.fetchNotifications = async function(){
+        renderNotifications();
+        await fetchStableNotifications();
+    };
+
+    window.openFullNotif = window.openFullNotifFinal = async function(id){
+        const n = notifCache.find(x => String(x.id) === String(id));
+
+        if(!n){
+            await fetchStableNotifications();
+        }
+
+        const finalN = notifCache.find(x => String(x.id) === String(id));
+        if(!finalN) return;
+
+        finalN.read = true;
+        renderNotifications();
+        await saveRead(finalN);
+
+        const cont = el("notifDetailContent");
+        const mod = el("notificationDetailModal");
+
+        const linkHtml = finalN.link
+            ? `<a href="${safe(String(finalN.link).startsWith("http") ? finalN.link : "https://" + finalN.link)}" target="_blank" rel="noopener noreferrer" class="btn-prime" style="text-decoration:none; margin-top:15px; display:inline-flex;"><i class="fas fa-external-link-alt"></i> Open Link</a>`
+            : "";
+
+        if(cont && mod){
+            cont.innerHTML = `
+                <div class="prime-notif-detail">
+                    <h3>${safe(finalN.title)}</h3>
+                    <p>${safe(finalN.text)}</p>
+                    <div class="muted-line"><i class="fas fa-clock"></i> ${safe(fmtTime(finalN.time))}</div>
+                    ${linkHtml}
+                </div>
+            `;
+            mod.style.display = "flex";
+            setTimeout(function(){ mod.classList.add("show"); }, 10);
+        }
+    };
+
+    const oldShowSection = window.showSection;
+
+    window.showSection = async function(section){
+        if(typeof oldShowSection === "function"){
+            await oldShowSection.apply(this, arguments);
+        }
+
+        if(section === "notifications"){
+            renderNotifications();
+            await fetchStableNotifications();
+            setTimeout(markAllVisibleRead, 250);
+            setTimeout(markAllVisibleRead, 900);
+        }
+    };
+
+    const observerTarget = el("fullNotifList");
+
+    if(observerTarget){
+        const obs = new MutationObserver(function(){
+            if(notifRenderLock) return;
+
+            const sec = el("notificationsSection");
+            if(!sec || !sec.classList.contains("active")) return;
+
+            const txt = String(observerTarget.textContent || "").toLowerCase();
+
+            if(notifCache.length && (txt.includes("loading") || txt.includes("no notifications") || txt.includes("no new messages"))){
+                setTimeout(renderNotifications, 50);
+            }
+        });
+
+        obs.observe(observerTarget, { childList:true, subtree:true });
+    }
+
+    document.addEventListener("DOMContentLoaded", function(){
+        setTimeout(fetchStableNotifications, 700);
+        setTimeout(fetchStableNotifications, 2000);
+    });
+
+    setTimeout(fetchStableNotifications, 700);
+    setTimeout(fetchStableNotifications, 2000);
+})();
+/* ===== RESTORE PRODUCT PERFORMANCE AS BEFORE ===== */
+(function(){
+    if(window.ARYANTA_RESTORE_PRODUCT_PERFORMANCE_OLD_UI) return;
+    window.ARYANTA_RESTORE_PRODUCT_PERFORMANCE_OLD_UI = true;
+
+    let currentPerfFilter = "all";
+
+    function $(id){
+        return document.getElementById(id);
+    }
+
+    function safe(v){
+        return String(v == null ? "" : v).replace(/[&<>"']/g, function(c){
+            return {
+                "&":"&amp;",
+                "<":"&lt;",
+                ">":"&gt;",
+                '"':"&quot;",
+                "'":"&#39;"
+            }[c];
+        });
+    }
+
+    function low(v){
+        return String(v == null ? "" : v).toLowerCase().trim();
+    }
+
+    function num(v){
+        const n = Number(v);
+        return Number.isFinite(n) ? n : 0;
+    }
+
+    function getProductsSafe(){
+        try{
+            return sellerProducts || window.sellerProducts || [];
+        }catch(e){
+            return window.sellerProducts || [];
+        }
+    }
+
+    function getOrdersSafe(){
+        try{
+            return sellerOrders || window.sellerOrders || [];
+        }catch(e){
+            return window.sellerOrders || [];
+        }
+    }
+
+    function getSellerItems(order){
+        try{
+            if(typeof getSellerItemsFromOrder === "function"){
+                return getSellerItemsFromOrder(order) || [];
+            }
+        }catch(e){}
+
+        return Array.isArray(order && order.items) ? order.items : [];
+    }
+
+    function firstImage(p){
+        if(!p) return "";
+
+        if(Array.isArray(p.images) && p.images[0]) return p.images[0];
+        if(Array.isArray(p.imageUrls) && p.imageUrls[0]) return p.imageUrls[0];
+
+        return (
+            p.image ||
+            p.imageUrl ||
+            p.mainImage ||
+            p.productImage ||
+            p.thumbnail ||
+            ""
+        );
+    }
+
+    function productMatch(product, item){
+        const pId = String(product.id || product.productId || product.product_id || "").trim();
+        const iId = String(item.id || item.productId || item.product_id || item.productDocId || "").trim();
+
+        const pSku = low(product.sku);
+        const iSku = low(item.sku);
+
+        return (
+            (pId && iId && pId === iId) ||
+            (pSku && iSku && pSku === iSku)
+        );
+    }
+
+    function itemAmount(item, product){
+        const price = num(
+            item.price ||
+            item.sellingPrice ||
+            item.finalPrice ||
+            product.price ||
+            product.sellingPrice ||
+            0
+        );
+
+        const qty = num(item.qty || item.quantity || 1) || 1;
+
+        return price * qty;
+    }
+
+    function buildProductPerformance(){
+        const products = getProductsSafe();
+        const orders = getOrdersSafe();
+
+        const map = {};
+
+        products.forEach(function(p){
+            const id = String(p.id || p.productId || p.sku || Math.random()).trim();
+
+            map[id] = {
+                id: id,
+                product: p,
+                soldQty: 0,
+                totalOrders: 0,
+                deliveredQty: 0,
+                cancelledQty: 0,
+                returnedQty: 0,
+                revenue: 0,
+                views: num(p.views || p.totalViews || p.clicks || p.totalClicks || 0),
+                stock: num(p.stock || p.quantity || p.totalStock || 0)
+            };
+        });
+
+        orders.forEach(function(order){
+            const status = low(order.status || order.orderStatus || order.deliveryStatus);
+            const items = getSellerItems(order);
+
+            items.forEach(function(item){
+                let matchedKey = null;
+                let matchedProduct = null;
+
+                Object.keys(map).some(function(key){
+                    const p = map[key].product;
+
+                    if(productMatch(p, item)){
+                        matchedKey = key;
+                        matchedProduct = p;
+                        return true;
+                    }
+
+                    return false;
+                });
+
+                if(!matchedKey || !matchedProduct) return;
+
+                const qty = num(item.qty || item.quantity || 1) || 1;
+                const st = map[matchedKey];
+
+                st.soldQty += qty;
+                st.totalOrders += 1;
+                st.revenue += itemAmount(item, matchedProduct);
+
+                if(status.includes("deliver")){
+                    st.deliveredQty += qty;
+                }
+
+                if(status.includes("cancel")){
+                    st.cancelledQty += qty;
+                }
+
+                if(status.includes("return")){
+                    st.returnedQty += qty;
+                }
+            });
+        });
+
+        return Object.values(map);
+    }
+
+    function setActiveFilterUI(filter){
+        ["all", "top", "loss"].forEach(function(f){
+            const btn = $("perf-filter-" + f);
+            if(btn){
+                btn.classList.toggle("active", f === filter);
+            }
+        });
+    }
+
+    window.setProductPerformanceFilter = function(filter){
+        currentPerfFilter = filter || "all";
+        setActiveFilterUI(currentPerfFilter);
+        window.loadProductPerformance();
+    };
+
+    window.loadProductPerformance = function(){
+        const list = $("productPerformanceList");
+
+        if(!list) return;
+
+        setActiveFilterUI(currentPerfFilter);
+
+        let rows = buildProductPerformance();
+
+        if(currentPerfFilter === "top"){
+            rows = rows
+                .filter(function(x){
+                    return x.soldQty > 0 || x.deliveredQty > 0 || x.revenue > 0;
+                })
+                .sort(function(a,b){
+                    return b.soldQty - a.soldQty || b.revenue - a.revenue || b.views - a.views;
+                });
+        }else if(currentPerfFilter === "loss"){
+            rows = rows
+                .filter(function(x){
+                    return (x.cancelledQty + x.returnedQty) > 0;
+                })
+                .sort(function(a,b){
+                    return (b.cancelledQty + b.returnedQty) - (a.cancelledQty + a.returnedQty);
+                });
+        }else{
+            rows = rows.sort(function(a,b){
+                return b.soldQty - a.soldQty || b.views - a.views || b.revenue - a.revenue;
+            });
+        }
+
+        if(rows.length === 0){
+            list.innerHTML = `
+                <div class="panel-box" style="grid-column:1/-1;">
+                    <h3 style="margin-bottom:6px;">No product performance data yet.</h3>
+                    <p class="muted-line">Once real seller orders, views, cancellations or returns are available, product performance will show here.</p>
+                </div>
+            `;
+            return;
+        }
+
+        list.innerHTML = rows.map(function(st){
+            const p = st.product || {};
+            const img = firstImage(p);
+
+            const lossQty = st.cancelledQty + st.returnedQty;
+            const totalQty = Math.max(1, st.soldQty);
+            const deliveredPct = Math.round((st.deliveredQty / totalQty) * 100);
+            const cancelPct = Math.round((st.cancelledQty / totalQty) * 100);
+            const returnPct = Math.round((st.returnedQty / totalQty) * 100);
+
+            const stockBadge = st.stock <= 0
+                ? `<span class="lock-chip"><i class="fas fa-ban"></i> Out of Stock</span>`
+                : st.stock <= 7
+                    ? `<span class="lock-chip"><i class="fas fa-triangle-exclamation"></i> Low Stock: ${st.stock}</span>`
+                    : `<span class="ok-chip"><i class="fas fa-box"></i> Stock: ${st.stock}</span>`;
+
+            const editBtn = p.id
+                ? `<button class="btn-outline w-100" onclick="editItem('${safe(p.id)}')"><i class="fas fa-edit"></i> Edit Product</button>`
+                : "";
+
+            return `
+                <div class="performance-card prime-performance-card">
+                    ${
+                        img
+                        ? `<img src="${safe(img)}" loading="lazy" class="perf-img" style="width:100%;height:150px;object-fit:cover;border-radius:16px;margin-bottom:12px;">`
+                        : `<div class="prime-image-fallback"><i class="fas fa-box-open"></i></div>`
+                    }
+
+                    <h4>${safe(p.name || p.title || "Product")}</h4>
+
+                    <p class="muted-line">
+                        SKU: <b>${safe(p.sku || p.id || "N/A")}</b><br>
+                        Price: <b>₹${num(p.price || p.sellingPrice || 0).toLocaleString("en-IN")}</b>
+                    </p>
+
+                    <div style="margin:10px 0;">
+                        ${stockBadge}
+                    </div>
+
+                    <div class="tiny-metric-grid">
+                        <div class="tiny-metric"><span>Sold</span>${st.soldQty}</div>
+                        <div class="tiny-metric"><span>Delivered</span>${st.deliveredQty}</div>
+                        <div class="tiny-metric"><span>Loss</span>${lossQty}</div>
+                    </div>
+
+                    <div class="tiny-metric-grid">
+                        <div class="tiny-metric"><span>Views</span>${st.views}</div>
+                        <div class="tiny-metric"><span>Orders</span>${st.totalOrders}</div>
+                        <div class="tiny-metric"><span>Revenue</span>₹${st.revenue.toLocaleString("en-IN")}</div>
+                    </div>
+
+                    <div class="perf-bars">
+                        <small>Delivered ${deliveredPct}%</small>
+                        <div class="perf-bar"><i style="width:${Math.min(100, deliveredPct)}%"></i></div>
+
+                        <small>Cancelled ${cancelPct}%</small>
+                        <div class="perf-bar danger"><i style="width:${Math.min(100, cancelPct)}%"></i></div>
+
+                        <small>Returns ${returnPct}%</small>
+                        <div class="perf-bar warning"><i style="width:${Math.min(100, returnPct)}%"></i></div>
+                    </div>
+
+                    ${editBtn}
+                </div>
+            `;
+        }).join("");
+    };
+
+    const oldShowSection = window.showSection;
+
+    window.showSection = async function(section){
+        const res = oldShowSection ? await oldShowSection.apply(this, arguments) : null;
+
+        if(section === "productPerformance"){
+            setTimeout(function(){
+                window.loadProductPerformance();
+            }, 100);
+        }
+
+        return res;
+    };
+
+    setTimeout(function(){
+        const sec = $("productPerformanceSection");
+        if(sec && sec.classList.contains("active")){
+            window.loadProductPerformance();
+        }
+    }, 800);
 })();
