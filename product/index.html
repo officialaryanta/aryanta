@@ -37,6 +37,40 @@
         .tabs-container .tab-content.active{display:block;}
         .tabs-container .tab-btn{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
         .tabs-container .tab-btn.active{pointer-events:auto;}
+        body.filter-open #themeToggleBtn{display:none!important;visibility:hidden!important;pointer-events:none!important;}
+
+        .modal-overlay .modal-box{width:min(94vw,520px);max-width:calc(100vw - 32px);box-sizing:border-box;margin-left:auto;margin-right:auto;}
+        .public-broadcast-box{width:min(92vw,460px)!important;}
+        .seller-premium-box{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;}
+        .seller-main-info{display:flex;align-items:center;gap:14px;min-width:0;}
+        .seller-logo-img{width:42px;height:42px;border-radius:14px;object-fit:cover;border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow-sm);}
+        .seller-logo-fallback{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:var(--surface-2,var(--surface));border:1px solid var(--border);color:var(--text-main);box-shadow:var(--shadow-sm);}
+        .seller-name-line{font-weight:800;color:var(--text-main);font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:min(55vw,340px);}
+        .seller-verified-badge{background:var(--text-main);color:var(--bg-color);padding:6px 10px;border-radius:8px;font-size:11px;font-weight:800;display:flex;align-items:center;gap:6px;box-shadow:var(--shadow-sm);}
+        .seller-store-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+        .seller-share-store-btn{width:38px;height:38px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text-main);display:grid;place-items:center;box-shadow:var(--shadow-sm);transition:var(--transition);}
+        .seller-share-store-btn:active{transform:scale(.96);}
+        .similar-seller-logo{width:18px;height:18px;border-radius:6px;object-fit:cover;border:1px solid var(--border);background:var(--surface);flex:0 0 auto;}
+        .main-image-wrapper{position:relative;cursor:zoom-in;}
+        .product-new-badge,.similar-new-badge{position:absolute;top:10px;left:10px;z-index:3;background:#111827;color:#fff;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:900;letter-spacing:.5px;box-shadow:0 8px 20px rgba(0,0,0,.18);}
+        .similar-new-badge{top:8px;left:8px;padding:5px 9px;font-size:10px;}
+        .s-card-top{position:relative;}
+        .marketplace-trust-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:18px 0 24px;}
+        .marketplace-trust-item{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:16px;background:var(--surface);box-shadow:var(--shadow-sm);font-size:13px;font-weight:800;color:var(--text-main);}
+        .marketplace-trust-item i{color:var(--accent);font-size:17px;width:20px;text-align:center;}
+        .fullscreen-gallery{position:fixed;inset:0;z-index:10050;background:rgba(5,8,15,.96);display:none;align-items:center;justify-content:center;flex-direction:column;padding:18px;box-sizing:border-box;}
+        .fullscreen-gallery.show{display:flex;}
+        .gallery-close-btn,.gallery-nav-btn{border:0;cursor:pointer;background:rgba(255,255,255,.12);color:#fff;border-radius:999px;display:grid;place-items:center;backdrop-filter:blur(12px);}
+        .gallery-close-btn{position:absolute;top:18px;right:18px;width:44px;height:44px;font-size:19px;z-index:2;}
+        .gallery-nav-btn{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;font-size:22px;}
+        .gallery-nav-btn.prev{left:16px;}.gallery-nav-btn.next{right:16px;}
+        .fullscreen-gallery img.gallery-main-img{max-width:92vw;max-height:72vh;object-fit:contain;border-radius:18px;background:#fff;box-shadow:0 20px 60px rgba(0,0,0,.35);}
+        .gallery-thumb-row{display:flex;gap:10px;overflow-x:auto;max-width:94vw;margin-top:18px;padding:8px;scrollbar-width:none;}
+        .gallery-thumb-row img{width:66px;height:66px;object-fit:cover;border-radius:12px;border:2px solid transparent;background:#fff;cursor:pointer;opacity:.72;}
+        .gallery-thumb-row img.active{border-color:#fff;opacity:1;}
+        .gallery-count{color:#fff;font-weight:800;margin-top:10px;font-size:13px;opacity:.85;}
+        .active-filter-chips button{display:inline-flex;align-items:center;gap:6px;}
+        @media(max-width:640px){.marketplace-trust-grid{grid-template-columns:1fr}.gallery-nav-btn{width:42px;height:42px}.seller-premium-box{align-items:flex-start}.seller-name-line{max-width:52vw}.seller-store-actions{align-self:center}.modal-overlay .modal-box{width:calc(100vw - 28px)!important;max-width:calc(100vw - 28px)!important;}}
     </style>
 
 </head>
@@ -148,8 +182,8 @@
                 <label class="custom-radio"><input type="radio" name="similarSortFilter" value="high" onchange="applySimilarFilters()"><span>Price High to Low</span></label>
             </div>
             <div class="filter-actions">
-                <button class="btn-outline" onclick="resetSimilarFilters()"><i class="fas fa-rotate-left"></i> Reset</button>
-                <button class="btn-prime" onclick="closeAllModals()"><i class="fas fa-check"></i> Show Results</button>
+                <button class="btn-outline" onclick="resetSimilarFilters()"><i class="fas fa-times"></i> Remove </button>
+                <button class="btn-prime" onclick="closeAllModals()"><i class="fas fa-check"></i> Show </button>
             </div>
         </div>
     </aside>
@@ -201,7 +235,7 @@
                         <span class="mrp-price" id="pMrp">₹0</span>
                         <span class="discount-tag" id="pDiscount">0% OFF</span>
                     </div>
-                    <div style="font-size: 13px; color: var(--text-muted); margin-top: 8px; font-weight: 600;">Inclusive of all taxes.</div>
+                    <div style="font-size: 13px; color: var(--text-muted); margin-top: 8px; font-weight: 600;">Included of all taxes.</div>
                 </div>
 
                 <!-- DELIVERY PREVIEW -->
@@ -251,6 +285,8 @@
                         <span id="secureText">Secure Transaction</span>
                     </div>
                 </div>
+
+                <div class="marketplace-trust-grid" id="marketplaceTrustGrid"></div>
 
                 <!-- STOCK MARKET PRICE GRAPH -->
                 <div class="price-graph-container" id="priceGraphSection">
@@ -480,6 +516,17 @@
         </div>
     </div>
 
+
+    <!-- Fullscreen Product Gallery -->
+    <div class="fullscreen-gallery" id="fullscreenGallery" aria-label="Product image gallery">
+        <button class="gallery-close-btn" onclick="closeFullscreenGallery()" title="Close"><i class="fas fa-times"></i></button>
+        <button class="gallery-nav-btn prev" onclick="moveGalleryImage(-1)" title="Previous image"><i class="fas fa-chevron-left"></i></button>
+        <img class="gallery-main-img" id="galleryMainImage" src="" alt="Product image preview">
+        <button class="gallery-nav-btn next" onclick="moveGalleryImage(1)" title="Next image"><i class="fas fa-chevron-right"></i></button>
+        <div class="gallery-thumb-row" id="galleryThumbRow"></div>
+        <div class="gallery-count" id="galleryImageCount">1 / 1</div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toastNotification" class="toast-notification"><i class="fas fa-check-circle"></i> <span id="toastMessage">Action successful</span></div>
 
@@ -496,9 +543,18 @@
         let currentFinalPrice = 0;
         let currentNormalPrice = 0;
         let currentMaxPrice = 0;
+        let userCartDirtyAt = 0;
+        let lastDbCartSyncAt = 0;
+        let lastLocalCartWriteAt = 0;
+        let cartSyncInFlight = false;
+        let similarRenderToken = 0;
+        let sellerImageRefCache = new Map();
+        let currentGalleryImages = [];
+        let currentGalleryIndex = 0;
         let productFirebaseDb = null;
         let productFirebaseInitPromise = null;
         let searchCatalogPromise = null;
+        let activeVoiceRecognition = null;
 
         let selectedStars = 0;
         let selectedReviewImages = [];
@@ -531,9 +587,9 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            activeSession = JSON.parse(localStorage.getItem('active_session'));
-            cart = (activeSession && activeSession.email) ? [] : (JSON.parse(localStorage.getItem('local_cart')) || []);
-            wishlist = JSON.parse(localStorage.getItem('aryanta_wishlist')) || [];
+            try { activeSession = JSON.parse(localStorage.getItem('active_session') || 'null'); } catch(e) { activeSession = null; }
+            try { cart = JSON.parse(localStorage.getItem('local_cart') || '[]') || []; } catch(e) { cart = []; }
+            try { wishlist = JSON.parse(localStorage.getItem('aryanta_wishlist') || '[]') || []; } catch(e) { wishlist = []; }
             
             loadAppSettings(); 
             loadSpecialDayAndBroadcast();
@@ -572,6 +628,14 @@
                 if (!e.target.closest('.nav-search')) {
                     document.querySelectorAll('.search-dropdown').forEach(d => d.style.display = 'none');
                 }
+            });
+
+            document.addEventListener('keydown', function(e) {
+                const galleryOpen = document.getElementById('fullscreenGallery')?.classList.contains('show');
+                if (!galleryOpen) return;
+                if (e.key === 'Escape') closeFullscreenGallery();
+                if (e.key === 'ArrowLeft') moveGalleryImage(-1);
+                if (e.key === 'ArrowRight') moveGalleryImage(1);
             });
             
             document.getElementById('revImageInput').addEventListener('change', function(e) {
@@ -659,23 +723,44 @@
             if (window.hasOwnProperty('webkitSpeechRecognition') || window.hasOwnProperty('SpeechRecognition')) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 const rec = new SpeechRecognition();
+                activeVoiceRecognition = rec;
                 rec.lang = "en-US";
-                rec.start();
+                rec.interimResults = false;
+                rec.maxAlternatives = 1;
                 openModalId('voiceSearchModal');
+                try { rec.start(); } catch(e) { activeVoiceRecognition = null; closeAllModals(); return showToast("Voice search failed."); }
                 
                 rec.onresult = function(e) {
-                    const transcript = e.results[0][0].transcript;
-                    document.getElementById(inputId).value = transcript;
-                    closeAllModals();
-                    window.location.href = `https://aryanta.in/?search=${encodeURIComponent(transcript)}`;
+                    const transcript = e.results && e.results[0] && e.results[0][0] ? e.results[0][0].transcript : "";
+                    activeVoiceRecognition = null;
+                    if (transcript.trim()) {
+                        document.getElementById(inputId).value = transcript;
+                        closeAllModals();
+                        window.location.href = `https://aryanta.in/?search=${encodeURIComponent(transcript)}`;
+                    }
                 };
                 rec.onerror = function(e) { 
+                    activeVoiceRecognition = null;
                     closeAllModals();
                     showToast("Voice search failed."); 
+                };
+                rec.onend = function() {
+                    activeVoiceRecognition = null;
                 };
             } else {
                 showAlert("Voice search not supported in this browser.", "Notice");
             }
+        }
+
+        window.stopDictation = function() {
+            try {
+                if (activeVoiceRecognition) {
+                    if (typeof activeVoiceRecognition.abort === 'function') activeVoiceRecognition.abort();
+                    else if (typeof activeVoiceRecognition.stop === 'function') activeVoiceRecognition.stop();
+                }
+            } catch(e) {}
+            activeVoiceRecognition = null;
+            closeAllModals();
         }
 
         function setupSearchLogic(inputId, dropId, micBtnId) {
@@ -723,7 +808,7 @@
                         const img = getProductImageSafe(p);
                         const tag = isSponsoredProduct(p) ? '<span class="s-sponsored-tag">Sponsored</span>' : (isBoostedProduct(p) ? '<span class="s-sponsored-tag boosted">Boosted</span>' : '');
                         return `
-                            <div class="search-item" onclick="window.location.href='${getPublicProductUrl(p.id)}'">
+                            <div class="search-item" onclick="window.location.href=${escapeAttr(JSON.stringify(getPublicProductUrl(p.id)))}">
                                 <img src="${escapeAttr(img)}" loading="lazy" decoding="async" style="width: 44px; height: 44px; object-fit: contain; border-radius: 8px; border:1px solid var(--border); padding:2px;">
                                 <div style="display:flex; flex-direction:column; overflow:hidden; padding-left:5px; min-width:0; width:100%;">
                                     <span style="font-weight: 800; font-size: 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-main);">
@@ -842,6 +927,192 @@
             return "";
         }
 
+        function normalizeKeyPart(value) {
+            return String(value || "").trim().toLowerCase();
+        }
+
+        function getProductIdentifierSet(p = {}) {
+            return [p.id, p.productId, p.pid, p.sku, p.docId, p.itemId, p.slug]
+                .map(normalizeKeyPart)
+                .filter(Boolean);
+        }
+
+        function getProductFingerprint(p = {}) {
+            const seller = normalizeKeyPart(p.sellerEmail || p.email || p.sellerId || p.sellerUID || p.storeId || p.shopName || p.storeName);
+            const name = normalizeKeyPart(p.name || p.title || p.productName || p.itemName);
+            const price = String(Number(p.price || p.salePrice || p.sellingPrice || p.finalPrice || 0) || 0);
+            const image = normalizeKeyPart(getProductImageSafe(p));
+            return [seller, name, price, image].filter(Boolean).join("|");
+        }
+
+        function mergeProductObjects(oldProduct = {}, newProduct = {}) {
+            const merged = { ...oldProduct, ...newProduct };
+            const oldImages = Array.isArray(oldProduct.images) ? oldProduct.images : [];
+            const newImages = Array.isArray(newProduct.images) ? newProduct.images : [];
+            const allImages = [...oldImages, ...newImages].filter(Boolean);
+            if (allImages.length) merged.images = Array.from(new Set(allImages));
+            merged.id = String(firstNonEmpty(oldProduct.id, newProduct.id, newProduct.productId, oldProduct.productId, newProduct.sku, oldProduct.sku));
+            return merged;
+        }
+
+        function dedupeProductArray(list = []) {
+            const keyed = new Map();
+            const idOwner = new Map();
+            const fingerprintOwner = new Map();
+
+            (Array.isArray(list) ? list : []).forEach(product => {
+                if (!product || typeof product !== "object") return;
+                const ids = getProductIdentifierSet(product);
+                const fingerprint = getProductFingerprint(product);
+                let ownerKey = "";
+
+                for (const id of ids) {
+                    if (idOwner.has(id)) { ownerKey = idOwner.get(id); break; }
+                }
+                if (!ownerKey && fingerprint && fingerprintOwner.has(fingerprint)) ownerKey = fingerprintOwner.get(fingerprint);
+                if (!ownerKey) ownerKey = ids[0] || fingerprint || Math.random().toString(36).slice(2);
+
+                const merged = keyed.has(ownerKey) ? mergeProductObjects(keyed.get(ownerKey), product) : product;
+                keyed.set(ownerKey, merged);
+                getProductIdentifierSet(merged).forEach(id => idOwner.set(id, ownerKey));
+                const mergedFp = getProductFingerprint(merged);
+                if (mergedFp) fingerprintOwner.set(mergedFp, ownerKey);
+            });
+
+            return Array.from(keyed.values());
+        }
+
+        function productsSameIdentity(a, b) {
+            if (!a || !b) return false;
+            const bIds = new Set(getProductIdentifierSet(b));
+            if (getProductIdentifierSet(a).some(id => bIds.has(id))) return true;
+            const fpA = getProductFingerprint(a);
+            const fpB = getProductFingerprint(b);
+            return !!fpA && fpA === fpB;
+        }
+
+        function markCartDirty() {
+            userCartDirtyAt = Date.now();
+            lastLocalCartWriteAt = userCartDirtyAt;
+            try {
+                sessionStorage.setItem('aryanta_cart_dirty_at', String(userCartDirtyAt));
+                sessionStorage.setItem('aryanta_cart_local_snapshot', JSON.stringify(cart || []));
+            } catch(e) {}
+        }
+
+        function isCartRecentlyChanged() {
+            let stored = 0;
+            try { stored = Number(sessionStorage.getItem('aryanta_cart_dirty_at') || 0); } catch(e) {}
+            const dirtyAt = Math.max(userCartDirtyAt || 0, lastLocalCartWriteAt || 0, stored || 0);
+            return !!dirtyAt && (Date.now() - dirtyAt < 10 * 60 * 1000);
+        }
+
+        function updateActiveSessionCartSnapshot() {
+            if (!activeSession || typeof activeSession !== 'object') return;
+            activeSession.cart = cart;
+            activeSession.cartItems = cart;
+            try { localStorage.setItem('active_session', JSON.stringify(activeSession)); } catch(e) {}
+        }
+
+        function extractUserPayload(data = {}) {
+            return data.user || data.profile || data.data || data.seller || data;
+        }
+
+        function getSellerLogoSafe(p = {}) {
+            return firstNonEmpty(
+                p.storeLogo, p.shopLogo, p.sellerLogo, p.logoUrl, p.logo, p.profileImage, p.photoURL,
+                p.sellerImage, p.sellerPhoto, p.sellerAvatar, p.brandLogo, p.storeLogoShortLink,
+                'https://aryanta.in/vurify/aryanta.jpeg'
+            );
+        }
+
+        async function resolveSellerImage(value) {
+            if (!value) return '';
+            const raw = String(value).trim();
+            if (!raw) return '';
+            if (raw.startsWith('data:image/') || raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('blob:')) return raw;
+            if (raw.startsWith('aryanta-img:')) {
+                const refId = raw.replace('aryanta-img:', '').trim();
+                if (!refId) return '';
+                if (sellerImageRefCache.has(refId)) return sellerImageRefCache.get(refId);
+                try {
+                    const db = await initProductFirestore();
+                    if (!db) return '';
+                    const doc = await db.collection('seller_image_refs').doc(refId).get();
+                    if (doc.exists) {
+                        const data = doc.data() || {};
+                        const resolved = data.dataUrl || data.url || '';
+                        if (resolved) sellerImageRefCache.set(refId, resolved);
+                        return resolved;
+                    }
+                } catch(e) { console.warn('Seller image ref resolve failed', e); }
+            }
+            return raw;
+        }
+
+        async function resolveSellerLogoSafe(p = {}) {
+            const rawLogo = getSellerLogoSafe(p);
+            const resolved = await resolveSellerImage(rawLogo);
+            return resolved || 'https://aryanta.in/vurify/aryanta.jpeg';
+        }
+
+        async function fetchSellerProfileFromFirestore(product = {}) {
+            const db = await initProductFirestore();
+            if (!db) return null;
+            const sellerEmail = String(product.sellerEmail || product.email || '').trim().toLowerCase();
+            const sellerId = String(firstNonEmpty(product.sellerId, product.sellerUID, product.storeId, product.uid)).trim();
+
+            if (sellerEmail) {
+                try {
+                    const direct = await db.collection('sellers').doc(sellerEmail).get();
+                    if (direct.exists) return { email: sellerEmail, id: direct.id, ...direct.data() };
+                } catch(e) {}
+                try {
+                    const q = await db.collection('sellers').where('email', '==', sellerEmail).limit(1).get();
+                    if (!q.empty) return { id: q.docs[0].id, ...q.docs[0].data() };
+                } catch(e) {}
+            }
+
+            if (sellerId) {
+                for (const field of ['id', 'uid', 'sellerId', 'storeId']) {
+                    try {
+                        const q = await db.collection('sellers').where(field, '==', sellerId).limit(1).get();
+                        if (!q.empty) return { id: q.docs[0].id, ...q.docs[0].data() };
+                    } catch(e) {}
+                }
+            }
+            return null;
+        }
+
+        function getSubscriptionExpiryTime(p = {}) {
+            const raw = firstNonEmpty(p.subscriptionEndsAt, p.subscriptionEndAt, p.subscriptionExpiry, p.sellerSubscriptionExpiry, p.planExpiry, p.expiryDate, p.validTill, p.subscribedTill);
+            const t = raw ? new Date(raw).getTime() : 0;
+            return Number.isFinite(t) ? t : 0;
+        }
+
+        function hasActiveSellerSubscription(p = {}) {
+            const text = String(firstNonEmpty(p.sellerSubscription, p.subscription, p.subscriptionPlan, p.sellerPlan, p.plan, p.membership, p.packageName, p.sellerPackage, '')).toLowerCase();
+            const status = String(firstNonEmpty(p.subscriptionStatus, p.sellerSubscriptionStatus, p.planStatus, p.paymentStatus, p.subStatus, '')).toLowerCase();
+            const expiry = getSubscriptionExpiryTime(p);
+            if (expiry && expiry < Date.now()) return false;
+            if (p.sellerSubscribed === true || p.hasSubscription === true || p.isSubscribed === true || p.isSellerSubscribed === true || p.subscriptionActive === true || p.sellerSubscriptionActive === true) return true;
+            if (['active','paid','premium','plus','pro','verified','subscribed','live'].some(x => text.includes(x) || status.includes(x))) return true;
+            return false;
+        }
+
+        function getProductAddedTime(p = {}) {
+            const raw = firstNonEmpty(p.addedAt, p.createdAt, p.createdOn, p.listedAt, p.publishedAt, p.liveAt, p.timestamp, p.date);
+            const t = raw ? new Date(raw).getTime() : 0;
+            return Number.isFinite(t) ? t : 0;
+        }
+
+        function isNewProduct(p = {}) {
+            const t = getProductAddedTime(p);
+            if (!t) return false;
+            const threeDays = 3 * 24 * 60 * 60 * 1000;
+            return Date.now() - t >= 0 && Date.now() - t <= threeDays;
+        }
+
         function getDbCartArrayFromUser(userData = {}) {
             const source = userData.user || userData.profile || userData.data || userData;
             const possible = [source.cart, source.cartItems, source.local_cart, userData.cart, userData.cartItems, userData.local_cart];
@@ -876,10 +1147,12 @@
                 const safeQty = (product.allowBackorder === true || product.backorder === true) ? wantedQty : Math.min(wantedQty, stock);
                 const price = Number(firstNonEmpty(item.price, product.price, product.salePrice, product.sellingPrice, 0));
                 const merged = { ...product, ...item, id: String(product.id || id), price: Number.isFinite(price) ? price : product.price, qty: safeQty, selected: item.selected !== false };
-                if (!map.has(String(merged.id))) map.set(String(merged.id), merged);
+                const existingKey = Array.from(map.keys()).find(key => productsSameIdentity(map.get(key), merged));
+                if (!existingKey) map.set(String(merged.id), merged);
                 else {
-                    const old = map.get(String(merged.id));
+                    const old = map.get(existingKey);
                     old.qty = Math.min(stock || old.qty, Math.max(Number(old.qty || 1), safeQty));
+                    map.set(existingKey, mergeProductObjects(old, merged));
                 }
             });
             return Array.from(map.values());
@@ -888,14 +1161,27 @@
         function saveCartLocallyAndRefresh() {
             cart = normalizeCartWithDbStock(cart);
             localStorage.setItem('local_cart', JSON.stringify(cart));
+            updateActiveSessionCartSnapshot();
+            try { sessionStorage.setItem('aryanta_cart_local_snapshot', JSON.stringify(cart || [])); } catch(e) {}
             updateCartBadge();
             if (currentProduct) checkCartBtnStatus();
         }
 
         function syncCartFromUserDB(userData = {}) {
-            const dbCart = getDbCartArrayFromUser(userData);
-            cart = normalizeCartWithDbStock(dbCart);
+            lastDbCartSyncAt = Date.now();
+            const dbCart = normalizeCartWithDbStock(getDbCartArrayFromUser(userData));
+
+            // Never let an older DB read reverse the user's latest add/remove click.
+            // This was the reason the Add/Remove button flipped back after a few seconds.
+            if (cartSyncInFlight || isCartRecentlyChanged()) {
+                saveCartLocallyAndRefresh();
+                try { renderSimilarProducts(); } catch(e) {}
+                return;
+            }
+
+            cart = dbCart;
             localStorage.setItem('local_cart', JSON.stringify(cart));
+            updateActiveSessionCartSnapshot();
             updateCartBadge();
             if (currentProduct) checkCartBtnStatus();
             try { renderSimilarProducts(); } catch(e) {}
@@ -969,20 +1255,15 @@
         function normalizeProductList(payload) {
             const raw = payload?.products || payload?.items || payload?.data || payload?.docs || payload?.documents || payload?.results || payload;
             const arr = Array.isArray(raw) ? raw : (raw ? [raw] : []);
-            const map = new Map();
-            arr.map(normalizeProductItem).filter(isLiveProduct).forEach(p => {
-                if (!map.has(String(p.id))) map.set(String(p.id), p);
-            });
-            return Array.from(map.values());
+            return dedupeProductArray(arr.map(normalizeProductItem).filter(isLiveProduct));
         }
 
         function mergeProducts(products) {
-            const map = new Map(allProducts.map(p => [String(p.id), p]));
-            normalizeProductList(products).forEach(p => map.set(String(p.id), { ...(map.get(String(p.id)) || {}), ...p }));
-            allProducts = Array.from(map.values()).filter(isLiveProduct);
+            allProducts = dedupeProductArray([...allProducts, ...normalizeProductList(products)]).filter(isLiveProduct);
             if (Array.isArray(cart) && cart.length) {
                 cart = normalizeCartWithDbStock(cart);
                 localStorage.setItem('local_cart', JSON.stringify(cart));
+                updateActiveSessionCartSnapshot();
                 updateCartBadge();
             }
             return allProducts;
@@ -1009,13 +1290,7 @@
         }
 
         function uniqueByProductId(list) {
-            const seen = new Set();
-            return list.filter(p => {
-                const id = String(p?.id || "");
-                if (!id || seen.has(id)) return false;
-                seen.add(id);
-                return true;
-            });
+            return dedupeProductArray(list).filter(Boolean);
         }
 
         function getSearchableProducts() {
@@ -1466,6 +1741,97 @@
             }
         }
 
+        function getSellerInfo(product = {}, extra = {}) {
+            const p = { ...product, ...extra };
+            const sellerEmail = String(p.sellerEmail || p.email || '').trim();
+            const isAdminSeller = !sellerEmail || sellerEmail === 'admin' || p.sellerName === 'Aryanta Admin';
+            const sellerLinkID = firstNonEmpty(p.sellerId, p.sellerUID, p.storeId, sellerEmail, 'admin');
+            const shopName = isAdminSeller
+                ? 'Aryanta Store'
+                : firstNonEmpty(p.shopName, p.storeName, p.companyName, p.businessName, p.brand, 'Aryanta Store');
+            return {
+                sellerLinkID,
+                sellerStoreUrl: `https://aryanta.in/store/?seller=${encodeURIComponent(sellerLinkID)}`,
+                sellerDisplayName: shopName,
+                sellerLogo: getSellerLogoSafe(p),
+                isVerified: hasActiveSellerSubscription(p)
+            };
+        }
+
+        function renderSellerBox(product = {}, extra = {}) {
+            const box = document.getElementById('pBrandContainer');
+            if (!box) return;
+            const info = getSellerInfo(product, extra);
+            const logo = info.sellerLogo || 'https://aryanta.in/vurify/aryanta.jpeg';
+            const verifiedUI = info.isVerified ? `<span class="seller-verified-badge"><i class="fas fa-check-circle"></i> Verified</span>` : '';
+            box.innerHTML = `
+                <div class="seller-premium-box" onclick="window.location.href='${escapeAttr(info.sellerStoreUrl)}'">
+                    <div class="seller-main-info">
+                        <img src="${escapeAttr(logo)}" class="seller-logo-img" alt="Shop logo" onerror="this.onerror=null;this.src='https://aryanta.in/vurify/aryanta.jpeg';">
+                        <div style="min-width:0;">
+                            <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Sold by</div>
+                            <div class="seller-name-line">${escapeHtmlText(info.sellerDisplayName)}</div>
+                        </div>
+                    </div>
+                    <div class="seller-store-actions">
+                        ${verifiedUI}
+                        <button class="seller-share-store-btn" onclick="event.stopPropagation(); shareSellerStoreLink('${escapeAttr(info.sellerStoreUrl)}')" title="Share store" aria-label="Share store"><i class="fas fa-share-nodes"></i></button>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.shareSellerStoreLink = async function(url) {
+            const shareUrl = url || 'https://aryanta.in/store/';
+            const title = (currentProduct && getSellerInfo(currentProduct).sellerDisplayName) || 'Aryanta Store';
+            if (navigator.share) {
+                try { await navigator.share({ title, url: shareUrl }); return; } catch(e) {}
+            }
+            try { await navigator.clipboard.writeText(shareUrl); }
+            catch(e) {
+                const input = document.createElement('input');
+                input.value = shareUrl;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                input.remove();
+            }
+            showToast('Store link copied');
+        }
+
+        async function refreshSellerBoxFromDB(product = {}) {
+            const sellerEmail = String(product.sellerEmail || product.email || '').trim().toLowerCase();
+            const sellerId = String(firstNonEmpty(product.sellerId, product.sellerUID, product.storeId, product.uid)).trim();
+            if ((!sellerEmail || sellerEmail === 'admin') && !sellerId) return;
+
+            try {
+                let seller = null;
+                if (sellerEmail && sellerEmail !== 'admin') {
+                    try {
+                        const data = await fetchPublicJson(`/get-user?email=${encodeURIComponent(sellerEmail)}`, 3500);
+                        seller = extractUserPayload(data);
+                    } catch(e) {}
+                }
+                if (!seller || typeof seller !== 'object') seller = await fetchSellerProfileFromFirestore(product);
+                if (!seller || typeof seller !== 'object') return;
+
+                const sellerLogo = await resolveSellerLogoSafe(seller);
+                renderSellerBox(product, {
+                    shopName: seller.shopName || seller.storeName || seller.companyName || seller.businessName || seller.brand,
+                    storeName: seller.storeName || seller.shopName || seller.companyName || seller.businessName || seller.brand,
+                    companyName: seller.companyName || seller.businessName,
+                    sellerLogo,
+                    storeLogo: sellerLogo,
+                    sellerId: seller.id || seller.uid || seller.sellerId || sellerId,
+                    sellerEmail: seller.email || seller.sellerEmail || sellerEmail,
+                    sellerSubscription: seller.sellerSubscription || seller.subscription || seller.subscriptionPlan || seller.plan || seller.membership,
+                    subscriptionStatus: seller.subscriptionStatus || seller.sellerSubscriptionStatus || seller.planStatus,
+                    subscriptionActive: seller.subscriptionActive || seller.sellerSubscriptionActive || seller.hasSubscription || seller.isSubscribed,
+                    subscriptionEndsAt: seller.subscriptionEndsAt || seller.subscriptionExpiry || seller.planExpiry || seller.validTill
+                });
+            } catch(e) {}
+        }
+
         function renderProductDetails() {
             const p = currentProduct;
             
@@ -1473,22 +1839,8 @@
             document.getElementById('bcTitle').innerText = p.name.split(' ').slice(0, 3).join(' ') + '...';
             
             // --- Premium Seller Box ---
-            let sellerLinkID = p.sellerId || p.sellerEmail || 'admin';
-            let sellerDisplayName = (!p.sellerEmail || p.sellerEmail === 'admin' || p.sellerName === 'Aryanta Admin') ? `Aryanta Admin` : (p.sellerName || p.shopName || p.brand || "Aryanta Verified Seller");
-            let verifiedUI = `<span style="background:var(--text-main); color:var(--bg-color); padding: 6px 10px; border-radius:8px; font-size:11px; font-weight:800; display:flex; align-items:center; gap:6px; box-shadow:var(--shadow-sm);"><i class="fas fa-check-circle"></i> Verified</span>`;
-            
-            document.getElementById('pBrandContainer').innerHTML = `
-                <div class="seller-premium-box" onclick="window.location.href='https://aryanta.in/store/?seller=${encodeURIComponent(sellerLinkID)}'">
-                    <div style="display:flex; align-items:center; gap: 14px;">
-                        <div class="s-icon"><i class="fas fa-store"></i></div>
-                        <div>
-                            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Sold by</div>
-                            <div style="font-weight: 800; color: var(--text-main); font-size: 16px;">${sellerDisplayName}</div>
-                        </div>
-                    </div>
-                    ${verifiedUI}
-                </div>
-            `;
+            renderSellerBox(p);
+            refreshSellerBoxFromDB(p);
             
             document.getElementById('bcCategory').innerText = p.category || "General";
             document.getElementById('pIdTag').innerText = `ID: ${p.id}`;
@@ -1551,9 +1903,9 @@
                     }
 
                     lHtml += `
-                    <div class="linked-item" style="border-color: ${isCurrentProd ? 'var(--text-main)' : 'var(--border)'};" onclick="window.location.href='${url}'">
-                        <img src="${vImg}">
-                        <span>${vName}</span>
+                    <div class="linked-item" style="border-color: ${isCurrentProd ? 'var(--text-main)' : 'var(--border)'};" onclick="window.location.href=${escapeAttr(JSON.stringify(match ? getRelativeProductUrl(match[1]) : url))}">
+                        <img src="${escapeAttr(vImg)}">
+                        <span>${escapeHtmlText(vName)}</span>
                     </div>`;
                 });
                 
@@ -1660,19 +2012,39 @@
                 policySecure.style.display = "flex";
             }
 
-            let imgArr = p.images && p.images.length > 0 ? p.images : [p.image || 'https://via.placeholder.com/500'];
+            renderMarketplaceTrustGrid(p);
+
+            let imgArr = (p.images && p.images.length > 0 ? p.images : [p.image || 'https://aryanta.in/vurify/aryanta.jpeg']).filter(Boolean);
+            currentGalleryImages = imgArr;
+            currentGalleryIndex = 0;
             const mainImg = document.getElementById('mainProductImage');
             mainImg.src = imgArr[0];
+            mainImg.onclick = () => openFullscreenGallery(currentGalleryIndex || 0);
+            const imageWrapper = document.getElementById('imageWrapper');
+            if (imageWrapper) {
+                imageWrapper.querySelectorAll('.product-new-badge').forEach(x => x.remove());
+                if (isNewProduct(p)) imageWrapper.insertAdjacentHTML('afterbegin', '<div class="product-new-badge">NEW</div>');
+            }
 
             const thumbCont = document.getElementById('thumbnailContainer');
             if(imgArr.length > 1) {
                 thumbCont.style.display = 'flex';
                 thumbCont.innerHTML = imgArr.map((src, i) => `
-                    <img src="${src}" class="thumbnail-item ${i===0 ? 'active':''}" onclick="setMainImg('${src}', this)">
+                    <img src="${escapeAttr(src)}" class="thumbnail-item ${i===0 ? 'active':''}" onclick="setMainImg(${escapeAttr(JSON.stringify(src))}, this, ${i})">
                 `).join('');
             } else { thumbCont.style.display = 'none'; }
 
             checkCartBtnStatus();
+        }
+
+        function renderMarketplaceTrustGrid(p = {}) {
+            const grid = document.getElementById('marketplaceTrustGrid');
+            if (!grid) return;
+            const returnText = (p.returnPolicy === false || String(p.returnPolicy).toLowerCase() === 'false') ? 'No returns' : (p.returnPolicy || p.returnable || 'Easy return');
+            const deliveryText = p.deliveryTime || 'Fast delivery';
+            const supportText = p.supportText || 'Aryanta support';
+            const warrantyText = p.warranty && !['No Warranty','None','false'].includes(String(p.warranty)) ? p.warranty : 'Quality checked';
+            
         }
 
         async function simulateDBPriceUpdate(id, newPrice, stockNum) {
@@ -1685,10 +2057,52 @@
             } catch(e) { console.error("Dynamic price sync failed", e); }
         }
 
-        window.setMainImg = function(src, el) {
-            document.getElementById('mainProductImage').src = src;
+        window.setMainImg = function(src, el, index = 0) {
+            currentGalleryIndex = Math.max(0, Number(index) || 0);
+            const img = document.getElementById('mainProductImage');
+            if (img) img.src = src;
             document.querySelectorAll('.thumbnail-item').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
+            if (el) el.classList.add('active');
+        }
+
+        window.openFullscreenGallery = function(index = 0) {
+            if (!currentGalleryImages.length && currentProduct) currentGalleryImages = currentProduct.images || [currentProduct.image].filter(Boolean);
+            if (!currentGalleryImages.length) return;
+            currentGalleryIndex = Math.max(0, Math.min(Number(index) || 0, currentGalleryImages.length - 1));
+            const overlay = document.getElementById('fullscreenGallery');
+            if (!overlay) return;
+            renderFullscreenGallery();
+            overlay.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        window.closeFullscreenGallery = function() {
+            const overlay = document.getElementById('fullscreenGallery');
+            if (overlay) overlay.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        window.moveGalleryImage = function(step = 1) {
+            if (!currentGalleryImages.length) return;
+            currentGalleryIndex = (currentGalleryIndex + step + currentGalleryImages.length) % currentGalleryImages.length;
+            renderFullscreenGallery();
+        }
+
+        window.selectGalleryImage = function(index = 0) {
+            currentGalleryIndex = Math.max(0, Math.min(Number(index) || 0, currentGalleryImages.length - 1));
+            renderFullscreenGallery();
+        }
+
+        function renderFullscreenGallery() {
+            const main = document.getElementById('galleryMainImage');
+            const row = document.getElementById('galleryThumbRow');
+            const count = document.getElementById('galleryImageCount');
+            const src = currentGalleryImages[currentGalleryIndex] || currentGalleryImages[0];
+            if (main) main.src = src;
+            if (count) count.innerText = `${currentGalleryIndex + 1} / ${currentGalleryImages.length}`;
+            if (row) {
+                row.innerHTML = currentGalleryImages.map((img, i) => `<img src="${escapeAttr(img)}" class="${i === currentGalleryIndex ? 'active' : ''}" onclick="selectGalleryImage(${i})" alt="Product thumbnail ${i + 1}">`).join('');
+            }
         }
 
         window.openAuthPrompt = function() {
@@ -1709,11 +2123,10 @@
                 setTimeout(() => {
                     btn.disabled = false;
                     btn.classList.remove("is-processing");
-                    if (btn.dataset.oldHtml) {
-                        btn.innerHTML = btn.dataset.oldHtml;
-                        delete btn.dataset.oldHtml;
-                    }
+                    if (btn.dataset.oldHtml) delete btn.dataset.oldHtml;
                     userActionPriority = false;
+                    if (currentProduct) checkCartBtnStatus();
+                    try { renderSimilarProducts(); } catch(e) {}
                 }, 650);
             } else {
                 setTimeout(() => { userActionPriority = false; }, 650);
@@ -1721,30 +2134,40 @@
         }
 
         function persistUserStateFast(type = "cart") {
-            if (!activeSession || !activeSession.email) return;
+            if (!activeSession || !activeSession.email) return Promise.resolve();
+            saveCartLocallyAndRefresh();
+            const cartSnapshot = JSON.stringify(cart || []);
+            cartSyncInFlight = true;
             const payload = JSON.stringify({
                 email: activeSession.email,
-                updates: { cart: cart, wishlist: wishlist },
+                updates: { cart: cart, cartItems: cart, wishlist: wishlist, cartUpdatedAt: new Date().toISOString() },
                 projectId: PROJECT_ID
             });
-            try {
-                if (navigator.sendBeacon) {
-                    const blob = new Blob([payload], { type: "application/json" });
-                    navigator.sendBeacon(`${API_BASE_URL}/update-user`, blob);
-                    return;
-                }
-            } catch(e) {}
-            fetch(`${API_BASE_URL}/update-user`, {
+            return fetch(`${API_BASE_URL}/update-user`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: payload,
                 keepalive: true
-            }).catch(() => {});
+            }).then(res => {
+                if (!res.ok) throw new Error(`Cart sync failed: ${res.status}`);
+                if (JSON.stringify(cart || []) === cartSnapshot) {
+                    userCartDirtyAt = Date.now();
+                    try { sessionStorage.setItem('aryanta_cart_dirty_at', String(userCartDirtyAt)); } catch(e) {}
+                }
+            }).catch(() => {
+                markCartDirty();
+            }).finally(() => {
+                cartSyncInFlight = false;
+                saveCartLocallyAndRefresh();
+                try { renderSimilarProducts(); } catch(e) {}
+            });
         }
 
         function getProductByIdFast(id) {
             if (!id && currentProduct) return currentProduct;
-            return allProducts.find(x => String(x.id) === String(id)) || (currentProduct && String(currentProduct.id) === String(id) ? currentProduct : null);
+            const target = { id };
+            if (currentProduct && productsSameIdentity(currentProduct, target)) return currentProduct;
+            return allProducts.find(x => productsSameIdentity(x, target)) || null;
         }
 
         function getGiftAwarePrice(p) {
@@ -1815,26 +2238,68 @@
             }, { passive: true });
         }
 
+        function setThemeToggleHiddenForFilter(hidden) {
+            document.body.classList.toggle('filter-open', !!hidden);
+            const themeBtn = document.getElementById('themeToggleBtn');
+            if(themeBtn) themeBtn.style.display = hidden ? 'none' : '';
+        }
+
         window.openProductFilter = function() {
             const panel = document.getElementById('filterSidebar');
             const overlay = document.getElementById('overlay');
+            setThemeToggleHiddenForFilter(true);
             if(panel) panel.classList.add('open');
             if(overlay) overlay.classList.add('show');
+            ensureSearchCatalogReady();
+        }
+
+        function closeProductFilterPanel() {
+            const panel = document.getElementById('filterSidebar');
+            if(panel) panel.classList.remove('open');
+            setThemeToggleHiddenForFilter(false);
+            const overlay = document.getElementById('overlay');
+            const sidebarOpen = document.getElementById('sidebar')?.classList.contains('open');
+            if(overlay && !sidebarOpen) overlay.classList.remove('show');
         }
 
         window.applySimilarFilters = function() {
             const priceInput = document.querySelector('input[name="similarPriceFilter"]:checked');
             const sortInput = document.querySelector('input[name="similarSortFilter"]:checked');
+            const minInput = document.getElementById('similarMinPrice');
+            const maxInput = document.getElementById('similarMaxPrice');
+            let minVal = Math.max(0, Math.floor(Number(minInput?.value || 0) || 0));
+            let maxVal = Math.max(0, Math.floor(Number(maxInput?.value || 0) || 0));
+            if(minVal && maxVal && minVal > maxVal) {
+                const temp = minVal;
+                minVal = maxVal;
+                maxVal = temp;
+                if(minInput) minInput.value = minVal;
+                if(maxInput) maxInput.value = maxVal;
+            }
             similarFilters.price = priceInput ? priceInput.value : 'all';
             similarFilters.sort = sortInput ? sortInput.value : 'smart';
-            similarFilters.min = Number(document.getElementById('similarMinPrice')?.value || 0);
-            similarFilters.max = Number(document.getElementById('similarMaxPrice')?.value || 0);
+            similarFilters.min = minVal;
+            similarFilters.max = maxVal;
             similarPoolKey = '';
             similarSponsoredVisible = INITIAL_SPONSORED_TOP;
             similarBoostedVisible = 8;
             similarNormalVisible = INITIAL_SIMILAR_TOTAL;
             renderActiveFilterChips();
             renderSimilarProducts();
+            closeProductFilterPanel();
+
+            if(!backgroundCatalogLoaded && !isFullCatalogLoading) {
+                isFullCatalogLoading = true;
+                fetchPublicJson(`/products?limit=320`, 7000)
+                    .then(data => { if(data) mergeProducts(normalizeProductList(data)); })
+                    .catch(() => {})
+                    .finally(() => {
+                        backgroundCatalogLoaded = true;
+                        isFullCatalogLoading = false;
+                        similarPoolKey = '';
+                        renderSimilarProducts();
+                    });
+            }
         }
 
         window.resetSimilarFilters = function() {
@@ -1848,6 +2313,7 @@
             similarPoolKey = '';
             renderActiveFilterChips();
             renderSimilarProducts();
+            closeProductFilterPanel();
         }
 
         function renderActiveFilterChips() {
@@ -1858,7 +2324,21 @@
             if(similarFilters.min || similarFilters.max) chips.push(`₹${similarFilters.min || 0} - ₹${similarFilters.max || '∞'}`);
             if(similarFilters.sort && similarFilters.sort !== 'smart') chips.push(similarFilters.sort.replace(/^./, c => c.toUpperCase()));
             box.style.display = chips.length ? 'flex' : 'none';
-            box.innerHTML = chips.map(c => `<span>${escapeHtmlText(c)}</span>`).join('') + (chips.length ? `<button onclick="resetSimilarFilters()"><i class="fas fa-times"></i></button>` : '');
+            box.innerHTML = chips.map(c => `<span>${escapeHtmlText(c)}</span>`).join('') + (chips.length ? `<button onclick="resetSimilarFilters()"><i class="fas fa-times"></i> Remove Filter</button>` : '');
+            const filterBtn = document.querySelector('.global-filter-btn');
+            if (filterBtn) {
+                if (chips.length) {
+                    filterBtn.innerHTML = '<i class="fas fa-times"></i> Remove Filter';
+                    filterBtn.onclick = resetSimilarFilters;
+                } else {
+                    filterBtn.innerHTML = '<i class="fas fa-filter"></i> Filter';
+                    filterBtn.onclick = openProductFilter;
+                }
+            }
+        }
+
+        function isSimilarFilterActive() {
+            return !!(similarFilters.price && similarFilters.price !== 'all') || !!similarFilters.min || !!similarFilters.max || !!(similarFilters.sort && similarFilters.sort !== 'smart');
         }
 
         function passesSimilarFilters(p) {
@@ -1915,18 +2395,19 @@
             if (idx > -1) {
                 if(!isGiftCardMode) {
                     cart.splice(idx, 1);
-                    showToast("Item removed from Cart");
+                    showToast("Item removed from cart");
                 } else {
                     cart[idx].price = finalPriceToAdd;
                     cart[idx].qty = Math.min(Math.max(1, Number(cart[idx].qty || 1)), Math.max(1, getAvailableStockNumber(currentProduct, cart[idx])));
-                    showToast("Gift card updated in Cart");
+                    showToast("Gift card updated in cart");
                 }
             } else {
                 const safeItem = buildSafeCartItem(currentProduct, finalPriceToAdd);
                 if (!safeItem) { checkCartBtnStatus(); return; }
                 cart.unshift(safeItem);
-                showToast("Item added to Cart");
+                showToast("Item added to cart");
             }
+            markCartDirty();
             saveCartLocallyAndRefresh();
             persistUserStateFast('cart');
         }
@@ -2691,7 +3172,7 @@
 
             if(reviewsData.length === 0) {
                 list.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-weight:500;">Be the first to share your experience with this product.</p>';
-                if (aiText) aiText.innerText = 'Need at least 1 review to generate live review insights. Be the first to review!';
+                if (aiText) aiText.innerText = 'No Review yet. Be the first to review!';
                 maybeOpenReviewsPageFromUrl();
                 return;
             }
@@ -2859,15 +3340,15 @@
             const prefCat = prefArr[0] || currentProduct.category;
             const prefKw = (prefArr[1] || "").toLowerCase();
 
-            const pool = getSearchableProducts()
-                .filter(p => String(p.id) !== String(currentProduct.id))
+            const pool = uniqueByProductId(getSearchableProducts())
+                .filter(p => !productsSameIdentity(p, currentProduct))
                 .filter(passesSimilarFilters);
 
             const similarMatch = pool.filter(p => {
                 const productName = String(p.name || "").toLowerCase();
                 return p.category === prefCat || (prefKw && productName.includes(prefKw));
             });
-            const otherProducts = pool.filter(p => !similarMatch.some(x => String(x.id) === String(p.id)));
+            const otherProducts = pool.filter(p => !similarMatch.some(x => productsSameIdentity(x, p)));
             let rankedPool = uniqueByProductId([...similarMatch, ...otherProducts]);
             rankedPool = sortSimilarList(rankedPool);
 
@@ -2881,7 +3362,8 @@
 
         function rebuildSimilarPoolsIfNeeded(force = false) {
             const parts = getSimilarPoolParts();
-            const key = [...parts.sponsored, ...parts.boosted, ...parts.normal].map(p => String(p.id)).sort().join('|');
+            const sortMode = similarFilters.sort || 'smart';
+            const key = `${sortMode}|${similarFilters.price}|${similarFilters.min}|${similarFilters.max}|` + [...parts.sponsored, ...parts.boosted, ...parts.normal].map(p => String(p.id)).sort().join('|');
             if(!force && key === similarPoolKey) return;
 
             const isFirstBuild = !similarPoolKey;
@@ -2890,9 +3372,15 @@
             const oldNormalVisible = similarNormalVisible || INITIAL_SIMILAR_TOTAL;
 
             similarPoolKey = key;
-            similarSponsoredOrder = shuffleArrayFast(parts.sponsored);
-            similarBoostedOrder = shuffleArrayFast(parts.boosted);
-            similarNormalOrder = shuffleArrayFast(parts.normal);
+            if (["rating", "new", "low", "high"].includes(sortMode)) {
+                similarSponsoredOrder = [];
+                similarBoostedOrder = [];
+                similarNormalOrder = sortSimilarList(uniqueByProductId([...parts.sponsored, ...parts.boosted, ...parts.normal]));
+            } else {
+                similarSponsoredOrder = shuffleArrayFast(parts.sponsored);
+                similarBoostedOrder = shuffleArrayFast(parts.boosted);
+                similarNormalOrder = shuffleArrayFast(parts.normal);
+            }
 
             const initialSponsoredCount = Math.min(INITIAL_SPONSORED_TOP, similarSponsoredOrder.length);
             const initialBoostedCount = Math.min(Math.max(0, INITIAL_SIMILAR_TOTAL - initialSponsoredCount), similarBoostedOrder.length);
@@ -2955,18 +3443,23 @@
             const track = document.getElementById('similarProductsTrack');
             if(!track) return;
 
+            const renderToken = ++similarRenderToken;
             rebuildSimilarPoolsIfNeeded();
-            const combined = getVisibleSimilarProducts();
+            const combined = uniqueByProductId(getVisibleSimilarProducts());
             track.innerHTML = "";
 
             if(combined.length === 0) {
                 if (wrapper) wrapper.style.display = 'block';
+                const filterActive = isSimilarFilterActive();
+                const message = filterActive && backgroundCatalogLoaded ? 'No live products match this filter.' : 'Finding more live products...';
+                const icon = filterActive && backgroundCatalogLoaded ? 'fas fa-filter' : 'fas fa-spinner fa-spin';
                 track.innerHTML = `
                     <div class="similar-controls">
                         <div class="similar-loading-card">
-                            <i class="fas fa-spinner fa-spin"></i>
-                            <span>Finding more live products...</span>
+                            <i class="${icon}"></i>
+                            <span>${message}</span>
                         </div>
+                        ${filterActive ? `<button class="btn-prime bounce-hover similar-load-more-btn" onclick="resetSimilarFilters()"><i class="fas fa-rotate-left"></i> Remove Filters</button>` : ``}
                         <button class="btn-outline bounce-hover similar-back-btn" onclick="window.location.href='https://aryanta.in/'">
                             <i class="fas fa-arrow-left"></i> Back to Store
                         </button>
@@ -2992,21 +3485,17 @@
             `;
             fragment.appendChild(controls);
 
-            requestAnimationFrame(() => track.appendChild(fragment));
+            if (renderToken !== similarRenderToken) return;
+            track.replaceChildren(fragment);
         }
 
         function createSimilarCardHTML(p) {
             let img = getProductImageSafe(p);
-            let sellerText = '';
-            let adminVerified = false;
-            
-            if(!p.sellerEmail || p.sellerEmail === 'admin' || p.sellerName === 'Aryanta Admin') {
-                sellerText = `Aryanta Admin`;
-                adminVerified = true;
-            } else {
-                sellerText = p.sellerName || p.shopName || p.brand || "Seller";
-            }
-            let verifiedIcon = adminVerified ? '<i class="fas fa-check-circle" style="color:var(--text-main); font-size:12px;"></i>' : (p.isSellerVerified ? '<i class="fas fa-check-circle" style="color:var(--success); font-size:12px;"></i>' : '');
+            const sellerInfo = getSellerInfo(p);
+            let sellerText = sellerInfo.sellerDisplayName || 'Aryanta Store';
+            let sellerLogo = sellerInfo.sellerLogo || 'https://aryanta.in/vurify/aryanta.jpeg';
+            if (String(sellerLogo).startsWith('aryanta-img:')) sellerLogo = 'https://aryanta.in/vurify/aryanta.jpeg';
+            let verifiedIcon = hasActiveSellerSubscription(p) ? '<i class="fas fa-check-circle" style="color:var(--success); font-size:12px;"></i>' : '';
 
             let price = Number(p.price);
             let mrp = p.mrp ? Number(p.mrp) : 0;
@@ -3015,19 +3504,24 @@
                 priceHTML = `<span style="text-decoration:line-through; color:var(--text-muted); font-size:13px; margin-right:6px; font-weight:600;">₹${mrp.toLocaleString('en-IN')}</span> ₹${price.toLocaleString('en-IN')}`;
             }
 
+            const productIdJson = escapeAttr(JSON.stringify(String(p.id)));
+            const productUrlJson = escapeAttr(JSON.stringify(getRelativeProductUrl(p.id)));
+            const inWishlist = wishlist.some(i => String(i.id || i) === String(p.id));
             let inCart = cart.some(i => String(i.id) === String(p.id));
             let cartBtnHtml = inCart 
-                ? `<button class="s-add-btn" style="flex:1; background:rgba(255, 59, 48, 0.1); color:var(--danger); border-color:transparent;" onclick="event.stopPropagation(); quickAddCart('${p.id}', this)"><i class="fas fa-times"></i></button>`
-                : `<button class="s-add-btn" style="flex:1; background:var(--surface); color:var(--text-main); border-color:var(--border);" onclick="event.stopPropagation(); quickAddCart('${p.id}', this)"><i class="fas fa-shopping-cart"></i></button>`;
+                ? `<button class="s-add-btn" style="flex:1; background:rgba(255, 59, 48, 0.1); color:var(--danger); border-color:transparent;" onclick="event.stopPropagation(); quickAddCart(${productIdJson}, this)"><i class="fas fa-times"></i></button>`
+                : `<button class="s-add-btn" style="flex:1; background:var(--surface); color:var(--text-main); border-color:var(--border);" onclick="event.stopPropagation(); quickAddCart(${productIdJson}, this)"><i class="fas fa-shopping-cart"></i></button>`;
 
             return `
-                <div class="similar-card ${isSponsoredProduct(p) ? 'is-sponsored-card' : (isBoostedProduct(p) ? 'is-boosted-card' : '')}" onclick="window.location.href='${getRelativeProductUrl(p.id)}'">
+                <div class="similar-card ${isSponsoredProduct(p) ? 'is-sponsored-card' : (isBoostedProduct(p) ? 'is-boosted-card' : '')}" onclick="window.location.href=${productUrlJson}">
                     ${isSponsoredProduct(p) ? '<div class="sponsored-ribbon">Sponsored</div>' : (isBoostedProduct(p) ? '<div class="sponsored-ribbon boosted-ribbon">Boosted</div>' : '')}
                     <div class="s-card-top">
+                        ${isNewProduct(p) ? '<div class="similar-new-badge">NEW</div>' : ''}
                         <img src="${escapeAttr(img)}" class="s-img" loading="lazy" decoding="async">
                         <div class="s-details">
                             <div class="s-title">${escapeHtmlText(p.name || 'Aryanta Product')}</div>
                             <div class="seller-line">
+                                <img src="${escapeAttr(sellerLogo)}" class="similar-seller-logo" alt="Shop logo" onerror="this.onerror=null;this.src='https://aryanta.in/vurify/aryanta.jpeg';">
                                 <span>Sold by ${escapeHtmlText(sellerText)}</span> ${verifiedIcon}
                             </div>
                             <div class="s-price">${priceHTML}</div>
@@ -3035,10 +3529,10 @@
                     </div>
                     <div class="similar-actions">
                         ${cartBtnHtml}
-                        <button class="s-wishlist-btn ${wishlist.some(i => String(i.id || i) === String(p.id)) ? 'active' : ''}" onclick="event.stopPropagation(); toggleWishlistItem('${p.id}', this)" title="Wishlist">
-                            <i class="${wishlist.some(i => String(i.id || i) === String(p.id)) ? 'fas' : 'far'} fa-heart"></i>
+                        <button class="s-wishlist-btn ${inWishlist ? 'active' : ''}" onclick="event.stopPropagation(); toggleWishlistItem(${productIdJson}, this)" title="Wishlist">
+                            <i class="${inWishlist ? 'fas' : 'far'} fa-heart"></i>
                         </button>
-                        <button class="s-buy-btn" onclick="event.stopPropagation(); quickBuy('${p.id}')">Buy Now</button>
+                        <button class="s-buy-btn" onclick="event.stopPropagation(); quickBuy(${productIdJson})">Buy Now</button>
                     </div>
                 </div>
             `;
@@ -3052,13 +3546,14 @@
             const existingIdx = cart.findIndex(i => String(i.id) === String(p.id));
             if(existingIdx > -1) {
                 cart.splice(existingIdx, 1);
-                showToast("Removed from Cart");
+                showToast("Removed from cart");
             } else {
                 const safeItem = buildSafeCartItem(p, p.price);
                 if (!safeItem) return;
                 cart.unshift(safeItem);
-                showToast("Added to Cart");
+                showToast("Added to cart");
             }
+            markCartDirty();
             saveCartLocallyAndRefresh();
             if (currentProduct && String(currentProduct.id) === String(id)) checkCartBtnStatus();
             renderSimilarProducts();
@@ -3093,6 +3588,7 @@
                 cart[existingIdx].price = priceToPush;
                 cart[existingIdx].selected = true;
             }
+            markCartDirty();
             saveCartLocallyAndRefresh();
             showToast("Item added. Opening cart...");
             persistUserStateFast('cart');
@@ -3160,6 +3656,7 @@
         window.closeAllModals = function() { 
             document.getElementById('sidebar').classList.remove('open');
             const fp = document.getElementById('filterSidebar'); if(fp) fp.classList.remove('open'); 
+            setThemeToggleHiddenForFilter(false);
             document.getElementById('overlay').classList.remove('show'); 
             document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('show'));
             document.querySelectorAll('.full-screen-panel').forEach(m => m.classList.remove('show'));
