@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,6 +31,14 @@
     
     <!-- Centralized Stylesheet -->
     <link rel="stylesheet" href="style.css?v=10">
+    <!-- Tab safety styles: keeps Highlights / Reviews / Product Queries switching working even if external CSS changes -->
+    <style id="aryanta-tab-fix-style">
+        .tabs-container .tab-content{display:none;}
+        .tabs-container .tab-content.active{display:block;}
+        .tabs-container .tab-btn{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+        .tabs-container .tab-btn.active{pointer-events:auto;}
+    </style>
+
 </head>
 <body>
 
@@ -289,14 +298,14 @@
             
             <div class="tab-content" id="tab-reviews">
                 <div class="ai-review-box">
-                    <h4><i class="fas fa-sparkles"></i> Aryanta AI Analysis</h4>
+                    <h4><i class="fas fa-sparkles"></i> Aryanta Review Insights</h4>
                     <div id="aiReviewText">
                         <div class="ai-loader-bar"><div class="ai-loader-fill"></div></div>
                     </div>
                 </div>
 
                 <div class="flex-row-between" style="margin-bottom: 25px;">
-                    <h3 style="font-size: 20px; color: var(--text-main); font-weight: 800; letter-spacing:-0.5px;">Top Reviews</h3>
+                    <h3 style="font-size: 20px; color: var(--text-main); font-weight: 800; letter-spacing:-0.5px;">Customer Reviews</h3>
                     <button class="btn-outline bounce-hover" id="writeReviewBtn" style="padding: 10px 18px; font-size: 14px; width: auto; border-radius: 12px;" onclick="openReviewModal()"><i class="fas fa-pen"></i> Write a Review</button>
                 </div>
                 <div id="reviewsList">
@@ -306,7 +315,7 @@
 
             <div class="tab-content" id="tab-qna">
                 <div class="flex-row-between" style="margin-bottom: 25px;">
-                    <h3 style="font-size: 20px; color: var(--text-main); font-weight: 800; letter-spacing:-0.5px;">Frequently Asked Questions</h3>
+                    <h3 style="font-size: 20px; color: var(--text-main); font-weight: 800; letter-spacing:-0.5px;">Answered Product Questions</h3>
                 </div>
                 <div id="qaListContainer">
                     <p style="color: var(--text-muted); text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading questions...</p>
@@ -2032,29 +2041,190 @@
             showToast("Delivery address updated");
         }
 
-        window.openReviewModal = function() { 
+        function getActiveSessionSafe() {
+            try {
+                const stored = JSON.parse(localStorage.getItem('active_session') || 'null');
+                if (stored && stored.email) {
+                    activeSession = stored;
+                    return stored;
+                }
+            } catch(e) {}
+            if (activeSession && activeSession.email) return activeSession;
+            return null;
+        }
+
+        function requireAryantaSignIn(actionLabel = 'continue') {
+            const session = getActiveSessionSafe();
+            if (session && session.email) return session;
+            if (typeof openAuthPrompt === 'function') openAuthPrompt();
+            else showAlert(`Please sign in to ${actionLabel}.`, 'Login Required');
+            return null;
+        }
+
+
+        function normalizeProductKeyValue(value) {
+            return String(value || '').trim().toLowerCase();
+        }
+
+        function getCurrentItemId() {
+            if (!currentProduct) return '';
+            return String(firstNonEmpty(
+                currentProduct.id,
+                currentProduct.productId,
+                currentProduct.itemId,
+                currentProduct.product_id,
+                currentProduct.item_id,
+                currentProduct.pid,
+                currentProduct.sku,
+                currentProduct.docId
+            ) || '').trim();
+        }
+
+        function getCurrentItemIdSet() {
+            if (!currentProduct) return new Set();
+            const ids = [
+                currentProduct.id,
+                currentProduct.productId,
+                currentProduct.itemId,
+                currentProduct.product_id,
+                currentProduct.item_id,
+                currentProduct.pid,
+                currentProduct.sku,
+                currentProduct.docId,
+                getCurrentItemId()
+            ].map(normalizeProductKeyValue).filter(Boolean);
+            return new Set(ids);
+        }
+
+        function getRecordProductIdSet(record) {
+            if (!record || typeof record !== 'object') return new Set();
+            const ids = [
+                record.productId,
+                record.itemId,
+                record.product_id,
+                record.item_id,
+                record.productDocId,
+                record.docProductId,
+                record.parentProductId,
+                record.parentId,
+                record.pid,
+                record.sku,
+                record.product?.id,
+                record.product?.productId,
+                record.item?.id
+            ].map(normalizeProductKeyValue).filter(Boolean);
+            return new Set(ids);
+        }
+
+        function recordBelongsToCurrentProduct(record, options = {}) {
+            const currentIds = getCurrentItemIdSet();
+            if (!currentIds.size) return false;
+            const recordIds = getRecordProductIdSet(record);
+            if (!recordIds.size) return !!options.allowMissingWhenEmbedded;
+            for (const id of recordIds) {
+                if (currentIds.has(id)) return true;
+            }
+            return false;
+        }
+
+        function attachCurrentItemId(record) {
+            const itemId = getCurrentItemId();
+            const docId = String(firstNonEmpty(currentProduct?.docId, currentProduct?.id, itemId) || '').trim();
+            return {
+                ...(record || {}),
+                productId: itemId,
+                itemId: itemId,
+                productDocId: docId
+            };
+        }
+
+        function filterAndAttachCurrentProductRecords(records, options = {}) {
+            const arr = Array.isArray(records) ? records : [];
+            return arr
+                .filter(record => recordBelongsToCurrentProduct(record, options))
+                .map(record => attachCurrentItemId(record));
+        }
+
+        function getReviewIdentity(review) {
+            if (!review) return '';
+            return String(review.id || review.reviewId || review.timestamp || `${review.userEmail || ''}|${review.text || review.review || review.comment || ''}`).trim();
+        }
+
+        function reviewBelongsToCurrentUser(review) {
+            const session = getActiveSessionSafe();
+            if (!session || !session.email || !review) return false;
+            return String(review.userEmail || review.email || '').toLowerCase() === String(session.email).toLowerCase();
+        }
+
+        async function saveReviewToDB(payload, reviewsSnapshot) {
+            let saved = false;
+            let firstError = null;
+            const safeReviewsSnapshot = normalizeReviewsPayload(reviewsSnapshot || [], { assumeCurrentProduct: true });
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/add-review`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error(`/add-review returned ${res.status}`);
+                saved = true;
+            } catch (err) {
+                firstError = err;
+                console.error('Primary review save failed:', err);
+            }
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/update-product`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: getCurrentItemId(),
+                        productId: getCurrentItemId(),
+                        itemId: getCurrentItemId(),
+                        reviews: safeReviewsSnapshot,
+                        projectId: PROJECT_ID
+                    })
+                });
+                if (!res.ok) throw new Error(`/update-product returned ${res.status}`);
+                saved = true;
+            } catch (err) {
+                console.error('Embedded review sync failed:', err);
+                if (!firstError) firstError = err;
+            }
+
+            if (!saved) throw firstError || new Error('Review could not be saved.');
+            return true;
+        }
+
+        window.openReviewModal = function() {
+            const session = requireAryantaSignIn('write a review');
+            if (!session) return;
             editingReviewId = null;
             selectedStars = 0;
             selectedReviewImages = [];
-            document.getElementById('reviewModalTitle').innerText = "Write a Review";
-            document.getElementById('submitReviewBtn').innerText = "Submit Review";
-            document.getElementById('deleteReviewBtn').style.display = "none";
+            document.getElementById('reviewModalTitle').innerText = 'Write a Review';
+            document.getElementById('submitReviewBtn').innerText = 'Submit Review';
+            document.getElementById('deleteReviewBtn').style.display = 'none';
             document.getElementById('revText').value = '';
             setRevStars(5);
             renderRevImages();
-            document.getElementById('reviewModal').classList.add('show'); 
+            document.getElementById('reviewModal').classList.add('show');
         }
 
         window.openEditReviewModal = function(review) {
-            editingReviewId = review.timestamp || review.id; 
+            const session = requireAryantaSignIn('edit your review');
+            if (!session) return;
+            if (!reviewBelongsToCurrentUser(review)) return showAlert('You can edit only your own review.', 'Not Allowed');
+            editingReviewId = review.id || review.reviewId || review.timestamp;
             selectedStars = review.rating || 5;
             selectedReviewImages = review.images ? [...review.images] : [];
-            document.getElementById('revText').value = review.text || '';
-            
-            document.getElementById('reviewModalTitle').innerText = "Edit your Review";
-            document.getElementById('submitReviewBtn').innerText = "Update Review";
-            document.getElementById('deleteReviewBtn').style.display = "block";
-            
+            document.getElementById('revText').value = review.text || review.review || review.comment || '';
+
+            document.getElementById('reviewModalTitle').innerText = 'Edit your Review';
+            document.getElementById('submitReviewBtn').innerText = 'Update Review';
+            document.getElementById('deleteReviewBtn').style.display = 'block';
+
             setRevStars(selectedStars);
             renderRevImages();
             document.getElementById('reviewModal').classList.add('show');
@@ -2066,175 +2236,357 @@
             icons.forEach((icon, idx) => { icon.style.color = idx < val ? '#f59e0b' : '#cbd5e1'; });
         }
 
-        window.submitReview = function() {
-            if(selectedStars === 0) return showAlert("Please select a star rating.", "Notice");
+        window.submitReview = async function() {
+            const session = requireAryantaSignIn('submit a review');
+            if (!session) return;
+            if(selectedStars === 0) return showAlert('Please select a star rating.', 'Notice');
             const text = document.getElementById('revText').value.trim();
-            if(!text) return showAlert("Please write your review text.", "Notice");
-            
-            const session = JSON.parse(localStorage.getItem('active_session'));
+            if(!text) return showAlert('Please write your review text.', 'Notice');
+            if(!currentProduct || !currentProduct.id) return showAlert('Product is not ready yet. Please refresh and try again.', 'Notice');
+
+            const submitBtn = document.getElementById('submitReviewBtn');
+            const oldBtnText = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            }
+
+            const reviewId = editingReviewId || ('REV-' + Date.now());
+            const itemId = getCurrentItemId();
             const payload = {
-                productId: currentProduct.id, 
-                userName: session ? session.name : "Guest User", 
-                userEmail: session ? session.email : "", 
+                id: reviewId,
+                reviewId: reviewId,
+                productId: itemId,
+                itemId: itemId,
+                productDocId: String(firstNonEmpty(currentProduct.docId, currentProduct.id, itemId)),
+                userName: session.name || session.fullName || session.email.split('@')[0],
+                userEmail: session.email,
                 rating: selectedStars,
-                text: text, 
-                images: selectedReviewImages, 
-                timestamp: editingReviewId || new Date().toISOString(), 
-                projectId: PROJECT_ID 
+                text: text,
+                images: selectedReviewImages,
+                timestamp: editingReviewId || new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                projectId: PROJECT_ID
             };
-            
-            if(!currentProduct.reviews) currentProduct.reviews = [];
+
+            currentProduct.reviews = normalizeReviewsPayload(currentProduct.reviews || [], { assumeCurrentProduct: true });
 
             if(editingReviewId) {
-                const rIndex = currentProduct.reviews.findIndex(r => r.timestamp === editingReviewId || r.id === editingReviewId);
-                if(rIndex > -1) currentProduct.reviews[rIndex] = payload;
-                showToast("Review updated successfully!");
+                const rIndex = currentProduct.reviews.findIndex(r => getReviewIdentity(r) === String(editingReviewId));
+                if(rIndex > -1) currentProduct.reviews[rIndex] = { ...currentProduct.reviews[rIndex], ...payload };
+                else currentProduct.reviews.unshift(payload);
             } else {
-                currentProduct.reviews.unshift(payload);
-                showToast("Review submitted successfully!");
+                const existingMine = currentProduct.reviews.findIndex(r => reviewBelongsToCurrentUser(r));
+                if (existingMine > -1) currentProduct.reviews[existingMine] = { ...currentProduct.reviews[existingMine], ...payload };
+                else currentProduct.reviews.unshift(payload);
             }
-            
-            closeAllModals();
-            loadReviews(); 
 
-            fetch(`${API_BASE_URL}/add-review`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }).catch(e => console.error("Review sync failed", e));
+            try {
+                await saveReviewToDB(payload, currentProduct.reviews);
+                closeAllModals();
+                showToast(editingReviewId ? 'Review updated and saved in DB!' : 'Review submitted and saved in DB!');
+                loadReviews();
+            } catch(e) {
+                console.error('Review save failed:', e);
+                showAlert('Review could not be saved in database. Please check Worker /add-review or /update-product route.', 'Save Failed');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = oldBtnText || 'Submit Review';
+                }
+            }
         }
 
         window.deleteReview = async function() {
+            const session = requireAryantaSignIn('delete your review');
+            if (!session) return;
             if(!editingReviewId) return;
-            if(!confirm("Are you sure you want to delete your review?")) return;
-            
+            if(!confirm('Are you sure you want to delete your review?')) return;
+
             if(currentProduct.reviews) {
-                currentProduct.reviews = currentProduct.reviews.filter(r => r.timestamp !== editingReviewId && r.id !== editingReviewId);
+                const reviewToDelete = currentProduct.reviews.find(r => getReviewIdentity(r) === String(editingReviewId));
+                if (reviewToDelete && !reviewBelongsToCurrentUser(reviewToDelete)) return showAlert('You can delete only your own review.', 'Not Allowed');
+                currentProduct.reviews = currentProduct.reviews.filter(r => getReviewIdentity(r) !== String(editingReviewId));
             }
 
             try {
                 await fetch(`${API_BASE_URL}/update-product`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: currentProduct.id, reviews: currentProduct.reviews, projectId: PROJECT_ID })
+                    body: JSON.stringify({ id: getCurrentItemId(), productId: getCurrentItemId(), itemId: getCurrentItemId(), reviews: normalizeReviewsPayload(currentProduct.reviews || [], { assumeCurrentProduct: true }), projectId: PROJECT_ID })
                 });
-            } catch(e) { console.error("Review deletion sync failed", e); }
+            } catch(e) { console.error('Review deletion sync failed', e); }
 
             closeAllModals();
-            showToast("Review deleted!");
+            showToast('Review deleted!');
             loadReviews();
         }
 
-        window.openQuestionModal = function() { document.getElementById('questionModal').classList.add('show'); }
-        
-        window.submitQuestion = function() {
+        window.openQuestionModal = function() {
+            const session = requireAryantaSignIn('ask a product question');
+            if (!session) return;
+            document.getElementById('questionModal').classList.add('show');
+        }
+
+        window.submitQuestion = async function() {
+            const session = requireAryantaSignIn('submit a product question');
+            if (!session) return;
             const text = document.getElementById('qnaText').value.trim();
-            if(text === "") return showAlert("Please type a question.", "Notice");
-            
-            const session = JSON.parse(localStorage.getItem('active_session'));
+            if(text === '') return showAlert('Please type a question.', 'Notice');
+            if(!currentProduct || !currentProduct.id) return showAlert('Product is not ready yet. Please refresh and try again.', 'Notice');
+
+            const itemId = getCurrentItemId();
             const qaObj = {
                 id: 'Q-' + Date.now(),
-                user: session ? session.name.split(' ')[0] : 'Guest',
+                productId: itemId,
+                itemId: itemId,
+                productDocId: String(firstNonEmpty(currentProduct.docId, currentProduct.id, itemId)),
+                user: session.name ? session.name.split(' ')[0] : session.email.split('@')[0],
+                userEmail: session.email,
                 question: text,
                 answer: '',
                 admin: false,
+                status: 'pending',
                 timestamp: new Date().toISOString()
             };
-            
-            if(!currentProduct.qa) currentProduct.qa = [];
-            currentProduct.qa.unshift(qaObj); 
 
-            closeAllModals();
-            renderQA();
-            showToast("Question sent successfully!");
+            currentProduct.qa = filterAndAttachCurrentProductRecords(currentProduct.qa || [], { allowMissingWhenEmbedded: true });
+            currentProduct.qa.unshift(qaObj);
 
-            fetch(`${API_BASE_URL}/update-product`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: currentProduct.id, qa: currentProduct.qa, projectId: PROJECT_ID })
-            }).catch(e => console.error("Q&A sync failed", e));
+            try {
+                await fetch(`${API_BASE_URL}/update-product`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: getCurrentItemId(), productId: getCurrentItemId(), itemId: getCurrentItemId(), qa: filterAndAttachCurrentProductRecords(currentProduct.qa || [], { allowMissingWhenEmbedded: true }), projectId: PROJECT_ID })
+                });
+                document.getElementById('qnaText').value = '';
+                closeAllModals();
+                renderQA();
+                showToast('Question sent. It will show publicly after admin answers.');
+            } catch(e) {
+                console.error('Q&A sync failed', e);
+                showAlert('Question could not be saved. Please try again.', 'Save Failed');
+            }
         }
 
-       function triggerAIAnalysis(reviews) {
+       function getReviewRatingSafe(review) {
+            const rating = Number(review && (review.rating || review.stars || review.star || review.rate));
+            if (!Number.isFinite(rating)) return 5;
+            return Math.max(1, Math.min(5, Math.round(rating)));
+        }
+
+        function getReviewTextSafe(review) {
+            if (!review) return "";
+            const value = review.text || review.review || review.comment || review.message || review.body || "";
+            return String(value).replace(/\s+/g, " ").trim();
+        }
+
+        function pickRandomReviewsForInsight(reviews, maxCount = 20) {
+            const clean = Array.isArray(reviews) ? reviews.filter(Boolean) : [];
+            if (!clean.length) return [];
+            const shuffled = [...clean];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled.slice(0, Math.max(1, Math.min(20, maxCount)));
+        }
+
+        function countTextHits(text, words) {
+            if (!text) return 0;
+            return words.reduce((sum, word) => sum + (text.includes(word) ? 1 : 0), 0);
+        }
+
+        function buildLocalReviewInsights(reviews) {
+            const totalReviews = Array.isArray(reviews) ? reviews.filter(Boolean) : [];
+            if (!totalReviews.length) {
+                return `<p style="margin:0; color:var(--text-muted); font-weight:700; line-height:1.6;">Need at least 1 real review to generate live review insights.</p>`;
+            }
+
+            const randomSample = pickRandomReviewsForInsight(totalReviews, 20);
+            const allRatings = totalReviews.map(getReviewRatingSafe);
+            const avg = allRatings.reduce((sum, rating) => sum + rating, 0) / allRatings.length;
+            const starCounts = { 1:0, 2:0, 3:0, 4:0, 5:0 };
+            allRatings.forEach(rating => starCounts[rating]++);
+
+            const sampleTexts = randomSample.map(getReviewTextSafe).filter(Boolean);
+            const allText = sampleTexts.join(" ").toLowerCase();
+            const highRated = allRatings.filter(r => r >= 4).length;
+            const midRated = allRatings.filter(r => r === 3).length;
+            const lowRated = allRatings.filter(r => r <= 2).length;
+            const highPercent = Math.round((highRated / allRatings.length) * 100);
+            const lowPercent = Math.round((lowRated / allRatings.length) * 100);
+
+            const topicGroups = [
+                { name: "Quality", words: ["quality", "material", "build", "durable", "premium", "finish", "strong"] },
+                { name: "Value", words: ["price", "value", "worth", "affordable", "budget", "money", "cost"] },
+                { name: "Delivery", words: ["delivery", "delivered", "shipping", "fast", "late", "packaging", "package"] },
+                { name: "Design", words: ["design", "look", "style", "color", "beautiful", "nice", "size"] },
+                { name: "Performance", words: ["performance", "working", "works", "useful", "easy", "smooth", "good"] },
+                { name: "Support", words: ["support", "service", "seller", "response", "help"] }
+            ];
+            const topicScores = topicGroups
+                .map(group => ({ name: group.name, score: countTextHits(allText, group.words) }))
+                .filter(group => group.score > 0)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 4);
+
+            const positiveHits = countTextHits(allText, ["good", "great", "excellent", "best", "nice", "perfect", "love", "amazing", "satisfied", "happy", "premium", "fast"]);
+            const negativeHits = countTextHits(allText, ["bad", "poor", "worst", "broken", "late", "damage", "damaged", "return", "issue", "problem", "not good", "fake"]);
+
+            let verdict = "Mixed buyer response";
+            if (avg >= 4.5 && lowPercent <= 10) verdict = "Excellent buyer response";
+            else if (avg >= 4 && lowPercent <= 15) verdict = "Strong buyer response";
+            else if (avg >= 3.2) verdict = "Balanced buyer response";
+            else verdict = "Needs improvement based on reviews";
+
+            const insightLines = [];
+            insightLines.push(`${highPercent}% of all reviewers gave 4★ or 5★.`);
+            if (topicScores.length) {
+                insightLines.push(`Most repeated topics in the random sample: ${topicScores.map(t => t.name).join(", ")}.`);
+            } else if (sampleTexts.length) {
+                insightLines.push(`Text reviews are available, but no repeated product topic is strong enough yet.`);
+            } else {
+                insightLines.push(`Most reviews only have ratings, so this insight is based mainly on star data.`);
+            }
+            if (lowRated > 0) insightLines.push(`${lowRated} low-rating review${lowRated > 1 ? "s" : ""} found, so check recent buyer feedback before buying.`);
+            else insightLines.push(`No 1★ or 2★ rating found in the current review data.`);
+
+            let mood = "Neutral";
+            if (positiveHits > negativeHits + 1 || avg >= 4) mood = "Positive";
+            if (negativeHits > positiveHits || avg < 3) mood = "Caution";
+
+            const starsBar = [5,4,3,2,1].map(star => {
+                const count = starCounts[star] || 0;
+                const width = Math.max(4, Math.round((count / allRatings.length) * 100));
+                return `<div style="display:grid; grid-template-columns:42px 1fr 34px; gap:8px; align-items:center; font-size:12px; font-weight:800; color:var(--text-muted); margin:6px 0;">
+                    <span>${star}★</span><div style="height:8px; border-radius:999px; background:rgba(148,163,184,.22); overflow:hidden;"><div style="width:${width}%; height:100%; border-radius:999px; background:var(--primary);"></div></div><span>${count}</span>
+                </div>`;
+            }).join("");
+
+            return `
+                <div style="display:grid; gap:14px;">
+                    <p style="margin:0; color:var(--text-main); font-weight:900; font-size:16px; line-height:1.5;">${verdict}</p>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <span style="padding:8px 10px; border-radius:999px; background:rgba(99,102,241,.10); color:var(--primary); font-weight:900; font-size:12px;">Avg ${avg.toFixed(1)}★</span>
+                        <span style="padding:8px 10px; border-radius:999px; background:rgba(15,23,42,.06); color:var(--text-main); font-weight:900; font-size:12px;">Total ${totalReviews.length}</span>
+                        <span style="padding:8px 10px; border-radius:999px; background:rgba(15,23,42,.06); color:var(--text-main); font-weight:900; font-size:12px;">Random sample ${randomSample.length}/20</span>
+                        <span style="padding:8px 10px; border-radius:999px; background:rgba(15,23,42,.06); color:var(--text-main); font-weight:900; font-size:12px;">Mood ${mood}</span>
+                    </div>
+                    <div>${starsBar}</div>
+                    <ul style="margin:0; padding-left:18px; color:var(--text-muted); font-weight:700; line-height:1.7;">
+                        ${insightLines.map(line => `<li>${escapeHtmlText(line)}</li>`).join("")}
+                    </ul>
+                    <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:800; line-height:1.5;">Generated locally.</p>
+                </div>`;
+        }
+
+        function triggerLocalReviewAnalysis(reviews) {
             const aiText = document.getElementById('aiReviewText');
+            if (!aiText) return;
             aiText.innerHTML = '<div class="ai-loader-bar"><div class="ai-loader-fill"></div></div>';
+            setTimeout(() => {
+                aiText.innerHTML = buildLocalReviewInsights(reviews);
+            }, 60);
+        }
 
-            let grouped = { 1:[], 2:[], 3:[], 4:[], 5:[] };
+        function normalizeReviewsPayload(payload, options = {}) {
+            const raw = payload?.reviews || payload?.items || payload?.data || payload?.results || payload;
+            const arr = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+            return arr.filter(Boolean).map(r => {
+                const clean = normalizeFirestoreDoc(r) || {};
+                const normalized = {
+                    ...clean,
+                    id: clean.id || clean.reviewId || clean.timestamp || ('REV-' + Math.random().toString(36).slice(2)),
+                    rating: getReviewRatingSafe(clean),
+                    text: getReviewTextSafe(clean),
+                    userName: clean.userName || clean.name || clean.user || 'Verified Buyer',
+                    userEmail: clean.userEmail || clean.email || '',
+                    images: Array.isArray(clean.images) ? clean.images : []
+                };
 
-            reviews.forEach(r => {
-                let star = Math.round(r.rating || 5);
-                if (star < 1) star = 1;
-                if (star > 5) star = 5;
+                if (!recordBelongsToCurrentProduct(normalized, { allowMissingWhenEmbedded: !!options.assumeCurrentProduct })) return null;
+                return attachCurrentItemId(normalized);
+            }).filter(Boolean);
+        }
 
-                if (grouped[star].length < 10 && r.text && r.text.trim() !== '') {
-                    grouped[star].push(r.text.trim());
-                }
+        function mergeReviewLists(...lists) {
+            const map = new Map();
+            lists.flat().filter(Boolean).forEach(review => {
+                const key = getReviewIdentity(review) || `${review.userEmail || ''}|${review.timestamp || ''}|${review.text || ''}`;
+                if (!key) return;
+                map.set(key, { ...(map.get(key) || {}), ...review });
             });
+            return Array.from(map.values()).sort((a, b) => new Date(b.timestamp || b.updatedAt || 0) - new Date(a.timestamp || a.updatedAt || 0));
+        }
 
-            let allTexts = [];
-            for (let i = 1; i <= 5; i++) {
-                if (grouped[i].length > 0) {
-                    allTexts.push(`--- ${i} Star Reviews ---\n` + grouped[i].join('\n'));
-                }
+        function pickRandomReviewsForDisplay(reviews, maxCount = 20) {
+            const clean = Array.isArray(reviews) ? reviews.filter(Boolean) : [];
+            if (!clean.length) return [];
+            const shuffled = [...clean];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
             }
+            return shuffled.slice(0, Math.max(1, Math.min(20, maxCount)));
+        }
 
-            let promptText = allTexts.join('\n\n');
-
-            if (promptText.trim() === '') {
-                aiText.innerText = 'Not enough detailed text reviews for AI analysis yet.';
-                return;
+        function renderReviewCard(data, fullMode = false) {
+            const rating = getReviewRatingSafe(data);
+            let rStars = '';
+            for(let i=1; i<=5; i++) rStars += `<i class="fas fa-star" style="color: ${i <= rating ? '#f59e0b' : '#cbd5e1'};"></i>`;
+            let imgsHtml = '';
+            if(data.images && data.images.length > 0) {
+                imgsHtml = `<div style="display:flex; gap:12px; margin-top:12px; flex-wrap:wrap;">` + data.images.slice(0, 5).map(src => `<img src="${escapeAttr(src)}" loading="lazy" decoding="async" style="width: 65px; height: 65px; object-fit: cover; border-radius: 12px; cursor: pointer; border: 1px solid var(--border);">`).join('') + `</div>`;
             }
-
-            fetch(`${API_BASE_URL}/ai-summary`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    reviewData: promptText,
-                    productId: currentProduct.id
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                aiText.innerHTML = data.summary || "AI summary could not be generated right now.";
-            })
-            .catch(() => {
-                aiText.innerText = "AI summary could not be generated right now.";
-            });
+            const cardStyle = fullMode ? ' style="background:var(--surface); padding: 24px; border: 1px solid var(--border); border-radius: 20px; margin-bottom: 20px; box-shadow: var(--shadow-sm);"' : '';
+            const textColor = fullMode ? 'var(--text-main)' : 'var(--text-muted)';
+            const safeUser = escapeHtmlText(data.userName || 'Verified Buyer');
+            const safeText = escapeHtmlText(data.text || '');
+            const safeDate = data.timestamp ? new Date(data.timestamp).toLocaleDateString() : 'Recent';
+            return `
+                <div class="review-card"${cardStyle}>
+                    <div class="r-header">
+                        <span class="r-user" style="${fullMode ? 'font-size: 16px;' : ''}"><i class="fas fa-user-circle"></i> ${safeUser}</span>
+                        <span class="r-date">${safeDate}</span>
+                    </div>
+                    <div class="r-stars" style="margin-bottom: ${fullMode ? '10px' : '8px'};">${rStars}</div>
+                    <p style="font-size: 15px; line-height: 1.6; color:${textColor}; font-weight:500;">${safeText}</p>
+                    ${imgsHtml}
+                </div>`;
         }
 
         function loadReviews() {
             const list = document.getElementById('reviewsList');
             const aiText = document.getElementById('aiReviewText');
+            if (!list || !currentProduct) return;
             list.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-weight:600;"><i class="fas fa-spinner fa-spin"></i> Loading reviews...</p>';
-            
-            let reviewsData = [];
-            
-            if (currentProduct && currentProduct.reviews && currentProduct.reviews.length > 0) {
-                reviewsData = currentProduct.reviews;
-                processReviewsData(reviewsData, list, aiText);
-            } else {
-                fetch(`${API_BASE_URL}/reviews?productId=${currentProduct.id}`)
-                .then(res => res.json())
+
+            const embeddedReviews = normalizeReviewsPayload(currentProduct.reviews || [], { assumeCurrentProduct: true });
+
+            fetch(`${API_BASE_URL}/reviews?productId=${encodeURIComponent(getCurrentItemId())}&itemId=${encodeURIComponent(getCurrentItemId())}`, { cache: 'no-store' })
+                .then(res => res.ok ? res.json() : [])
                 .then(data => {
-                    if (data && Array.isArray(data)) {
-                        reviewsData = data;
-                        if(currentProduct) currentProduct.reviews = data; // Sync local
-                    }
-                    processReviewsData(reviewsData, list, aiText);
+                    const remoteReviews = normalizeReviewsPayload(data, { assumeCurrentProduct: false });
+                    const merged = mergeReviewLists(remoteReviews, embeddedReviews);
+                    currentProduct.reviews = merged;
+                    processReviewsData(merged, list, aiText);
                 })
                 .catch(e => {
-                    processReviewsData(reviewsData, list, aiText);
+                    console.warn('Reviews DB fetch failed, using embedded product reviews:', e);
+                    currentProduct.reviews = embeddedReviews;
+                    processReviewsData(embeddedReviews, list, aiText);
                 });
-            }
         }
 
         function processReviewsData(reviewsData, list, aiText) {
+            reviewsData = normalizeReviewsPayload(reviewsData, { assumeCurrentProduct: true });
             window.allFetchedReviews = reviewsData;
 
             let totalRating = 0;
             let avgRating = 0;
             if(reviewsData.length > 0) {
-                totalRating = reviewsData.reduce((sum, r) => sum + (r.rating || 5), 0);
+                totalRating = reviewsData.reduce((sum, r) => sum + getReviewRatingSafe(r), 0);
                 avgRating = (totalRating / reviewsData.length).toFixed(1);
                 document.getElementById('pRating').style.display = 'flex';
                 document.getElementById('pRatingVal').innerText = avgRating;
@@ -2247,141 +2599,175 @@
 
             let userReview = null;
             if(activeSession && activeSession.email) {
-                userReview = reviewsData.find(r => r.userEmail === activeSession.email);
+                userReview = reviewsData.find(r => reviewBelongsToCurrentUser(r));
             }
-            
+
             const writeBtn = document.getElementById('writeReviewBtn');
-            if(userReview) {
-                writeBtn.innerHTML = '<i class="fas fa-edit"></i> Edit Review';
-                writeBtn.onclick = () => openEditReviewModal(userReview);
-            } else {
-                writeBtn.innerHTML = '<i class="fas fa-pen"></i> Write a Review';
-                writeBtn.onclick = openReviewModal;
+            if(writeBtn) {
+                if(userReview) {
+                    writeBtn.innerHTML = '<i class="fas fa-edit"></i> Edit Review';
+                    writeBtn.onclick = () => openEditReviewModal(userReview);
+                } else {
+                    writeBtn.innerHTML = '<i class="fas fa-pen"></i> Write a Review';
+                    writeBtn.onclick = openReviewModal;
+                }
             }
-            
+
             if(reviewsData.length === 0) {
                 list.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-weight:500;">Be the first to share your experience with this product.</p>';
-                aiText.innerText = "Not enough data for AI analysis. Be the first to review!";
+                if (aiText) aiText.innerText = 'Need at least 1 review to generate live review insights. Be the first to review!';
+                maybeOpenReviewsPageFromUrl();
                 return;
             }
 
-            triggerAIAnalysis(reviewsData);
+            triggerLocalReviewAnalysis(reviewsData);
 
-            // Display Top 5 
-            const top5 = reviewsData.slice(0, 5);
+            const random20 = pickRandomReviewsForDisplay(reviewsData, 20);
+            list.innerHTML = random20.map(data => renderReviewCard(data, false)).join('');
 
-            list.innerHTML = top5.map(data => {
-                let rStars = "";
-                for(let i=1; i<=5; i++) rStars += `<i class="fas fa-star" style="color: ${i <= (data.rating||5) ? '#f59e0b' : '#cbd5e1'};"></i>`;
-                let imgsHtml = "";
-                if(data.images && data.images.length > 0) {
-                    imgsHtml = `<div style="display:flex; gap:12px; margin-top:12px;">` + data.images.map(src => `<img src="${src}" style="width: 65px; height: 65px; object-fit: cover; border-radius: 12px; cursor: pointer; border: 1px solid var(--border);">`).join('') + `</div>`;
-                }
-                return `
-                    <div class="review-card">
-                        <div class="r-header">
-                            <span class="r-user"><i class="fas fa-user-circle"></i> ${data.userName || 'Verified Buyer'}</span>
-                            <span class="r-date">${data.timestamp ? new Date(data.timestamp).toLocaleDateString() : 'Recent'}</span>
-                        </div>
-                        <div class="r-stars" style="margin-bottom: 8px;">${rStars}</div>
-                        <p style="font-size: 15px; line-height: 1.6; color:var(--text-muted); font-weight:500;">${data.text || data}</p>
-                        ${imgsHtml}
-                    </div>`;
-            }).join('');
-
-            if (reviewsData.length > 5) {
-                list.innerHTML += `<button class="btn-outline w-100 bounce-hover" style="margin-top: 15px;" onclick="openAllReviewsModal()">Read All ${reviewsData.length} Reviews</button>`;
+            if (reviewsData.length > 20) {
+                list.innerHTML += `<button class="btn-outline w-100 bounce-hover" style="margin-top: 15px;" onclick="goToAllReviewsPage()">See More Reviews</button>`;
             }
+
+            maybeOpenReviewsPageFromUrl();
         }
-        
+
+        function getAllReviewsPageUrl() {
+            const url = new URL(window.location.href);
+            if (currentProduct && getCurrentItemId()) url.searchParams.set('id', getCurrentItemId());
+            url.searchParams.set('reviews', 'all');
+            return url.toString();
+        }
+
+        window.goToAllReviewsPage = function() {
+            window.location.href = getAllReviewsPageUrl();
+        }
+
         window.openAllReviewsModal = function() {
             document.getElementById('fullReviewsPanel').classList.add('show');
+            window.reviewPageVisibleCount = 40;
+            window.currentReviewFilterStar = 'all';
             document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
-            document.querySelector('.filter-pill').classList.add('active'); 
+            const firstPill = document.querySelector('.filter-pill');
+            if (firstPill) firstPill.classList.add('active');
             renderFilteredReviews('all');
+        }
+
+        function maybeOpenReviewsPageFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('reviews') === 'all') {
+                setTimeout(() => openAllReviewsModal(), 80);
+            }
         }
 
         window.closeAllReviewsModal = function() {
             document.getElementById('fullReviewsPanel').classList.remove('show');
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('reviews') === 'all') {
+                params.delete('reviews');
+                const query = params.toString();
+                const cleanUrl = `${window.location.pathname}${query ? '?' + query : ''}${window.location.hash || ''}`;
+                try { window.history.replaceState(null, '', cleanUrl); } catch(e) {}
+            }
         }
 
         window.renderFilteredReviews = function(filterStar, btnEl) {
             if(btnEl) {
                 document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
                 btnEl.classList.add('active');
+                window.reviewPageVisibleCount = 40;
             }
-            
+
+            window.currentReviewFilterStar = filterStar;
             const container = document.getElementById('fullReviewsContainer');
-            let filtered = window.allFetchedReviews;
-            
+            let filtered = Array.isArray(window.allFetchedReviews) ? window.allFetchedReviews : [];
+
             if(filterStar !== 'all') {
-                filtered = window.allFetchedReviews.filter(r => Math.round(r.rating || 5) === parseInt(filterStar));
+                filtered = filtered.filter(r => getReviewRatingSafe(r) === parseInt(filterStar));
             }
-            
+
             if(filtered.length === 0) {
                 container.innerHTML = `<p style="text-align:center; margin-top:30px; color:var(--text-muted); font-weight: 600;">No reviews found for this rating.</p>`;
                 return;
             }
-            
-            container.innerHTML = filtered.map(data => {
-                let rStars = "";
-                for(let i=1; i<=5; i++) rStars += `<i class="fas fa-star" style="color: ${i <= (data.rating||5) ? '#f59e0b' : '#cbd5e1'};"></i>`;
-                let imgsHtml = "";
-                if(data.images && data.images.length > 0) {
-                    imgsHtml = `<div style="display:flex; gap:12px; margin-top:12px;">` + data.images.map(src => `<img src="${src}" style="width: 65px; height: 65px; object-fit: cover; border-radius: 12px; cursor: pointer; border: 1px solid var(--border);">`).join('') + `</div>`;
-                }
-                return `
-                    <div class="review-card" style="background:var(--surface); padding: 24px; border: 1px solid var(--border); border-radius: 20px; margin-bottom: 20px; box-shadow: var(--shadow-sm);">
-                        <div class="r-header">
-                            <span class="r-user" style="font-size: 16px;"><i class="fas fa-user-circle"></i> ${data.userName || 'Verified Buyer'}</span>
-                            <span class="r-date">${data.timestamp ? new Date(data.timestamp).toLocaleDateString() : 'Recent'}</span>
-                        </div>
-                        <div class="r-stars" style="margin-bottom: 10px;">${rStars}</div>
-                        <p style="font-size: 15px; line-height: 1.6; color: var(--text-main); font-weight:500;">${data.text || data}</p>
-                        ${imgsHtml}
-                    </div>`;
-            }).join('');
+
+            const visibleCount = Math.max(40, Number(window.reviewPageVisibleCount || 40));
+            const visible = filtered.slice(0, visibleCount);
+            const remaining = Math.max(0, filtered.length - visible.length);
+
+            container.innerHTML = `
+                <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:18px; flex-wrap:wrap;">
+                    <div style="font-weight:900; color:var(--text-main);">Showing ${visible.length} of ${filtered.length} reviews</div>
+                    <div style="font-size:13px; color:var(--text-muted); font-weight:700;">First page shows 40, then Load More adds 40 each time.</div>
+                </div>
+                ${visible.map(data => renderReviewCard(data, true)).join('')}
+                ${remaining > 0 ? `<button class="btn-outline w-100 bounce-hover" style="margin-top: 15px;" onclick="loadMoreReviews()"><i class="fas fa-plus-circle"></i> Load More Reviews (${remaining} left)</button>` : ''}
+            `;
+        }
+
+        window.loadMoreReviews = function() {
+            window.reviewPageVisibleCount = Math.max(40, Number(window.reviewPageVisibleCount || 40)) + 40;
+            renderFilteredReviews(window.currentReviewFilterStar || 'all');
+        }
+
+        function normalizeQAItem(qa) {
+            const clean = normalizeFirestoreDoc(qa) || {};
+            const belongs = recordBelongsToCurrentProduct(clean, { allowMissingWhenEmbedded: true });
+            const attached = belongs ? attachCurrentItemId(clean) : clean;
+            const question = String(attached.question || attached.q || attached.query || '').trim();
+            const answer = String(attached.answer || attached.a || attached.reply || attached.adminAnswer || '').trim();
+            return {
+                ...attached,
+                _notForThisProduct: !belongs,
+                question,
+                answer,
+                user: attached.user || attached.userName || 'User',
+                timestamp: attached.timestamp || attached.createdAt || ''
+            };
+        }
+
+        function getAnsweredQAList() {
+            const allQA = Array.isArray(currentProduct?.qa) ? currentProduct.qa : [];
+            return allQA.map(normalizeQAItem).filter(qa => !qa._notForThisProduct && qa.question && qa.answer);
+        }
+
+        function renderQACard(qa, fullMode = false) {
+            const cardStyle = fullMode ? ' style="background:var(--surface); padding: 24px; border: 1px solid var(--border); border-radius: 20px; margin-bottom: 20px; box-shadow: var(--shadow-sm);"' : '';
+            return `
+                <div class="qna-card"${cardStyle}>
+                    <div class="qna-q" style="${fullMode ? 'font-size:16px; margin-bottom:12px;' : ''}"><i class="fas fa-question-circle" style="margin-top:3px; ${fullMode ? 'color:var(--primary);' : ''}"></i> ${escapeHtmlText(qa.question)}</div>
+                    <div class="qna-a" style="${fullMode ? 'font-size:15px;' : ''}"><i class="fas fa-check-circle" style="color:var(--success); margin-top:3px;"></i> ${escapeHtmlText(qa.answer)}</div>
+                </div>`;
         }
 
         function renderQA() {
             const qaList = document.getElementById('qaListContainer');
-            const mockQA = currentProduct.qa || [];
-            if(mockQA.length === 0) {
-                qaList.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding: 20px; font-weight:500;">No questions asked yet. Be the first!</p>';
+            if (!qaList) return;
+            const answeredQA = getAnsweredQAList();
+            if(answeredQA.length === 0) {
+                qaList.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding: 20px; font-weight:500;">No answered product questions yet. Ask a question after login and it will appear here after admin answers.</p>';
                 return;
             }
 
-            const topQA = mockQA.slice(0, 5);
-            qaList.innerHTML = topQA.map(qa => {
-                let answerHtml = qa.answer ? `<div class="qna-a"><i class="fas fa-check-circle" style="color:var(--success); margin-top:3px;"></i> ${qa.answer}</div>` : `<div class="qna-a" style="color:var(--text-muted);"><em>Pending official answer...</em></div>`;
-                return `
-                <div class="qna-card">
-                    <div class="qna-q"><i class="fas fa-question-circle" style="margin-top:3px;"></i> ${qa.question}</div>
-                    ${answerHtml}
-                </div>
-                `;
-            }).join('');
+            const topQA = answeredQA.slice(0, 5);
+            qaList.innerHTML = topQA.map(qa => renderQACard(qa, false)).join('');
 
-            if(mockQA.length > 5) {
-                qaList.innerHTML += `<button class="btn-outline w-100 bounce-hover" style="margin-top: 15px;" onclick="openAllQAModal()">Read All ${mockQA.length} Questions</button>`;
+            if(answeredQA.length > 5) {
+                qaList.innerHTML += `<button class="btn-outline w-100 bounce-hover" style="margin-top: 15px;" onclick="openAllQAModal()">Read All ${answeredQA.length} Answered Questions</button>`;
             }
         }
 
         window.openAllQAModal = function() {
             document.getElementById('fullQAPanel').classList.add('show');
             const container = document.getElementById('fullQAContainer');
-            const mockQA = currentProduct.qa || [];
-            
-            container.innerHTML = mockQA.map(qa => {
-                let answerHtml = qa.answer ? `<div class="qna-a" style="font-size:15px;"><i class="fas fa-check-circle" style="color:var(--success); margin-top:3px;"></i> ${qa.answer}</div>` : `<div class="qna-a" style="color:var(--text-muted); font-size:15px;"><em>Pending official answer...</em></div>`;
-                return `
-                <div class="qna-card" style="background:var(--surface); padding: 24px; border: 1px solid var(--border); border-radius: 20px; margin-bottom: 20px; box-shadow: var(--shadow-sm);">
-                    <div class="qna-q" style="font-size:16px; margin-bottom:12px;"><i class="fas fa-question-circle" style="margin-top:3px; color:var(--primary);"></i> ${qa.question}</div>
-                    ${answerHtml}
-                    <div style="font-size: 13px; color: var(--text-muted); text-align: right; margin-top: 15px; font-weight:600;">Asked by ${qa.user || 'Guest'}</div>
-                </div>
-                `;
-            }).join('');
+            const answeredQA = getAnsweredQAList();
+
+            if (!answeredQA.length) {
+                container.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding: 20px; font-weight:500;">No answered questions available yet.</p>';
+                return;
+            }
+
+            container.innerHTML = answeredQA.map(qa => renderQACard(qa, true)).join('');
         }
 
         window.closeAllQAModal = function() {
@@ -2714,6 +3100,71 @@
 
         function logOut() { localStorage.removeItem('active_session'); location.reload(); }
         
+
+        // --- TAB SWITCHING FIX: Highlights / Customer Reviews / Product Queries ---
+        window.switchTab = function(tabId, clickedButton) {
+            const target = document.getElementById(tabId);
+            if (!target) {
+                console.warn("Aryanta tab not found:", tabId);
+                return;
+            }
+
+            const tabsContainer = target.closest('.tabs-container') || document.querySelector('.tabs-container');
+            if (!tabsContainer) return;
+
+            tabsContainer.querySelectorAll('.tab-content').forEach(panel => {
+                const isActive = panel.id === tabId;
+                panel.classList.toggle('active', isActive);
+                panel.style.display = isActive ? 'block' : 'none';
+                panel.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+            });
+
+            const buttons = Array.from(tabsContainer.querySelectorAll('.tab-btn'));
+            buttons.forEach(btn => {
+                const isActive = btn === clickedButton || (btn.getAttribute('onclick') || '').includes(tabId);
+                btn.classList.toggle('active', isActive);
+                btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+
+            if (tabId === 'tab-reviews' && currentProduct) {
+                const list = document.getElementById('reviewsList');
+                if (list && (!list.dataset.loadedOnce || list.innerText.toLowerCase().includes('loading'))) {
+                    list.dataset.loadedOnce = '1';
+                    try { loadReviews(); } catch (e) { console.warn('Review reload skipped:', e); }
+                }
+            }
+
+            if (tabId === 'tab-qna' && currentProduct) {
+                const qaList = document.getElementById('qaListContainer');
+                if (qaList && (!qaList.dataset.loadedOnce || qaList.innerText.toLowerCase().includes('loading'))) {
+                    qaList.dataset.loadedOnce = '1';
+                    try { renderQA(); } catch (e) { console.warn('Q&A reload skipped:', e); }
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabsContainer = document.querySelector('.tabs-container');
+            if (!tabsContainer) return;
+
+            tabsContainer.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.type = 'button';
+                btn.setAttribute('role', 'tab');
+                btn.addEventListener('click', function(event) {
+                    const handler = this.getAttribute('onclick') || '';
+                    const match = handler.match(/switchTab\(['"]([^'"]+)['"]\)/);
+                    if (match && window.switchTab) {
+                        event.preventDefault();
+                        window.switchTab(match[1], this);
+                    }
+                });
+            });
+
+            tabsContainer.querySelectorAll('.tab-content').forEach(panel => panel.setAttribute('role', 'tabpanel'));
+            window.switchTab('tab-highlights', tabsContainer.querySelector('.tab-btn.active') || tabsContainer.querySelector('.tab-btn'));
+        });
+
+
         let toastTimer;
         function showToast(message) {
             if (!appSettings.notifications) return; 
