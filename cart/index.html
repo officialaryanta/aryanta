@@ -26,6 +26,14 @@
         .email-cancel-btn{display:none;background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.22);color:var(--danger)}
         .email-delivery-card .form-input[readonly],.mixed-delivery-note .form-input[readonly]{opacity:.9;cursor:default;background:var(--surface-2)!important}
         @media(max-width:560px){.cart-img-box{width:82px;height:82px;border-radius:18px;flex-basis:82px}.email-edit-row{gap:8px}.email-edit-btn,.email-cancel-btn{height:44px;padding:0 11px;font-size:12px}.email-edit-btn span,.email-cancel-btn span{display:none}}
+
+        .cart-smart-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px;font-size:11px;font-weight:900;color:var(--text-muted)}
+        .cart-smart-meta span{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;background:var(--surface-2,#f8fafc);border:1px solid var(--border)}
+        .cart-smart-meta .stock-ok{color:var(--success,#16a34a);background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.22)}
+        .cart-smart-meta .stock-low{color:var(--warning,#f59e0b);background:rgba(245,158,11,.10);border-color:rgba(245,158,11,.24)}
+        .cart-smart-meta .stock-block{color:var(--danger,#ef4444);background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.24)}
+        .qty-btn[disabled]{opacity:.38;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+        .cart-stock-check-note{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;font-weight:900;color:var(--primary,#2563eb)}
    </style>
 </head>
 <body>
@@ -582,13 +590,16 @@
                 if (!id) return;
 
                 const old = seen.get(id);
-                const qty = Math.max(1, Number(raw.qty || raw.quantity || 1) || 1);
+                const qty = Math.max(1, Number(raw.qty || raw.cartQty || raw.cartQuantity || raw.selectedQty || 1) || 1);
                 const imageRaw = window.getProductImageCandidate ? window.getProductImageCandidate(raw) : window.pickCartValue(raw, ["image", "thumbnail", "imageUrl", "img", "photo"], Array.isArray(raw.images) ? raw.images[0] : "");
                 const name = String(window.pickCartValue(raw, ["name", "title", "productName", "itemName"], "Aryanta Product")).slice(0, 180);
+                const stockRaw = window.pickCartValue(raw, ["stock", "availableStock", "stockLeft", "leftInStock", "totalStock", "totalQty", "availableQuantity", "inventory"], "");
+                const stockNum = stockRaw === "" ? 999 : Number(stockRaw);
                 const clean = {
                     id,
                     productId: String(window.pickCartValue(raw, ["productId", "productID", "pid", "docId"], id)).trim(),
                     sku: String(window.pickCartValue(raw, ["sku", "barcode"], "")).slice(0, 80),
+                    itemId: String(window.pickCartValue(raw, ["itemId", "productItemId"], id)).trim(),
                     name,
                     title: name,
                     price: Number(window.pickCartValue(raw, ["price", "salePrice", "sellingPrice", "finalPrice", "listedPrice", "amount"], 0)) || 0,
@@ -600,7 +611,9 @@
                     sellerEmail: String(window.pickCartValue(raw, ["sellerEmail", "seller_email", "vendorEmail", "ownerEmail"], "")).toLowerCase().slice(0, 160),
                     sellerId: String(window.pickCartValue(raw, ["sellerId", "sellerUID", "storeId", "uid"], "")).slice(0, 120),
                     sellerName: String(window.pickCartValue(raw, ["sellerName", "storeName", "companyName"], "")).slice(0, 120),
-                    stock: Number(window.pickCartValue(raw, ["stock", "quantity", "availableStock"], 999)) || 999,
+                    stock: Number.isFinite(stockNum) ? Math.max(0, Math.floor(stockNum)) : 999,
+                    stockVerified: raw.stockVerified === true || raw.dbVerified === true,
+                    stockCheckedAt: raw.stockCheckedAt || raw.dbCheckedAt || "",
                     emailDelivery: window.booleanFlag ? window.booleanFlag(raw.emailDelivery || raw.isEmailDelivery || raw.deliverByEmail || raw.digitalDelivery || raw.isDigital || raw.digital || raw.isGiftCard) : !!(raw.emailDelivery || raw.isEmailDelivery || raw.deliverByEmail || raw.digitalDelivery || raw.isDigital || raw.digital || raw.isGiftCard),
                     digitalDelivery: !!(raw.digitalDelivery || raw.isDigital || raw.digital || raw.isGiftCard),
                     deliveryMode: String(window.pickCartValue(raw, ["deliveryMode", "deliveryType", "delivery_method", "fulfillment", "productType", "type"], "")).slice(0, 80)
@@ -770,27 +783,50 @@
             if (!payload) return null;
             if (payload.success === false || payload.exists === false || payload.found === false) return null;
 
+            const wanted = String(requestedId || "").trim().toLowerCase();
+            const pickMatching = (arr) => {
+                const list = (Array.isArray(arr) ? arr : []).map(x => window.normalizeBackendProduct(x, "")).filter(Boolean);
+                if (!wanted) return list[0] || null;
+                return list.find(p => window.cartProductKeys(p).map(k => String(k).toLowerCase()).includes(wanted)) || null;
+            };
+
+            if (Array.isArray(payload)) return pickMatching(payload);
+            if (Array.isArray(payload.products)) return pickMatching(payload.products);
+            if (Array.isArray(payload.items)) return pickMatching(payload.items);
+            if (Array.isArray(payload.documents)) return pickMatching(payload.documents);
+
             let raw = payload.product || payload.item || payload.data || payload.result || payload.doc || payload.document || payload;
-            if (Array.isArray(payload.products)) raw = payload.products.find(p => String(p?.id || p?.productId || p?.sku || "") === String(requestedId)) || payload.products[0];
-            if (Array.isArray(payload.items)) raw = payload.items.find(p => String(p?.id || p?.productId || p?.sku || "") === String(requestedId)) || payload.items[0];
-            if (Array.isArray(payload.documents)) raw = payload.documents[0];
-            if (Array.isArray(raw)) raw = raw.find(p => String(p?.id || p?.productId || p?.sku || "") === String(requestedId)) || raw[0];
+            if (Array.isArray(raw)) return pickMatching(raw);
             if (!raw || typeof raw !== "object") return null;
 
             if (raw.fields && typeof raw.fields === "object") {
                 const flat = {};
                 Object.entries(raw.fields).forEach(([k, v]) => { flat[k] = window.flattenFirestoreValue(v); });
                 const docId = String(raw.name || "").split('/').pop();
-                raw = { ...flat, id: flat.id || flat.productId || docId };
+                raw = { ...flat, id: flat.id || flat.productId || docId, docId };
             }
 
-            const id = String(window.firstNonEmpty(raw.id, raw.productId, raw.pid, raw.sku, requestedId));
+            const id = String(window.firstNonEmpty(raw.id, raw.productId, raw.pid, raw.docId, raw.sku, requestedId));
             if (!id) return null;
             const name = String(window.firstNonEmpty(raw.name, raw.title, raw.productName, raw.itemName, "Aryanta Product"));
             const image = window.getProductImageCandidate ? window.getProductImageCandidate(raw) : window.firstNonEmpty(raw.image, raw.thumbnail, raw.imageUrl, raw.photo, Array.isArray(raw.images) ? raw.images[0] : "", Array.isArray(raw.imageUrls) ? raw.imageUrls[0] : "");
             const price = Number(window.firstNonEmpty(raw.price, raw.salePrice, raw.sellingPrice, raw.finalPrice, raw.amount, 0)) || 0;
-            const stock = Number(window.firstNonEmpty(raw.stock, raw.quantity, raw.qty, raw.availableStock, 999));
-            return { ...raw, id, productId: raw.productId || id, name, title: name, image, price, stock: Number.isFinite(stock) ? stock : 999 };
+            const stockRaw = window.firstNonEmpty(raw.stock, raw.availableStock, raw.stockLeft, raw.leftInStock, raw.totalStock, raw.totalQty, raw.availableQuantity, raw.inventory, raw.qty, raw.quantity, "");
+            const stock = Number(stockRaw);
+            const liveStock = Number.isFinite(stock) ? Math.max(0, Math.floor(stock)) : 0;
+            return {
+                ...raw,
+                id,
+                productId: String(raw.productId || raw.pid || id),
+                itemId: String(raw.itemId || raw.productItemId || id),
+                name,
+                title: name,
+                image,
+                price,
+                stock: liveStock,
+                availableStock: liveStock,
+                stockLeft: liveStock
+            };
         };
 
         window.CART_IMAGE_MISSING_SVG = "";
@@ -889,18 +925,20 @@
         };
 
         window.cartProductKeys = function(item = {}) {
+            if (typeof item === "string" || typeof item === "number") return [String(item).trim()].filter(Boolean);
             return [
                 item.id, item.productId, item.productID, item.pid, item.docId, item.productDocId,
-                item.sku, item.itemId, item.slug, item.uid, item.barcode
+                item.sku, item.itemId, item.productItemId, item.slug, item.uid, item.barcode
             ].map(v => String(v || "").trim()).filter(Boolean);
         };
 
         window.cacheCartProductImage = function(product = {}) {
+            if (!product || typeof product !== "object") return;
             const img = window.getProductImageCandidate(product, true);
-            if (!img) return;
-            window.cartProductKeys(product).forEach(key => {
-                window.cartProductImageCache[key] = img;
-                window.cartProductDataCache[key] = product;
+            const cachedProduct = { ...product, image: img || product.image || "" };
+            window.cartProductKeys(cachedProduct).forEach(key => {
+                if (img) window.cartProductImageCache[key] = img;
+                window.cartProductDataCache[key] = cachedProduct;
             });
         };
 
@@ -919,23 +957,30 @@
             return [];
         };
 
-        window.fetchCartCatalogImageMap = async function() {
+        window.fetchCartCatalogImageMap = async function(force = false) {
+            if (!force && window.cartCatalogLoadedAt && Date.now() - window.cartCatalogLoadedAt < 45000) return window.cartProductImageCache;
             if (window.cartCatalogPromise) return window.cartCatalogPromise;
             window.cartCatalogPromise = (async () => {
                 const urls = [
-                    `${window.API_BASE_URL}/products?limit=2500&_cartimg=${Date.now()}`,
-                    `${window.API_BASE_URL}/home-fast?limit=2500&_cartimg=${Date.now()}`,
-                    `${window.API_BASE_URL}/products?_cartimg=${Date.now()}`
+                    `${window.API_BASE_URL}/products?limit=2500&_cartstock=${Date.now()}`,
+                    `${window.API_BASE_URL}/home-fast?limit=2500&_cartstock=${Date.now()}`,
+                    `${window.API_BASE_URL}/products?_cartstock=${Date.now()}`
                 ];
+                let totalCached = 0;
                 for (const url of urls) {
                     try {
                         const data = await window.fastFetchJSON(url, {}, 1);
                         window.cartArrayFromResponse(data).forEach(raw => {
                             const p = window.normalizeBackendProduct(raw) || raw;
-                            window.cacheCartProductImage(p);
+                            if (p && p.id) {
+                                window.cacheCartProductImage(p);
+                                totalCached++;
+                            }
                         });
+                        if (totalCached > 0) break;
                     } catch(e) {}
                 }
+                window.cartCatalogLoadedAt = Date.now();
                 return window.cartProductImageCache;
             })().finally(() => { window.cartCatalogPromise = null; });
             return window.cartCatalogPromise;
@@ -1068,6 +1113,28 @@
             if (cancel) cancel.style.display = 'none';
         };
 
+        window.getCartStockLimit = function(product = {}) {
+            const raw = window.firstNonEmpty(
+                product.stock,
+                product.availableStock,
+                product.stockLeft,
+                product.leftInStock,
+                product.totalStock,
+                product.totalQty,
+                product.availableQuantity,
+                product.inventory,
+                ""
+            );
+            const n = Number(raw);
+            return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+        };
+
+        window.productMatchesCartItem = function(product = {}, itemOrId = {}) {
+            const itemKeys = window.cartProductKeys(itemOrId).map(k => String(k).toLowerCase());
+            const productKeys = new Set(window.cartProductKeys(product).map(k => String(k).toLowerCase()));
+            return itemKeys.length > 0 && itemKeys.some(k => productKeys.has(k));
+        };
+
         window.isLiveDBProduct = function(product) {
             if (!product || !product.id) return false;
             const statusText = String(window.firstNonEmpty(product.status, product.approvalStatus, product.productStatus, product.sellerStatus, "")).toLowerCase();
@@ -1077,76 +1144,162 @@
             if (product.isLive === false || product.live === false || product.isApproved === false || product.approved === false) return false;
             if (["rejected", "blocked", "deleted", "disabled", "hidden", "private", "offline"].some(x => statusText.includes(x) || visibilityText.includes(x))) return false;
             if (["pending", "review", "draft"].some(x => statusText === x || visibilityText === x)) return false;
-            if (Number(product.stock) <= 0 && product.allowBackorder !== true && product.backorder !== true) return false;
+            const stock = window.getCartStockLimit(product);
+            if (stock <= 0 && product.allowBackorder !== true && product.backorder !== true) return false;
             return true;
         };
 
-        window.fetchLiveCartProduct = async function(id) {
-            await window.fetchCartCatalogImageMap();
-            const sid = String(id || "").trim();
-            if (!sid) return null;
-            const cachedImage = window.cartProductImageCache[sid] || "";
-            const existing = (window.cart || []).find(i => window.cartProductKeys(i).includes(sid));
-            if (!existing && !cachedImage) return null;
-            return { ...(existing || {}), id: sid, image: cachedImage || window.getProductImageCandidate(existing || {}) };
+        window.fetchDirectLiveProduct = async function(itemOrId) {
+            const keys = window.cartProductKeys(itemOrId).slice(0, 5);
+            for (const key of keys) {
+                const encoded = encodeURIComponent(key);
+                const urls = [
+                    `${window.API_BASE_URL}/product?id=${encoded}&_stock=${Date.now()}`,
+                    `${window.API_BASE_URL}/product?productId=${encoded}&_stock=${Date.now()}`,
+                    `${window.API_BASE_URL}/product?pid=${encoded}&_stock=${Date.now()}`,
+                    `${window.API_BASE_URL}/products?id=${encoded}&limit=1&_stock=${Date.now()}`
+                ];
+                for (const url of urls) {
+                    try {
+                        const data = await window.fastFetchJSON(url, {}, 0);
+                        const product = window.normalizeBackendProduct(data, key);
+                        if (product && window.productMatchesCartItem(product, itemOrId) && window.isLiveDBProduct(product)) {
+                            window.cacheCartProductImage(product);
+                            return product;
+                        }
+                    } catch(e) {}
+                }
+            }
+            return null;
+        };
+
+        window.fetchLiveCartProduct = async function(itemOrId) {
+            const item = (itemOrId && typeof itemOrId === "object") ? itemOrId : { id: itemOrId };
+            const keys = window.cartProductKeys(item);
+            if (!keys.length) return null;
+
+            const direct = await window.fetchDirectLiveProduct(item);
+            if (direct) return direct;
+
+            await window.fetchCartCatalogImageMap(false);
+            for (const key of keys) {
+                const cached = window.cartProductDataCache[key];
+                if (cached && window.productMatchesCartItem(cached, item) && window.isLiveDBProduct(cached)) return cached;
+            }
+            return null;
+        };
+
+        window.mergeLiveProductIntoCartItem = function(item, live) {
+            const wasEmailOrGift = window.isEmailDeliveryItem(item);
+            const liveEmailOrGift = window.isEmailDeliveryItem(live);
+            const keepCustomPrice = wasEmailOrGift && Number(item.price || 0) > 0 && Number(item.price) !== Number(live.price || 0);
+            const stock = window.getCartStockLimit(live);
+            const currentQty = Math.max(1, Number(item.qty || 1) || 1);
+            const clampedQty = live.allowBackorder === true || live.backorder === true ? currentQty : Math.min(currentQty, stock);
+            return {
+                ...item,
+                ...live,
+                id: String(live.id || item.id),
+                productId: String(live.productId || live.id || item.productId || item.id),
+                itemId: String(live.itemId || live.productItemId || item.itemId || live.id || item.id),
+                qty: Math.max(1, clampedQty),
+                selected: item.selected !== false,
+                price: keepCustomPrice ? Number(item.price || 0) : Number(live.price || item.price || 0),
+                mrp: Number(live.mrp || live.originalPrice || item.mrp || 0) || 0,
+                image: live.image || item.image || (Array.isArray(live.images) ? live.images[0] : "") || "",
+                stock,
+                availableStock: stock,
+                stockLeft: stock,
+                stockVerified: true,
+                stockCheckedAt: new Date().toISOString(),
+                emailDelivery: liveEmailOrGift || wasEmailOrGift,
+                sellerId: live.sellerId || live.sellerUID || live.storeId || item.sellerId || "",
+                sellerName: live.sellerName || live.storeName || live.companyName || item.sellerName || "",
+                sellerEmail: live.sellerEmail || live.seller_email || item.sellerEmail || "",
+                category: live.category || item.category || ""
+            };
         };
 
         window.validateCartAgainstDB = async function(reason = "cart-open") {
-            if (!window.cart.length) return [];
+            if (!window.cart.length) return { removed: [], clamped: [] };
             if (window.cartValidationPromise) return window.cartValidationPromise;
 
             window.cartValidationPromise = (async () => {
-                const beforeIds = new Set(window.cart.map(i => String(i.id)));
-                const checks = await Promise.all(window.cart.map(async item => ({ item, live: await window.fetchLiveCartProduct(item.id) })));
+                const oldMap = new Map(window.cart.map(i => [String(i.id), { ...i }]));
+                const checks = await Promise.all(window.cart.map(async item => ({ item, live: await window.fetchLiveCartProduct(item) })));
                 const nextCart = [];
                 const removed = [];
+                const clamped = [];
 
                 checks.forEach(({ item, live }) => {
-                    if (!live) {
+                    if (!live || !window.isLiveDBProduct(live)) {
                         removed.push(item);
                         return;
                     }
-                    const wasEmailOrGift = window.isEmailDeliveryItem(item);
-                    const liveEmailOrGift = window.isEmailDeliveryItem(live);
-                    const keepCustomPrice = wasEmailOrGift && Number(item.price || 0) > 0 && Number(item.price) !== Number(live.price || 0);
-                    const qty = Math.max(1, Number(item.qty || 1) || 1);
-                    const stock = Number(live.stock || 999);
-                    const clampedQty = Number.isFinite(stock) && stock > 0 && live.allowBackorder !== true && live.backorder !== true ? Math.min(qty, stock) : qty;
-                    nextCart.push({
-                        ...item,
-                        ...live,
-                        id: String(live.id || item.id),
-                        productId: String(live.productId || live.id || item.productId || item.id),
-                        qty: clampedQty,
-                        selected: item.selected !== false,
-                        price: keepCustomPrice ? Number(item.price || 0) : Number(live.price || item.price || 0),
-                        image: live.image || item.image || (Array.isArray(live.images) ? live.images[0] : "") || "",
-                        emailDelivery: liveEmailOrGift || wasEmailOrGift
-                    });
+                    const merged = window.mergeLiveProductIntoCartItem(item, live);
+                    if (Number(merged.qty) < Number(item.qty || 1)) clamped.push({ item, newQty: merged.qty, stock: merged.stock });
+                    if (Number(merged.stock || 0) <= 0 && merged.allowBackorder !== true && merged.backorder !== true) {
+                        removed.push(item);
+                        return;
+                    }
+                    nextCart.push(merged);
                 });
 
-                const normalized = window.normalizeCartItems(nextCart);
-                const changed = removed.length > 0 || normalized.length !== window.cart.length || normalized.some(item => !beforeIds.has(String(item.id)) || JSON.stringify(item) !== JSON.stringify(window.cart.find(old => String(old.id) === String(item.id)) || {}));
-                if (changed) {
-                    window.cart = normalized;
-                    window.state.removedDbItems += removed.length;
-                    window.saveCartData();
-                    if (window.cart.length) {
-                        if (window.currentStep === 1) window.renderStep1();
-                        else if (window.currentStep === 2) window.renderStep2();
-                        else if (window.currentStep === 3) window.renderStep3();
-                    } else {
-                        window.renderEmptyCartState();
-                    }
-                    if (removed.length) {
-                        const names = removed.slice(0, 2).map(i => i.name || i.title || i.id).join(', ');
-                        window.showToast(`${removed.length} unavailable item${removed.length > 1 ? 's were' : ' was'} removed from cart${names ? ': ' + names : '.'}`);
-                    }
+                const normalized = window.normalizeCartItems(nextCart).map(item => {
+                    const live = nextCart.find(x => String(x.id) === String(item.id)) || {};
+                    return { ...item, ...live, qty: item.qty, selected: live.selected !== false };
+                });
+                const changed = removed.length > 0 || clamped.length > 0 || normalized.length !== window.cart.length || normalized.some(item => JSON.stringify(item) !== JSON.stringify(oldMap.get(String(item.id)) || {}));
+
+                window.cart = normalized;
+                window.state.removedDbItems += removed.length;
+                window.saveLocalCartCompact(window.cart);
+                if (window.activeSession && window.activeSession.email) window.syncCartToCloudSilently(`stock-verified-${reason}`);
+
+                if (window.cart.length) {
+                    document.getElementById('stepperNav').style.display = 'flex';
+                    document.getElementById('summaryPanel').style.display = 'block';
+                    if (window.currentStep === 1 || changed) window.renderStep1();
+                    else if (window.currentStep === 2) window.renderStep2();
+                    else if (window.currentStep === 3) window.renderStep3();
+                } else {
+                    window.renderEmptyCartState();
                 }
-                return removed;
+
+                if (reason !== "silent" && (removed.length || clamped.length)) {
+                    const messages = [];
+                    if (removed.length) messages.push(`${removed.length} unavailable/out-of-stock item${removed.length > 1 ? 's were' : ' was'} removed`);
+                    if (clamped.length) messages.push(`${clamped.length} item quantity was limited to available stock`);
+                    window.showToast(messages.join('. ') + '.');
+                }
+                return { removed, clamped };
             })().finally(() => { window.cartValidationPromise = null; });
 
             return window.cartValidationPromise;
+        };
+
+        window.selectedCartSignature = function() {
+            return window.getSelectedCartItems().map(i => `${i.id}:${i.qty}:${i.stock}`).sort().join('|');
+        };
+
+        window.ensureCartStockIsCurrent = async function(reason = "checkout") {
+            const before = window.selectedCartSignature();
+            await window.validateCartAgainstDB(reason);
+            const selected = window.getSelectedCartItems();
+            const after = window.selectedCartSignature();
+            if (!selected.length) {
+                window.currentStep = 1;
+                window.renderStep1();
+                window.showAlert('Selected items are no longer available. Please choose available products again.', 'Stock Updated');
+                return false;
+            }
+            if (before && before !== after) {
+                window.currentStep = 1;
+                window.renderStep1();
+                window.showAlert('Cart stock changed. I updated your cart with the latest available quantity. Please review once before checkout.', 'Stock Updated');
+                return false;
+            }
+            return true;
         };
 
         window.renderCartWarmupState = function(message = "Loading your secure cart...") {
@@ -1228,11 +1381,25 @@
                 window.cart = normalized;
                 window.saveLocalCartCompact(window.cart);
                 window.refreshDeliveryModeState();
-                document.getElementById('stepperNav').style.display = 'flex';
-                document.getElementById('summaryPanel').style.display = 'block';
-                window.renderStep1();
-                window.checkoutBootDone = true;
-                window.enrichCartImagesSilently(source).catch(() => {});
+                window.renderCartWarmupState("Checking live stock from Aryanta DB...");
+                document.getElementById('summaryPanel').style.display = 'none';
+                document.getElementById('stepperNav').style.display = 'none';
+                window.toggleLoader(true, "Checking item stock...");
+                window.validateCartAgainstDB(`open-${source}`).then(() => {
+                    window.checkoutBootDone = true;
+                    if (window.cart.length) {
+                        document.getElementById('stepperNav').style.display = 'flex';
+                        document.getElementById('summaryPanel').style.display = 'block';
+                        window.renderStep1();
+                        window.enrichCartImagesSilently(source).catch(() => {});
+                    } else {
+                        window.renderEmptyCartState();
+                    }
+                }).catch(() => {
+                    window.checkoutBootDone = true;
+                    window.renderEmptyCartState();
+                    window.showAlert('Could not verify cart products from Aryanta DB. Please open the store and add products again.', 'Stock Verification Failed');
+                }).finally(() => window.toggleLoader(false));
                 return true;
             }
 
@@ -1278,10 +1445,9 @@
             const openedFromLocal = window.applyCartAndRender(localCart, "local-fast");
 
             if (openedFromLocal) {
-                window.toggleLoader(false);
                 window.syncCartToCloudSilently("checkout-open-local-cart");
                 window.deferBackgroundTask(() => {
-                    window.fetchKeysAndDB().catch(() => {}).finally(() => window.toggleLoader(false));
+                    window.fetchKeysAndDB().catch(() => {}).finally(() => {});
                 });
             } else {
                 window.renderCartWarmupState();
@@ -1387,7 +1553,15 @@
                 const itemName = window.escapeAttr(item.name || item.title || 'Aryanta Product');
                 let price = Number(item.price) || 0;
                 if (isPrime) price = Math.floor(price * 0.95);
-                const qty = Math.max(1, Number(item.qty || 1) || 1);
+                const stockLimit = window.getCartStockLimit(item);
+                const qty = Math.max(1, Math.min(Number(item.qty || 1) || 1, stockLimit > 0 ? stockLimit : 1));
+                item.qty = qty;
+                const maxReached = stockLimit > 0 && qty >= stockLimit && item.allowBackorder !== true && item.backorder !== true;
+                const stockClass = stockLimit <= 0 ? 'stock-block' : (stockLimit <= 5 ? 'stock-low' : 'stock-ok');
+                const stockText = stockLimit > 0 ? `${stockLimit} left in stock` : 'Out of stock';
+                const unitText = `Unit ${window.money(price)}`;
+                const sellerText = item.sellerName ? `Seller: ${window.escapeAttr(item.sellerName)}` : (item.sellerId ? `Seller ID: ${window.escapeAttr(item.sellerId)}` : 'Aryanta verified');
+                const idText = `ID: ${window.escapeAttr(rawId.slice(0, 18))}`;
 
                 if (item.selected) {
                     window.state.itemsTotal += price * qty;
@@ -1414,13 +1588,20 @@
                                     <div class="price">${window.money(price * qty)}</div>
                                     ${deliveryBadge}
                                     ${primeBadge}
+                                    <div class="cart-smart-meta">
+                                        <span class="${stockClass}"><i class="fas fa-cubes"></i> ${stockText}</span>
+                                        <span><i class="fas fa-tag"></i> ${unitText}</span>
+                                        <span><i class="fas fa-store"></i> ${sellerText}</span>
+                                        <span><i class="fas fa-fingerprint"></i> ${idText}</span>
+                                    </div>
+                                    <div class="cart-stock-check-note"><i class="fas fa-shield-check"></i> </div>
                                 </div>
                             </div>
                             <div class="cart-controls">
                                 <div style="display:flex; align-items:center; gap:12px;">
-                                    <button type="button" class="qty-btn" onclick="changeQty(${jsIdArg}, -1)"><i class="fas fa-minus"></i></button>
+                                    <button type="button" class="qty-btn" onclick="changeQty(${jsIdArg}, -1)" ${qty <= 1 ? 'disabled' : ''}><i class="fas fa-minus"></i></button>
                                     <span style="font-weight:800; font-size:16px; width:25px; text-align:center;">${qty}</span>
-                                    <button type="button" class="qty-btn" onclick="changeQty(${jsIdArg}, 1)"><i class="fas fa-plus"></i></button>
+                                    <button type="button" class="qty-btn" onclick="changeQty(${jsIdArg}, 1)" ${maxReached ? 'disabled' : ''}><i class="fas fa-plus"></i></button>
                                 </div>
                                 <button type="button" class="btn-remove" onclick="removeFromCart(${jsIdArg})"><i class="fas fa-trash"></i> Drop</button>
                             </div>
@@ -1451,15 +1632,56 @@
             }
         };
 
-        window.changeQty = function(id, diff) {
-            const item = window.cart.find(i => String(i.id) === String(id));
-            if(item) {
-                item.qty += diff;
-                if(item.qty <= 0) {
-                    window.cart = window.cart.filter(i => String(i.id) !== String(id));
+        window.changeQty = async function(id, diff) {
+            const key = String(id);
+            if (!window.__qtyLocks) window.__qtyLocks = {};
+            if (window.__qtyLocks[key]) return;
+            const item = window.cart.find(i => String(i.id) === key || String(i.productId) === key || String(i.sku) === key);
+            if (!item) return;
+            window.__qtyLocks[key] = true;
+
+            try {
+                if (diff < 0) {
+                    item.qty = Math.max(0, Number(item.qty || 1) + diff);
+                    if (item.qty <= 0) window.cart = window.cart.filter(i => String(i.id) !== String(item.id));
+                    window.saveCartData();
+                    window.renderStep1();
+                    return;
                 }
+
+                const live = await window.fetchLiveCartProduct(item);
+                if (!live || !window.isLiveDBProduct(live)) {
+                    window.cart = window.cart.filter(i => String(i.id) !== String(item.id));
+                    window.saveCartData();
+                    window.renderStep1();
+                    return window.showAlert('This product is not available in Aryanta DB anymore, so it was removed from cart.', 'Product Unavailable');
+                }
+
+                const merged = window.mergeLiveProductIntoCartItem(item, live);
+                Object.assign(item, merged);
+                const maxQty = window.getCartStockLimit(merged);
+                const currentQty = Math.max(1, Number(item.qty || 1) || 1);
+                const nextQty = currentQty + diff;
+
+                if (maxQty <= 0 && item.allowBackorder !== true && item.backorder !== true) {
+                    window.cart = window.cart.filter(i => String(i.id) !== String(item.id));
+                    window.saveCartData();
+                    window.renderStep1();
+                    return window.showAlert('This item is now out of stock and was removed from your cart.', 'Out of Stock');
+                }
+
+                if (nextQty > maxQty && item.allowBackorder !== true && item.backorder !== true) {
+                    item.qty = maxQty;
+                    window.saveCartData();
+                    window.renderStep1();
+                    return window.showToast(`Only ${maxQty} unit${maxQty > 1 ? 's are' : ' is'} left in stock.`);
+                }
+
+                item.qty = nextQty;
                 window.saveCartData();
                 window.renderStep1();
+            } finally {
+                window.__qtyLocks[key] = false;
             }
         };
 
@@ -1490,11 +1712,17 @@
             });
         };
 
-        window.goStepForward = function() {
+        window.goStepForward = async function() {
             if (window.currentStep === 1) {
                 const selectedItems = window.cart.filter(i => i.selected);
                 if (selectedItems.length === 0) {
                     return window.showAlert("Please select at least one item to proceed.", "Selection Required");
+                }
+                window.toggleButtonState('btnNextStep', true, 'Checking stock...');
+                const ok = await window.ensureCartStockIsCurrent('before-delivery');
+                if (!ok) {
+                    window.resetCheckoutButton();
+                    return;
                 }
                 window.renderStep2();
             } else if (window.currentStep === 2) {
@@ -1821,6 +2049,13 @@
             window.pendingWalletPaymentAmount = 0;
             if (window.checkoutBusy) return;
             window.checkoutBusy = true;
+            window.toggleButtonState('btnNextStep', true, 'Checking live stock...');
+            const stockOk = await window.ensureCartStockIsCurrent('before-payment');
+            if (!stockOk) {
+                window.checkoutBusy = false;
+                window.resetCheckoutButton();
+                return;
+            }
             window.toggleButtonState('btnNextStep', true, 'Securing Order...');
 
             const mode = window.refreshDeliveryModeState();
@@ -1996,10 +2231,17 @@
                     quantity: qty,
                     price,
                     amount: price * qty,
+                    mrp: Number(item.mrp || item.originalPrice || 0) || 0,
+                    stockAtCheckout: window.getCartStockLimit(item),
+                    availableStock: window.getCartStockLimit(item),
+                    stockCheckedAt: item.stockCheckedAt || new Date().toISOString(),
                     deliveryMode: window.isEmailDeliveryItem(item) ? 'email' : 'physical',
                     emailDelivery: window.isEmailDeliveryItem(item),
+                    category: item.category || '',
                     sellerId: item.sellerId || item.seller_id || item.sellerUid || '',
-                    sellerUid: item.sellerUid || item.sellerId || item.seller_id || ''
+                    sellerUid: item.sellerUid || item.sellerId || item.seller_id || '',
+                    sellerName: item.sellerName || item.storeName || '',
+                    sellerEmail: item.sellerEmail || item.seller_email || ''
                 };
             });
             const confirmationSubject = `Aryanta Order Confirmed - ${orderNo}`;
@@ -2118,6 +2360,9 @@
         };
 
         window.executeOrderPlacement = async function(paymentId, payMethodStr) {
+            const beforeSig = window.selectedCartSignature();
+            await window.validateCartAgainstDB('final-order-save');
+            if (beforeSig && beforeSig !== window.selectedCartSignature()) throw new Error('Stock changed before order save.');
             const orderedItems = window.cart.filter(i => i.selected);
             const remainingItems = window.cart.filter(i => !i.selected);
             if (!orderedItems.length) throw new Error('No selected items.');
