@@ -531,9 +531,9 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            cart = JSON.parse(localStorage.getItem('local_cart')) || [];
-            wishlist = JSON.parse(localStorage.getItem('aryanta_wishlist')) || [];
             activeSession = JSON.parse(localStorage.getItem('active_session'));
+            cart = (activeSession && activeSession.email) ? [] : (JSON.parse(localStorage.getItem('local_cart')) || []);
+            wishlist = JSON.parse(localStorage.getItem('aryanta_wishlist')) || [];
             
             loadAppSettings(); 
             loadSpecialDayAndBroadcast();
@@ -547,6 +547,7 @@
                 fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(activeSession.email)}`)
                 .then(res => res.json())
                 .then(uData => {
+                    syncCartFromUserDB(uData);
                     window.userAddresses = uData.addresses || [];
                     if(window.userAddresses.length === 0 && uData.address) {
                         window.userAddresses.push({ name: uData.name, phone: uData.phone, street: uData.address, city: uData.city, pincode: uData.pincode });
@@ -841,6 +842,75 @@
             return "";
         }
 
+        function getDbCartArrayFromUser(userData = {}) {
+            const source = userData.user || userData.profile || userData.data || userData;
+            const possible = [source.cart, source.cartItems, source.local_cart, userData.cart, userData.cartItems, userData.local_cart];
+            for (const value of possible) {
+                if (Array.isArray(value)) return value;
+                if (value && typeof value === "object") return Object.values(value);
+            }
+            return [];
+        }
+
+        function getCartItemId(item) {
+            return String(firstNonEmpty(item?.id, item?.productId, item?.pid, item?.sku, item?.docId, item?.itemId)).trim();
+        }
+
+        function getAvailableStockNumber(product, fallbackItem = null) {
+            const raw = firstNonEmpty(product?.stock, product?.quantity, product?.qty, product?.availableStock, fallbackItem?.stock, fallbackItem?.quantity, fallbackItem?.availableStock, fallbackItem?.maxQty, 0);
+            const stock = Number(raw);
+            return Number.isFinite(stock) ? Math.max(0, Math.floor(stock)) : 0;
+        }
+
+        function normalizeCartWithDbStock(items = []) {
+            const map = new Map();
+            (Array.isArray(items) ? items : []).forEach(item => {
+                if (!item || typeof item !== "object") return;
+                const id = getCartItemId(item);
+                if (!id) return;
+                const product = getProductByIdFast(id) || normalizeProductItem({ ...item, id });
+                if (!product || !product.id || !isLiveProduct(product)) return;
+                const stock = getAvailableStockNumber(product, item);
+                if (stock <= 0 && product.allowBackorder !== true && product.backorder !== true) return;
+                const wantedQty = Math.max(1, Math.floor(Number(item.qty || item.quantity || 1) || 1));
+                const safeQty = (product.allowBackorder === true || product.backorder === true) ? wantedQty : Math.min(wantedQty, stock);
+                const price = Number(firstNonEmpty(item.price, product.price, product.salePrice, product.sellingPrice, 0));
+                const merged = { ...product, ...item, id: String(product.id || id), price: Number.isFinite(price) ? price : product.price, qty: safeQty, selected: item.selected !== false };
+                if (!map.has(String(merged.id))) map.set(String(merged.id), merged);
+                else {
+                    const old = map.get(String(merged.id));
+                    old.qty = Math.min(stock || old.qty, Math.max(Number(old.qty || 1), safeQty));
+                }
+            });
+            return Array.from(map.values());
+        }
+
+        function saveCartLocallyAndRefresh() {
+            cart = normalizeCartWithDbStock(cart);
+            localStorage.setItem('local_cart', JSON.stringify(cart));
+            updateCartBadge();
+            if (currentProduct) checkCartBtnStatus();
+        }
+
+        function syncCartFromUserDB(userData = {}) {
+            const dbCart = getDbCartArrayFromUser(userData);
+            cart = normalizeCartWithDbStock(dbCart);
+            localStorage.setItem('local_cart', JSON.stringify(cart));
+            updateCartBadge();
+            if (currentProduct) checkCartBtnStatus();
+            try { renderSimilarProducts(); } catch(e) {}
+        }
+
+        function buildSafeCartItem(product, price) {
+            if (!product || !product.id || !isLiveProduct(product)) return null;
+            const stock = getAvailableStockNumber(product);
+            if (stock <= 0 && product.allowBackorder !== true && product.backorder !== true) {
+                showAlert("This product is currently out of stock.", "Out of Stock");
+                return null;
+            }
+            return { ...product, price, qty: 1, selected: true };
+        }
+
         function getProductImageSafe(p) {
             if (!p) return "https://aryanta.in/vurify/aryanta.jpeg";
             if (Array.isArray(p.images) && p.images.length) return p.images[0];
@@ -910,6 +980,11 @@
             const map = new Map(allProducts.map(p => [String(p.id), p]));
             normalizeProductList(products).forEach(p => map.set(String(p.id), { ...(map.get(String(p.id)) || {}), ...p }));
             allProducts = Array.from(map.values()).filter(isLiveProduct);
+            if (Array.isArray(cart) && cart.length) {
+                cart = normalizeCartWithDbStock(cart);
+                localStorage.setItem('local_cart', JSON.stringify(cart));
+                updateCartBadge();
+            }
             return allProducts;
         }
 
@@ -1843,15 +1918,16 @@
                     showToast("Item removed from Cart");
                 } else {
                     cart[idx].price = finalPriceToAdd;
+                    cart[idx].qty = Math.min(Math.max(1, Number(cart[idx].qty || 1)), Math.max(1, getAvailableStockNumber(currentProduct, cart[idx])));
                     showToast("Gift card updated in Cart");
                 }
             } else {
-                cart.unshift({ ...currentProduct, price: finalPriceToAdd, qty: 1, selected: true });
+                const safeItem = buildSafeCartItem(currentProduct, finalPriceToAdd);
+                if (!safeItem) { checkCartBtnStatus(); return; }
+                cart.unshift(safeItem);
                 showToast("Item added to Cart");
             }
-            localStorage.setItem('local_cart', JSON.stringify(cart));
-            updateCartBadge();
-            checkCartBtnStatus();
+            saveCartLocallyAndRefresh();
             persistUserStateFast('cart');
         }
 
@@ -2945,7 +3021,7 @@
                 : `<button class="s-add-btn" style="flex:1; background:var(--surface); color:var(--text-main); border-color:var(--border);" onclick="event.stopPropagation(); quickAddCart('${p.id}', this)"><i class="fas fa-shopping-cart"></i></button>`;
 
             return `
-                <div class="similar-card ${isSponsoredProduct(p) ? 'is-sponsored-card' : (isBoostedProduct(p) ? 'is-boosted-card' : '')}" onclick="window.location.href=getRelativeProductUrl(p.id)">
+                <div class="similar-card ${isSponsoredProduct(p) ? 'is-sponsored-card' : (isBoostedProduct(p) ? 'is-boosted-card' : '')}" onclick="window.location.href='${getRelativeProductUrl(p.id)}'">
                     ${isSponsoredProduct(p) ? '<div class="sponsored-ribbon">Sponsored</div>' : (isBoostedProduct(p) ? '<div class="sponsored-ribbon boosted-ribbon">Boosted</div>' : '')}
                     <div class="s-card-top">
                         <img src="${escapeAttr(img)}" class="s-img" loading="lazy" decoding="async">
@@ -2978,11 +3054,12 @@
                 cart.splice(existingIdx, 1);
                 showToast("Removed from Cart");
             } else {
-                cart.unshift({ ...p, price: p.price, qty: 1, selected: true });
+                const safeItem = buildSafeCartItem(p, p.price);
+                if (!safeItem) return;
+                cart.unshift(safeItem);
                 showToast("Added to Cart");
             }
-            localStorage.setItem('local_cart', JSON.stringify(cart));
-            updateCartBadge();
+            saveCartLocallyAndRefresh();
             if (currentProduct && String(currentProduct.id) === String(id)) checkCartBtnStatus();
             renderSimilarProducts();
             persistUserStateFast('cart');
@@ -2999,16 +3076,24 @@
             const priceToPush = getGiftAwarePrice(p);
             if(priceToPush === null) return;
 
+            const stock = getAvailableStockNumber(p);
+            if (stock <= 0 && p.allowBackorder !== true && p.backorder !== true) {
+                showAlert("This product is currently out of stock.", "Out of Stock");
+                return;
+            }
+
             const existingIdx = cart.findIndex(i => String(i.id) === String(p.id));
             if(existingIdx === -1) {
-                cart.unshift({ ...p, price: priceToPush, qty: 1, selected: true });
+                const safeItem = buildSafeCartItem(p, priceToPush);
+                if (!safeItem) return;
+                cart.unshift(safeItem);
             } else {
-                cart[existingIdx].qty = Math.max(1, Number(cart[existingIdx].qty || 1));
+                const wantedQty = Math.max(1, Number(cart[existingIdx].qty || 1));
+                cart[existingIdx].qty = (p.allowBackorder === true || p.backorder === true) ? wantedQty : Math.min(wantedQty, stock);
                 cart[existingIdx].price = priceToPush;
                 cart[existingIdx].selected = true;
             }
-            localStorage.setItem('local_cart', JSON.stringify(cart));
-            updateCartBadge();
+            saveCartLocallyAndRefresh();
             showToast("Item added. Opening cart...");
             persistUserStateFast('cart');
             setTimeout(() => { window.location.href = 'https://aryanta.in/cart/'; }, 60);
@@ -3059,7 +3144,10 @@
         }
 
         function updateCartBadge() {
-            let count = cart.reduce((total, item) => total + (item.qty || 1), 0);
+            const beforeCart = JSON.stringify(cart || []);
+            const cleanCart = normalizeCartWithDbStock(cart);
+            if (beforeCart !== JSON.stringify(cleanCart)) cart = cleanCart;
+            let count = cleanCart.reduce((total, item) => total + Math.max(1, Number(item.qty || 1)), 0);
             const badge = document.getElementById('cartBadge');
             if(badge) {
                 badge.innerText = count;
