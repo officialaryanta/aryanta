@@ -34,6 +34,9 @@
         .cart-smart-meta .stock-block{color:var(--danger,#ef4444);background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.24)}
         .qty-btn[disabled]{opacity:.38;cursor:not-allowed;transform:none!important;box-shadow:none!important}
         .cart-stock-check-note{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;font-weight:900;color:var(--primary,#2563eb)}
+        .pay-radio.cod-disabled{opacity:.62;cursor:not-allowed;filter:grayscale(.1)}
+        .pay-radio.cod-disabled *{cursor:not-allowed!important}
+        .pay-radio.cod-disabled .pay-radio-content{border-color:rgba(239,68,68,.26)}
    </style>
 </head>
 <body>
@@ -354,6 +357,12 @@
         window.requireAdvance = false;
         window.backendDeliveryCharge = 60;
 
+        window.COD_CANCEL_LIMIT = 3;
+        window.lastDeliveryCheckData = null;
+        window.codUnavailableDueToCancellations = false;
+        window.codRestrictionCancelCount = 0;
+        window.codRestrictionReason = "";
+
         window.state = { itemsTotal: 0, shippingCost: 0, walletBalance: 0, walletApplied: 0, promoDiscount: 0, finalPayable: 0, promoCode: "", hasEmailDelivery: false, hasPhysicalDelivery: false, allEmailDelivery: false, removedDbItems: 0 };
         window.checkoutBusy = false;
         window.checkoutBootDone = false;
@@ -579,6 +588,40 @@
             return fallback;
         };
 
+        window.cartBasicKeyList = function(item = {}) {
+            return [
+                item.id, item.productId, item.productID, item.pid, item.docId, item.productDocId,
+                item.sku, item.itemId, item.productItemId, item.slug, item.uid, item.barcode
+            ].map(v => String(v || "").trim().toLowerCase()).filter(Boolean);
+        };
+
+        window.getRecentOrderedCartKeySet = function() {
+            try {
+                const saved = window.safeJSON(localStorage.getItem('aryanta_recent_ordered_cart_keys') || '{}', {});
+                const at = Number(saved.at || 0);
+                if (!at || Date.now() - at > 24 * 60 * 60 * 1000) {
+                    localStorage.removeItem('aryanta_recent_ordered_cart_keys');
+                    return new Set();
+                }
+                return new Set((Array.isArray(saved.keys) ? saved.keys : []).map(k => String(k || '').trim().toLowerCase()).filter(Boolean));
+            } catch(e) {
+                return new Set();
+            }
+        };
+
+        window.rememberRecentlyOrderedCartKeys = function(items = []) {
+            try {
+                const keys = Array.from(new Set((Array.isArray(items) ? items : []).flatMap(item => window.cartBasicKeyList(item))));
+                if (keys.length) localStorage.setItem('aryanta_recent_ordered_cart_keys', JSON.stringify({ at: Date.now(), keys }));
+            } catch(e) {}
+        };
+
+        window.filterRecentlyOrderedCartItems = function(items = []) {
+            const keySet = window.getRecentOrderedCartKeySet();
+            if (!keySet.size || !Array.isArray(items)) return items;
+            return items.filter(item => !window.cartBasicKeyList(item).some(key => keySet.has(key)));
+        };
+
         window.normalizeCartItems = function(items, opts = {}) {
             if (!Array.isArray(items)) return [];
             const forStorage = !!(opts && opts.forStorage);
@@ -671,7 +714,7 @@
                     }
                 });
             });
-            return Array.from(merged.values());
+            return window.filterRecentlyOrderedCartItems(Array.from(merged.values()));
         };
 
         window.firstNonEmpty = function(...values) {
@@ -761,6 +804,114 @@
         window.calculateShippingCost = function() {
             const mode = window.refreshDeliveryModeState();
             return mode.hasPhysicalDelivery && window.requireAdvance ? Number(window.backendDeliveryCharge || 0) : 0;
+        };
+
+        window.unwrapDeliveryRestrictionData = function(source = {}) {
+            if (!source || typeof source !== "object") return {};
+            const first = source.data || source.delivery || source.result || source.check || source.user || source.account || source.profile || source.cod || source.cashOnDelivery;
+            if (first && typeof first === "object" && !Array.isArray(first)) return { ...source, ...first };
+            return source;
+        };
+
+        window.getCODCancellationCount = function(source = {}) {
+            source = window.unwrapDeliveryRestrictionData(source);
+            if (!source || typeof source !== "object") return 0;
+            const numericKeys = [
+                "cancelCount", "cancellationCount", "cancelledCount", "canceledCount",
+                "cancelledOrders", "canceledOrders", "codCancelCount", "codCancelledCount",
+                "codCancellationCount", "orderCancelCount", "pastCancelCount", "previousCancelCount",
+                "failedCodCount", "codFailedCount", "returnCancelCount", "cancel_count",
+                "cancellation_count", "cod_cancel_count", "totalCancellations", "totalCancelledOrders"
+            ];
+            for (const key of numericKeys) {
+                if (Object.prototype.hasOwnProperty.call(source, key)) {
+                    const value = source[key];
+                    if (Array.isArray(value)) return value.length;
+                    const n = Number(value);
+                    if (Number.isFinite(n)) return Math.max(0, Math.floor(n));
+                }
+            }
+            const arrayKeys = [
+                "cancelHistory", "cancellationHistory", "cancelledOrderIds", "canceledOrderIds",
+                "cancelled_orders", "canceled_orders", "codCancellations", "failedCodOrders",
+                "cancelledOrdersList", "canceledOrdersList"
+            ];
+            for (const key of arrayKeys) {
+                if (Array.isArray(source[key])) return source[key].length;
+            }
+            return 0;
+        };
+
+        window.hasExplicitCODBlock = function(source = {}) {
+            source = window.unwrapDeliveryRestrictionData(source);
+            if (!source || typeof source !== "object") return false;
+            const blockKeys = [
+                "codBlocked", "codDisabled", "codUnavailable", "cashOnDeliveryBlocked",
+                "cashOnDeliveryDisabled", "disableCOD", "disableCod", "codRestricted",
+                "forceOnlinePayment", "requireOnlinePayment", "onlineOnly", "codLimitCrossed",
+                "cancelLimitCrossed", "cancellationLimitCrossed", "cod_not_available"
+            ];
+            if (blockKeys.some(key => Object.prototype.hasOwnProperty.call(source, key) && window.booleanFlag(source[key]))) return true;
+
+            const allowKeys = [
+                "codAvailable", "codAllowed", "allowCOD", "allowCod",
+                "cashOnDeliveryAvailable", "cashOnDeliveryAllowed"
+            ];
+            return allowKeys.some(key => {
+                if (!Object.prototype.hasOwnProperty.call(source, key)) return false;
+                const value = source[key];
+                if (value === undefined || value === null || String(value).trim() === "") return false;
+                return !window.booleanFlag(value);
+            });
+        };
+
+        window.getDeliveryChargeFromResponse = function(source = {}, fallback = 60) {
+            source = window.unwrapDeliveryRestrictionData(source);
+            const keys = ["deliveryCharge", "shippingCharge", "charge", "delivery_fee", "shipping_fee", "codAdvance", "advanceDeliveryCharge"];
+            for (const key of keys) {
+                if (Object.prototype.hasOwnProperty.call(source, key)) {
+                    const n = Number(source[key]);
+                    if (Number.isFinite(n)) return Math.max(0, n);
+                }
+            }
+            return Number(fallback || 60);
+        };
+
+        window.deliveryRequiresAdvance = function(source = {}) {
+            source = window.unwrapDeliveryRestrictionData(source);
+            return !!(source && typeof source === "object" && (
+                window.booleanFlag(source.requireAdvance) ||
+                window.booleanFlag(source.requiresAdvance) ||
+                window.booleanFlag(source.advanceRequired) ||
+                window.booleanFlag(source.prepaidRequired) ||
+                window.booleanFlag(source.onlinePaymentRequired)
+            ));
+        };
+
+        window.refreshCODRestrictionState = function(extraSource = {}) {
+            const sources = [
+                extraSource,
+                window.lastDeliveryCheckData || {},
+                window.userData || {},
+                window.activeSession || {}
+            ].filter(Boolean);
+
+            const cancelCount = Math.max(0, ...sources.map(src => window.getCODCancellationCount(src)));
+            const explicitBlock = sources.some(src => window.hasExplicitCODBlock(src));
+            const backendAdvanceBlock = sources.some(src => window.deliveryRequiresAdvance(src));
+            const frequentCancellationBlock = cancelCount >= Number(window.COD_CANCEL_LIMIT || 3);
+
+            window.requireAdvance = !!(window.requireAdvance || backendAdvanceBlock);
+            window.codRestrictionCancelCount = cancelCount;
+            window.codUnavailableDueToCancellations = !!(explicitBlock || backendAdvanceBlock || frequentCancellationBlock);
+            window.codRestrictionReason = window.codUnavailableDueToCancellations
+                ? "COD is not available right now. Please pay online securely, use Aryanta Wallet, or apply a promo/redeem code."
+                : "";
+            return window.codUnavailableDueToCancellations;
+        };
+
+        window.isCODRestricted = function(extraSource = {}) {
+            return window.refreshCODRestrictionState(extraSource);
         };
 
         window.flattenFirestoreValue = function(value) {
@@ -1376,7 +1527,7 @@
         };
 
         window.applyCartAndRender = function(nextCart, source = "local") {
-            const normalized = window.normalizeCartItems(nextCart);
+            const normalized = window.filterRecentlyOrderedCartItems(window.normalizeCartItems(nextCart));
             if (normalized.length > 0) {
                 window.cart = normalized;
                 window.saveLocalCartCompact(window.cart);
@@ -1408,10 +1559,16 @@
         };
 
         window.syncCartToCloudSilently = function(reason = "local-first") {
-            if (!window.activeSession || !window.activeSession.email || !window.cart.length) return;
+            if (!window.activeSession || !window.activeSession.email) return;
+            const compactCart = window.normalizeCartItems(window.cart || [], { forStorage: true });
             const payload = {
                 email: window.activeSession.email,
-                updates: { cart: window.normalizeCartItems(window.cart, { forStorage: true }) },
+                updates: {
+                    cart: compactCart,
+                    cartItems: compactCart,
+                    shoppingCart: compactCart,
+                    cartUpdatedAt: new Date().toISOString()
+                },
                 projectId: window.PROJECT_ID,
                 _enc_packet: window.encryptPayload({ a: "cart_repair", reason })
             };
@@ -1482,8 +1639,9 @@
             }
 
             if (delData) {
-                window.requireAdvance = !!delData.requireAdvance;
-                window.backendDeliveryCharge = Number(delData.deliveryCharge || delData.shippingCharge || delData.charge || window.backendDeliveryCharge || 60);
+                window.lastDeliveryCheckData = delData;
+                window.requireAdvance = window.deliveryRequiresAdvance(delData);
+                window.backendDeliveryCharge = window.getDeliveryChargeFromResponse(delData, window.backendDeliveryCharge || 60);
             }
 
             if (uData && typeof uData === "object") {
@@ -1494,6 +1652,7 @@
 
             window.ensureUserAddressModel();
             window.state.walletBalance = Number(window.userData.wallet ?? window.userData.walletBalance ?? window.userData.wallet_amount ?? window.userData.balance ?? 0) || 0;
+            window.refreshCODRestrictionState(delData || {});
 
             const localCart = window.normalizeCartItems(window.getLocalCart());
             const cloudCart = window.normalizeCartItems(window.userData && Array.isArray(window.userData.cart) ? window.userData.cart : []);
@@ -1619,8 +1778,10 @@
             document.getElementById('sumPoints').innerText = `+${earnedPts.toLocaleString('en-IN')} Pts`;
 
             document.getElementById('btnBackStep').style.display = 'none';
-            document.getElementById('btnNextStep').innerHTML = 'Proceed to Delivery <i class="fas fa-arrow-right"></i>';
-            document.getElementById('btnNextStep').onclick = window.goStepForward;
+            const nextBtn = document.getElementById('btnNextStep');
+            nextBtn.innerHTML = 'Proceed to Delivery <i class="fas fa-arrow-right"></i>';
+            nextBtn.onclick = window.goStepForward;
+            nextBtn.disabled = false;
         };
 
         window.toggleItemSelection = function(id) {
@@ -1808,8 +1969,10 @@
             }
 
             document.getElementById('btnBackStep').style.display = 'block';
-            document.getElementById('btnNextStep').innerHTML = 'Proceed to Payment <i class="fas fa-lock"></i>';
-            document.getElementById('btnNextStep').onclick = window.goStepForward;
+            const nextBtn = document.getElementById('btnNextStep');
+            nextBtn.innerHTML = 'Proceed to Payment <i class="fas fa-lock"></i>';
+            nextBtn.onclick = window.goStepForward;
+            nextBtn.disabled = false;
 
             window.state.shippingCost = window.calculateShippingCost();
             if (mode.allEmailDelivery) {
@@ -1866,6 +2029,8 @@
             document.getElementById('step3Container').style.display = 'block';
 
             document.getElementById('btnBackStep').style.display = 'block';
+            const nextBtn = document.getElementById('btnNextStep');
+            if (nextBtn) nextBtn.disabled = false;
 
             window.updatePaymentUI();
             window.updateWalletPayUI();
@@ -1894,18 +2059,22 @@
 
             const btn = document.getElementById('btnNextStep');
             const mode = window.refreshDeliveryModeState();
-            const isCOD = !mode.hasEmailDelivery && document.querySelector('input[name="payMethod"][value="cod"]')?.checked;
+            const codRestricted = !mode.hasEmailDelivery && window.isCODRestricted();
+            const isCOD = !mode.hasEmailDelivery && !codRestricted && document.querySelector('input[name="payMethod"][value="cod"]')?.checked;
 
-            if (window.currentStep === 3) {
+            if (window.currentStep === 3 && btn) {
                 if (isCOD && !window.requireAdvance) {
                     btn.innerHTML = 'Place Order <i class="fas fa-check"></i>';
                 } else if (window.state.finalPayable === 0) {
                     btn.innerHTML = 'Complete Order <i class="fas fa-check"></i>';
                 } else {
                     let amt = isCOD ? Math.max(0, window.state.shippingCost - deductions) : window.state.finalPayable;
-                    btn.innerHTML = `Pay ${window.money(amt)} <i class="fas fa-lock"></i>`;
+                    btn.innerHTML = codRestricted
+                        ? `Pay Now Online ${window.money(amt)} <i class="fas fa-lock"></i>`
+                        : `Pay ${window.money(amt)} <i class="fas fa-lock"></i>`;
                 }
                 btn.onclick = window.processCheckout;
+                btn.disabled = false;
             }
             window.updateWalletPayUI();
         };
@@ -1969,40 +2138,70 @@
             const codOption = document.getElementById('codPaymentOption');
             const codInput = document.querySelector('input[name="payMethod"][value="cod"]');
             const onlineInput = document.querySelector('input[name="payMethod"][value="online"]');
-            const isCOD = codInput ? codInput.checked : false;
             const wBox = document.getElementById('codWarningBox');
             const sub = document.getElementById('codSubtext');
+            const codRestricted = !mode.hasEmailDelivery && window.isCODRestricted();
 
             if (mode.hasEmailDelivery) {
-                if (codOption) codOption.style.display = 'none';
-                if (codInput) codInput.checked = false;
+                if (codOption) {
+                    codOption.style.display = 'none';
+                    codOption.classList.remove('cod-disabled');
+                    codOption.removeAttribute('aria-disabled');
+                    codOption.title = '';
+                }
+                if (codInput) {
+                    codInput.checked = false;
+                    codInput.disabled = true;
+                }
                 if (onlineInput) onlineInput.checked = true;
                 if (wBox) {
                     wBox.style.display = 'block';
                     wBox.classList.add('digital-info');
                     wBox.innerHTML = `<i class="fas fa-envelope-circle-check"></i> Your cart contains digital items. Cash on Delivery is disabled. Please pay online securely.`;
                 }
-                if (sub) sub.innerText = 'Unavailable for email delivery.';
+                if (sub) {
+                    sub.style.color = 'var(--danger)';
+                    sub.innerText = 'Unavailable for email delivery.';
+                }
             } else {
-                if (codOption) codOption.style.display = '';
+                if (codOption) {
+                    codOption.style.display = '';
+                    codOption.classList.toggle('cod-disabled', codRestricted);
+                    codOption.setAttribute('aria-disabled', codRestricted ? 'true' : 'false');
+                    codOption.title = codRestricted ? 'COD is not available right now. Please pay online.' : '';
+                }
+                if (codInput) {
+                    if (codRestricted) codInput.checked = false;
+                    codInput.disabled = codRestricted;
+                }
+                if (codRestricted && onlineInput) onlineInput.checked = true;
+
                 if (wBox) {
                     wBox.classList.remove('digital-info');
-                    wBox.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Notice: Due to frequent past cancellations, you must pay the delivery charge upfront to place a Cash on Delivery order.`;
-                }
-                if (isCOD) {
-                    if (window.requireAdvance) {
+                    if (codRestricted) {
                         wBox.style.display = 'block';
+                        wBox.innerHTML = `<i class="fas fa-ban"></i> COD is not available right now because the cancellation limit was crossed. Please use Pay Now Online, Aryanta Wallet, or promo/redeem discount.`;
+                    } else {
+                        wBox.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Notice: Due to frequent past cancellations, you must pay the delivery charge upfront to place a Cash on Delivery order.`;
+                    }
+                }
+
+                const isCOD = codInput ? codInput.checked : false;
+                if (sub) {
+                    if (codRestricted) {
+                        sub.style.color = 'var(--danger)';
+                        sub.innerText = 'COD is not available right now.';
+                    } else if (isCOD && window.requireAdvance) {
+                        if (wBox) wBox.style.display = 'block';
                         sub.style.color = 'var(--danger)';
                         sub.innerText = 'Advance Shipping Fee Required.';
                     } else {
-                        wBox.style.display = 'none';
+                        if (wBox) wBox.style.display = 'none';
                         sub.style.color = 'var(--text-muted)';
                         sub.innerText = 'Pay when your order arrives.';
                     }
-                } else {
+                } else if (wBox && !codRestricted && !(isCOD && window.requireAdvance)) {
                     wBox.style.display = 'none';
-                    sub.style.color = 'var(--text-muted)';
-                    sub.innerText = 'Pay when your order arrives.';
                 }
             }
 
@@ -2015,12 +2214,15 @@
             const btn = document.getElementById('btnNextStep');
             if (!btn) return;
             const mode = window.refreshDeliveryModeState();
-            const isCOD = !mode.hasEmailDelivery && document.querySelector('input[name="payMethod"]:checked')?.value === 'cod';
+            const codRestricted = !mode.hasEmailDelivery && window.isCODRestricted();
+            const isCOD = !mode.hasEmailDelivery && !codRestricted && document.querySelector('input[name="payMethod"]:checked')?.value === 'cod';
             let amount = window.state?.finalPayable || 0;
             if (isCOD && window.requireAdvance) amount = Math.max(0, (window.state.shippingCost || 0) - (window.state.promoDiscount || 0) - (window.state.walletApplied || 0));
             if (isCOD && !window.requireAdvance) btn.innerHTML = 'Place Order <i class="fas fa-check"></i>';
             else if (amount <= 0) btn.innerHTML = 'Complete Order <i class="fas fa-check"></i>';
-            else btn.innerHTML = `Pay ${window.money(amount)} <i class="fas fa-lock"></i>`;
+            else btn.innerHTML = codRestricted
+                ? `Pay Now Online ${window.money(amount)} <i class="fas fa-lock"></i>`
+                : `Pay ${window.money(amount)} <i class="fas fa-lock"></i>`;
             btn.disabled = false;
             window.updateWalletPayUI();
         };
@@ -2057,10 +2259,27 @@
                 return;
             }
             window.toggleButtonState('btnNextStep', true, 'Securing Order...');
+            window.refreshCODRestrictionState(window.lastDeliveryCheckData || {});
+            window.updatePaymentUI();
 
             const mode = window.refreshDeliveryModeState();
             const checkedPay = document.querySelector('input[name="payMethod"]:checked');
             const isCOD = checkedPay ? checkedPay.value === 'cod' : false;
+            const codRestricted = !mode.hasEmailDelivery && window.isCODRestricted();
+
+            if (isCOD && codRestricted) {
+                const codInput = document.querySelector('input[name="payMethod"][value="cod"]');
+                const onlineInput = document.querySelector('input[name="payMethod"][value="online"]');
+                if (codInput) {
+                    codInput.checked = false;
+                    codInput.disabled = true;
+                }
+                if (onlineInput) onlineInput.checked = true;
+                window.checkoutBusy = false;
+                window.updatePaymentUI();
+                window.resetCheckoutButton();
+                return window.showAlert('COD is not available right now. Please use Pay Now Online, Aryanta Wallet, or promo/redeem discount.', 'COD Not Available');
+            }
 
             if (isCOD && mode.hasEmailDelivery) {
                 window.checkoutBusy = false;
@@ -2359,12 +2578,75 @@
             }
         };
 
+        window.getCartIdentitySet = function(items = []) {
+            const set = new Set();
+            (Array.isArray(items) ? items : []).forEach(item => {
+                window.cartProductKeys(item).forEach(key => {
+                    const clean = String(key || "").trim().toLowerCase();
+                    if (clean) set.add(clean);
+                });
+            });
+            return set;
+        };
+
+        window.cartItemMatchesAnyKey = function(item = {}, keySet = new Set()) {
+            if (!item || !keySet || !keySet.size) return false;
+            return window.cartProductKeys(item).some(key => keySet.has(String(key || "").trim().toLowerCase()));
+        };
+
+        window.persistCartAfterSuccessfulOrder = async function(orderedItems = [], extraUpdates = {}) {
+            const orderedKeys = window.getCartIdentitySet(orderedItems);
+            window.rememberRecentlyOrderedCartKeys(orderedItems);
+            const currentCart = Array.isArray(window.cart) ? window.cart : [];
+            const remaining = currentCart.filter(item => item && item.selected === false && !window.cartItemMatchesAnyKey(item, orderedKeys));
+            const compactRemaining = window.normalizeCartItems(remaining, { forStorage: true });
+
+            window.cart = window.normalizeCartItems(remaining);
+            if (window.userData) window.userData.cart = compactRemaining;
+            window.saveLocalCartCompact(window.cart);
+            try { localStorage.setItem('local_cart', JSON.stringify(compactRemaining)); } catch(e) {}
+            try { sessionStorage.removeItem('local_cart'); } catch(e) {}
+
+            if (!window.activeSession || !window.activeSession.email) return compactRemaining;
+
+            const updates = {
+                ...extraUpdates,
+                cart: compactRemaining,
+                cartItems: compactRemaining,
+                shoppingCart: compactRemaining,
+                local_cart: compactRemaining,
+                cartUpdatedAt: new Date().toISOString(),
+                lastOrderedCartRemovedAt: new Date().toISOString()
+            };
+
+            const payload = {
+                email: window.activeSession.email,
+                updates,
+                projectId: window.PROJECT_ID,
+                _enc_packet: window.encryptPayload({ a: 'order_cart_clear', orderNo: extraUpdates.lastOrderNo || '' })
+            };
+
+            try {
+                await fetch(`${window.API_BASE_URL}/update-user`, {
+                    method: 'POST',
+                    mode: 'cors',
+                    cache: 'no-store',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify(payload),
+                    keepalive: true
+                });
+            } catch(e) {
+                window.syncCartToCloudSilently('order-cart-clear-retry');
+            }
+
+            return compactRemaining;
+        };
+
         window.executeOrderPlacement = async function(paymentId, payMethodStr) {
             const beforeSig = window.selectedCartSignature();
             await window.validateCartAgainstDB('final-order-save');
             if (beforeSig && beforeSig !== window.selectedCartSignature()) throw new Error('Stock changed before order save.');
-            const orderedItems = window.cart.filter(i => i.selected);
-            const remainingItems = window.cart.filter(i => !i.selected);
+            const orderedItems = window.getSelectedCartItems();
             if (!orderedItems.length) throw new Error('No selected items.');
 
             const selAddr = window.getCheckoutAddress();
@@ -2420,24 +2702,12 @@
             const newPoints = Number(window.userData.points || 0) + earnedPoints;
             window.userData.points = newPoints;
 
-            window.cart = remainingItems;
-            window.cart = window.saveLocalCartCompact(window.cart);
-
-            await fetch(`${window.API_BASE_URL}/update-user`, {
-                method: 'POST',
-                mode: 'cors',
-                cache: 'no-store',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify({
-                    email: window.activeSession.email,
-                    updates: {
-                        wallet: newBal,
-                        points: newPoints,
-                        cart: window.normalizeCartItems(window.cart, { forStorage: true })
-                    },
-                    projectId: window.PROJECT_ID
-                })
-            }).catch(() => {});
+            await window.persistCartAfterSuccessfulOrder(orderedItems, {
+                wallet: newBal,
+                walletBalance: newBal,
+                points: newPoints,
+                lastOrderNo: orderNo
+            });
 
             await window.sendOrderConfirmationEmail({
                 orderNo,
