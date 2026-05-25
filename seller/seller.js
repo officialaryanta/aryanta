@@ -9276,4 +9276,1972 @@ window.loadTutorials = function() {
             window.loadProductPerformance();
         }
     }, 800);
+})();/* Aryanta Seller Panel Smart Feature Upgrade - 2026-05-25 */
+(function(){
+    if(window.ARYANTA_SELLER_SMART_UPGRADE_20260525) return;
+    window.ARYANTA_SELLER_SMART_UPGRADE_20260525 = true;
+
+    const PLAN_RULES = {
+        Basic:{key:'Basic',name:'Basic',commission:6,sponsoredPrice:70,fineDiscount:0,performance:'locked',badge:'Free seller access',freeAds:0},
+        Growth:{key:'Growth',name:'Growth',commission:4,sponsoredPrice:50,fineDiscount:30,performance:'growth',badge:'Growth analytics enabled',freeAds:2},
+        Pro:{key:'Pro',name:'Pro',commission:2.5,sponsoredPrice:40,fineDiscount:50,performance:'pro',badge:'Pro deep analytics enabled',freeAds:5}
+    };
+
+    window.ARYANTA_PLAN_RULES_2026 = PLAN_RULES;
+
+    function $(id){return document.getElementById(id);}
+    function qsa(sel,root=document){return Array.from(root.querySelectorAll(sel));}
+    function txt(v){return v===undefined||v===null?'':String(v);}
+    function low(v){return txt(v).toLowerCase().trim();}
+    function num(v){const n=Number(v);return Number.isFinite(n)?n:0;}
+    function nowIso(){return new Date().toISOString();}
+    function safe(v){return txt(v).replace(/[&<>'"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c];});}
+    function toast(msg,type='info'){try{if(typeof showToast==='function')showToast(msg,type);else console.log(msg);}catch(e){console.log(msg);}}
+    function seller(){try{return activeSeller||window.activeSeller||null;}catch(e){return window.activeSeller||null;}}
+    function dbx(){try{return db||window.db||null;}catch(e){return window.db||null;}}
+    function sellerEmail(){const s=seller()||{};return low(s.email||s.sellerEmail||s.mail);}
+    function sellerDocId(){const s=seller()||{};return txt(s.email||s.sellerEmail||s.uid||s.id||sellerEmail()).trim();}
+    function products(){try{return Array.isArray(sellerProducts)?sellerProducts:[];}catch(e){return window.sellerProducts||[];}}
+    function orders(){try{return Array.isArray(sellerOrders)?sellerOrders:[];}catch(e){return window.sellerOrders||[];}}
+    function reviews(){try{return Array.isArray(sellerReviews)?sellerReviews:[];}catch(e){return window.sellerReviews||[];}}
+    function planKey(raw){
+        const s=seller()||{};
+        const p=low(raw||s.subscription||s.subscriptionName||s.plan||s.package||'Basic');
+        if(p.includes('pro')||p.includes('ultra')||p.includes('premium')) return 'Pro';
+        if(p.includes('growth')||p.includes('grow')||p==='go'||p.includes('go plan')) return 'Growth';
+        return 'Basic';
+    }
+    function currentPlan(){return PLAN_RULES[planKey()]||PLAN_RULES.Basic;}
+    function isPaidPlan(){return currentPlan().key!=='Basic';}
+    function planPrice(plan){plan=PLAN_RULES[planKey(plan)]||PLAN_RULES.Basic;return plan.sponsoredPrice;}
+    function formatMoney(v){return '₹'+num(v).toLocaleString('en-IN');}
+    function dateOf(v){if(!v)return null;if(v&&typeof v.toDate==='function')return v.toDate();const d=new Date(v);return isNaN(d.getTime())?null:d;}
+    function monthKey(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+    function productImage(p){
+        if(!p)return '';
+        if(Array.isArray(p.images)&&p.images[0])return p.images[0];
+        if(Array.isArray(p.imageUrls)&&p.imageUrls[0])return p.imageUrls[0];
+        return p.image||p.imageUrl||p.mainImage||p.productImage||p.thumbnail||p.img||'';
+    }
+    function productById(id){
+        const key=txt(id).trim();
+        return products().find(p=>[p.id,p.productId,p.product_id,p.sku].some(v=>txt(v).trim()===key));
+    }
+    function orderItems(order){
+        let items=[];
+        try{if(typeof getSellerItemsFromOrder==='function')items=getSellerItemsFromOrder(order)||[];}catch(e){}
+        if(!items.length&&Array.isArray(order&&order.items))items=order.items;
+        return items;
+    }
+    function orderAmount(order){return orderItems(order).reduce((s,i)=>s+(num(i.price||i.sellingPrice||i.finalPrice||i.amount)*Math.max(1,num(i.qty||i.quantity||1)||1)),0)||num(order&& (order.total||order.amount||order.finalAmount||order.totalPrice));}
+    function orderDate(order){return dateOf(order&& (order.timestamp||order.createdAt||order.orderDate||order.date))||new Date();}
+    function findOrder(id){const key=txt(id).trim();return orders().find(o=>[o.id,o.orderId,o.order_no,o.orderNo,o.invoiceId].some(v=>txt(v).trim()===key));}
+    function productMatchItem(p,item){
+        const pId=txt(p.id||p.productId||p.product_id).trim();
+        const iId=txt(item.productId||item.product_id||item.productDocId||item.id).trim();
+        const pSku=low(p.sku), iSku=low(item.sku);
+        const pName=low(p.name||p.title), iName=low(item.name||item.title||item.productName);
+        return (pId&&iId&&pId===iId)||(pSku&&iSku&&pSku===iSku)||(pName&&iName&&pName===iName);
+    }
+    function closeSmartModal(id){const m=$(id);if(m){m.classList.remove('show');m.style.display='none';}}
+    window.closeSmartModal = closeSmartModal;
+
+    window.getAryantaCommissionPercent = function(){return currentPlan().commission;};
+    window.getAryantaCommissionRate = function(){return currentPlan().commission/100;};
+    window.getAryantaSponsoredAdPrice = function(){return currentPlan().sponsoredPrice;};
+    window.getAryantaFineDiscountPercent = function(){return currentPlan().fineDiscount;};
+
+    function discountedFineAmount(amount){
+        const p=currentPlan();
+        const original=num(amount);
+        const final=Math.max(0,Math.round(original*(100-p.fineDiscount)/100));
+        return {original,final,discount:p.fineDiscount,plan:p.key};
+    }
+
+    function normalizeFineRequest(payload){
+        payload=payload||{};
+        const s=seller()||{};
+        const calc=discountedFineAmount(payload.amount||payload.finalAmount||payload.requestedAmount||0);
+        return Object.assign({},payload,{
+            email:sellerEmail(),
+            sellerEmail:sellerEmail(),
+            sellerName:s.companyName||s.shopName||s.name||s.email||'',
+            sellerPhone:s.phone||s.mobile||'',
+            sellerUid:s.uid||s.sellerUid||s.accountUid||s.id||'',
+            sellerAddress:s.address||s.shopAddress||s.businessAddress||'',
+            requestedAmount:calc.original,
+            originalAmount:calc.original,
+            amount:calc.final,
+            suggestedFinalAmount:calc.final,
+            planAtRequest:calc.plan,
+            fineDiscountPercent:calc.discount,
+            status:'Pending Admin Approval',
+            fineRequestStatus:'Waiting Admin Approval',
+            adminEditableAmount:true,
+            adminCanAccept:true,
+            adminCanChangeAmount:true,
+            source:'seller-panel-fine-request',
+            requestedAt:payload.requestedAt||payload.timestamp||payload.createdAt||nowIso(),
+            createdAt:payload.createdAt||nowIso(),
+            timestamp:payload.timestamp||nowIso(),
+            note:'This is a request only. Seller payout is not deducted until admin accepts or edits the fine amount.'
+        });
+    }
+
+    async function sendFineRequest(key,amount,reason,extra){
+        const database=dbx();
+        if(!database||!sellerEmail())return false;
+        const safeId=(sellerEmail()+'_'+txt(key||reason||Date.now())).replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,180);
+        const payload=normalizeFineRequest(Object.assign({requestKey:key,reason:reason||'Fine request',amount:amount},extra||{}));
+        try{
+            const ref=database.collection('seller_fine_requests').doc(safeId);
+            const old=await ref.get().catch(()=>null);
+            if(old&&old.exists)return false;
+            await ref.set(payload,{merge:true});
+            toast('Fine request sent to admin for approval. No deduction applied now.','warning');
+            return true;
+        }catch(e){console.warn('fine request failed',e);return false;}
+    }
+
+    window.aryantaAddFineOnce = sendFineRequest;
+    window.addFineRequestToAdmin = sendFineRequest;
+    try{window.addFineOnce=sendFineRequest;}catch(e){}
+
+    function installFineRequestMode(){
+        const database=dbx();
+        if(!database||database.__ARYANTA_FINE_REQUEST_MODE)return false;
+        const originalCollection=database.collection.bind(database);
+        database.collection=function(path,...rest){
+            const ref=originalCollection(path,...rest);
+            if(txt(path)!=='fines')return ref;
+            return new Proxy(ref,{
+                get(target,prop){
+                    if(prop==='add'){
+                        return function(payload){
+                            return originalCollection('seller_fine_requests').add(normalizeFineRequest(payload));
+                        };
+                    }
+                    if(prop==='doc'){
+                        return function(docId){
+                            const fineRef=originalCollection('seller_fine_requests').doc(txt(docId||('fine_'+Date.now())).replace(/[^a-zA-Z0-9_-]/g,'_'));
+                            return new Proxy(fineRef,{
+                                get(t,p){
+                                    if(p==='set')return function(payload,opt){return fineRef.set(normalizeFineRequest(Object.assign({requestKey:docId},payload||{})),opt||{merge:true});};
+                                    if(p==='update')return function(payload){return fineRef.set(normalizeFineRequest(Object.assign({requestKey:docId},payload||{})),{merge:true});};
+                                    const value=t[p];
+                                    return typeof value==='function'?value.bind(t):value;
+                                }
+                            });
+                        };
+                    }
+                    const value=target[prop];
+                    return typeof value==='function'?value.bind(target):value;
+                }
+            });
+        };
+        database.__ARYANTA_FINE_REQUEST_MODE=true;
+        return true;
+    }
+
+    function retryFinePatch(){
+        let tries=0;
+        const timer=setInterval(function(){
+            tries++;
+            if(installFineRequestMode()||tries>40)clearInterval(timer);
+        },250);
+    }
+    retryFinePatch();
+
+    function reviewValue(r){return num(r.rating||r.stars||r.star||r.value||r.rate);}
+    function collectStoreReviews(){
+        const rows=[];
+        reviews().forEach(r=>{const v=reviewValue(r);if(v>0)rows.push({rating:Math.max(1,Math.min(5,Math.round(v))),source:'review'});});
+        products().forEach(p=>{
+            const arr=Array.isArray(p.reviews)?p.reviews:(Array.isArray(p.ratings)?p.ratings:[]);
+            arr.forEach(r=>{const v=reviewValue(r);if(v>0)rows.push({rating:Math.max(1,Math.min(5,Math.round(v))),source:'product',productId:p.id});});
+            const avg=num(p.rating||p.avgRating||p.averageRating);
+            const count=num(p.reviewCount||p.ratingCount||p.totalReviews);
+            if(avg>0&&count>0){for(let i=0;i<count;i++)rows.push({rating:Math.max(1,Math.min(5,Math.round(avg))),source:'aggregate',productId:p.id});}
+        });
+        return rows;
+    }
+    function storeRatingStats(){
+        const rows=collectStoreReviews();
+        const buckets={1:0,2:0,3:0,4:0,5:0};
+        let total=0;
+        rows.forEach(r=>{const v=Math.max(1,Math.min(5,Math.round(r.rating)));buckets[v]++;total+=v;});
+        const count=rows.length;
+        return {count,avg:count?Number((total/count).toFixed(1)):0,buckets,total};
+    }
+    function applyStoreRatingUI(){
+        const st=storeRatingStats();
+        const top=$('topShopRating');
+        if(top)top.textContent=st.count?`${st.avg} (${st.count} reviews)`:'No reviews';
+        let box=$('aryStoreRatingBreakdown');
+        const home=$('homeSection');
+        if(!box&&home){
+            box=document.createElement('div');box.id='aryStoreRatingBreakdown';box.className='panel-box ary-rating-box';
+            const chart=home.querySelector('.panel-box.mt-20');
+            if(chart)chart.insertAdjacentElement('beforebegin',box);else home.appendChild(box);
+        }
+        if(box){
+            const max=Math.max(1,...Object.values(st.buckets));
+            box.innerHTML=`<div class="section-head-row"><div><h3><i class="fas fa-star"></i> Store Rating Calculation</h3><p class="muted-line">Calculated from all visible item reviews and product rating summaries.</p></div><strong>${st.count?st.avg:'N/A'} / 5</strong></div>`+
+            [5,4,3,2,1].map(n=>`<div class="ary-rating-row"><span>${n}★</span><b style="width:${Math.round((st.buckets[n]/max)*100)}%"></b><em>${st.buckets[n]}</em></div>`).join('');
+        }
+    }
+
+    const oldRenderDashboardStats=window.renderDashboardStats;
+    window.renderDashboardStats=function(){
+        const res=oldRenderDashboardStats?oldRenderDashboardStats.apply(this,arguments):undefined;
+        setTimeout(function(){applyStoreRatingUI();renderAiBusinessTips();updatePlanGates();renderAchievementBadge();},60);
+        return res;
+    };
+    try{renderDashboardStats=window.renderDashboardStats;}catch(e){}
+
+    function ensureSubscriptionModal(){
+        if($('arySubscriptionDetailModal'))return;
+        document.body.insertAdjacentHTML('beforeend',`<div class="modal" id="arySubscriptionDetailModal"><div class="modal-content ary-smart-modal"><span class="close-modal" onclick="closeSmartModal('arySubscriptionDetailModal')"><i class="fas fa-times"></i></span><div id="arySubscriptionDetailBody"></div></div></div>`);
+    }
+
+    function subscriptionEnd(){return dateOf((seller()||{}).subEndDate||(seller()||{}).subscriptionEndDate||(seller()||{}).planEndDate);}
+    function pausedPlan(){const s=seller()||{};return s.pausedSubscription||s.pausedPlan||s.lastPaidSubscription||'';}
+
+    async function saveSellerPatch(payload){
+        const database=dbx(),s=seller();
+        if(!database||!s)return;
+        Object.assign(s,payload);
+        try{await database.collection('sellers').doc(sellerDocId()).set(payload,{merge:true});}catch(e){console.warn('seller save failed',e);}
+        try{localStorage.setItem('sellerToken',JSON.stringify(s));}catch(e){}
+    }
+
+    window.pauseMySubscription = async function(){
+        const s=seller(); if(!s)return toast('Login required.','error');
+        const p=currentPlan();
+        if(p.key==='Basic')return toast('Basic plan is already active.','info');
+        await saveSellerPatch({subscription:'Basic',subscriptionName:'Basic',subscriptionPaused:true,pausedSubscription:p.key,pausedSubscriptionName:p.name,pausedSubEndDate:s.subEndDate||s.subscriptionEndDate||'',pausedAt:nowIso(),subscriptionCommissionPercent:PLAN_RULES.Basic.commission});
+        toast('Running subscription paused. Basic is active now.','success');
+        renderSmartSubscriptionUI();updatePlanGates();
+    };
+
+    window.resumePausedSubscription = async function(){
+        const s=seller(); if(!s)return toast('Login required.','error');
+        const old=planKey(pausedPlan());
+        if(!old||old==='Basic')return toast('No paused paid subscription found.','warning');
+        const p=PLAN_RULES[old];
+        await saveSellerPatch({subscription:p.key,subscriptionName:p.name,subscriptionPaused:false,resumedAt:nowIso(),subscriptionCommissionPercent:p.commission,subEndDate:s.pausedSubEndDate||s.subEndDate||''});
+        toast(`${p.name} subscription resumed.`, 'success');
+        renderSmartSubscriptionUI();updatePlanGates();
+    };
+
+    window.switchToBasicWithConfirm = async function(){
+        if(isPaidPlan()){
+            const ok=confirm('Are you sure you want to switch to Basic? It will pause your running subscription. You can resume it later from Subscription Details.');
+            if(!ok)return;
+            return window.pauseMySubscription();
+        }
+        await saveSellerPatch({subscription:'Basic',subscriptionName:'Basic',subscriptionCommissionPercent:PLAN_RULES.Basic.commission});
+        renderSmartSubscriptionUI();updatePlanGates();
+    };
+
+    window.requestSubscriptionFromAdmin = async function(plan){
+        plan=planKey(plan);
+        if(plan==='Basic')return window.switchToBasicWithConfirm();
+        const database=dbx(),s=seller(); if(!database||!s)return toast('Login required.','error');
+        const p=PLAN_RULES[plan];
+        try{
+            await database.collection('seller_subscription_requests').add({sellerEmail:sellerEmail(),sellerName:s.companyName||s.shopName||'',sellerPhone:s.phone||'',sellerUid:s.uid||s.id||'',planName:p.name,planKey:p.key,commissionPercent:p.commission,sponsoredAdPrice:p.sponsoredPrice,fineDiscountPercent:p.fineDiscount,status:'Pending Admin Approval',requestedAt:nowIso(),source:'seller-panel'});
+            toast(`${p.name} subscription request sent to admin.`, 'success');
+        }catch(e){toast('Could not send subscription request.','error');}
+    };
+
+    window.processSubscription = function(planName){return window.requestSubscriptionFromAdmin(planName);};
+
+    function subscriptionCard(p){
+        const active=currentPlan().key===p.key;
+        const pauseResume=(p.key==='Basic'&&seller()&&seller().subscriptionPaused)?`<button class="btn-prime w-100" onclick="resumePausedSubscription()"><i class="fas fa-play"></i> Resume ${safe(pausedPlan())}</button>`:'';
+        const action=active?`<button class="btn-outline w-100" disabled><i class="fas fa-check"></i> Active Plan</button>`:(p.key==='Basic'?`<button class="btn-outline w-100" onclick="switchToBasicWithConfirm()"><i class="fas fa-pause"></i> Switch / Pause to Basic</button>`:`<button class="btn-prime w-100" onclick="requestSubscriptionFromAdmin('${p.key}')"><i class="fas fa-paper-plane"></i> Request Admin Activation</button>`);
+        return `<div class="admin-plan-card ary-smart-plan-card ${active?'active':''}"><div class="admin-plan-title"><strong>${safe(p.name)}</strong>${active?'<span class="ok-chip"><i class="fas fa-check"></i> Current</span>':'<span class="lock-chip"><i class="fas fa-user-shield"></i> Admin approval</span>'}</div><p class="muted-line">${safe(p.badge)}</p><div class="feature-list"><div class="feature-row"><span>Commission</span><span>${p.commission}%</span></div><div class="feature-row"><span>Paid Sponsored Price</span><span>${formatMoney(p.sponsoredPrice)}/24hr</span></div><div class="feature-row"><span>Fine Charge</span><span>${p.fineDiscount?`${p.fineDiscount}% lower`:'Standard admin approval'}</span></div><div class="feature-row"><span>Product Performance</span><span>${p.performance==='locked'?'Hidden':(p.performance==='pro'?'Advanced Pro':'Growth view')}</span></div></div>${action}${pauseResume}</div>`;
+    }
+
+    function renderSmartSubscriptionUI(){
+        const notice=$('subscriptionAdminNotice'),cards=$('subscriptionCards'),history=$('subscriptionHistoryBox');
+        const p=currentPlan(),end=subscriptionEnd(),s=seller()||{};
+        if(notice){
+            notice.innerHTML=`<div class="ary-sub-toolbar"><div><b>Current plan:</b> ${safe(p.name)} ${s.subscriptionPaused?'<span class="lock-chip"><i class="fas fa-pause"></i> Paid plan paused</span>':''}<br><span class="muted-line">Commission ${p.commission}% · Sponsored ${formatMoney(p.sponsoredPrice)} · Fine discount ${p.fineDiscount}% · ${end?'Valid till '+end.toLocaleDateString('en-IN'):'No expiry set'}</span></div><div class="ary-sub-actions"><button class="btn-outline" onclick="showSubscriptionDetails()"><i class="fas fa-receipt"></i> Subscription Details</button>${isPaidPlan()?'<button class="btn-outline" onclick="pauseMySubscription()"><i class="fas fa-pause"></i> Pause My Subscription</button>':(s.subscriptionPaused?'<button class="btn-prime" onclick="resumePausedSubscription()"><i class="fas fa-play"></i> Resume</button>':'')}</div></div>`;
+        }
+        if(cards)cards.innerHTML=[PLAN_RULES.Basic,PLAN_RULES.Growth,PLAN_RULES.Pro].map(subscriptionCard).join('');
+        if(history&&history.style.display==='block')renderSubscriptionHistoryBox();
+    }
+
+    const oldLoadSubscriptionsUI=window.loadSubscriptionsUI;
+    window.loadSubscriptionsUI=async function(){
+        try{if(typeof oldLoadSubscriptionsUI==='function')await oldLoadSubscriptionsUI.apply(this,arguments);}catch(e){}
+        renderSmartSubscriptionUI();
+    };
+    try{loadSubscriptionsUI=window.loadSubscriptionsUI;}catch(e){}
+
+    function renderSubscriptionHistoryBox(){
+        const box=$('subscriptionHistoryBox'); if(!box)return;
+        const hist=Array.isArray((seller()||{}).subHistory)?(seller()||{}).subHistory:[];
+        box.style.display='block';
+        box.innerHTML=`<div class="section-head-row"><div><h3><i class="fas fa-file-invoice"></i> Subscription Invoice & History</h3><p class="muted-line">Print invoice, pause/resume details and payment records.</p></div><button class="btn-prime" onclick="printSubscriptionInvoice()"><i class="fas fa-print"></i> Print Invoice</button></div>`+(hist.length?`<div class="table-container"><table class="admin-table"><thead><tr><th>Plan</th><th>Amount</th><th>Payment</th><th>Start</th><th>End</th><th>Status</th></tr></thead><tbody>${hist.slice().reverse().map(h=>`<tr><td data-label="Plan"><b>${safe(h.planName||h.plan||h.name||'-')}</b></td><td data-label="Amount">${formatMoney(h.amount||h.cost||h.price||0)}</td><td data-label="Payment">${safe(h.method||h.paymentMethod||'-')}</td><td data-label="Start">${dateOf(h.startDate||h.createdAt)?.toLocaleDateString('en-IN')||'-'}</td><td data-label="End">${dateOf(h.endDate||h.subEndDate)?.toLocaleDateString('en-IN')||'-'}</td><td data-label="Status"><span class="ok-chip">${safe(h.status||'Active')}</span></td></tr>`).join('')}</tbody></table></div>`:`<div class="admin-empty">No subscription payment history found.</div>`);
+    }
+
+    window.showSubscriptionDetails=function(){
+        ensureSubscriptionModal();
+        const p=currentPlan(),s=seller()||{},end=subscriptionEnd();
+        const body=$('arySubscriptionDetailBody');
+        if(body)body.innerHTML=`<h3 style="font-size:24px;font-weight:900;margin-bottom:8px;"><i class="fas fa-crown"></i> Subscription Details</h3><p class="muted-line">Seller can pause paid plan to Basic and resume the old plan later.</p><div class="ary-detail-grid"><div><span>Seller</span><b>${safe(s.companyName||s.shopName||s.name||'-')}</b></div><div><span>Email</span><b>${safe(s.email||'-')}</b></div><div><span>Phone</span><b>${safe(s.phone||'-')}</b></div><div><span>Account UID</span><b>${safe(s.uid||s.id||'-')}</b></div><div><span>Current Plan</span><b>${safe(p.name)}</b></div><div><span>Commission</span><b>${p.commission}%</b></div><div><span>Sponsored Price</span><b>${formatMoney(p.sponsoredPrice)}</b></div><div><span>Fine Discount</span><b>${p.fineDiscount}%</b></div><div><span>End Date</span><b>${end?end.toLocaleString('en-IN'):'Not set'}</b></div><div><span>Paused Plan</span><b>${safe(pausedPlan()||'None')}</b></div></div><div class="ary-sub-actions" style="margin-top:18px;"><button class="btn-prime" onclick="printSubscriptionInvoice()"><i class="fas fa-print"></i> Print Invoice</button>${isPaidPlan()?'<button class="btn-outline" onclick="pauseMySubscription()"><i class="fas fa-pause"></i> Pause My Subscription</button>':((seller()||{}).subscriptionPaused?'<button class="btn-prime" onclick="resumePausedSubscription()"><i class="fas fa-play"></i> Resume Subscription</button>':'')}</div>`;
+        const modal=$('arySubscriptionDetailModal');if(modal){modal.style.display='flex';setTimeout(()=>modal.classList.add('show'),10);}
+        renderSubscriptionHistoryBox();
+    };
+
+    window.printSubscriptionInvoice=function(){
+        const s=seller()||{},p=currentPlan(),end=subscriptionEnd();
+        const hist=Array.isArray(s.subHistory)?s.subHistory:[];
+        const last=hist[hist.length-1]||{};
+        const html=`<div style="font-family:Arial,sans-serif;color:#0f172a;padding:28px;max-width:850px;margin:0 auto;"><div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #111827;padding-bottom:16px;margin-bottom:20px;"><div><h1 style="margin:0;font-size:28px;">Aryanta.in</h1><p style="margin:5px 0 0;font-weight:700;">Seller Subscription Invoice</p><p style="margin:5px 0 0;font-size:12px;">support@aryanta.in · 6206318133</p></div><div style="text-align:right;font-size:12px;"><b>Invoice Date</b><br>${new Date().toLocaleString('en-IN')}<br><br><b>Plan</b><br>${safe(p.name)}</div></div><h3>Seller Details</h3><table style="width:100%;border-collapse:collapse;margin-bottom:18px;"><tr><td style="padding:8px;border:1px solid #e2e8f0;"><b>Name</b><br>${safe(s.companyName||s.shopName||s.name||'-')}</td><td style="padding:8px;border:1px solid #e2e8f0;"><b>Email</b><br>${safe(s.email||'-')}</td></tr><tr><td style="padding:8px;border:1px solid #e2e8f0;"><b>Phone</b><br>${safe(s.phone||'-')}</td><td style="padding:8px;border:1px solid #e2e8f0;"><b>Account UID</b><br>${safe(s.uid||s.id||'-')}</td></tr><tr><td colspan="2" style="padding:8px;border:1px solid #e2e8f0;"><b>Address</b><br>${safe(s.address||s.shopAddress||s.businessAddress||'-')}</td></tr></table><h3>Subscription Details</h3><table style="width:100%;border-collapse:collapse;margin-bottom:18px;"><tr><th style="text-align:left;padding:10px;border:1px solid #e2e8f0;background:#f8fafc;">Plan</th><th style="text-align:left;padding:10px;border:1px solid #e2e8f0;background:#f8fafc;">Commission</th><th style="text-align:left;padding:10px;border:1px solid #e2e8f0;background:#f8fafc;">Sponsored Price</th><th style="text-align:left;padding:10px;border:1px solid #e2e8f0;background:#f8fafc;">Fine Discount</th><th style="text-align:left;padding:10px;border:1px solid #e2e8f0;background:#f8fafc;">Valid Till</th></tr><tr><td style="padding:10px;border:1px solid #e2e8f0;">${safe(p.name)}</td><td style="padding:10px;border:1px solid #e2e8f0;">${p.commission}%</td><td style="padding:10px;border:1px solid #e2e8f0;">${formatMoney(p.sponsoredPrice)}</td><td style="padding:10px;border:1px solid #e2e8f0;">${p.fineDiscount}%</td><td style="padding:10px;border:1px solid #e2e8f0;">${end?end.toLocaleDateString('en-IN'):'-'}</td></tr></table><h3>Paid Information</h3><p><b>Amount:</b> ${formatMoney(last.amount||last.price||0)} &nbsp; <b>Payment Method:</b> ${safe(last.method||last.paymentMethod||'Admin / Manual')} &nbsp; <b>Status:</b> ${safe(last.status||'Active')}</p><p style="font-size:12px;color:#64748b;margin-top:30px;">This invoice is generated from Aryanta seller panel subscription records.</p></div>`;
+        const area=$('printArea')||document.body.appendChild(document.createElement('div'));area.id='printArea';area.innerHTML=html;area.style.display='block';
+        if(window.printJS){printJS({printable:'printArea',type:'html',targetStyles:['*']});}
+        else{const w=window.open('','_blank');w.document.write(html);w.document.close();w.focus();w.print();}
+        setTimeout(()=>{area.style.display='none';},800);
+    };
+
+    async function notificationReadIds(){
+        const ids=new Set(),database=dbx();
+        if(!database||!sellerEmail())return ids;
+        try{const snap=await database.collection('seller_notification_reads').where('sellerEmail','==',sellerEmail()).limit(500).get();snap.forEach(d=>{const data=d.data()||{};ids.add(txt(data.notificationId||d.id));});}catch(e){}
+        return ids;
+    }
+    function targetOk(d){const target=low(d.target||d.sellerEmail||d.email||'all');return target==='all'||target==='sellers'||target===sellerEmail();}
+    function renderNotificationsSmart(){
+        const count=(window.adminNotifications||adminNotifications||[]).length;
+        ['notifBadge','topbarNotifBadge'].forEach(id=>{const el=$(id);if(el){el.textContent=count;el.style.display=count?'inline-block':'none';el.classList.remove('blink','pulse','animate');el.style.animation='none';}});
+        const rows=window.adminNotifications||adminNotifications||[];
+        const html=rows.length?rows.map(n=>`<div class="notification-card ary-notification-card" onclick="openFullNotifFinal('${safe(n.id)}')"><div class="ary-notif-top"><strong>${safe(n.title||'Aryanta Notice')}</strong><span>${safe(n.source==='seller_notifications'?'Personal':'Broadcast')}</span></div><p>${safe(n.text||'No message')}</p><small><i class="fas fa-clock"></i> ${dateOf(n.time)?.toLocaleString('en-IN')||''}</small>${n.link?'<div class="ok-chip"><i class="fas fa-link"></i> Link attached</div>':''}</div>`).join(''):`<div class="panel-box" style="text-align:center;"><i class="fas fa-bell-slash" style="font-size:30px;color:var(--text-light);"></i><h3>No notifications</h3><p class="muted-line">Read notifications are removed from this seller view.</p></div>`;
+        const full=$('fullNotifList');if(full)full.innerHTML=html;
+        const drop=$('notifList');if(drop)drop.innerHTML=html;
+    }
+    window.fetchNotifications=async function(){
+        const database=dbx(); if(!database||!sellerEmail())return;
+        const rows=[],read=await notificationReadIds();
+        try{const b=await database.collection('admin_broadcasts').orderBy('timestamp','desc').limit(60).get();b.forEach(doc=>{const d=doc.data()||{};const id='admin_broadcasts_'+doc.id;if(targetOk(d)&&!read.has(id))rows.push({id,docId:doc.id,source:'admin_broadcasts',title:d.title||'Aryanta Notice',text:d.message||d.text||d.title||'Notice',time:d.timestamp||d.createdAt||d.time||nowIso(),link:d.link||d.url||d.actionUrl||''});});}catch(e){}
+        try{const s1=await database.collection('seller_notifications').where('sellerEmail','==',sellerEmail()).limit(60).get();s1.forEach(doc=>{const d=doc.data()||{};rows.push({id:'seller_notifications_'+doc.id,docId:doc.id,source:'seller_notifications',title:d.title||'Seller Notification',text:d.message||d.text||d.title||'Notification',time:d.timestamp||d.createdAt||d.time||nowIso(),link:d.link||d.url||d.actionLink||''});});}catch(e){}
+        try{const s2=await database.collection('seller_notifications').where('email','==',sellerEmail()).limit(60).get();s2.forEach(doc=>{if(rows.some(r=>r.docId===doc.id&&r.source==='seller_notifications'))return;const d=doc.data()||{};rows.push({id:'seller_notifications_'+doc.id,docId:doc.id,source:'seller_notifications',title:d.title||'Seller Notification',text:d.message||d.text||d.title||'Notification',time:d.timestamp||d.createdAt||d.time||nowIso(),link:d.link||d.url||d.actionLink||''});});}catch(e){}
+        rows.sort((a,b)=>(dateOf(b.time)||0)-(dateOf(a.time)||0));
+        try{adminNotifications=rows;window.adminNotifications=rows;sellerNotifications=rows;}catch(e){window.adminNotifications=rows;}
+        renderNotificationsSmart();
+    };
+    try{fetchNotifications=window.fetchNotifications;}catch(e){}
+
+    async function markNotificationRead(n){
+        const database=dbx(); if(!database||!n)return;
+        try{
+            if(n.source==='seller_notifications')await database.collection('seller_notifications').doc(n.docId).delete();
+            else await database.collection('seller_notification_reads').doc((n.id+'_'+sellerEmail()).replace(/[^a-zA-Z0-9_-]/g,'_')).set({sellerEmail:sellerEmail(),notificationId:n.id,source:n.source,docId:n.docId,readAt:nowIso()},{merge:true});
+        }catch(e){console.warn('notification read save failed',e);}
+        const rows=(window.adminNotifications||adminNotifications||[]).filter(x=>x.id!==n.id);
+        try{adminNotifications=rows;window.adminNotifications=rows;sellerNotifications=rows;}catch(e){window.adminNotifications=rows;}
+        renderNotificationsSmart();
+    }
+    window.openFullNotifFinal=async function(id){
+        const rows=window.adminNotifications||adminNotifications||[];
+        const n=rows.find(x=>txt(x.id)===txt(id)); if(!n)return;
+        const cont=$('notifDetailContent'),mod=$('notificationDetailModal');
+        if(cont&&mod){
+            cont.innerHTML=`<div style="background:var(--surface-2);padding:20px;border-radius:16px;border:1px solid var(--border-color);"><h3 style="margin-bottom:10px;">${safe(n.title||'Aryanta Notice')}</h3><p style="font-size:15px;font-weight:800;line-height:1.7;color:var(--text-main);">${safe(n.text||'No message')}</p><small class="muted-line"><i class="fas fa-clock"></i> ${dateOf(n.time)?.toLocaleString('en-IN')||''}</small>${n.link?`<br><a class="btn-prime" style="display:inline-flex;text-decoration:none;margin-top:14px;" target="_blank" rel="noopener" href="${safe(/^https?:\/\//i.test(n.link)?n.link:'https://'+n.link)}"><i class="fas fa-link"></i> Open Link</a>`:''}<p class="muted-line" style="margin-top:12px;">This notification is now removed from your seller notification view.</p></div>`;
+            mod.style.display='flex';setTimeout(()=>mod.classList.add('show'),10);
+        }else toast(n.text||'Notification','info');
+        await markNotificationRead(n);
+    };
+    window.openFullNotif=window.openFullNotifFinal;
+
+    function productPerformanceRows(){
+        const st=products().map(p=>({product:p,sold:0,orders:0,delivered:0,cancelled:0,returned:0,revenue:0,views:num(p.views||p.viewCount||p.totalViews||p.clicks||0),stock:num(p.stock||p.quantity||p.totalStock||0),rating:num(p.rating||p.avgRating||0),reviewCount:num(p.reviewCount||p.ratingCount||0)}));
+        orders().forEach(o=>{
+            const status=low(o.status||o.orderStatus||o.deliveryStatus);
+            orderItems(o).forEach(i=>{
+                const row=st.find(r=>productMatchItem(r.product,i)); if(!row)return;
+                const q=Math.max(1,num(i.qty||i.quantity||1)||1), amt=q*num(i.price||i.sellingPrice||i.finalPrice||0);
+                row.sold+=q; row.orders+=1; row.revenue+=amt;
+                if(status.includes('deliver'))row.delivered+=q;
+                if(status.includes('cancel')||status.includes('breach'))row.cancelled+=q;
+                if(status.includes('return')||status.includes('rto'))row.returned+=q;
+            });
+        });
+        return st.sort((a,b)=>b.revenue-a.revenue||b.sold-a.sold||b.views-a.views);
+    }
+    function aiTip(r){
+        if(r.stock<=0)return 'Restock first. Ads and ranking will not help while stock is zero.';
+        if(r.views>20&&r.sold===0)return 'Many views but no sale: improve price, first image and highlights.';
+        if(r.returned+r.cancelled>Math.max(1,r.sold)*0.25)return 'High loss rate: check packaging, product title accuracy and QC.';
+        if(r.sold>0&&r.stock<=7)return 'Good demand with low stock. Refill before the item goes out of stock.';
+        if(r.views<10)return 'Low visibility. Use sponsored slot or improve title keywords.';
+        return 'Stable item. Keep stock and monitor reviews for ranking.';
+    }
+    window.loadProductPerformance=function(){
+        const p=currentPlan();
+        const list=$('productPerformanceList'); if(!list)return;
+        if(p.performance==='locked'){
+            list.innerHTML=`<div class="panel-box ary-locked-performance"><i class="fas fa-lock"></i><h3>Product Performance is locked on Basic</h3><p class="muted-line">Upgrade to Growth for product performance. Pro unlocks deeper Amazon/Flipkart-style analytics, loss signals and AI tips.</p><button class="btn-prime" onclick="showSection('subscription')"><i class="fas fa-crown"></i> View Plans</button></div>`;
+            return;
+        }
+        let rows=productPerformanceRows();
+        const filter=window.currentPerfFilter||'all';
+        qsa('#productPerformanceSection .cat-pill').forEach(b=>b.classList.remove('active'));
+        const fbtn=$('perf-filter-'+filter);if(fbtn)fbtn.classList.add('active');
+        if(filter==='top')rows=rows.filter(r=>r.sold>0).sort((a,b)=>b.sold-a.sold||b.revenue-a.revenue);
+        if(filter==='loss')rows=rows.filter(r=>r.cancelled+r.returned>0).sort((a,b)=>(b.cancelled+b.returned)-(a.cancelled+a.returned));
+        if(!rows.length){list.innerHTML='<div class="panel-box">No product performance data yet.</div>';return;}
+        list.innerHTML=rows.map((r,idx)=>{
+            const prod=r.product||{},img=productImage(prod),loss=r.cancelled+r.returned,views=Math.max(0,r.views),conversion=views?((r.sold/views)*100).toFixed(1):'0.0',returnRate=r.sold?Math.round((loss/r.sold)*100):0,sellThrough=(r.sold+r.stock)>0?Math.round((r.sold/(r.sold+r.stock))*100):0;
+            const proBlock=p.performance==='pro'?`<div class="ary-pro-metrics"><div><span>Conversion</span><b>${conversion}%</b></div><div><span>Return/Loss Rate</span><b>${returnRate}%</b></div><div><span>Sell-through</span><b>${sellThrough}%</b></div><div><span>Rank</span><b>#${idx+1}</b></div></div><div class="ary-ai-tip"><i class="fas fa-wand-magic-sparkles"></i> ${safe(aiTip(r))}</div>`:'';
+            return `<div class="performance-card ary-smart-performance-card"><div class="ary-perf-img">${img?`<img src="${safe(img)}" loading="lazy" onclick="openImageViewer&&openImageViewer('${safe(img)}')">`:'<i class="fas fa-box-open"></i>'}</div><div class="ary-perf-body"><h4>${safe(prod.name||prod.title||'Product')}</h4><p class="muted-line">UID: <b>${safe(prod.id||prod.productId||'-')}</b><br>SKU: <b>${safe(prod.sku||'-')}</b></p><div class="tiny-metric-grid"><div class="tiny-metric"><span>Sold</span>${r.sold}</div><div class="tiny-metric"><span>Revenue</span>${formatMoney(r.revenue)}</div><div class="tiny-metric"><span>Views</span>${views}</div></div><div class="tiny-metric-grid"><div class="tiny-metric"><span>Stock</span>${r.stock}</div><div class="tiny-metric"><span>Delivered</span>${r.delivered}</div><div class="tiny-metric"><span>Loss</span>${loss}</div></div>${proBlock}<button class="btn-outline w-100" onclick="editItem&&editItem('${safe(prod.id||prod.productId||'')}')"><i class="fas fa-edit"></i> Edit Product</button></div></div>`;
+        }).join('');
+    };
+    try{loadProductPerformance=window.loadProductPerformance;}catch(e){}
+    window.setProductPerformanceFilter=function(filter){window.currentPerfFilter=filter||'all';window.loadProductPerformance();};
+
+    function updatePlanGates(){
+        const basic=currentPlan().key==='Basic';
+        qsa('.nav-item').forEach(nav=>{
+            const click=nav.getAttribute('onclick')||'';
+            if(click.includes('productPerformance'))nav.style.display=basic?'none':'';
+        });
+        const badge=$('currentPlanBadge');if(badge)badge.textContent=currentPlan().name;
+    }
+
+    function qnaEntries(){
+        const rows=[];
+        products().forEach(p=>{
+            const qs=Array.isArray(p.qa)?p.qa:(Array.isArray(p.qna)?p.qna:(Array.isArray(p.questions)?p.questions:[]));
+            qs.forEach((q,i)=>rows.push({product:p,question:q,index:i,id:q.id||q.qid||String(i),answered:!!(q.answer||q.ans||q.reply)}));
+        });
+        return rows;
+    }
+    function ensureQnaControls(){
+        const sec=$('qnaSection'); if(!sec||$('aryQnaToolbar'))return;
+        const panel=sec.querySelector('.panel-box');
+        const div=document.createElement('div');div.id='aryQnaToolbar';div.className='ary-qna-toolbar';
+        div.innerHTML=`<button class="cat-pill active" id="qna-filter-new" onclick="setQnaFilter('new')"><i class="fas fa-circle-question"></i> New Questions</button><button class="cat-pill" id="qna-filter-answered" onclick="setQnaFilter('answered')"><i class="fas fa-check-circle"></i> Answered Ques</button><button class="cat-pill" id="qna-filter-all" onclick="setQnaFilter('all')"><i class="fas fa-layer-group"></i> All</button>`;
+        if(panel)panel.insertAdjacentElement('afterend',div);else sec.insertBefore(div,sec.firstChild);
+    }
+    window.setQnaFilter=function(filter){window.currentQnaFilter=filter||'new';window.loadQna();};
+    window.loadQna=function(){
+        ensureQnaControls();
+        const list=$('qnaList'); if(!list)return;
+        const filter=window.currentQnaFilter||'new';
+        ['new','answered','all'].forEach(f=>{const b=$('qna-filter-'+f);if(b)b.classList.toggle('active',f===filter);});
+        let rows=qnaEntries();
+        if(filter==='new')rows=rows.filter(r=>!r.answered);
+        if(filter==='answered')rows=rows.filter(r=>r.answered);
+        if(!rows.length){list.innerHTML=`<tr><td colspan="4" style="text-align:center;font-weight:800;padding:22px;">No ${filter==='answered'?'answered':'new'} questions.</td></tr>`;return;}
+        list.innerHTML=rows.map(r=>{
+            const p=r.product,q=r.question,img=productImage(p),ans=q.answer||q.ans||q.reply||'';
+            return `<tr class="clickable-row" onclick="openQnaProductDetails('${safe(p.id||p.productId||'')}','${safe(r.id)}')"><td data-label="Product"><div class="ary-qna-product">${img?`<img src="${safe(img)}" loading="lazy">`:'<i class="fas fa-box-open"></i>'}<div><b>${safe(p.name||p.title||'Product')}</b><small>UID: ${safe(p.id||p.productId||'-')}</small></div></div></td><td data-label="Question"><b>Q:</b> ${safe(q.question||q.text||q.message||'Question')}<br><span class="muted-line"><b>A:</b> ${ans?safe(ans):'Waiting for your reply'}</span></td><td data-label="Status">${ans?'<span class="ok-chip">Answered</span>':'<span class="lock-chip">New</span>'}</td><td data-label="Action"><button class="btn-prime btn-sm" onclick="event.stopPropagation(); answerQnaSmart('${safe(p.id||p.productId||'')}','${safe(r.id)}')"><i class="fas fa-reply"></i> ${ans?'Edit':'Answer'}</button></td></tr>`;
+        }).join('');
+    };
+    try{loadQna=window.loadQna;}catch(e){}
+
+    function ensureQnaDetailModal(){
+        if($('aryQnaProductModal'))return;
+        document.body.insertAdjacentHTML('beforeend',`<div class="modal" id="aryQnaProductModal"><div class="modal-content ary-smart-modal"><span class="close-modal" onclick="closeSmartModal('aryQnaProductModal')"><i class="fas fa-times"></i></span><div id="aryQnaProductBody"></div></div></div>`);
+    }
+    window.openQnaProductDetails=function(pid,qid){
+        ensureQnaDetailModal();
+        const row=qnaEntries().find(r=>txt(r.product.id||r.product.productId)===txt(pid)&&txt(r.id)===txt(qid)); if(!row)return;
+        const p=row.product,q=row.question,img=productImage(p),ans=q.answer||q.ans||q.reply||'';
+        const body=$('aryQnaProductBody');
+        if(body)body.innerHTML=`<h3><i class="fas fa-comments"></i> Product Question Details</h3><div class="ary-qna-detail">${img?`<img src="${safe(img)}" onclick="openImageViewer&&openImageViewer('${safe(img)}')">`:'<div class="prime-image-fallback"><i class="fas fa-box-open"></i></div>'}<div><p><b>Product UID:</b> ${safe(p.id||p.productId||'-')}</p><p><b>Title:</b> ${safe(p.name||p.title||'-')}</p><p><b>Description:</b> ${safe(p.description||p.desc||p.highlights||'-')}</p><p><b>Question:</b> ${safe(q.question||q.text||q.message||'-')}</p><p><b>Answer:</b> ${ans?safe(ans):'Not answered yet'}</p><button class="btn-prime" onclick="answerQnaSmart('${safe(p.id||p.productId||'')}','${safe(row.id)}')"><i class="fas fa-reply"></i> Answer / Edit</button></div></div>`;
+        const modal=$('aryQnaProductModal');if(modal){modal.style.display='flex';setTimeout(()=>modal.classList.add('show'),10);}
+    };
+    window.answerQnaSmart=function(pid,qid){
+        const row=qnaEntries().find(r=>txt(r.product.id||r.product.productId)===txt(pid)&&txt(r.id)===txt(qid)); if(!row)return;
+        const p=row.product,q=row.question;
+        if($('qnaProdId'))$('qnaProdId').value=p.id||p.productId||'';
+        if($('qnaQid'))$('qnaQid').value=qid;
+        if($('qnaTextDisplay'))$('qnaTextDisplay').innerText='Q: '+(q.question||q.text||q.message||'Question');
+        if($('qnaAnsText'))$('qnaAnsText').value=q.answer||q.ans||q.reply||'';
+        const m=$('qnaModal');if(m){m.style.display='flex';setTimeout(()=>m.classList.add('show'),10);}
+    };
+    window.saveQnaAnswer=async function(){
+        const pid=$('qnaProdId')?.value, qid=$('qnaQid')?.value, ans=$('qnaAnsText')?.value.trim();
+        if(!pid||!ans)return toast('Answer cannot be empty.','warning');
+        const p=productById(pid); if(!p)return toast('Product not found.','error');
+        const arr=Array.isArray(p.qa)?p.qa.slice():(Array.isArray(p.qna)?p.qna.slice():(Array.isArray(p.questions)?p.questions.slice():[]));
+        const idx=arr.findIndex((q,i)=>txt(q.id||q.qid||i)===txt(qid));
+        if(idx<0)return toast('Question not found.','error');
+        arr[idx]=Object.assign({},arr[idx],{answer:ans,answeredAt:nowIso(),answeredBy:sellerEmail(),status:'Answered'});
+        try{await dbx().collection('products').doc(p.id||p.productId).set({qa:arr},{merge:true});p.qa=arr;closeModal&&closeModal('qnaModal');toast('Answer published.','success');window.loadQna();}catch(e){toast('Could not save answer.','error');}
+    };
+
+    function injectSupportQnaButtons(){
+        const sec=$('supportSection'); if(!sec||$('supportQnaShortcutRow'))return;
+        const head=sec.querySelector('div[style*="justify-content:space-between"]')||sec.firstElementChild;
+        const row=document.createElement('div');row.id='supportQnaShortcutRow';row.className='ary-support-shortcuts';
+        row.innerHTML=`<button class="btn-prime" onclick="showSection('qna');setQnaFilter('new')"><i class="fas fa-circle-question"></i> New Questions</button><button class="btn-outline" onclick="showSection('qna');setQnaFilter('answered')"><i class="fas fa-check-circle"></i> Answered Ques</button>`;
+        if(head)head.insertAdjacentElement('afterend',row);else sec.insertBefore(row,sec.firstChild);
+    }
+
+    function ensureAchievementUI(){
+        if(!$('nav-achievements')){
+            const div=document.createElement('div');div.id='nav-achievements';div.className='nav-item';div.setAttribute('onclick',"showSection('achievements')");div.innerHTML='<i class="fas fa-trophy" style="color:#f59e0b;"></i> Achievements <span id="badge-achievements" class="nav-badge" style="background:#f59e0b;">0</span>';
+            const anchor=Array.from(document.querySelectorAll('.nav-item')).find(n=>(n.getAttribute('onclick')||'').includes('subscription'))||Array.from(document.querySelectorAll('.nav-item')).find(n=>(n.getAttribute('onclick')||'').includes('support'));
+            if(anchor)anchor.insertAdjacentElement('afterend',div);
+        }
+        if(!$('achievementsSection')){
+            const sec=document.createElement('section');sec.id='achievementsSection';sec.className='data-section';sec.innerHTML=`<div class="section-head-row"><div><h3 style="font-size:24px;font-weight:900;color:#f59e0b;"><i class="fas fa-trophy"></i> Seller Achievements</h3><p class="muted-line">Unlock powers, free sponsored ad slots and subscription reward requests as your store grows.</p></div><button class="btn-outline" onclick="loadAchievements()"><i class="fas fa-sync"></i> Refresh</button></div><div id="achievementsSummary" class="ary-achievement-summary"></div><div id="achievementsGrid" class="ary-achievement-grid"></div>`;
+            const pad=document.querySelector('.content-padding'); if(pad)pad.appendChild(sec);
+        }
+    }
+    function achievementDefinitions(){
+        const os=orders(), delivered=os.filter(o=>low(o.status).includes('deliver')), losses=os.filter(o=>low(o.status).includes('cancel')||low(o.status).includes('return')), st=storeRatingStats(), ps=products();
+        return [
+            {id:'first_order',title:'First Order Hero',icon:'fa-flag-checkered',unlocked:os.length>=1,progress:Math.min(os.length,1),target:1,reward:'1 free sponsored ad slot',type:'sponsored_slot',power:'+1 Boost Slot'},
+            {id:'ten_orders',title:'10 Order Starter',icon:'fa-boxes-stacked',unlocked:os.length>=10,progress:Math.min(os.length,10),target:10,reward:'2 free sponsored ad slots',type:'sponsored_slot_2',power:'+2 Boost Slots'},
+            {id:'fifty_orders',title:'50 Order Growth Seller',icon:'fa-chart-line',unlocked:os.length>=50,progress:Math.min(os.length,50),target:50,reward:'Growth subscription reward request',type:'growth_subscription',power:'Growth Upgrade Request'},
+            {id:'hundred_orders',title:'100 Order Pro Seller',icon:'fa-crown',unlocked:os.length>=100,progress:Math.min(os.length,100),target:100,reward:'Pro subscription reward request',type:'pro_subscription',power:'Pro Upgrade Request'},
+            {id:'first_5star',title:'First 5-Star Review',icon:'fa-star',unlocked:st.buckets[5]>=1,progress:Math.min(st.buckets[5],1),target:1,reward:'Store trust badge request',type:'badge',power:'Trust Badge'},
+            {id:'ten_delivered',title:'10 Delivered Orders',icon:'fa-truck-fast',unlocked:delivered.length>=10,progress:Math.min(delivered.length,10),target:10,reward:'1 free sponsored ad slot',type:'sponsored_slot',power:'+1 Boost Slot'},
+            {id:'clean_seller',title:'Clean Seller Streak',icon:'fa-shield-heart',unlocked:os.length>=10&&losses.length===0,progress:os.length>=10&&losses.length===0?10:Math.max(0,10-losses.length),target:10,reward:'Low fine priority review',type:'priority_review',power:'Priority Review'},
+            {id:'stock_master',title:'Stock Master',icon:'fa-warehouse',unlocked:ps.length>0&&ps.every(p=>num(p.stock||p.quantity)>7),progress:ps.filter(p=>num(p.stock||p.quantity)>7).length,target:Math.max(1,ps.length),reward:'Inventory health badge',type:'badge',power:'Inventory Badge'}
+        ];
+    }
+    function claimedAchievements(){const s=seller()||{};return new Set(Array.isArray(s.claimedAchievements)?s.claimedAchievements:[]);}
+    function renderAchievementBadge(){
+        const unlocked=achievementDefinitions().filter(a=>a.unlocked&&!claimedAchievements().has(a.id)).length;
+        const b=$('badge-achievements');if(b){b.style.display=unlocked?'inline-block':'none';b.textContent=unlocked;}
+    }
+    window.loadAchievements=function(){
+        ensureAchievementUI();
+        const grid=$('achievementsGrid'),sum=$('achievementsSummary'); if(!grid)return;
+        const defs=achievementDefinitions(),claimed=claimedAchievements();
+        if(sum)sum.innerHTML=`<div><strong>${defs.filter(a=>a.unlocked).length}</strong><span>Unlocked</span></div><div><strong>${claimed.size}</strong><span>Claimed</span></div><div><strong>${defs.length}</strong><span>Total Powers</span></div>`;
+        grid.innerHTML=defs.map(a=>{
+            const c=claimed.has(a.id),pct=Math.min(100,Math.round((a.progress/Math.max(1,a.target))*100));
+            return `<div class="ary-achievement-card ${a.unlocked?'unlocked':'locked'} ${c?'claimed':''}"><div class="ary-ach-icon"><i class="fas ${a.icon}"></i></div><h4>${safe(a.title)}</h4><p>${safe(a.reward)}</p><div class="ary-ach-progress"><span style="width:${pct}%"></span></div><small>${safe(a.progress)} / ${safe(a.target)} · ${safe(a.power)}</small>${a.unlocked?(c?'<button class="btn-outline w-100" disabled><i class="fas fa-check"></i> Claimed</button>':`<button class="btn-prime w-100" onclick="claimAchievement('${safe(a.id)}')"><i class="fas fa-gift"></i> Claim Reward</button>`):'<button class="btn-outline w-100" disabled><i class="fas fa-lock"></i> Locked</button>'}</div>`;
+        }).join('');
+        renderAchievementBadge();
+    };
+    window.claimAchievement=async function(id){
+        const def=achievementDefinitions().find(a=>a.id===id),database=dbx(),s=seller();
+        if(!def||!def.unlocked)return toast('Achievement not unlocked yet.','warning');
+        const claimed=claimedAchievements(); if(claimed.has(id))return toast('Already claimed.','info');
+        const next=[...claimed,id];
+        try{
+            await database.collection('seller_achievement_claims').doc((sellerEmail()+'_'+id).replace(/[^a-zA-Z0-9_-]/g,'_')).set({sellerEmail:sellerEmail(),sellerName:s.companyName||s.shopName||'',achievementId:id,title:def.title,reward:def.reward,type:def.type,status:def.type.includes('subscription')?'Pending Admin Approval':'Available',claimedAt:nowIso(),source:'seller-panel'},{merge:true});
+            const patch={claimedAchievements:next};
+            if(def.type==='sponsored_slot')patch.rewardSponsoredSlots=num(s.rewardSponsoredSlots)+1;
+            if(def.type==='sponsored_slot_2')patch.rewardSponsoredSlots=num(s.rewardSponsoredSlots)+2;
+            await saveSellerPatch(patch);
+            if(def.type.includes('subscription'))await database.collection('seller_subscription_requests').add({sellerEmail:sellerEmail(),sellerName:s.companyName||'',planName:def.type==='pro_subscription'?'Pro':'Growth',source:'achievement',achievementId:id,status:'Pending Admin Approval',requestedAt:nowIso()}).catch(()=>{});
+            toast('Achievement reward claimed.','success');window.loadAchievements();
+        }catch(e){toast('Could not claim reward.','error');}
+    };
+
+    function renderAiBusinessTips(){
+        const home=$('homeSection'); if(!home||$('aryAiTipsBox'))return;
+        const box=document.createElement('div');box.id='aryAiTipsBox';box.className='panel-box ary-ai-box';
+        const rows=productPerformanceRows();
+        const lowStock=products().filter(p=>num(p.stock||p.quantity)<=7).length;
+        const losses=orders().filter(o=>low(o.status).includes('cancel')||low(o.status).includes('return')).length;
+        const top=rows[0];
+        box.innerHTML=`<h3><i class="fas fa-wand-magic-sparkles"></i> AI Seller Assistant</h3><div class="ary-ai-list"><p><b>Plan:</b> ${safe(currentPlan().name)} · commission ${currentPlan().commission}% · sponsored ${formatMoney(currentPlan().sponsoredPrice)}</p><p><b>Stock:</b> ${lowStock?`${lowStock} products need restock.`:'Stock health looks good.'}</p><p><b>Order quality:</b> ${losses?`${losses} cancelled/return order signals found. Check packaging and listing accuracy.`:'No major loss signal in loaded orders.'}</p><p><b>Top item:</b> ${top?safe(top.product.name||top.product.title||'Product')+' with '+formatMoney(top.revenue)+' revenue.':'No sales data loaded yet.'}</p></div>`;
+        const chart=home.querySelector('.panel-box.mt-20'); if(chart)chart.insertAdjacentElement('beforebegin',box); else home.appendChild(box);
+    }
+
+    function shipUrl(o){return txt(o&&(o.shiprocketInvoicePdfUrl||o.shiprocketPdfUrl||o.shiprocket_invoice_pdf_url||o.shiprocketInvoiceUrl||o.shippingLabelUrl||o.label_url||o.pdf_url||o.invoicePdfUrl)).trim();}
+    function absUrl(u){u=txt(u).trim();return u&&!/^https?:\/\//i.test(u)?'https://'+u:u;}
+    function shipStatus(o){if(shipUrl(o))return 'ready';return low(o&&(o.shiprocketInvoiceStatus||o.shiprocket_status||o.shiprocketStatus));}
+    function orderStatusMatch(o,keys){const s=low(o.status||o.orderStatus||o.deliveryStatus);return keys.some(k=>s.includes(k));}
+    function itemLine(i){
+        const p=products().find(x=>productMatchItem(x,i))||{};
+        const img=i.image||i.productImage||productImage(p);
+        return `<div class="ary-v4-item">${img?`<img src="${safe(img)}" style="object-fit:contain;background:#fff;">`:'<img style="display:none">'}<div><b>${safe(i.name||i.title||i.productName||p.name||'Product')}</b><div class="ary-v4-muted">SKU: ${safe(i.sku||p.sku||i.productId||'-')} · Qty: ${safe(i.qty||i.quantity||1)} · ${formatMoney(i.price||i.sellingPrice||p.price||0)}</div></div></div>`;
+    }
+    async function saveShipState(o,payload){
+        Object.assign(o,payload);
+        const database=dbx(); if(!database)return;
+        const id=txt(o.id||o.orderId||o.order_no||o.orderNo).trim(); if(!id)return;
+        try{await database.collection('orders').doc(txt(o.id||id)).set(Object.assign({sellerEmail:sellerEmail(),orderId:id,updatedAt:nowIso()},payload),{merge:true});}catch(e){}
+        try{await database.collection('seller_shiprocket_invoices').doc((id+'_'+sellerEmail()).replace(/[^a-zA-Z0-9_-]/g,'_')).set(Object.assign({sellerEmail:sellerEmail(),orderId:id,updatedAt:nowIso()},payload),{merge:true});}catch(e){}
+    }
+    function renderShipBtn(o){
+        const url=shipUrl(o),st=shipStatus(o),id=safe(o.id||o.orderId||o.order_no||o.orderNo);
+        if(url)return `<button class="btn-shiprocket shiprocket-ready-btn" onclick="event.stopPropagation();window.open('${safe(absUrl(url))}','_blank','noopener')"><i class="fas fa-download"></i> Download Shiprocket PDF</button>`;
+        const label=st==='missing_details'?'Fix Missing Details':(st==='api_error'||st==='timeout'?'Retry Shiprocket':(st==='requested'||st==='generating'||st==='waiting_pdf'?'Waiting / Retry PDF':'Generate Shiprocket'));
+        return `<button class="btn-shiprocket" onclick="event.stopPropagation();downloadShippingInvoice('${id}')"><i class="fas ${st==='generating'||st==='waiting_pdf'?'fa-spinner fa-spin':'fa-rocket'}"></i> ${label}</button>`;
+    }
+    window.loadAcceptedOrders=function(){
+        const list=$('acceptedOrdersList'); if(!list)return;
+        const rows=orders().filter(o=>orderStatusMatch(o,['accepted','processing','packed','ready to ship','completed scan'])||o.shiprocketInvoiceRequested||shipUrl(o));
+        if(!rows.length){list.innerHTML='<tr><td colspan="5" style="text-align:center;font-weight:800;padding:22px;">No accepted / Shiprocket pending orders.</td></tr>';return;}
+        list.innerHTML=rows.map(o=>{
+            const id=safe(o.id||o.orderId||o.order_no||o.orderNo), note=shipUrl(o)?'<div class="ok-chip"><i class="fas fa-check"></i> Shiprocket PDF saved.</div>':(o.shiprocketInvoiceRequested?'<div class="no-fine-note"><i class="fas fa-shield-heart"></i> Shiprocket requested. No auto fine while PDF is pending.</div>':'');
+            return `<tr class="clickable-row" onclick="viewOrderDetails&&viewOrderDetails('${id}')"><td data-label="Select"><input type="checkbox" class="custom-cb cb-acc" value="${id}" onclick="event.stopPropagation()"></td><td data-label="Order Date"><strong>${orderDate(o).toLocaleString('en-IN')}</strong></td><td data-label="Order Ref"><strong style="font-family:monospace;color:var(--primary);">${safe(o.order_no||o.orderNo||o.id||'N/A')}</strong><br><small class="muted-line">${safe(o.status||o.orderStatus||'Accepted')}</small></td><td data-label="Item Details">${orderItems(o).map(itemLine).join('')}${note}</td><td data-label="Action"><div class="shiprocket-action-col">${renderShipBtn(o)}<button class="btn-outline btn-sm" onclick="event.stopPropagation();processSlips('print','${id}')"><i class="fas fa-print"></i> Standard Slip</button><button class="btn-outline btn-sm" onclick="event.stopPropagation();viewOrderDetails&&viewOrderDetails('${id}')"><i class="fas fa-eye"></i> Details</button></div></td></tr>`;
+        }).join('');
+    };
+    try{loadAcceptedOrders=window.loadAcceptedOrders;}catch(e){}
+
+    const oldDownloadShippingInvoice=window.downloadShippingInvoice;
+    window.downloadShippingInvoice=async function(orderId){
+        let ids=[];
+        if(orderId==='bulk'){qsa('.cb-acc:checked').forEach(cb=>ids.push(cb.value));if(!ids.length)return toast('Select at least one accepted order.','warning');}else ids=[orderId];
+        for(const id of ids){const o=findOrder(id);if(o)await saveShipState(o,{shiprocketInvoiceRequested:true,shiprocketInvoiceNoFine:true,shiprocketInvoiceStatus:shipStatus(o)||'requested',shiprocketInvoiceRequestedAt:o.shiprocketInvoiceRequestedAt||nowIso()});}
+        try{if(typeof oldDownloadShippingInvoice==='function')await oldDownloadShippingInvoice.apply(this,arguments);}catch(e){toast('Shiprocket request saved. Retry after package/API details are fixed.','warning');}
+        setTimeout(()=>window.loadAcceptedOrders(),120);
+    };
+    try{downloadShippingInvoice=window.downloadShippingInvoice;}catch(e){}
+
+    window.processSlips=async function(mode,singleId){
+        let ids=[]; if(singleId)ids=[singleId]; else qsa('.cb-acc:checked').forEach(cb=>ids.push(cb.value));
+        if(!ids.length)return toast('Select at least one order.','warning');
+        const s=seller()||{};
+        let html='<div style="font-family:Arial,sans-serif;color:#0f172a;background:#fff;">';
+        for(const id of ids){
+            const o=findOrder(id); if(!o)continue;
+            const items=orderItems(o); await saveShipState(o,{standardSlipPrinted:true,standardSlipPrintedAt:nowIso(),dispatchSlipPrintedAt:nowIso()});
+            html+=`<div style="page-break-after:always;max-width:850px;margin:0 auto;padding:24px;border:1px solid #e2e8f0;"><div style="display:flex;justify-content:space-between;border-bottom:3px solid #111827;padding-bottom:12px;margin-bottom:15px;"><div><h1 style="margin:0;font-size:26px;">Aryanta.in</h1><p style="margin:4px 0;font-size:12px;font-weight:700;">Standard Seller Dispatch Slip</p><p style="margin:0;font-size:11px;">support@aryanta.in · 6206318133</p></div><div style="text-align:right;font-size:12px;"><b>Order</b><br>${safe(o.order_no||o.orderNo||o.id||id)}<br><br><b>Date</b><br>${orderDate(o).toLocaleString('en-IN')}</div></div><table style="width:100%;border-collapse:collapse;margin-bottom:14px;"><tr><td style="border:1px solid #e2e8f0;padding:8px;"><b>Seller</b><br>${safe(s.companyName||s.shopName||s.email||'-')}<br>${safe(s.phone||'')}</td><td style="border:1px solid #e2e8f0;padding:8px;"><b>Buyer</b><br>${safe(o.delivery_name||o.customerName||o.name||'-')}<br>${safe(o.delivery_phone||o.customerPhone||o.phone||'')}</td></tr><tr><td colspan="2" style="border:1px solid #e2e8f0;padding:8px;"><b>Delivery Address</b><br>${safe(o.delivery_address||o.address||o.shippingAddress||'-')}</td></tr></table><table style="width:100%;border-collapse:collapse;"><thead><tr><th style="text-align:left;border:1px solid #e2e8f0;padding:8px;background:#f8fafc;">Item</th><th style="text-align:center;border:1px solid #e2e8f0;padding:8px;background:#f8fafc;">Qty</th><th style="text-align:right;border:1px solid #e2e8f0;padding:8px;background:#f8fafc;">Seller Price</th></tr></thead><tbody>${items.map(i=>`<tr><td style="border:1px solid #e2e8f0;padding:8px;">${safe(i.name||i.title||i.productName||'Product')}<br><small>SKU: ${safe(i.sku||i.productId||'-')}</small></td><td style="text-align:center;border:1px solid #e2e8f0;padding:8px;">${safe(i.qty||i.quantity||1)}</td><td style="text-align:right;border:1px solid #e2e8f0;padding:8px;">${formatMoney(i.price||i.sellingPrice||0)}</td></tr>`).join('')}</tbody></table><div style="margin-top:16px;display:flex;justify-content:space-between;align-items:center;"><b>Total: ${formatMoney(orderAmount(o))}</b><div style="font-family:monospace;font-size:18px;letter-spacing:3px;border:1px dashed #111827;padding:8px 14px;">${safe(o.order_no||o.orderNo||o.id||id)}</div></div><p style="font-size:11px;color:#64748b;margin-top:18px;">Pack only the listed seller items. Keep proof photo/video until shipment is picked up.</p></div>`;
+        }
+        html+='</div>';
+        const area=$('printArea')||document.body.appendChild(document.createElement('div'));area.id='printArea';area.innerHTML=html;area.style.display='block';
+        if(window.printJS)printJS({printable:'printArea',type:'html',targetStyles:['*']});else{const w=window.open('','_blank');w.document.write(html);w.document.close();w.focus();w.print();}
+        setTimeout(()=>{area.style.display='none';window.loadAcceptedOrders();},800);
+    };
+
+    async function sponsorUsage(){const s=seller()||{},u=s.sponsoredAdUsage||{};return u.month===monthKey()?num(u.used):0;}
+    async function saveSponsorUsage(n){const usage={month:monthKey(),used:n,updatedAt:nowIso()};await saveSellerPatch({sponsoredAdUsage:usage,sponsoredAdsUsedThisMonth:n});}
+    async function activateSponsored(productId,isFree,paymentInfo){
+        const p=currentPlan(),database=dbx(); if(!database)return;
+        const start=nowIso(),end=new Date(Date.now()+24*3600000).toISOString();
+        const payload={isAd:true,isSponsored:true,sponsored:true,adStatus:'Sponsored',sponsorStatus:'Live',sponsoredAt:start,sponsoredStartAt:start,sponsoredUntil:end,sponsorEndAt:end,sponsoredBySeller:sellerEmail(),sponsoredPlan:p.key,sponsoredPayment:isFree?'free_slot':'paid'};
+        await database.collection('products').doc(productId).set(payload,{merge:true});
+        await database.collection('seller_ad_logs').add({sellerEmail:sellerEmail(),productId,amount:isFree?0:p.sponsoredPrice,status:'Live',startAt:start,endAt:end,plan:p.key,createdAt:start,method:isFree?'free_slot':((paymentInfo&&paymentInfo.method)||'paid'),...(paymentInfo||{})}).catch(()=>{});
+        const prod=productById(productId);if(prod)Object.assign(prod,payload);
+        if(isFree)await saveSponsorUsage((await sponsorUsage())+1);
+        toast('Sponsored ad active for 24 hours.','success');
+        if(typeof closeModal==='function')closeModal('adPaymentModal');
+        if(typeof loadAds==='function')loadAds();
+    }
+    window.startAd=async function(productId){
+        const p=currentPlan(),used=await sponsorUsage(),freeLeft=Math.max(0,num(p.freeAds)+num((seller()||{}).rewardSponsoredSlots)-used),prod=productById(productId)||{};
+        if($('adProdId'))$('adProdId').value=productId;
+        if($('adCostDisplay'))$('adCostDisplay').textContent=freeLeft>0?'FREE':formatMoney(p.sponsoredPrice);
+        if($('adPlanMessage'))$('adPlanMessage').innerHTML=freeLeft>0?`<b>${safe(prod.name||prod.title||'This product')}</b> can use a free sponsored slot. Remaining: <b>${freeLeft}</b>.`:`${safe(p.name)} sponsored price is <b>${formatMoney(p.sponsoredPrice)}</b> for 24 hours.`;
+        const online=document.querySelector('#adPaymentModal button[onclick="payAdOnline()"]');if(online)online.innerHTML=freeLeft>0?'<i class="fas fa-bolt"></i> Use Free Sponsored Slot':`<i class="fas fa-credit-card"></i> Pay ${formatMoney(p.sponsoredPrice)} Online`;
+        const payout=$('btnAdPayout');if(payout)payout.innerHTML=`<i class="fas fa-wallet"></i> Deduct ${formatMoney(p.sponsoredPrice)} from Payout`;
+        const m=$('adPaymentModal');if(m){m.style.display='flex';setTimeout(()=>m.classList.add('show'),10);}
+    };
+    window.payAdOnline=async function(){
+        const productId=$('adProdId')?.value;if(!productId)return;
+        const p=currentPlan(),freeLeft=Math.max(0,num(p.freeAds)+num((seller()||{}).rewardSponsoredSlots)-(await sponsorUsage()));
+        if(freeLeft>0)return activateSponsored(productId,true,{method:'free_slot'});
+        if(!window.Razorpay||!API_KEYS||!API_KEYS.RAZORPAY){toast('Razorpay key missing. Ask admin to enable payment.','error');return;}
+        new Razorpay({key:API_KEYS.RAZORPAY,amount:p.sponsoredPrice*100,currency:'INR',name:'Aryanta Sponsored Ads',description:`Sponsored ad ${p.name}`,handler:res=>activateSponsored(productId,false,{method:'razorpay',razorpayPaymentId:res.razorpay_payment_id||''}),prefill:{name:(seller()||{}).companyName||'',email:sellerEmail(),contact:(seller()||{}).phone||''},theme:{color:'#111827'}}).open();
+    };
+    window.payAdUpcoming=async function(){
+        const productId=$('adProdId')?.value;if(!productId)return;
+        const p=currentPlan();
+        try{await dbx().collection('seller_payment_ledger').add({sellerEmail:sellerEmail(),type:'sponsored_ad_payout',productId,amount:-p.sponsoredPrice,status:'Pending payout deduction',createdAt:nowIso(),plan:p.key});}catch(e){}
+        return activateSponsored(productId,false,{method:'upcoming_payout'});
+    };
+
+    const oldUpdateBankDetails=window.updateBankDetails;
+    window.updateBankDetails=async function(){
+        const accEl=$('profAcc'); if(accEl)accEl.value=txt(accEl.value).replace(/\D/g,'');
+        if(accEl&&!accEl.value)return toast('Account number must be numeric only.','warning');
+        if(typeof oldUpdateBankDetails==='function')return oldUpdateBankDetails.apply(this,arguments);
+    };
+    try{updateBankDetails=window.updateBankDetails;}catch(e){}
+
+    const oldShowSection=window.showSection;
+    window.showSection=async function(section){
+        ensureAchievementUI();injectSupportQnaButtons();updatePlanGates();
+        if(section==='productPerformance'&&currentPlan().key==='Basic'){
+            toast('Product Performance is hidden on Basic. Upgrade to Growth or Pro.','warning');
+            section='subscription';
+        }
+        let res;
+        if(section==='achievements'){
+            qsa('.data-section').forEach(sec=>sec.classList.remove('active'));
+            const sec=$('achievementsSection');if(sec)sec.classList.add('active');
+            qsa('.nav-item').forEach(n=>n.classList.remove('active'));const nav=$('nav-achievements');if(nav)nav.classList.add('active');
+            const sb=$('mobileSidebar');if(sb)sb.classList.remove('open');const ov=$('mobileSidebarOverlay');if(ov)ov.style.display='none';
+            window.loadAchievements();return;
+        }
+        if(typeof oldShowSection==='function')res=await oldShowSection.apply(this,[section]);
+        setTimeout(function(){
+            if(section==='subscription')renderSmartSubscriptionUI();
+            if(section==='notifications')window.fetchNotifications();
+            if(section==='productPerformance')window.loadProductPerformance();
+            if(section==='qna')window.loadQna();
+            if(section==='support')injectSupportQnaButtons();
+            if(section==='acceptedOrders')window.loadAcceptedOrders();
+            applyStoreRatingUI();updatePlanGates();renderAchievementBadge();
+        },100);
+        return res;
+    };
+    try{showSection=window.showSection;}catch(e){}
+
+    function bootSmartFeatures(){
+        installFineRequestMode();ensureAchievementUI();ensureQnaControls();injectSupportQnaButtons();updatePlanGates();applyStoreRatingUI();renderAiBusinessTips();renderAchievementBadge();
+        const acc=$('profAcc');if(acc){acc.setAttribute('inputmode','numeric');acc.setAttribute('pattern','[0-9]*');acc.addEventListener('input',function(){this.value=this.value.replace(/\D/g,'');});}
+        try{window.fetchNotifications();}catch(e){}
+    }
+    document.addEventListener('DOMContentLoaded',function(){setTimeout(bootSmartFeatures,500);setTimeout(bootSmartFeatures,1800);});
+    setTimeout(bootSmartFeatures,1200);
+})();
+
+(function(){
+    const bindQnaSubmit=function(){
+        if(window.saveQnaAnswer){
+            window.submitQnaAnswer=window.saveQnaAnswer;
+            try{submitQnaAnswer=window.saveQnaAnswer;}catch(e){}
+        }
+        if(window.answerQnaSmart){
+            window.openQnaModal=window.answerQnaSmart;
+            try{openQnaModal=window.answerQnaSmart;}catch(e){}
+        }
+    };
+    document.addEventListener('DOMContentLoaded',function(){setTimeout(bindQnaSubmit,600);setTimeout(bindQnaSubmit,1800);});
+    setTimeout(bindQnaSubmit,1200);
+})();
+
+
+/* ===== Aryanta Final Requested Patch 2026-05-25: direct subscriptions, chart fix, returns, achievements, support cleanup ===== */
+(function(){
+    if(window.ARYANTA_FINAL_DIRECT_SUB_PATCH_20260525) return;
+    window.ARYANTA_FINAL_DIRECT_SUB_PATCH_20260525 = true;
+
+    const PLAN_FINAL = {
+        Basic:{key:'Basic',name:'Basic',monthlyPrice:0,commission:6,sponsoredPrice:70,fineDiscount:0,freeAds:0,performance:'locked',badge:'Free access · 6% commission'},
+        Growth:{key:'Growth',name:'Growth',monthlyPrice:259,commission:4,sponsoredPrice:50,fineDiscount:30,freeAds:2,performance:'growth',badge:'Direct paid plan · smarter analytics'},
+        Pro:{key:'Pro',name:'Pro',monthlyPrice:459,commission:2.5,sponsoredPrice:40,fineDiscount:50,freeAds:5,performance:'pro',badge:'Direct paid plan · advanced analytics'}
+    };
+    window.ARYANTA_PLAN_RULES_2026 = PLAN_FINAL;
+    window.ARYANTA_DIRECT_PAID_PLANS = PLAN_FINAL;
+
+    function $(id){return document.getElementById(id);}
+    function qsa(sel,root=document){return Array.from(root.querySelectorAll(sel));}
+    function txt(v){return v===undefined||v===null?'':String(v);}
+    function low(v){return txt(v).toLowerCase().trim();}
+    function num(v){const n=Number(v);return Number.isFinite(n)?n:0;}
+    function safe(v){return txt(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+    function nowIso(){return new Date().toISOString();}
+    function toast(msg,type='info'){try{if(typeof showToast==='function')showToast(msg,type);else console.log(msg);}catch(e){console.log(msg);}}
+    function seller(){try{return activeSeller||window.activeSeller||{};}catch(e){return window.activeSeller||{};}}
+    function sellerEmail(){const s=seller();return low(s.email||s.sellerEmail||s.mail);}
+    function sellerDocId(){const s=seller();return txt(s.email||s.sellerEmail||sellerEmail()||s.uid||s.id).trim();}
+    function dbx(){try{return db||window.db||null;}catch(e){return window.db||null;}}
+    function products(){try{return Array.isArray(sellerProducts)?sellerProducts:[];}catch(e){return window.sellerProducts||[];}}
+    function orders(){try{return Array.isArray(sellerOrders)?sellerOrders:[];}catch(e){return window.sellerOrders||[];}}
+    function reviews(){try{return Array.isArray(sellerReviews)?sellerReviews:[];}catch(e){return window.sellerReviews||[];}}
+    function money(v){return '₹'+num(v).toLocaleString('en-IN');}
+    function dateOf(v){if(!v)return null;if(v&&typeof v.toDate==='function')return v.toDate();const d=new Date(v);return isNaN(d.getTime())?null:d;}
+    function addDays(d,n){const x=new Date(d||Date.now());x.setDate(x.getDate()+n);return x;}
+    function planKey(raw){
+        const s=seller();const p=low(raw||s.subscription||s.subscriptionName||s.plan||'Basic');
+        if(p.includes('pro')||p.includes('ultra')||p.includes('premium'))return 'Pro';
+        if(p.includes('growth')||p.includes('grow'))return 'Growth';
+        return 'Basic';
+    }
+    function currentPlan(){return PLAN_FINAL[planKey()]||PLAN_FINAL.Basic;}
+    function planByKey(k){return PLAN_FINAL[planKey(k)]||PLAN_FINAL.Basic;}
+    function subEnd(){const s=seller();return dateOf(s.subEndDate||s.subscriptionEndDate||s.planEndDate||s.endDate);}
+    function itemQty(i){return Math.max(1,num(i.qty||i.quantity||1)||1);}
+    function orderDate(o){return dateOf(o&& (o.timestamp||o.createdAt||o.orderDate||o.date||o.acceptedAt||o.updatedAt))||new Date();}
+    function orderItems(o){let it=[];try{if(typeof getSellerItemsFromOrder==='function')it=getSellerItemsFromOrder(o)||[];}catch(e){} if(!it.length&&Array.isArray(o&&o.items))it=o.items;return it;}
+    function orderAmount(o){return orderItems(o).reduce((s,i)=>s+(num(i.price||i.sellingPrice||i.finalPrice||i.amount)*itemQty(i)),0)||num(o&&(o.total||o.amount||o.finalAmount||o.totalPrice));}
+    function findOrder(id){const key=txt(id).trim();return orders().find(o=>[o.id,o.orderId,o.order_no,o.orderNo,o.invoiceId].some(v=>txt(v).trim()===key));}
+    function productImageByItem(i){
+        const itemId=txt(i.productId||i.product_id||i.productDocId||i.id).trim(), sku=low(i.sku), name=low(i.name||i.title||i.productName);
+        const p=products().find(x=>txt(x.id||x.productId||x.product_id).trim()===itemId || (sku&&low(x.sku)===sku) || (name&&low(x.name||x.title)===name))||{};
+        if(Array.isArray(i.images)&&i.images[0])return i.images[0];
+        if(i.image||i.imageUrl||i.productImage)return i.image||i.imageUrl||i.productImage;
+        if(Array.isArray(p.images)&&p.images[0])return p.images[0];
+        if(Array.isArray(p.imageUrls)&&p.imageUrls[0])return p.imageUrls[0];
+        return p.image||p.imageUrl||p.mainImage||p.productImage||'';
+    }
+
+    function installSafeChart(){
+        if(!window.Chart || window.Chart.__aryantaSafeChart) return;
+        const RealChart = window.Chart;
+        function SafeChart(ctx, config){
+            try{
+                const canvas = ctx && ctx.canvas ? ctx.canvas : ctx;
+                const old = RealChart.getChart ? RealChart.getChart(canvas) : null;
+                if(old && typeof old.destroy === 'function') old.destroy();
+            }catch(e){}
+            return new RealChart(ctx, config);
+        }
+        try{Object.setPrototypeOf(SafeChart, RealChart);}catch(e){}
+        try{SafeChart.prototype = RealChart.prototype;}catch(e){}
+        try{Object.getOwnPropertyNames(RealChart).forEach(k=>{if(!(k in SafeChart))SafeChart[k]=RealChart[k];});}catch(e){}
+        SafeChart.__aryantaSafeChart = true;
+        window.Chart = SafeChart;
+    }
+    installSafeChart();
+
+    function destroySalesChart(){
+        const c=$('salesChart');
+        try{if(c&&window.Chart&&Chart.getChart){const ch=Chart.getChart(c);if(ch)ch.destroy();}}catch(e){}
+        try{if(window.salesChartInstance&&typeof window.salesChartInstance.destroy==='function')window.salesChartInstance.destroy();}catch(e){}
+        try{if(typeof salesChartInstance!=='undefined'&&salesChartInstance&&typeof salesChartInstance.destroy==='function')salesChartInstance.destroy();}catch(e){}
+    }
+    window.destroyAryantaSalesChart = destroySalesChart;
+
+    const oldRenderSalesChart = window.renderSalesChart;
+    window.renderSalesChart = function(data){
+        destroySalesChart();
+        const canvas=$('salesChart');
+        if(!canvas || !window.Chart) return;
+        const labels=[]; const values=[];
+        const today=new Date();
+        for(let i=6;i>=0;i--){const d=new Date(today);d.setDate(today.getDate()-i);labels.push(d.toLocaleDateString('en-IN',{weekday:'short'}));values.push(0);}
+        orders().forEach(o=>{
+            const d=orderDate(o); const diff=Math.floor((new Date(today.getFullYear(),today.getMonth(),today.getDate())-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/86400000);
+            if(diff>=0&&diff<7 && low(o.status).includes('delivered')) values[6-diff]+=orderAmount(o);
+        });
+        const finalData = Array.isArray(data)&&data.some(v=>num(v)>0)?data:values;
+        try{
+            const ctx=canvas.getContext('2d');
+            window.salesChartInstance = new Chart(ctx,{type:'line',data:{labels:labels,datasets:[{label:'Revenue (₹)',data:finalData,fill:true,tension:.35,borderWidth:3,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true},x:{grid:{display:false}}}}});
+            try{salesChartInstance=window.salesChartInstance;}catch(e){}
+        }catch(e){console.warn('Aryanta 7-day chart render skipped safely',e);}
+    };
+
+    window.getAryantaCommissionPercent=function(){return currentPlan().commission;};
+    window.getAryantaCommissionRate=function(){return currentPlan().commission/100;};
+    window.getAryantaSponsoredAdPrice=function(){return currentPlan().sponsoredPrice;};
+    window.getAryantaFineDiscountPercent=function(){return currentPlan().fineDiscount;};
+    window.calculateAryantaCommission=function(amount){return Math.round(num(amount)*currentPlan().commission)/100;};
+
+    function saveSellerPatch(patch){
+        const database=dbx(), id=sellerDocId(); if(!database||!id)return Promise.resolve(false);
+        Object.assign(seller(),patch);
+        try{activeSeller=Object.assign(activeSeller||{},patch);window.activeSeller=activeSeller;localStorage.setItem('sellerToken',JSON.stringify(activeSeller));}catch(e){}
+        return database.collection('sellers').doc(id).set(patch,{merge:true}).then(()=>true).catch(e=>{console.warn('seller patch failed',e);return false;});
+    }
+
+    function normalizeFineRequest(payload){
+        payload=payload||{};const s=seller(),p=currentPlan();const original=num(payload.amount||payload.finalAmount||payload.requestedAmount||0);const final=Math.max(0,Math.round(original*(100-p.fineDiscount)/100));
+        return Object.assign({},payload,{email:sellerEmail(),sellerEmail:sellerEmail(),sellerName:s.companyName||s.shopName||s.name||'',sellerPhone:s.phone||'',sellerUid:s.uid||s.id||'',requestedAmount:original,originalAmount:original,amount:final,suggestedFinalAmount:final,planAtRequest:p.key,fineDiscountPercent:p.fineDiscount,status:'Pending Admin Approval',fineRequestStatus:'Waiting Admin Approval',adminEditableAmount:true,adminCanAccept:true,adminCanChangeAmount:true,source:'seller-panel-fine-request',requestedAt:payload.requestedAt||payload.createdAt||nowIso(),createdAt:payload.createdAt||nowIso(),timestamp:payload.timestamp||nowIso(),note:'Fine is only a DB request. Admin can accept or change amount before applying.'});
+    }
+    window.addFineRequestToAdmin=async function(key,amount,reason,extra){
+        const database=dbx(); if(!database||!sellerEmail())return false;
+        const doc=(sellerEmail()+'_'+txt(key||reason||Date.now())).replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,180);
+        try{await database.collection('seller_fine_requests').doc(doc).set(normalizeFineRequest(Object.assign({requestKey:key,reason:reason||'Fine request',amount},extra||{})),{merge:true});toast('Fine request saved for admin approval.','warning');return true;}catch(e){console.warn('fine request failed',e);return false;}
+    };
+    try{window.addFineOnce=window.addFineRequestToAdmin;addFineOnce=window.addFineRequestToAdmin;}catch(e){}
+
+    function installFineProxy(){
+        const database=dbx(); if(!database||database.__ARYANTA_FINAL_FINE_PROXY)return;
+        const original=database.collection.bind(database);
+        database.collection=function(path,...rest){
+            const ref=original(path,...rest);
+            if(txt(path)!=='fines')return ref;
+            return new Proxy(ref,{get(target,prop){
+                if(prop==='add')return payload=>original('seller_fine_requests').add(normalizeFineRequest(payload));
+                if(prop==='doc')return docId=>{
+                    const fineRef=original('seller_fine_requests').doc(txt(docId||('fine_'+Date.now())).replace(/[^a-zA-Z0-9_-]/g,'_'));
+                    return new Proxy(fineRef,{get(t,p){
+                        if(p==='set')return (payload,opt)=>fineRef.set(normalizeFineRequest(Object.assign({requestKey:docId},payload||{})),opt||{merge:true});
+                        if(p==='update')return payload=>fineRef.set(normalizeFineRequest(Object.assign({requestKey:docId},payload||{})),{merge:true});
+                        const v=t[p];return typeof v==='function'?v.bind(t):v;
+                    }});
+                };
+                const v=target[prop];return typeof v==='function'?v.bind(target):v;
+            }});
+        };
+        database.__ARYANTA_FINAL_FINE_PROXY=true;
+    }
+
+    async function activateSubscription(planName,payment){
+        const p=planByKey(planName); if(p.key==='Basic')return saveSellerPatch({subscription:'Basic',subscriptionName:'Basic',subscriptionCommissionPercent:PLAN_FINAL.Basic.commission});
+        const start=new Date(), end=addDays(start,30), s=seller();
+        const hist=Array.isArray(s.subHistory)?s.subHistory.slice():[];
+        const entry={plan:p.key,planName:p.name,amount:p.monthlyPrice,price:p.monthlyPrice,commissionPercent:p.commission,sponsoredAdPrice:p.sponsoredPrice,fineDiscountPercent:p.fineDiscount,method:payment.method||'Razorpay',paymentMethod:payment.method||'Razorpay',paymentBy:s.companyName||s.shopName||s.email||sellerEmail(),paymentId:payment.razorpayPaymentId||payment.paymentId||'',razorpayPaymentId:payment.razorpayPaymentId||'',startDate:start.toISOString(),endDate:end.toISOString(),status:'Active',createdAt:nowIso(),source:'direct-seller-payment'};
+        hist.push(entry);
+        await saveSellerPatch({subscription:p.key,subscriptionName:p.name,plan:p.key,subStartDate:start.toISOString(),subEndDate:end.toISOString(),subscriptionEndDate:end.toISOString(),subscriptionCommissionPercent:p.commission,subscriptionAmount:p.monthlyPrice,subscriptionPaymentStatus:'Paid',subscriptionPaused:false,pausedSubscription:null,pausedSubEndDate:null,lastSubscriptionPaymentAt:nowIso(),subHistory:hist,canClaimFreePro:false});
+        const database=dbx();
+        if(database){
+            database.collection('seller_subscription_payments').add(Object.assign({sellerEmail:sellerEmail(),sellerName:s.companyName||s.shopName||'',sellerPhone:s.phone||'',sellerUid:s.uid||s.id||''},entry)).catch(()=>{});
+            database.collection('seller_payment_ledger').add({sellerEmail:sellerEmail(),type:'subscription_payment',plan:p.key,amount:p.monthlyPrice,status:'Paid',createdAt:nowIso(),paymentId:entry.paymentId}).catch(()=>{});
+        }
+        toast(`${p.name} subscription activated for 1 month.`, 'success');
+        renderFinalSubscriptionUI(); updatePlanGatesFinal(); checkSubscriptionReminder(true);
+    }
+
+    window.startSubscriptionPayment=function(planName){
+        const p=planByKey(planName);
+        if(p.key==='Basic')return switchToBasicWithConfirmFinal();
+        if(currentPlan().key===p.key)return toast('This plan is already active.','info');
+        if(!window.Razorpay || !window.API_KEYS || !API_KEYS.RAZORPAY){
+            toast('Payment key is missing. Add Razorpay key in /get-api-keys first. No admin request was sent.','error');
+            return;
+        }
+        new Razorpay({
+            key:API_KEYS.RAZORPAY,
+            amount:p.monthlyPrice*100,
+            currency:'INR',
+            name:'Aryanta Seller Subscription',
+            description:`${p.name} plan - ₹${p.monthlyPrice}/month`,
+            handler:function(res){activateSubscription(p.key,{method:'Razorpay',razorpayPaymentId:res.razorpay_payment_id||''});},
+            prefill:{name:seller().companyName||seller().shopName||'',email:sellerEmail(),contact:seller().phone||''},
+            notes:{sellerEmail:sellerEmail(),plan:p.key},
+            theme:{color:'#111827'}
+        }).open();
+    };
+    window.requestSubscriptionFromAdmin=function(plan){return window.startSubscriptionPayment(plan);};
+    window.processSubscription=function(planName){return window.startSubscriptionPayment(planName);};
+
+    async function switchToBasicWithConfirmFinal(){
+        const cur=currentPlan();
+        if(cur.key==='Basic')return toast('Basic plan is already active.','info');
+        if(!confirm('Are you sure you want to switch to Basic? This will pause your running paid subscription. You can resume it later.'))return;
+        await saveSellerPatch({subscription:'Basic',subscriptionName:'Basic',subscriptionPaused:true,pausedSubscription:cur.key,pausedSubscriptionName:cur.name,pausedSubEndDate:(seller().subEndDate||seller().subscriptionEndDate||''),subscriptionCommissionPercent:PLAN_FINAL.Basic.commission,pausedAt:nowIso()});
+        toast('Paid subscription paused. Basic plan is active now.','success');renderFinalSubscriptionUI();
+    }
+    window.switchToBasicWithConfirm=switchToBasicWithConfirmFinal;
+    window.pauseMySubscription=switchToBasicWithConfirmFinal;
+    window.resumePausedSubscription=async function(){
+        const s=seller(); const old=planKey(s.pausedSubscription||s.pausedSubscriptionName);
+        if(old==='Basic')return toast('No paid paused subscription found.','warning');
+        const p=PLAN_FINAL[old];
+        await saveSellerPatch({subscription:p.key,subscriptionName:p.name,subscriptionPaused:false,subscriptionCommissionPercent:p.commission,subEndDate:s.pausedSubEndDate||s.subEndDate||addDays(new Date(),30).toISOString(),subscriptionEndDate:s.pausedSubEndDate||s.subscriptionEndDate||addDays(new Date(),30).toISOString(),resumedAt:nowIso()});
+        toast(`${p.name} subscription resumed.`, 'success');renderFinalSubscriptionUI();
+    };
+
+    async function applyNewSellerGrowthTrial(){
+        const s=seller(),database=dbx(); if(!database||!sellerEmail())return;
+        if(s.growthTrialRedeemedAt||s.freeGrowthTrialRedeemed||s.newSellerGrowthTrialRedeemed)return;
+        if(planKey()!=='Basic')return;
+        const hist=Array.isArray(s.subHistory)?s.subHistory:[];
+        if(hist.length>0)return;
+        const start=new Date(),end=addDays(start,60),entry={plan:'Growth',planName:'Growth',amount:0,price:0,method:'New Seller Free Trial',paymentMethod:'Free Trial',startDate:start.toISOString(),endDate:end.toISOString(),status:'Active',source:'new-seller-2-month-growth-trial',createdAt:nowIso(),commissionPercent:PLAN_FINAL.Growth.commission};
+        await saveSellerPatch({subscription:'Growth',subscriptionName:'Growth',plan:'Growth',subStartDate:start.toISOString(),subEndDate:end.toISOString(),subscriptionEndDate:end.toISOString(),subscriptionCommissionPercent:PLAN_FINAL.Growth.commission,subscriptionAmount:0,subscriptionPaymentStatus:'Free Trial',growthTrialRedeemedAt:nowIso(),freeGrowthTrialRedeemed:true,newSellerGrowthTrialRedeemed:true,canClaimFreePro:false,subHistory:[entry]});
+        database.collection('seller_subscription_payments').add({sellerEmail:sellerEmail(),plan:'Growth',amount:0,status:'Free Trial',source:'new-seller-2-month-growth-trial',startDate:start.toISOString(),endDate:end.toISOString(),createdAt:nowIso()}).catch(()=>{});
+        toast('New seller offer active: 2 months Growth subscription free.','success');
+    }
+
+    const oldActivateFreeSubscription=window.activateFreeSubscription;
+    window.activateFreeSubscription=function(plan){
+        if(planKey(plan)==='Pro' && (planKey()==='Growth'||seller().growthTrialRedeemedAt||seller().freeGrowthTrialRedeemed)){
+            return toast('Free Pro trial is not available after Growth has been activated.','warning');
+        }
+        if(typeof oldActivateFreeSubscription==='function')return oldActivateFreeSubscription.apply(this,arguments);
+    };
+
+    function planCard(p){
+        const active=currentPlan().key===p.key, paid=p.key!=='Basic', s=seller();
+        const price=paid?`<div class="plan-price-line">${money(p.monthlyPrice)} <small>/month</small></div><span class="direct-pay-tag"><i class="fas fa-bolt"></i> Direct payment</span>`:`<div class="plan-price-line">Free <small>default</small></div>`;
+        const action=active?`<button class="btn-outline w-100" disabled><i class="fas fa-check"></i> Active Plan</button>`:(p.key==='Basic'?`<button class="btn-outline w-100" onclick="switchToBasicWithConfirm()"><i class="fas fa-pause"></i> Switch / Pause to Basic</button>`:`<button class="btn-prime w-100" onclick="startSubscriptionPayment('${p.key}')"><i class="fas fa-credit-card"></i> Pay ${money(p.monthlyPrice)}</button>`);
+        const resume=(p.key==='Basic'&&s.subscriptionPaused)?`<button class="btn-prime w-100" onclick="resumePausedSubscription()" style="margin-top:8px"><i class="fas fa-play"></i> Resume ${safe(s.pausedSubscriptionName||s.pausedSubscription||'Paid Plan')}</button>`:'';
+        return `<div class="admin-plan-card ary-direct-plan-card ${active?'active':''}"><div class="admin-plan-title"><strong>${safe(p.name)}</strong>${active?'<span class="ok-chip"><i class="fas fa-check"></i> Current</span>':''}</div>${price}<p class="muted-line">${safe(p.badge)}</p><div class="feature-list"><div class="feature-row"><span>Commission on orders</span><span>${p.commission}%</span></div><div class="feature-row"><span>Sponsored ad price</span><span>${money(p.sponsoredPrice)}/24h</span></div><div class="feature-row"><span>Fine charge</span><span>${p.fineDiscount?`${p.fineDiscount}% lower`:'Normal request'}</span></div><div class="feature-row"><span>Product performance</span><span>${p.performance==='locked'?'Hidden':p.performance==='pro'?'Advanced Pro':'Growth analytics'}</span></div></div>${action}${resume}</div>`;
+    }
+
+    function checkSubscriptionReminder(force){
+        const end=subEnd(); if(!end)return;
+        const days=Math.ceil((end.getTime()-Date.now())/86400000);
+        const key='ary_sub_reminder_'+sellerEmail()+'_'+end.toISOString().slice(0,10);
+        if(days<=7 && days>=0 && (force||sessionStorage.getItem(key)!=='1')){
+            toast(`Your ${currentPlan().name} subscription ends in ${days} day${days===1?'':'s'}. Please renew before expiry.`, 'warning');
+            try{sessionStorage.setItem(key,'1');}catch(e){}
+        }
+    }
+
+    function renderFinalSubscriptionUI(){
+        const notice=$('subscriptionAdminNotice'),cards=$('subscriptionCards'),history=$('subscriptionHistoryBox');
+        const p=currentPlan(),end=subEnd(),s=seller();
+        if(notice){
+            let reminder='';
+            if(end){const days=Math.ceil((end.getTime()-Date.now())/86400000);if(days<=7&&days>=0)reminder=`<div class="ary-sub-reminder"><i class="fas fa-bell"></i><div>Your ${safe(p.name)} subscription will end in <b>${days}</b> day${days===1?'':'s'}. Renew before expiry to keep plan powers active.</div></div>`;}
+            notice.innerHTML=`${reminder}<div class="ary-sub-toolbar"><div><b>Current plan:</b> ${safe(p.name)} ${s.subscriptionPaused?'<span class="lock-chip"><i class="fas fa-pause"></i> Paid plan paused</span>':''}<br><span class="muted-line">Commission ${p.commission}% · Sponsored ${money(p.sponsoredPrice)} · Fine discount ${p.fineDiscount}% · ${end?'Valid till '+end.toLocaleDateString('en-IN'):'No expiry set'}</span></div><div class="ary-sub-actions"><button class="btn-outline" onclick="showSubscriptionDetails()"><i class="fas fa-receipt"></i> Subscription Invoice & History</button>${p.key!=='Basic'?'<button class="btn-outline" onclick="pauseMySubscription()"><i class="fas fa-pause"></i> Pause My Subscription</button>':(s.subscriptionPaused?'<button class="btn-prime" onclick="resumePausedSubscription()"><i class="fas fa-play"></i> Resume</button>':'')}</div></div>`;
+        }
+        if(cards)cards.innerHTML=[PLAN_FINAL.Basic,PLAN_FINAL.Growth,PLAN_FINAL.Pro].map(planCard).join('');
+        if(history){history.style.display='none';history.innerHTML='';}
+        checkSubscriptionReminder(false);
+    }
+    const oldLoadSubscriptionsUI=window.loadSubscriptionsUI;
+    window.loadSubscriptionsUI=async function(){try{if(typeof oldLoadSubscriptionsUI==='function')await oldLoadSubscriptionsUI.apply(this,arguments);}catch(e){} renderFinalSubscriptionUI();};
+    try{loadSubscriptionsUI=window.loadSubscriptionsUI;}catch(e){}
+
+    function ensureSubscriptionModal(){
+        if($('arySubscriptionDetailModal'))return;
+        const modal=document.createElement('div');modal.id='arySubscriptionDetailModal';modal.className='modal-overlay';modal.style.display='none';
+        modal.innerHTML=`<div class="modal-content" style="max-width:900px;"><div class="modal-header"><h3><i class="fas fa-file-invoice"></i> Subscription Invoice & History</h3><button class="close-btn" onclick="closeSmartModal('arySubscriptionDetailModal')">&times;</button></div><div id="arySubscriptionDetailBody" style="padding:20px;max-height:75vh;overflow:auto;"></div></div>`;
+        document.body.appendChild(modal);
+    }
+    window.closeSmartModal=function(id){const m=$(id);if(m){m.classList.remove('show');m.style.display='none';}};
+    window.showSubscriptionDetails=function(){
+        ensureSubscriptionModal(); const p=currentPlan(),s=seller(),end=subEnd(),hist=Array.isArray(s.subHistory)?s.subHistory:[];
+        const body=$('arySubscriptionDetailBody');
+        if(body)body.innerHTML=`<div class="ary-detail-grid"><div><span>Seller</span><b>${safe(s.companyName||s.shopName||s.name||'-')}</b></div><div><span>Email</span><b>${safe(s.email||'-')}</b></div><div><span>Phone</span><b>${safe(s.phone||'-')}</b></div><div><span>Account UID</span><b>${safe(s.uid||s.id||'-')}</b></div><div><span>Current Plan</span><b>${safe(p.name)}</b></div><div><span>Commission</span><b>${p.commission}%</b></div><div><span>Sponsored Price</span><b>${money(p.sponsoredPrice)}</b></div><div><span>Fine Discount</span><b>${p.fineDiscount}%</b></div><div><span>End Date</span><b>${end?end.toLocaleString('en-IN'):'Not set'}</b></div><div><span>Paused Plan</span><b>${safe(s.pausedSubscriptionName||s.pausedSubscription||'None')}</b></div></div><div class="ary-sub-actions" style="margin:18px 0"><button class="btn-prime" onclick="printSubscriptionInvoice()"><i class="fas fa-print"></i> Print Invoice</button>${p.key!=='Basic'?'<button class="btn-outline" onclick="pauseMySubscription()"><i class="fas fa-pause"></i> Pause My Subscription</button>':(s.subscriptionPaused?'<button class="btn-prime" onclick="resumePausedSubscription()"><i class="fas fa-play"></i> Resume Subscription</button>':'')}</div><h3 style="margin:18px 0 10px"><i class="fas fa-clock-rotate-left"></i> Payment History</h3>${hist.length?`<div class="table-container"><table class="admin-table"><thead><tr><th>Plan</th><th>Amount</th><th>Payment</th><th>Start</th><th>End</th><th>Status</th></tr></thead><tbody>${hist.slice().reverse().map(h=>`<tr><td data-label="Plan"><b>${safe(h.planName||h.plan||'-')}</b></td><td data-label="Amount">${money(h.amount||h.price||0)}</td><td data-label="Payment">${safe(h.paymentMethod||h.method||'-')}</td><td data-label="Start">${dateOf(h.startDate||h.createdAt)?.toLocaleDateString('en-IN')||'-'}</td><td data-label="End">${dateOf(h.endDate||h.subEndDate)?.toLocaleDateString('en-IN')||'-'}</td><td data-label="Status"><span class="ok-chip">${safe(h.status||'Active')}</span></td></tr>`).join('')}</tbody></table></div>`:'<div class="admin-empty">No subscription invoice/history found yet.</div>'}`;
+        const m=$('arySubscriptionDetailModal'); if(m){m.style.display='flex';setTimeout(()=>m.classList.add('show'),10);} const histBox=$('subscriptionHistoryBox');if(histBox){histBox.style.display='none';histBox.innerHTML='';}
+    };
+    window.printSubscriptionInvoice=function(){
+        const s=seller(),p=currentPlan(),end=subEnd(),hist=Array.isArray(s.subHistory)?s.subHistory:[],last=hist[hist.length-1]||{};
+        const html=`<div style="font-family:Arial,sans-serif;color:#0f172a;padding:28px;max-width:850px;margin:0 auto"><div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #111827;padding-bottom:16px;margin-bottom:20px"><div><h1 style="margin:0;font-size:28px">Aryanta.in</h1><p style="margin:5px 0 0;font-weight:700">Seller Subscription Invoice</p><p style="margin:5px 0 0;font-size:12px">support@aryanta.in · 6206318133</p></div><div style="text-align:right;font-size:12px"><b>Invoice Date</b><br>${new Date().toLocaleString('en-IN')}<br><br><b>Plan</b><br>${safe(p.name)}</div></div><h3>Seller Details</h3><table style="width:100%;border-collapse:collapse;margin-bottom:18px"><tr><td style="padding:8px;border:1px solid #e2e8f0"><b>Name</b><br>${safe(s.companyName||s.shopName||s.name||'-')}</td><td style="padding:8px;border:1px solid #e2e8f0"><b>Email</b><br>${safe(s.email||'-')}</td></tr><tr><td style="padding:8px;border:1px solid #e2e8f0"><b>Phone</b><br>${safe(s.phone||'-')}</td><td style="padding:8px;border:1px solid #e2e8f0"><b>Account UID</b><br>${safe(s.uid||s.id||'-')}</td></tr><tr><td colspan="2" style="padding:8px;border:1px solid #e2e8f0"><b>Address</b><br>${safe(s.address||s.shopAddress||s.businessAddress||'-')}</td></tr></table><h3>Subscription Details</h3><table style="width:100%;border-collapse:collapse;margin-bottom:18px"><tr><th style="text-align:left;padding:10px;border:1px solid #e2e8f0;background:#f8fafc">Plan</th><th style="text-align:left;padding:10px;border:1px solid #e2e8f0;background:#f8fafc">Monthly Price</th><th style="text-align:left;padding:10px;border:1px solid #e2e8f0;background:#f8fafc">Commission</th><th style="text-align:left;padding:10px;border:1px solid #e2e8f0;background:#f8fafc">Sponsored Price</th><th style="text-align:left;padding:10px;border:1px solid #e2e8f0;background:#f8fafc">Valid Till</th></tr><tr><td style="padding:10px;border:1px solid #e2e8f0">${safe(p.name)}</td><td style="padding:10px;border:1px solid #e2e8f0">${money(p.monthlyPrice)}</td><td style="padding:10px;border:1px solid #e2e8f0">${p.commission}%</td><td style="padding:10px;border:1px solid #e2e8f0">${money(p.sponsoredPrice)}</td><td style="padding:10px;border:1px solid #e2e8f0">${end?end.toLocaleDateString('en-IN'):'-'}</td></tr></table><h3>Paid Information</h3><p><b>Amount:</b> ${money(last.amount||last.price||p.monthlyPrice)} &nbsp; <b>Payment Method:</b> ${safe(last.paymentMethod||last.method||'Direct Payment')} &nbsp; <b>Status:</b> ${safe(last.status||'Active')}</p><p style="font-size:12px;color:#64748b;margin-top:30px">This invoice is generated from Aryanta seller panel subscription records.</p></div>`;
+        const area=$('printArea')||document.body.appendChild(document.createElement('div'));area.id='printArea';area.innerHTML=html;area.style.display='block';
+        if(window.printJS)printJS({printable:'printArea',type:'html',targetStyles:['*']});else{const w=window.open('','_blank');w.document.write(html);w.document.close();w.focus();w.print();}
+        setTimeout(()=>{area.style.display='none';},800);
+    };
+
+    function normalizeSidebar(){
+        const ach=qsa('.sidebar .nav-item').filter(n=>/Achievements/i.test(n.textContent||''));
+        ach.forEach((n,i)=>{if(i===0){n.id='nav-achievements';n.setAttribute('onclick',"showSection('achievements')");}else n.remove();});
+        qsa('#supportQnaShortcutRow,.ary-support-shortcuts').forEach(n=>n.remove());
+    }
+    window.injectSupportQnaButtons=function(){qsa('#supportQnaShortcutRow,.ary-support-shortcuts').forEach(n=>n.remove());};
+
+    window.openHowToSellPage=function(){
+        let modal=$('aryHowToSellConfirm');
+        if(!modal){modal=document.createElement('div');modal.id='aryHowToSellConfirm';modal.className='modal-overlay';modal.style.display='none';modal.innerHTML=`<div class="ary-how-modal-card"><h3><i class="fas fa-video"></i> Open How to Sell?</h3><p>This page will redirect to another tab. Are you sure you want to continue?</p><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn-prime" onclick="confirmHowToSellRedirect()"><i class="fas fa-check"></i> Yes, Open</button><button class="btn-outline" onclick="closeSmartModal('aryHowToSellConfirm')"><i class="fas fa-times"></i> Cancel</button></div></div>`;document.body.appendChild(modal);} modal.style.display='flex';setTimeout(()=>modal.classList.add('show'),10);
+    };
+    window.confirmHowToSellRedirect=function(){closeSmartModal('aryHowToSellConfirm');window.open('https://aryanta.in/getdetails','_blank','noopener');};
+
+    function stableNotifications(){
+        qsa('#notifBadge,#topbarNotifBadge').forEach(b=>{b.style.animation='none';b.classList.remove('blink','pulse','animate','pulseGlow');});
+    }
+    const oldFetchNotifications=window.fetchNotifications;
+    window.fetchNotifications=async function(){
+        let r; try{if(typeof oldFetchNotifications==='function')r=await oldFetchNotifications.apply(this,arguments);}catch(e){console.warn('notification fetch skipped',e);} stableNotifications(); return r;
+    };
+    try{fetchNotifications=window.fetchNotifications;}catch(e){}
+
+    function returnDueDate(o){return addDays(orderDate(o),15);}
+    function isReturnOrCancel(o){const st=low(o.status||o.orderStatus||o.returnStatus);return st.includes('return')||st.includes('cancel');}
+    function isReturnTrackingOnly(o){const st=low(o.status||o.orderStatus||o.returnStatus);return st.includes('tracking')||st.includes('pickup')||st.includes('in transit')||st.includes('rto')||st.includes('reverse shipped')||st.includes('return shipped');}
+    function deliveredToSeller(o){return !!(o.sellerReturnDelivered||o.returnDeliveredToSeller||o.returnReceivedBySeller||o.returnDeliveredAt||o.cancelDeliveredToSeller||low(o.returnStatus).includes('delivered to seller'));}
+    function returnCard(o){
+        const due=returnDueDate(o),past=Date.now()>due.getTime();
+        const items=orderItems(o).map(i=>`<div class="return-item"><img src="${safe(productImageByItem(i)||'')}" onerror="this.style.display='none'"><div><b>${safe(i.name||i.title||i.productName||'Product')}</b><br><small>Qty ${safe(i.qty||i.quantity||1)} · SKU ${safe(i.sku||i.productId||'-')}</small></div></div>`).join('');
+        return `<div class="ary-return-card"><div class="return-head"><div><b>${safe(o.order_no||o.orderNo||o.id)}</b><br><small>${orderDate(o).toLocaleDateString('en-IN')}</small></div><span class="lock-chip">${safe(o.status||'Return/Cancel')}</span></div><div class="return-items">${items}</div><p class="muted-line">${past?'We are sorry, expected seller return date has passed. Aryanta support will follow up.':'This item will be delivered to you within 15 days.'}</p><div><b>Expected by:</b> ${due.toLocaleDateString('en-IN')}</div><div><b>Admin delivery confirmation:</b> ${deliveredToSeller(o)?'<span class="ok-chip">Delivered to seller</span>':'<span class="lock-chip">Pending</span>'}</div></div>`;
+    }
+    window.loadReturns=function(){
+        const list=$('returnsList'); if(!list)return;
+        const rows=orders().filter(o=>isReturnOrCancel(o)&&!deliveredToSeller(o));
+        if(!rows.length){list.innerHTML="<tr><td colspan='4' style='text-align:center;font-weight:800;'>No returns or cancellations pending.</td></tr>";return;}
+        list.innerHTML=rows.map(o=>`<tr><td colspan="4">${returnCard(o)}</td></tr>`).join('');
+    };
+    try{loadReturns=window.loadReturns;}catch(e){}
+    window.loadReturnTracking=function(){
+        const box=$('returnTrackingList'); if(!box)return;
+        const rows=orders().filter(o=>isReturnTrackingOnly(o)||isReturnOrCancel(o)).filter(o=>!deliveredToSeller(o));
+        box.innerHTML=rows.length?rows.map(returnCard).join(''):'<div class="admin-empty">No active return tracking records. Once admin marks delivered to seller, item leaves this list.</div>';
+    };
+    try{loadReturnTracking=window.loadReturnTracking;}catch(e){}
+
+    window.printAryantaOrderSlip=function(orderId){
+        const o=findOrder(orderId); if(!o)return toast('Order not found.','error');
+        const s=seller(),items=orderItems(o);
+        const html=`<div style="font-family:Arial,sans-serif;color:#111827;padding:28px;max-width:820px;margin:0 auto"><div style="display:flex;justify-content:space-between;border-bottom:3px solid #111827;padding-bottom:15px;margin-bottom:18px"><div><h1 style="margin:0">Aryanta.in</h1><p style="font-size:12px;font-weight:700;margin:5px 0 0">Aryanta Seller Dispatch Slip</p></div><div style="text-align:right;font-size:12px"><b>Order</b><br>${safe(o.order_no||o.orderNo||o.id)}<br><br><b>Date</b><br>${orderDate(o).toLocaleString('en-IN')}</div></div><table style="width:100%;border-collapse:collapse;margin-bottom:14px"><tr><td style="border:1px solid #e5e7eb;padding:8px"><b>Seller Name</b><br>${safe(s.companyName||s.shopName||s.name||'Aryanta Seller')}</td><td style="border:1px solid #e5e7eb;padding:8px"><b>Buyer</b><br>${safe(o.delivery_name||o.customerName||o.name||'-')}<br>${safe(o.delivery_phone||o.customerPhone||o.phone||'')}</td></tr><tr><td colspan="2" style="border:1px solid #e5e7eb;padding:8px"><b>Delivery Address</b><br>${safe(o.delivery_address||o.address||o.shippingAddress||'-')}</td></tr></table><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;border:1px solid #e5e7eb;padding:8px;background:#f8fafc">Item</th><th style="text-align:center;border:1px solid #e5e7eb;padding:8px;background:#f8fafc">Qty</th><th style="text-align:right;border:1px solid #e5e7eb;padding:8px;background:#f8fafc">Price</th></tr></thead><tbody>${items.map(i=>`<tr><td style="border:1px solid #e5e7eb;padding:8px">${safe(i.name||i.title||i.productName||'Product')}<br><small>SKU: ${safe(i.sku||i.productId||'-')}</small></td><td style="text-align:center;border:1px solid #e5e7eb;padding:8px">${safe(i.qty||i.quantity||1)}</td><td style="text-align:right;border:1px solid #e5e7eb;padding:8px">${money(i.price||i.sellingPrice||0)}</td></tr>`).join('')}</tbody></table><div style="margin-top:18px;text-align:right"><b>Total: ${money(orderAmount(o))}</b></div><p style="font-size:11px;color:#64748b;margin-top:20px">Seller phone/email hidden. This is Aryanta standard slip, not Shiprocket PDF.</p></div>`;
+        const area=$('printArea')||document.body.appendChild(document.createElement('div'));area.id='printArea';area.innerHTML=html;area.style.display='block';
+        if(window.printJS)printJS({printable:'printArea',type:'html',targetStyles:['*']});else{const w=window.open('','_blank');w.document.write(html);w.document.close();w.print();}
+        setTimeout(()=>{area.style.display='none';},800);
+    };
+    window.loadOrderHistory=function(){
+        const list=$('historyList'); if(!list)return;
+        const rows=orders().filter(o=>orderItems(o).length>0);
+        if(!rows.length){list.innerHTML="<tr><td colspan='5' style='text-align:center;font-weight:800;'>No orders yet.</td></tr>";return;}
+        list.innerHTML=rows.map(o=>`<tr class="clickable-row" onclick="viewOrderDetails('${safe(o.id||o.order_no||o.orderNo)}')"><td data-label="Date"><strong>${orderDate(o).toLocaleDateString('en-IN')}</strong></td><td data-label="Order Ref"><strong style="font-family:monospace;color:var(--primary)">${safe(o.order_no||o.orderNo||o.id)}</strong></td><td data-label="Items"><span style="font-weight:700">${orderItems(o).map(i=>safe(i.name||i.title||i.productName||'Product')).join(', ')}</span><div class="ary-history-action" onclick="event.stopPropagation()"><button class="btn-sm" onclick="printAryantaOrderSlip('${safe(o.id||o.order_no||o.orderNo)}')"><i class="fas fa-print"></i> Download Aryanta Slip</button></div></td><td data-label="Amount"><strong>${money(orderAmount(o))}</strong></td><td data-label="Status"><span class="badge" style="background:var(--surface-2);color:var(--text-light)">${safe(o.status||'-')}</span></td></tr>`).join('');
+    };
+    try{loadOrderHistory=window.loadOrderHistory;}catch(e){}
+
+    function localAchievements(){
+        const os=orders(),ps=products(),rs=reviews();const delivered=os.filter(o=>low(o.status).includes('delivered'));const cancelled=os.filter(o=>low(o.status).includes('cancel'));const returned=os.filter(o=>low(o.status).includes('return'));const rev5=rs.filter(r=>num(r.rating||r.stars)===5).length;const totalRev=rs.length;const stockOk=ps.filter(p=>num(p.stock||p.quantity)>7).length;
+        return [
+            {id:'first_order',title:'First Order Hero',icon:'fa-flag-checkered',unlocked:os.length>=1,progress:Math.min(os.length,1),target:1,reward:'1 free sponsored ad slot',type:'sponsored_slot',power:'+1 Boost Slot'},
+            {id:'ten_orders',title:'10 Order Starter',icon:'fa-boxes-stacked',unlocked:os.length>=10,progress:Math.min(os.length,10),target:10,reward:'2 free sponsored slots',type:'sponsored_slot_2',power:'+2 Boost Slots'},
+            {id:'twentyfive_orders',title:'25 Order Builder',icon:'fa-chart-simple',unlocked:os.length>=25,progress:Math.min(os.length,25),target:25,reward:'3 free sponsored slots',type:'sponsored_slot_3',power:'+3 Boost Slots'},
+            {id:'fifty_orders',title:'50 Order Growth Seller',icon:'fa-chart-line',unlocked:os.length>=50,progress:Math.min(os.length,50),target:50,reward:'Growth upgrade reward request',type:'growth_subscription',power:'Growth Reward'},
+            {id:'hundred_orders',title:'100 Order Pro Seller',icon:'fa-crown',unlocked:os.length>=100,progress:Math.min(os.length,100),target:100,reward:'Pro reward request',type:'pro_subscription',power:'Pro Reward'},
+            {id:'first_delivered',title:'First Delivered Order',icon:'fa-truck-fast',unlocked:delivered.length>=1,progress:Math.min(delivered.length,1),target:1,reward:'Trust progress badge',type:'badge',power:'Delivery Badge'},
+            {id:'ten_delivered',title:'10 Delivered Orders',icon:'fa-truck-ramp-box',unlocked:delivered.length>=10,progress:Math.min(delivered.length,10),target:10,reward:'1 free sponsored slot',type:'sponsored_slot',power:'+1 Boost Slot'},
+            {id:'fifty_delivered',title:'50 Delivered Orders',icon:'fa-medal',unlocked:delivered.length>=50,progress:Math.min(delivered.length,50),target:50,reward:'Priority seller review',type:'priority_review',power:'Priority Review'},
+            {id:'first_5star',title:'First 5-Star Review',icon:'fa-star',unlocked:rev5>=1,progress:Math.min(rev5,1),target:1,reward:'Store trust badge',type:'badge',power:'Trust Badge'},
+            {id:'ten_reviews',title:'10 Reviews Club',icon:'fa-comments',unlocked:totalRev>=10,progress:Math.min(totalRev,10),target:10,reward:'Review highlight power',type:'badge',power:'Review Power'},
+            {id:'rating_master',title:'Rating Master',icon:'fa-ranking-star',unlocked:totalRev>=5 && (rs.reduce((a,r)=>a+num(r.rating||r.stars),0)/Math.max(1,totalRev))>=4.5,progress:Math.min(totalRev,5),target:5,reward:'High-rating badge',type:'badge',power:'Rating Badge'},
+            {id:'stock_master',title:'Stock Master',icon:'fa-warehouse',unlocked:ps.length>0&&stockOk===ps.length,progress:stockOk,target:Math.max(1,ps.length),reward:'Inventory health badge',type:'badge',power:'Stock Badge'},
+            {id:'low_cancel_seller',title:'Low Cancel Seller',icon:'fa-shield-heart',unlocked:os.length>=10&&cancelled.length<=1,progress:Math.max(0,10-cancelled.length),target:10,reward:'Fine priority review',type:'priority_review',power:'Low Cancel Trust'},
+            {id:'return_control',title:'Return Control',icon:'fa-rotate-left',unlocked:os.length>=10&&returned.length<=1,progress:Math.max(0,10-returned.length),target:10,reward:'Return quality badge',type:'badge',power:'Return Badge'},
+            {id:'pro_analytics_ready',title:'Analytics Ready',icon:'fa-wand-magic-sparkles',unlocked:currentPlan().key==='Pro',progress:currentPlan().key==='Pro'?1:0,target:1,reward:'Advanced Pro analytics unlocked',type:'analytics',power:'AI Analytics'}
+        ];
+    }
+    async function remoteAchievements(){
+        const database=dbx(); if(!database)return [];
+        try{const snap=await database.collection('seller_achievements').where('active','==',true).get();return snap.docs.map(d=>Object.assign({id:d.id,remote:true},d.data()));}catch(e){return [];}
+    }
+    function claimedSet(){const s=seller();return new Set(Array.isArray(s.claimedAchievements)?s.claimedAchievements:[]);}
+    window.loadAchievements=async function(){
+        normalizeSidebar();const grid=$('achievementsGrid'),sum=$('achievementsSummary');if(!grid)return;
+        const defs=localAchievements().concat(await remoteAchievements());const claimed=claimedSet();
+        if(sum)sum.innerHTML=`<div><strong>${defs.filter(a=>a.unlocked).length}</strong><span>Unlocked</span></div><div><strong>${claimed.size}</strong><span>Claimed</span></div><div><strong>${defs.length}</strong><span>Total Powers</span></div>`;
+        grid.innerHTML=defs.map(a=>{const c=claimed.has(a.id),target=Math.max(1,num(a.target||1)),progress=Math.min(target,num(a.progress||(a.unlocked?target:0))),pct=Math.min(100,Math.round(progress/target*100));return `<div class="ary-achievement-card ${a.unlocked?'unlocked':'locked'} ${c?'claimed':''}"><div class="ary-ach-icon"><i class="fas ${safe(a.icon||'fa-trophy')}"></i></div><h4>${safe(a.title||a.name||'Achievement')}</h4><p>${safe(a.reward||a.description||'Seller reward')}</p><div class="ary-ach-progress"><span style="width:${pct}%"></span></div><small>${progress} / ${target} · ${safe(a.power||a.type||'Power')}</small>${a.unlocked?(c?'<button class="btn-outline w-100" disabled><i class="fas fa-check"></i> Claimed</button>':`<button class="btn-prime w-100" onclick="claimAchievement('${safe(a.id)}')"><i class="fas fa-gift"></i> Claim Reward</button>`):'<button class="btn-outline w-100" disabled><i class="fas fa-lock"></i> Locked</button>'}</div>`;}).join('');
+        renderAchievementBadgeFinal(defs,claimed);
+    };
+    function renderAchievementBadgeFinal(defs,claimed){defs=defs||localAchievements();claimed=claimed||claimedSet();const count=defs.filter(a=>a.unlocked&&!claimed.has(a.id)).length;const b=$('badge-achievements');if(b){b.style.display=count?'inline-block':'none';b.textContent=count;}}
+    window.claimAchievement=async function(id){
+        const database=dbx(),s=seller();const defs=localAchievements().concat(await remoteAchievements());const def=defs.find(a=>a.id===id);if(!def||!def.unlocked)return toast('Achievement not unlocked yet.','warning');const claimed=claimedSet();if(claimed.has(id))return toast('Already claimed.','info');const next=[...claimed,id];
+        try{await database.collection('seller_achievement_claims').doc((sellerEmail()+'_'+id).replace(/[^a-zA-Z0-9_-]/g,'_')).set({sellerEmail:sellerEmail(),sellerName:s.companyName||s.shopName||'',achievementId:id,title:def.title||def.name,reward:def.reward||'',type:def.type||'badge',status:(txt(def.type).includes('subscription')?'Pending Admin Review':'Available'),claimedAt:nowIso(),source:def.remote?'admin-db':'seller-panel'},{merge:true});const patch={claimedAchievements:next};if(def.type==='sponsored_slot')patch.rewardSponsoredSlots=num(s.rewardSponsoredSlots)+1;if(def.type==='sponsored_slot_2')patch.rewardSponsoredSlots=num(s.rewardSponsoredSlots)+2;if(def.type==='sponsored_slot_3')patch.rewardSponsoredSlots=num(s.rewardSponsoredSlots)+3;await saveSellerPatch(patch);toast('Achievement reward claimed.','success');window.loadAchievements();}catch(e){toast('Could not claim reward.','error');}
+    };
+
+    function updatePlanGatesFinal(){
+        const perfNav=qsa('.nav-item').find(n=>/Product Performance/i.test(n.textContent||''));
+        if(perfNav)perfNav.style.display=currentPlan().key==='Basic'?'none':'';
+    }
+    const oldShowSection=window.showSection;
+    window.showSection=async function(section){
+        normalizeSidebar();updatePlanGatesFinal();
+        if(section==='productPerformance'&&currentPlan().key==='Basic'){toast('Product Performance is available on Growth and Pro plans.','warning');section='subscription';}
+        let r;try{if(typeof oldShowSection==='function')r=await oldShowSection.apply(this,[section]);}catch(e){console.warn('showSection fallback',e);} 
+        setTimeout(()=>{normalizeSidebar();updatePlanGatesFinal();stableNotifications();if(section==='subscription')renderFinalSubscriptionUI();if(section==='returns')window.loadReturns();if(section==='returnTracking')window.loadReturnTracking();if(section==='history')window.loadOrderHistory();if(section==='achievements')window.loadAchievements();if(section==='support')window.injectSupportQnaButtons();try{if(section==='home')window.renderSalesChart();}catch(e){}},120);
+        return r;
+    };
+    try{showSection=window.showSection;}catch(e){}
+
+    function bootFinalPatch(){installSafeChart();installFineProxy();normalizeSidebar();stableNotifications();updatePlanGatesFinal();checkSubscriptionReminder(false);applyNewSellerGrowthTrial().then(()=>{renderFinalSubscriptionUI();updatePlanGatesFinal();}).catch(()=>{});if($('subscriptionSection')&&$('subscriptionSection').classList.contains('active'))renderFinalSubscriptionUI();try{window.renderSalesChart();}catch(e){} }
+    document.addEventListener('DOMContentLoaded',()=>{setTimeout(bootFinalPatch,400);setTimeout(bootFinalPatch,1800);});
+    setTimeout(bootFinalPatch,1000);
+})();
+(function () {
+    const PATCH_ID = "ARYANTA_SPONSOR_PAYMENT_AMOUNT_LOCK_PATCH_2026_05_25";
+    if (window[PATCH_ID]) return;
+    window[PATCH_ID] = true;
+
+    const $ = (id) => document.getElementById(id);
+
+    const SPONSOR_PRICE_BY_PLAN = {
+        basic: 70,
+        growth: 50,
+        pro: 40
+    };
+
+    function toast(msg, type) {
+        if (typeof window.showToast === "function") {
+            window.showToast(msg, type || "info");
+        } else {
+            alert(msg);
+        }
+    }
+
+    function esc(v) {
+        return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+            return {
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            }[c];
+        });
+    }
+
+    function sellerEmail() {
+        return String(activeSeller && activeSeller.email ? activeSeller.email : "").toLowerCase().trim();
+    }
+
+    function getSellerPlan() {
+        const raw = String(
+            activeSeller?.subscription ||
+            activeSeller?.plan ||
+            activeSeller?.package ||
+            "basic"
+        ).toLowerCase();
+
+        if (raw.includes("pro")) return "pro";
+        if (raw.includes("growth") || raw.includes("growt")) return "growth";
+        return "basic";
+    }
+
+    function getSponsorAmount() {
+        const plan = getSellerPlan();
+        const amount = Number(SPONSOR_PRICE_BY_PLAN[plan]);
+
+        if (!Number.isFinite(amount) || amount <= 0) {
+            return null;
+        }
+
+        return amount;
+    }
+
+    function getSelectedSponsorProductId() {
+        const input = $("adProdId");
+        return String(input && input.value ? input.value : "").trim();
+    }
+
+    function getSponsorProduct(productId) {
+        return (window.sellerProducts || sellerProducts || []).find(function (p) {
+            return String(p.id) === String(productId);
+        });
+    }
+
+    function ensureSponsorReady(productId) {
+        if (!window.db && typeof db === "undefined") {
+            toast("Database not ready. Please refresh and try again.", "error");
+            return false;
+        }
+
+        if (!activeSeller || !sellerEmail()) {
+            toast("Seller account not loaded. Please login again.", "error");
+            return false;
+        }
+
+        if (!productId) {
+            toast("Product not selected for sponsor.", "error");
+            return false;
+        }
+
+        const product = getSponsorProduct(productId);
+        if (!product) {
+            toast("Product not found. Sponsor cannot start.", "error");
+            return false;
+        }
+
+        const amount = getSponsorAmount();
+        if (!amount) {
+            toast("Sponsor payment amount not found. Sponsor is blocked.", "error");
+            return false;
+        }
+
+        return true;
+    }
+
+    function writeSponsorAmountToUI(amount) {
+        const costIds = [
+            "adCostDisplay",
+            "adAmountDisplay",
+            "sponsorCostDisplay",
+            "sponsorAmountDisplay",
+            "adPaymentAmount",
+            "sponsorPaymentAmount"
+        ];
+
+        costIds.forEach(function (id) {
+            const el = $(id);
+            if (el) el.textContent = "₹" + amount;
+        });
+
+        const hiddenAmountIds = [
+            "adAmount",
+            "sponsorAmount",
+            "adPayAmount",
+            "sponsorPayAmount"
+        ];
+
+        hiddenAmountIds.forEach(function (id) {
+            const el = $(id);
+            if (el) el.value = amount;
+        });
+    }
+
+    async function saveSponsorPaymentRecord(productId, amount, mode, razorpayPaymentId) {
+        const product = getSponsorProduct(productId) || {};
+        const payload = {
+            sellerEmail: sellerEmail(),
+            email: sellerEmail(),
+            sellerName: activeSeller?.companyName || activeSeller?.name || "",
+            sellerUid: activeSeller?.uid || activeSeller?.sellerUid || activeSeller?.accountUid || "",
+            productId: productId,
+            productName: product.name || product.title || "",
+            amount: Number(amount),
+            plan: getSellerPlan(),
+            type: "sponsored_ad",
+            paymentMode: mode,
+            status: mode === "online" ? "Paid" : "Deduct From Payout",
+            razorpayPaymentId: razorpayPaymentId || "",
+            timestamp: new Date().toISOString(),
+            createdAt: new Date().toISOString()
+        };
+
+        try {
+            await db.collection("sponsored_ad_payments").add(payload);
+        } catch (e) {
+            console.error("Sponsor payment save failed:", e);
+            throw new Error("Sponsor payment record failed.");
+        }
+
+        try {
+            await db.collection("seller_payment_ledger").add({
+                ...payload,
+                ledgerType: "debit",
+                reason: "Sponsored Ad Fee"
+            });
+        } catch (e) {
+            console.warn("Sponsor ledger save failed:", e);
+        }
+    }
+
+    async function activateSponsorAfterPaid(productId, amount, mode, razorpayPaymentId) {
+        if (!ensureSponsorReady(productId)) return;
+
+        if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
+            toast("Payment amount missing. Sponsor cannot activate.", "error");
+            return;
+        }
+
+        const now = new Date();
+        const until = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+        try {
+            await saveSponsorPaymentRecord(productId, amount, mode, razorpayPaymentId);
+
+            await db.collection("products").doc(productId).set({
+                isAd: true,
+                isSponsored: true,
+                sponsored: true,
+                adStatus: "Sponsored",
+                sponsorAmount: Number(amount),
+                sponsorPlan: getSellerPlan(),
+                sponsorPaymentMode: mode,
+                sponsoredAt: now.toISOString(),
+                sponsoredUntil: until.toISOString()
+            }, { merge: true });
+
+            const product = getSponsorProduct(productId);
+            if (product) {
+                product.isAd = true;
+                product.isSponsored = true;
+                product.sponsored = true;
+                product.adStatus = "Sponsored";
+                product.sponsorAmount = Number(amount);
+                product.sponsoredUntil = until.toISOString();
+            }
+
+            if (typeof closeModal === "function") closeModal("adPaymentModal");
+            else {
+                const modal = $("adPaymentModal");
+                if (modal) modal.style.display = "none";
+            }
+
+            toast("Sponsored ad activated for 24 hours.", "success");
+
+            if (typeof loadAds === "function") loadAds();
+        } catch (e) {
+            console.error(e);
+            toast("Sponsor failed. Payment record/product update was not completed.", "error");
+        }
+    }
+
+    window.startAd = async function (productId) {
+        productId = String(productId || "").trim();
+
+        if (!ensureSponsorReady(productId)) return;
+
+        const amount = getSponsorAmount();
+        const product = getSponsorProduct(productId) || {};
+        const plan = getSellerPlan();
+
+        const idInput = $("adProdId");
+        if (idInput) idInput.value = productId;
+
+        writeSponsorAmountToUI(amount);
+
+        const msg = $("adPlanMessage");
+        if (msg) {
+            msg.innerHTML = `
+                <div style="font-weight:900;color:var(--text-main);margin-bottom:6px;">
+                    Sponsored Ad Payment Required
+                </div>
+                <div style="font-size:13px;color:var(--text-light);line-height:1.6;">
+                    Product: <b>${esc(product.name || product.title || productId)}</b><br>
+                    Plan: <b>${plan.toUpperCase()}</b><br>
+                    Sponsor Price: <b>₹${amount}</b> for 24 hours
+                </div>
+            `;
+        }
+
+        const onlineBtn = document.querySelector('#adPaymentModal button[onclick="payAdOnline()"]');
+        if (onlineBtn) {
+            onlineBtn.innerHTML = `<i class="fas fa-bolt"></i> Pay ₹${amount} Online`;
+        }
+
+        const payoutBtn = $("btnAdPayout");
+        if (payoutBtn) {
+            payoutBtn.style.display = "inline-flex";
+            payoutBtn.innerHTML = `<i class="fas fa-wallet"></i> Deduct ₹${amount} From Payout`;
+        }
+
+        const modal = $("adPaymentModal");
+        if (modal) {
+            modal.style.display = "flex";
+            setTimeout(function () {
+                modal.classList.add("show");
+            }, 10);
+        } else {
+            toast("Sponsor payment popup missing. Sponsor cannot start.", "error");
+        }
+    };
+
+    window.payAdOnline = async function () {
+        const productId = getSelectedSponsorProductId();
+
+        if (!ensureSponsorReady(productId)) return;
+
+        const amount = getSponsorAmount();
+
+        if (!amount) {
+            toast("Payment amount missing. Sponsor payment blocked.", "error");
+            return;
+        }
+
+        if (!window.Razorpay) {
+            toast("Razorpay SDK not loaded. Payment cannot start.", "error");
+            return;
+        }
+
+        if (!API_KEYS || !API_KEYS.RAZORPAY) {
+            toast("Razorpay key missing. Payment cannot start.", "error");
+            return;
+        }
+
+        const options = {
+            key: API_KEYS.RAZORPAY,
+            amount: amount * 100,
+            currency: "INR",
+            name: "Aryanta Sponsored Ads",
+            description: "Sponsored Ad for 24 Hours",
+            handler: async function (response) {
+                const paymentId = response && response.razorpay_payment_id ? response.razorpay_payment_id : "";
+
+                if (!paymentId) {
+                    toast("Payment ID missing. Sponsor not activated.", "error");
+                    return;
+                }
+
+                await activateSponsorAfterPaid(productId, amount, "online", paymentId);
+            },
+            prefill: {
+                email: activeSeller?.email || "",
+                contact: activeSeller?.phone || ""
+            },
+            theme: {
+                color: "#0f172a"
+            },
+            modal: {
+                ondismiss: function () {
+                    toast("Payment cancelled. Sponsor not activated.", "info");
+                }
+            }
+        };
+
+        new Razorpay(options).open();
+    };
+
+    window.payAdUpcoming = async function () {
+        const productId = getSelectedSponsorProductId();
+
+        if (!ensureSponsorReady(productId)) return;
+
+        const amount = getSponsorAmount();
+
+        if (!amount) {
+            toast("Payment amount missing. Sponsor deduction blocked.", "error");
+            return;
+        }
+
+        const available = Number(window.cachedTotalUpcoming || cachedTotalUpcoming || 0);
+
+        if (!Number.isFinite(available) || available < amount) {
+            toast("Insufficient upcoming payout. Sponsor cannot start.", "error");
+            return;
+        }
+
+        const ok = confirm("Deduct ₹" + amount + " from upcoming payout for Sponsored Ad?");
+        if (!ok) return;
+
+        try {
+            await db.collection("fines").add({
+                email: sellerEmail(),
+                sellerEmail: sellerEmail(),
+                amount: amount,
+                reason: "Sponsored Ad Fee",
+                type: "sponsored_ad_fee",
+                productId: productId,
+                plan: getSellerPlan(),
+                status: "Pending Deduction",
+                timestamp: new Date().toISOString(),
+                createdAt: new Date().toISOString()
+            });
+
+            await activateSponsorAfterPaid(productId, amount, "upcoming_payout", "");
+        } catch (e) {
+            console.error(e);
+            toast("Could not save sponsor payout deduction. Sponsor not activated.", "error");
+        }
+    };
+
+    window.executeAd = async function () {
+        toast("Direct sponsor activation is blocked. Payment amount is required.", "error");
+    };
+
+    console.log("Aryanta sponsor payment amount lock patch active.");
+})();
+(function () {
+    const PATCH_ID = "ARYANTA_REAL_ORDER_STATS_PATCH_2026_05_25";
+    if (window[PATCH_ID]) return;
+    window[PATCH_ID] = true;
+
+    function setText(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    }
+
+    function getSellerEmailSafe() {
+        return String(
+            window.activeSeller?.email ||
+            activeSeller?.email ||
+            ""
+        ).toLowerCase().trim();
+    }
+
+    function parseOrderDate(order) {
+        if (!order) return null;
+
+        const raw =
+            order.timestamp ||
+            order.createdAt ||
+            order.orderDate ||
+            order.date ||
+            order.placedAt ||
+            order.created_at ||
+            order.time ||
+            null;
+
+        if (!raw) return null;
+
+        if (raw && typeof raw.toDate === "function") {
+            const d = raw.toDate();
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        if (typeof raw === "number") {
+            const d = new Date(raw);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        if (typeof raw === "string") {
+            const d = new Date(raw);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        if (raw.seconds) {
+            const d = new Date(raw.seconds * 1000);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        return null;
+    }
+
+    function isRealOrder(order) {
+        const status = String(order?.status || "").toLowerCase().trim();
+        const paymentStatus = String(order?.paymentStatus || "").toLowerCase().trim();
+
+        const blockedStatus = [
+            "demo",
+            "test",
+            "fake",
+            "deleted",
+            "draft",
+            "failed",
+            "payment failed",
+            "payment_failed"
+        ];
+
+        if (blockedStatus.includes(status)) return false;
+        if (blockedStatus.includes(paymentStatus)) return false;
+
+        if (order?.isDemo === true) return false;
+        if (order?.demo === true) return false;
+        if (order?.isDeleted === true) return false;
+        if (order?.deleted === true) return false;
+
+        return true;
+    }
+
+    function orderBelongsToSeller(order) {
+        const sellerEmail = getSellerEmailSafe();
+        if (!sellerEmail || !order) return false;
+
+        const orderSellerEmail = String(
+            order.sellerEmail ||
+            order.seller_email ||
+            order.vendorEmail ||
+            order.vendor_email ||
+            ""
+        ).toLowerCase().trim();
+
+        if (orderSellerEmail && orderSellerEmail === sellerEmail) {
+            return true;
+        }
+
+        if (typeof window.getSellerItemsFromOrder === "function") {
+            try {
+                const items = window.getSellerItemsFromOrder(order);
+                if (Array.isArray(items) && items.length > 0) return true;
+            } catch (e) {}
+        }
+
+        const sellerProductsArr = Array.isArray(window.sellerProducts)
+            ? window.sellerProducts
+            : (typeof sellerProducts !== "undefined" && Array.isArray(sellerProducts) ? sellerProducts : []);
+
+        const sellerProductIds = new Set();
+        const sellerProductSkus = new Set();
+
+        sellerProductsArr.forEach(function (p) {
+            const id = String(p.id || p.productId || p.product_id || "").trim();
+            const sku = String(p.sku || "").toLowerCase().trim();
+
+            if (id) sellerProductIds.add(id);
+            if (sku) sellerProductSkus.add(sku);
+        });
+
+        const items = Array.isArray(order.items) ? order.items : [];
+
+        return items.some(function (item) {
+            const itemSellerEmail = String(
+                item.sellerEmail ||
+                item.seller_email ||
+                item.vendorEmail ||
+                item.vendor_email ||
+                item.seller ||
+                ""
+            ).toLowerCase().trim();
+
+            if (itemSellerEmail) return itemSellerEmail === sellerEmail;
+
+            const itemId = String(
+                item.id ||
+                item.productId ||
+                item.product_id ||
+                item.productDocId ||
+                ""
+            ).trim();
+
+            const itemSku = String(item.sku || "").toLowerCase().trim();
+
+            if (itemId && sellerProductIds.has(itemId)) return true;
+            if (itemSku && sellerProductSkus.has(itemSku)) return true;
+
+            return false;
+        });
+    }
+
+    function calculateRealOrderStats() {
+        const ordersArr = Array.isArray(window.sellerOrders)
+            ? window.sellerOrders
+            : (typeof sellerOrders !== "undefined" && Array.isArray(sellerOrders) ? sellerOrders : []);
+
+        const now = new Date();
+
+        const todayKey =
+            now.getFullYear() + "-" +
+            String(now.getMonth() + 1).padStart(2, "0") + "-" +
+            String(now.getDate()).padStart(2, "0");
+
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+
+        let todayOrders = 0;
+        let monthlyOrders = 0;
+
+        const countedOrderIds = new Set();
+
+        ordersArr.forEach(function (order, index) {
+            if (!order || !isRealOrder(order)) return;
+            if (!orderBelongsToSeller(order)) return;
+
+            const orderId = String(order.id || order.orderId || order.order_no || index);
+            if (countedOrderIds.has(orderId)) return;
+            countedOrderIds.add(orderId);
+
+            const d = parseOrderDate(order);
+            if (!d) return;
+
+            const orderKey =
+                d.getFullYear() + "-" +
+                String(d.getMonth() + 1).padStart(2, "0") + "-" +
+                String(d.getDate()).padStart(2, "0");
+
+            if (orderKey === todayKey) {
+                todayOrders++;
+            }
+
+            if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
+                monthlyOrders++;
+            }
+        });
+
+        const dayOfMonth = Math.max(1, now.getDate());
+        const avgDaily = monthlyOrders / dayOfMonth;
+
+        let percentage = 0;
+
+        if (avgDaily > 0) {
+            percentage = Math.round(((todayOrders - avgDaily) / avgDaily) * 100);
+        } else if (todayOrders > 0) {
+            percentage = 100;
+        }
+
+        return {
+            todayOrders,
+            monthlyOrders,
+            percentage
+        };
+    }
+
+    function applyRealOrderStats() {
+        const stats = calculateRealOrderStats();
+
+        setText("smartDailyOrders", stats.todayOrders);
+        setText("smartMonthlyOrders", stats.monthlyOrders);
+
+        const pctEl = document.getElementById("smartDailyPct");
+        if (pctEl) {
+            const sign = stats.percentage >= 0 ? "+" : "";
+            const color = stats.percentage >= 0 ? "#10b981" : "#ef4444";
+
+            pctEl.innerHTML = `
+                <span style="font-size:11px;margin-left:5px;font-weight:900;color:${color}">
+                    ${sign}${stats.percentage}% vs Avg
+                </span>
+            `;
+        }
+
+        const todayTitle = document.querySelector("#smartDailyOrders")?.closest(".stat-card")?.querySelector("p");
+        if (todayTitle && /orders/i.test(todayTitle.textContent)) {
+            todayTitle.textContent = "Orders Today";
+        }
+
+        const monthlyTitle = document.querySelector("#smartMonthlyOrders")?.closest(".stat-card")?.querySelector("p");
+        if (monthlyTitle && /orders/i.test(monthlyTitle.textContent)) {
+            monthlyTitle.textContent = "Orders This Month";
+        }
+    }
+
+    const oldRenderDashboardStats = window.renderDashboardStats;
+
+    window.renderDashboardStats = async function () {
+        let result;
+
+        if (typeof oldRenderDashboardStats === "function") {
+            result = await oldRenderDashboardStats.apply(this, arguments);
+        }
+
+        applyRealOrderStats();
+
+        return result;
+    };
+
+    window.applyRealOrderStats = applyRealOrderStats;
+    window.calculateRealOrderStats = calculateRealOrderStats;
+
+    document.addEventListener("DOMContentLoaded", function () {
+        setTimeout(applyRealOrderStats, 800);
+        setTimeout(applyRealOrderStats, 2000);
+        setTimeout(applyRealOrderStats, 4000);
+    });
+
+    setInterval(function () {
+        const homeActive = document.getElementById("homeSection")?.classList.contains("active");
+        if (homeActive) applyRealOrderStats();
+    }, 5000);
+
+    console.log("Aryanta real order stats patch active.");
+})();
+(function(){
+    const KEY="ARYANTA_ACCEPTED_ORDER_SHIPROCKET_SHOW_ALL_PATCH_2026_05_25";
+    if(window[KEY])return;
+    window[KEY]=true;
+
+    function el(id){return document.getElementById(id);}
+    function txt(v){return String(v==null?"":v);}
+    function safe(v){
+        return txt(v).replace(/[&<>"']/g,function(c){
+            return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+        });
+    }
+    function low(v){return txt(v).toLowerCase().trim();}
+    function money(v){
+        const n=Number(v||0);
+        return "₹"+(Number.isFinite(n)?n:0).toLocaleString("en-IN");
+    }
+    function dateOf(o){
+        const raw=o.timestamp||o.createdAt||o.orderDate||o.date||o.placedAt||o.acceptedAt||o.time;
+        if(raw&&typeof raw.toDate==="function")return raw.toDate();
+        if(raw&&raw.seconds)return new Date(raw.seconds*1000);
+        const d=new Date(raw||Date.now());
+        return isNaN(d.getTime())?new Date():d;
+    }
+    function sellerEmail(){
+        return low(window.activeSeller&&activeSeller.email?activeSeller.email:"");
+    }
+    function products(){
+        if(Array.isArray(window.sellerProducts))return window.sellerProducts;
+        if(typeof sellerProducts!=="undefined"&&Array.isArray(sellerProducts))return sellerProducts;
+        return [];
+    }
+    function orders(){
+        if(Array.isArray(window.sellerOrders))return window.sellerOrders;
+        if(typeof sellerOrders!=="undefined"&&Array.isArray(sellerOrders))return sellerOrders;
+        return [];
+    }
+    function hasShiprocketUrl(o){
+        const fields=[
+            o.shiprocketInvoicePdfUrl,
+            o.shiprocketPdfUrl,
+            o.shiprocketInvoiceUrl,
+            o.invoicePdfUrl,
+            o.invoice_url,
+            o.labelUrl,
+            o.label_url,
+            o.shippingLabelUrl,
+            o.shipping_label_url,
+            o.shiprocketLabelUrl,
+            o.shiprocketDownloadUrl
+        ];
+        for(const f of fields){
+            const s=txt(f).trim();
+            if(/^https?:\/\//i.test(s))return s;
+        }
+        return "";
+    }
+    function shipStatus(o){
+        const url=hasShiprocketUrl(o);
+        if(url)return "ready";
+        const s=low(o.shiprocketInvoiceStatus||o.shiprocketStatus||o.invoiceStatus||o.labelStatus||"");
+        if(s.includes("ready")||s.includes("generated")||s.includes("success"))return "ready";
+        if(s.includes("wait")||s.includes("generat")||s.includes("process")||s.includes("pending"))return "waiting";
+        if(s.includes("error")||s.includes("fail")||s.includes("timeout")||s.includes("missing"))return "retry";
+        return "not_generated";
+    }
+    function itemProduct(item){
+        const id=txt(item.id||item.productId||item.product_id||item.productDocId).trim();
+        const sku=low(item.sku||"");
+        return products().find(function(p){
+            const pid=txt(p.id||p.productId||p.product_id).trim();
+            const psku=low(p.sku||"");
+            return (id&&pid&&id===pid)||(sku&&psku&&sku===psku);
+        })||{};
+    }
+    function orderSellerItems(o){
+        if(typeof window.getSellerItemsFromOrder==="function"){
+            try{
+                const x=window.getSellerItemsFromOrder(o);
+                if(Array.isArray(x)&&x.length)return x;
+            }catch(e){}
+        }
+        const email=sellerEmail();
+        const arr=Array.isArray(o.items)?o.items:[];
+        const pids=new Set();
+        const skus=new Set();
+        products().forEach(function(p){
+            const id=txt(p.id||p.productId||p.product_id).trim();
+            const sku=low(p.sku||"");
+            if(id)pids.add(id);
+            if(sku)skus.add(sku);
+        });
+        return arr.filter(function(i){
+            const itemEmail=low(i.sellerEmail||i.seller_email||i.vendorEmail||i.vendor_email||i.seller||"");
+            if(itemEmail)return itemEmail===email;
+            const id=txt(i.id||i.productId||i.product_id||i.productDocId).trim();
+            const sku=low(i.sku||"");
+            if(id&&pids.has(id))return true;
+            if(sku&&skus.has(sku))return true;
+            return false;
+        });
+    }
+    function belongsToSeller(o){
+        const email=sellerEmail();
+        if(!email)return false;
+        const oe=low(o.sellerEmail||o.seller_email||o.vendorEmail||o.vendor_email||"");
+        if(oe&&oe===email)return true;
+        return orderSellerItems(o).length>0;
+    }
+    function isAcceptedActive(o){
+        if(!belongsToSeller(o))return false;
+        const s=low(o.status||o.orderStatus||"");
+        if(["cancelled","canceled","return","returned","delivered","shipped","closed","deleted","failed"].some(function(x){return s.includes(x);}))return false;
+        if(["accepted","processing","packed","ready to ship","ready_to_ship","completed scan","completed_scan","scanned","ready for dispatch","ready_to_dispatch"].includes(s))return true;
+        if(s.includes("accept"))return true;
+        if(hasShiprocketUrl(o)&&!s.includes("ship")&&!s.includes("deliver")&&!s.includes("cancel")&&!s.includes("return"))return true;
+        return false;
+    }
+    function statusBadge(o){
+        const st=shipStatus(o);
+        if(st==="ready")return '<span class="badge" style="background:#dcfce7;color:#166534;">Shiprocket Generated</span>';
+        if(st==="waiting")return '<span class="badge" style="background:#fef3c7;color:#92400e;">Shiprocket Waiting</span>';
+        if(st==="retry")return '<span class="badge" style="background:#fee2e2;color:#991b1b;">Retry Shiprocket</span>';
+        return '<span class="badge" style="background:#e0f2fe;color:#075985;">Shiprocket Not Generated</span>';
+    }
+    function buttonHtml(o){
+        const id=safe(o.id||o.orderId||o.order_no||"");
+        const url=hasShiprocketUrl(o);
+        if(url){
+            return '<button class="btn-shiprocket" onclick="event.stopPropagation(); downloadShiprocketPdfForOrder(\''+id+'\')"><i class="fas fa-download"></i> Download Shiprocket PDF</button>';
+        }
+        const st=shipStatus(o);
+        const label=st==="waiting"?"Check / Retry Shiprocket":st==="retry"?"Retry Shiprocket":"Generate Shiprocket Invoice";
+        return '<button class="btn-shiprocket" onclick="event.stopPropagation(); downloadShippingInvoice(\''+id+'\')"><i class="fas fa-file-invoice"></i> '+label+'</button>';
+    }
+    function itemHtml(o){
+        const items=orderSellerItems(o);
+        if(!items.length)return '<div style="font-weight:800;color:var(--danger);">Seller item not found in this order.</div>';
+        return items.map(function(i){
+            const p=itemProduct(i);
+            const name=safe(i.name||i.title||p.name||p.title||"Product");
+            const sku=safe(i.sku||p.sku||i.productId||i.id||"N/A");
+            const qty=safe(i.qty||i.quantity||1);
+            const price=money(i.price||i.sellingPrice||i.finalPrice||p.price);
+            const img=i.image||i.img||i.productImage||p.image||p.imageUrl||p.mainImage||"";
+            const image=img?'<img src="'+safe(img)+'" style="width:46px;height:46px;border-radius:12px;object-fit:cover;border:1px solid var(--border-color);">':'<div style="width:46px;height:46px;border-radius:12px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-box"></i></div>';
+            return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">'+image+'<div><b>'+name+'</b><br><span style="font-size:12px;color:var(--text-light);font-weight:700;">SKU: '+sku+' · Qty: '+qty+' · '+price+'</span></div></div>';
+        }).join("");
+    }
+    function render(){
+        const list=el("acceptedOrdersList");
+        if(!list)return;
+        const sa=el("selectAllAcc");
+        if(sa)sa.checked=false;
+        const rows=orders().filter(isAcceptedActive).sort(function(a,b){return dateOf(b)-dateOf(a);});
+        if(!rows.length){
+            list.innerHTML='<tr><td colspan="6" style="text-align:center;font-weight:900;padding:24px;">No accepted orders found.</td></tr>';
+            return;
+        }
+        list.innerHTML=rows.map(function(o){
+            const id=safe(o.id||o.orderId||o.order_no||"");
+            const ref=safe(o.order_no||o.orderNo||o.orderId||o.id||"N/A");
+            return '<tr class="clickable-row" onclick="viewOrderDetails(\''+id+'\')">'+
+                '<td data-label="Select" style="text-align:center;"><input type="checkbox" class="custom-cb cb-acc" value="'+id+'" onclick="event.stopPropagation()"></td>'+
+                '<td data-label="Date"><strong style="font-size:13px;">'+safe(dateOf(o).toLocaleString())+'</strong></td>'+
+                '<td data-label="Order Ref"><strong style="font-family:monospace;color:var(--primary);font-size:14px;">'+ref+'</strong></td>'+
+                '<td data-label="Items" style="font-size:13px;">'+itemHtml(o)+'</td>'+
+                '<td data-label="Shiprocket">'+statusBadge(o)+'</td>'+
+                '<td data-label="Action"><div class="shiprocket-action-col">'+buttonHtml(o)+'<button class="btn-outline btn-sm" onclick="event.stopPropagation(); viewOrderDetails(\''+id+'\')"><i class="fas fa-eye"></i> Details</button></div></td>'+
+            '</tr>';
+        }).join("");
+    }
+
+    window.loadAcceptedOrders=function(){render();};
+
+    const oldShowSection=window.showSection;
+    window.showSection=async function(section){
+        const res=oldShowSection?await oldShowSection.apply(this,arguments):undefined;
+        if(section==="acceptedOrders"){
+            if(typeof window.ensureSellerOrders==="function"){
+                try{await window.ensureSellerOrders();}catch(e){}
+            }
+            render();
+        }
+        return res;
+    };
+
+    window.toggleSelectAllAcc=function(source){
+        document.querySelectorAll(".cb-acc").forEach(function(cb){cb.checked=!!source.checked;});
+    };
+
+    setTimeout(render,800);
+    setTimeout(render,2000);
 })();
