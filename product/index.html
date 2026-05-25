@@ -1210,25 +1210,29 @@
             if (p.product && typeof p.product === "object") p = { ...normalizeFirestoreDoc(p.product), id: p.id || p.product.id };
             if (p.data && typeof p.data === "object") p = { ...normalizeFirestoreDoc(p.data), id: p.id || p.data.id };
 
-            const id = firstNonEmpty(p.id, p.productId, p.pid, p.sku, p.docId);
-            const name = firstNonEmpty(p.name, p.title, p.productName, p.itemName, "Aryanta Product");
+            const id = firstNonEmpty(p.id, p.productId, p.productID, p.product_id, p.pid, p.sku, p.docId, p.itemId, p.slug);
+            const originalTitle = firstNonEmpty(p.name, p.title, p.productName, p.productTitle, p.itemName, p.displayName, "Aryanta Product");
             const image = getProductImageSafe(p);
             const images = Array.isArray(p.images) && p.images.length
                 ? p.images
                 : (Array.isArray(p.imageUrls) && p.imageUrls.length ? p.imageUrls : [image]);
 
-            const price = Number(firstNonEmpty(p.price, p.salePrice, p.sellingPrice, p.finalPrice, p.amount, 0));
+            const price = Number(firstNonEmpty(p.price, p.listedPrice, p.salePrice, p.sellingPrice, p.finalPrice, p.offerPrice, p.amount, p.mrp, 0));
             const mrp = Number(firstNonEmpty(p.mrp, p.maxPrice, p.originalPrice, p.oldPrice, price));
             const stock = Number(firstNonEmpty(p.stock, p.quantity, p.qty, p.availableStock, 999));
 
             return {
                 ...p,
                 id: String(id || Math.random().toString(36).slice(2)),
-                name: String(name),
-                title: String(name),
-                brand: firstNonEmpty(p.brand, p.company, p.sellerName, ""),
-                category: firstNonEmpty(p.category, p.cat, "General"),
+                productId: firstNonEmpty(p.productId, p.productID, p.product_id, id),
+                name: String(originalTitle),
+                title: String(originalTitle),
+                productName: String(originalTitle),
+                displayTitle: String(originalTitle),
+                brand: firstNonEmpty(p.brand, p.brandName, p.company, p.sellerName, ""),
+                category: firstNonEmpty(p.category, p.cat, p.section, p.productCategory, "General"),
                 image,
+                imageUrl: firstNonEmpty(p.imageUrl, image),
                 images,
                 price: Number.isFinite(price) ? price : 0,
                 mrp: Number.isFinite(mrp) ? mrp : price,
@@ -1240,15 +1244,57 @@
 
         function isLiveProduct(p) {
             if (!p || !p.id || p.isDummy) return false;
-            const statusText = String(firstNonEmpty(p.status, p.approvalStatus, p.productStatus, p.sellerStatus, "")).toLowerCase();
-            const visibilityText = String(firstNonEmpty(p.visibility, p.publicStatus, "")).toLowerCase();
 
-            if (p.deleted === true || p.isDeleted === true || p.blocked === true || p.isBlocked === true) return false;
-            if (p.isVisible === false || p.visible === false || p.isPublicVisible === false || p.publicVisible === false) return false;
-            if (p.isLive === false || p.live === false || p.isApproved === false || p.approved === false) return false;
-            if (["rejected", "blocked", "deleted", "disabled", "hidden", "private", "offline"].some(x => statusText.includes(x) || visibilityText.includes(x))) return false;
-            if (["pending", "review", "draft"].some(x => statusText === x || visibilityText === x)) return false;
-            if (Number(p.stock) <= 0 && p.allowBackorder !== true && p.backorder !== true) return false;
+            const isFalseValue = value => value === false || value === "false" || value === 0 || value === "0" || String(value).toLowerCase() === "no";
+            const isTrueValue = value => value === true || value === "true" || value === 1 || value === "1" || String(value).toLowerCase() === "yes";
+
+            const statusText = String([
+                p.status,
+                p.approvalStatus,
+                p.qcStatus,
+                p.productStatus,
+                p.visibility,
+                p.publishStatus,
+                p.liveStatus,
+                p.publicStatus
+            ].filter(Boolean).join(" ")).trim().toLowerCase();
+
+            const hardHidden =
+                isTrueValue(p.hidden) ||
+                isTrueValue(p.deleted) ||
+                isTrueValue(p.isDeleted) ||
+                isTrueValue(p.blocked) ||
+                isTrueValue(p.isBlocked) ||
+                isFalseValue(p.isVisible) ||
+                isFalseValue(p.visible) ||
+                isFalseValue(p.publicVisible) ||
+                isFalseValue(p.isPublicVisible);
+
+            if (hardHidden) return false;
+
+            const sellerOffline =
+                isTrueValue(p.sellerOffline) ||
+                isTrueValue(p.storeOffline) ||
+                isTrueValue(p.offline) ||
+                (p.settings && isTrueValue(p.settings.offline));
+
+            if (sellerOffline) return false;
+
+            const blockedWords = ["deleted", "disabled", "rejected", "reject", "blocked", "suspended", "suspend", "inactive", "cancelled", "canceled", "private", "hidden"];
+            if (blockedWords.some(word => statusText.includes(word))) return false;
+
+            const pendingOnly = ["pending", "review", "draft", "hold", "unapproved"].some(word => statusText.includes(word));
+            const approvedLive =
+                ["approved", "approve", "qc pass", "passed", "active", "live", "published", "public", "visible"].some(word => statusText.includes(word)) ||
+                isTrueValue(p.isVisible) ||
+                isTrueValue(p.visible) ||
+                isTrueValue(p.approved) ||
+                isTrueValue(p.isApproved) ||
+                isTrueValue(p.live) ||
+                isTrueValue(p.isLive);
+
+            if (pendingOnly && !approvedLive) return false;
+
             return true;
         }
 
@@ -1464,11 +1510,13 @@
             const cleanId = cleanRouteProductId(productId);
             if (!cleanId) return null;
 
-            // Do not call Worker /product with id/productId/pid/sku. That route returns 404/400 for many valid
-            // catalog IDs and creates noisy console errors. Load the public catalog, then match by any ID field.
             const catalog = await fetchProductBatch(2500);
             const exact = catalog.find(p => matchesProductIdentifier(p, cleanId));
             if (exact && isLiveProduct(exact)) return exact;
+
+            const routePayload = await fetchPublicJson(`/product?id=${encodeURIComponent(cleanId)}`, 4200).catch(() => null);
+            const routeProduct = routePayload ? normalizeProductItem(routePayload.product || routePayload.item || routePayload.data || routePayload) : null;
+            if (routeProduct && matchesProductIdentifier(routeProduct, cleanId) && isLiveProduct(routeProduct)) return routeProduct;
 
             const fireProduct = await fetchProductFromFirestore(cleanId);
             if (fireProduct && isLiveProduct(fireProduct)) return fireProduct;
@@ -1834,9 +1882,14 @@
 
         function renderProductDetails() {
             const p = currentProduct;
-            
-            document.getElementById('pTitle').innerText = p.name;
-            document.getElementById('bcTitle').innerText = p.name.split(' ').slice(0, 3).join(' ') + '...';
+            const displayTitle = String(firstNonEmpty(p.name, p.title, p.productName, p.productTitle, p.displayTitle, "Aryanta Product"));
+            p.name = displayTitle;
+            p.title = displayTitle;
+            p.productName = displayTitle;
+
+            document.getElementById('pTitle').innerText = displayTitle;
+            document.getElementById('bcTitle').innerText = displayTitle.split(' ').slice(0, 3).join(' ') + (displayTitle.split(' ').length > 3 ? '...' : '');
+            try { document.title = `${displayTitle} | Aryanta`; } catch(e) {}
             
             // --- Premium Seller Box ---
             renderSellerBox(p);
@@ -3519,7 +3572,7 @@
                         ${isNewProduct(p) ? '<div class="similar-new-badge">NEW</div>' : ''}
                         <img src="${escapeAttr(img)}" class="s-img" loading="lazy" decoding="async">
                         <div class="s-details">
-                            <div class="s-title">${escapeHtmlText(p.name || 'Aryanta Product')}</div>
+                            <div class="s-title" title="${escapeAttr(firstNonEmpty(p.name, p.title, p.productName, p.displayTitle, 'Aryanta Product'))}">${escapeHtmlText(firstNonEmpty(p.name, p.title, p.productName, p.displayTitle, 'Aryanta Product'))}</div>
                             <div class="seller-line">
                                 <img src="${escapeAttr(sellerLogo)}" class="similar-seller-logo" alt="Shop logo" onerror="this.onerror=null;this.src='https://aryanta.in/vurify/aryanta.jpeg';">
                                 <span>Sold by ${escapeHtmlText(sellerText)}</span> ${verifiedIcon}
