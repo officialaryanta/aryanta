@@ -5790,8 +5790,7 @@ window.loadTutorials = function() {
         let notice=$(noticeId);
         const sec=$('settingsSection');
         if(sec && !notice){notice=document.createElement('div'); notice.id=noticeId; notice.className='panel-box mini-plan-box prime-plan-notice'; sec.insertBefore(notice, sec.firstElementChild?.nextSibling||sec.firstChild);}
-        if(notice) notice.innerHTML=`<b><i class="fas fa-crown"></i> Current Plan:</b> ${safe(plan().name)} · Commission <b>${plan().commissionPercent}%</b><br><span class="muted-line">Free users can use Offline Mode, Dark Theme and Search Suggestions. Growth locks Auto Accept, Vacation, SMS and Email notifications. Pro unlocks all seller controls.</span>`;
-    };
+         };
     const oldToggleSetting=window.toggleSetting;
     window.toggleSetting=async function(key){
         if(!activeSeller) return toast('Login required.','error');
@@ -11244,4 +11243,1589 @@ window.loadTutorials = function() {
 
     setTimeout(render,800);
     setTimeout(render,2000);
+})();
+/* ===== FIX: Subscription Invoice & History opens as separate page ===== */
+(function(){
+    if(window.ARYANTA_SUB_INVOICE_HISTORY_PAGE_FIX) return;
+    window.ARYANTA_SUB_INVOICE_HISTORY_PAGE_FIX = true;
+
+    const $ = id => document.getElementById(id);
+
+    function text(v){
+        return v === undefined || v === null ? "" : String(v);
+    }
+
+    function safe(v){
+        return text(v).replace(/[&<>"']/g, function(c){
+            return {
+                "&":"&amp;",
+                "<":"&lt;",
+                ">":"&gt;",
+                '"':"&quot;",
+                "'":"&#039;"
+            }[c];
+        });
+    }
+
+    function num(v){
+        const n = Number(text(v).replace(/[^0-9.-]/g,""));
+        return Number.isFinite(n) ? n : 0;
+    }
+
+    function money(v){
+        return "₹" + num(v).toLocaleString("en-IN");
+    }
+
+    function getDate(v){
+        if(!v) return null;
+        try{
+            if(v.toDate && typeof v.toDate === "function") return v.toDate();
+            const d = new Date(v);
+            return isNaN(d.getTime()) ? null : d;
+        }catch(e){
+            return null;
+        }
+    }
+
+    function dateText(v){
+        const d = getDate(v);
+        return d ? d.toLocaleString("en-IN") : "-";
+    }
+
+    function getSellerSafe(){
+        try{
+            if(typeof activeSeller !== "undefined" && activeSeller) return activeSeller;
+        }catch(e){}
+        try{
+            return JSON.parse(localStorage.getItem("sellerToken") || "null") || {};
+        }catch(e){
+            return {};
+        }
+    }
+
+    function sellerEmailSafe(){
+        const s = getSellerSafe();
+        return text(s.email || s.sellerEmail || "").toLowerCase().trim();
+    }
+
+    function hideOldInlineHistoryBox(){
+        const box = $("subscriptionHistoryBox");
+        if(box){
+            box.style.display = "none";
+            box.innerHTML = "";
+        }
+    }
+
+    function ensureSubHistoryStyle(){
+        if($("arySubHistoryPageStyle")) return;
+
+        const st = document.createElement("style");
+        st.id = "arySubHistoryPageStyle";
+        st.textContent = `
+            #subscriptionInvoiceHistoryPage{
+                display:none;
+            }
+            #subscriptionInvoiceHistoryPage.active{
+                display:block;
+            }
+            .ary-sub-page-head{
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                gap:14px;
+                margin-bottom:18px;
+                padding:20px;
+                border-radius:22px;
+                background:linear-gradient(135deg,#111827,#020617);
+                color:#fff;
+                box-shadow:0 18px 40px rgba(15,23,42,.22);
+            }
+            .ary-sub-page-head h3{
+                margin:0 0 6px 0;
+                font-size:24px;
+                font-weight:950;
+            }
+            .ary-sub-page-head p{
+                margin:0;
+                color:#cbd5e1;
+                font-size:13px;
+                font-weight:700;
+            }
+            .ary-sub-summary-grid{
+                display:grid;
+                grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+                gap:12px;
+                margin-bottom:16px;
+            }
+            .ary-sub-summary-card{
+                background:var(--white);
+                border:1px solid var(--border-color);
+                border-radius:18px;
+                padding:16px;
+                box-shadow:var(--shadow-sm);
+            }
+            .ary-sub-summary-card span{
+                display:block;
+                font-size:11px;
+                color:var(--text-light);
+                font-weight:900;
+                text-transform:uppercase;
+                margin-bottom:6px;
+            }
+            .ary-sub-summary-card b{
+                font-size:16px;
+                color:var(--text-main);
+                font-weight:950;
+            }
+            .ary-sub-invoice-paper{
+                background:var(--white);
+                border:1px solid var(--border-color);
+                border-radius:22px;
+                padding:22px;
+                box-shadow:var(--shadow-md);
+            }
+            .ary-sub-invoice-row{
+                display:flex;
+                justify-content:space-between;
+                gap:14px;
+                padding:12px 0;
+                border-bottom:1px solid var(--border-color);
+                font-size:14px;
+            }
+            .ary-sub-invoice-row:last-child{
+                border-bottom:0;
+            }
+            .ary-sub-invoice-row span{
+                color:var(--text-light);
+                font-weight:850;
+            }
+            .ary-sub-invoice-row b{
+                text-align:right;
+                color:var(--text-main);
+                font-weight:950;
+            }
+            @media(max-width:700px){
+                .ary-sub-page-head{
+                    flex-direction:column;
+                    align-items:stretch;
+                }
+                .ary-sub-page-head .btn-outline,
+                .ary-sub-page-head .btn-prime{
+                    width:100%;
+                }
+                .ary-sub-invoice-row{
+                    flex-direction:column;
+                    gap:4px;
+                }
+                .ary-sub-invoice-row b{
+                    text-align:left;
+                }
+            }
+        `;
+        document.head.appendChild(st);
+    }
+
+    function ensureSubHistoryPage(){
+        ensureSubHistoryStyle();
+
+        let page = $("subscriptionInvoiceHistoryPage");
+        if(page) return page;
+
+        page = document.createElement("section");
+        page.id = "subscriptionInvoiceHistoryPage";
+        page.className = "data-section subscription-details-page";
+
+        const parent = document.querySelector(".content-padding") || document.querySelector(".main-content") || document.body;
+        parent.appendChild(page);
+
+        return page;
+    }
+
+    function showOnlySubHistoryPage(){
+        hideOldInlineHistoryBox();
+
+        document.querySelectorAll(".data-section").forEach(sec => {
+            sec.classList.remove("active");
+        });
+
+        const page = ensureSubHistoryPage();
+        page.classList.add("active");
+
+        try{
+            document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+            document.querySelectorAll(".nav-item").forEach(n => {
+                if((n.getAttribute("onclick") || "").includes("subscription")){
+                    n.classList.add("active");
+                }
+            });
+        }catch(e){}
+
+        window.scrollTo({top:0, behavior:"smooth"});
+    }
+
+    function normalizeHistoryRow(h){
+        h = h || {};
+        return {
+            id: h.id || h.docId || "",
+            plan: h.planName || h.plan || h.subscriptionName || h.name || h.packageName || "-",
+            amount: h.amount || h.cost || h.price || h.subscriptionPrice || 0,
+            method: h.paymentMethod || h.method || h.payment_mode || h.type || "-",
+            paidBy: h.paymentBy || h.paidBy || h.sellerName || h.companyName || "",
+            paymentId: h.razorpayPaymentId || h.paymentId || h.transactionId || h.txnId || h.reference || h.ref || "-",
+            invoiceNo: h.invoiceNo || h.invoiceId || "",
+            startDate: h.startDate || h.subStartDate || h.createdAt || h.timestamp || h.time || "",
+            endDate: h.endDate || h.subEndDate || h.subscriptionEndDate || "",
+            status: h.status || "Active",
+            raw: h
+        };
+    }
+
+    let cachedSubHistoryRows = [];
+
+    async function getSubscriptionHistoryRows(){
+        const seller = getSellerSafe();
+        const rows = [];
+
+        if(Array.isArray(seller.subHistory)){
+            seller.subHistory.forEach(h => rows.push(normalizeHistoryRow(h)));
+        }
+
+        try{
+            if(typeof db !== "undefined" && db && sellerEmailSafe()){
+                const snap = await db.collection("seller_subscription_payments")
+                    .where("sellerEmail","==",sellerEmailSafe())
+                    .limit(50)
+                    .get();
+
+                snap.forEach(doc => {
+                    rows.push(normalizeHistoryRow({id:doc.id, ...doc.data()}));
+                });
+            }
+        }catch(e){}
+
+        const seen = new Set();
+        const clean = rows.filter(r => {
+            const key = [
+                r.invoiceNo,
+                r.paymentId,
+                r.plan,
+                r.amount,
+                r.startDate
+            ].join("|");
+
+            if(seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+
+        clean.sort((a,b) => {
+            const da = getDate(a.startDate);
+            const dbb = getDate(b.startDate);
+            return (dbb ? dbb.getTime() : 0) - (da ? da.getTime() : 0);
+        });
+
+        cachedSubHistoryRows = clean;
+        return clean;
+    }
+
+    function invoiceNo(row, index){
+        if(row.invoiceNo) return row.invoiceNo;
+        const base = text(row.startDate || Date.now()).replace(/[^0-9]/g,"").slice(0,12);
+        return "ARY-SUB-" + (base || Date.now()) + "-" + String(index + 1).padStart(2,"0");
+    }
+
+    function currentPlanSummary(){
+        const s = getSellerSafe();
+
+        return `
+            <div class="ary-sub-summary-grid">
+                <div class="ary-sub-summary-card">
+                    <span>Current Plan</span>
+                    <b>${safe(s.subscriptionName || s.subscription || s.plan || "Basic / Free")}</b>
+                </div>
+                <div class="ary-sub-summary-card">
+                    <span>Start Date</span>
+                    <b>${safe(dateText(s.subStartDate || s.subscriptionStartDate))}</b>
+                </div>
+                <div class="ary-sub-summary-card">
+                    <span>End / Renewal Date</span>
+                    <b>${safe(dateText(s.subEndDate || s.subscriptionEndDate))}</b>
+                </div>
+                <div class="ary-sub-summary-card">
+                    <span>Seller</span>
+                    <b>${safe(s.companyName || s.shopName || s.name || sellerEmailSafe() || "-")}</b>
+                </div>
+            </div>
+        `;
+    }
+
+    function historyTable(rows){
+        if(!rows.length){
+            return `
+                <div class="panel-box" style="text-align:center;padding:28px;font-weight:850;color:var(--text-light);">
+                    <i class="fas fa-file-invoice" style="font-size:32px;margin-bottom:10px;color:var(--warning);"></i><br>
+                    No subscription invoice/history found yet.
+                </div>
+            `;
+        }
+
+        return `
+            <div class="table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Plan</th>
+                            <th>Amount</th>
+                            <th>Payment Method</th>
+                            <th>Payment By</th>
+                            <th>Payment ID</th>
+                            <th>Status</th>
+                            <th>Invoice</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map((h,i) => `
+                            <tr>
+                                <td data-label="Plan">
+                                    <b>${safe(h.plan)}</b><br>
+                                    <small>${safe(dateText(h.startDate))}</small>
+                                </td>
+                                <td data-label="Amount">${money(h.amount)}</td>
+                                <td data-label="Payment Method">${safe(h.method)}</td>
+                                <td data-label="Payment By">${safe(h.paidBy || getSellerSafe().companyName || getSellerSafe().shopName || sellerEmailSafe() || "-")}</td>
+                                <td data-label="Payment ID">${safe(h.paymentId)}</td>
+                                <td data-label="Status"><span class="ok-chip">${safe(h.status)}</span></td>
+                                <td data-label="Invoice">
+                                    <button class="btn-sm" onclick="viewSubscriptionInvoice(${i})">
+                                        <i class="fas fa-receipt"></i> View
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join("")}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    window.showSubscriptionDetails = async function(){
+        const page = ensureSubHistoryPage();
+        showOnlySubHistoryPage();
+
+        page.innerHTML = `
+            <div class="ary-sub-page-head">
+                <div>
+                    <h3><i class="fas fa-file-invoice"></i> Subscription Invoice & History</h3>
+                    <p>Full subscription plan, payment method, payment by, payment ID and invoice records.</p>
+                </div>
+                <button class="btn-outline" onclick="showSection('subscription')">
+                    <i class="fas fa-arrow-left"></i> Back to Subscription
+                </button>
+            </div>
+
+            <div class="panel-box" style="text-align:center;padding:26px;font-weight:900;">
+                <i class="fas fa-spinner fa-spin"></i> Loading invoice history...
+            </div>
+        `;
+
+        const rows = await getSubscriptionHistoryRows();
+
+        page.innerHTML = `
+            <div class="ary-sub-page-head">
+                <div>
+                    <h3><i class="fas fa-file-invoice"></i> Subscription Invoice & History</h3>
+                    <p>Full subscription plan, payment method, payment by, payment ID and invoice records.</p>
+                </div>
+                <button class="btn-outline" onclick="showSection('subscription')">
+                    <i class="fas fa-arrow-left"></i> Back to Subscription
+                </button>
+            </div>
+
+            ${currentPlanSummary()}
+            ${historyTable(rows)}
+        `;
+    };
+
+    window.viewSubscriptionInvoice = async function(index){
+        if(!cachedSubHistoryRows.length){
+            await getSubscriptionHistoryRows();
+        }
+
+        const h = cachedSubHistoryRows[index] || {};
+        const s = getSellerSafe();
+        const page = ensureSubHistoryPage();
+
+        showOnlySubHistoryPage();
+
+        const paidBy = h.paidBy || s.companyName || s.shopName || s.name || sellerEmailSafe() || "-";
+
+        page.innerHTML = `
+            <div class="ary-sub-page-head">
+                <div>
+                    <h3><i class="fas fa-receipt"></i> Subscription Invoice</h3>
+                    <p>${safe(h.plan || "Subscription")}</p>
+                </div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <button class="btn-outline" onclick="showSubscriptionDetails()">
+                        <i class="fas fa-arrow-left"></i> Back to History
+                    </button>
+                    <button class="btn-prime" onclick="printSubscriptionInvoiceByIndex(${Number(index) || 0})">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                </div>
+            </div>
+
+            <div class="ary-sub-invoice-paper" id="arySubInvoicePrintArea">
+                <div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:18px;border-bottom:3px solid #111827;padding-bottom:14px;">
+                    <div>
+                        <h2 style="margin:0;font-size:28px;font-weight:950;">Aryanta.in</h2>
+                        <p style="margin:5px 0 0;font-weight:850;color:var(--text-light);">Seller Subscription Invoice</p>
+                        <p style="margin:5px 0 0;font-size:12px;font-weight:750;color:var(--text-light);">support@aryanta.in · 6206318133</p>
+                    </div>
+                    <div style="text-align:right;font-size:12px;font-weight:850;color:var(--text-main);">
+                        Invoice Date<br>
+                        <b>${safe(dateText(h.startDate) || new Date().toLocaleString("en-IN"))}</b>
+                    </div>
+                </div>
+
+                <div class="ary-sub-invoice-row"><span>Invoice No.</span><b>${safe(invoiceNo(h,index))}</b></div>
+                <div class="ary-sub-invoice-row"><span>Seller</span><b>${safe(paidBy)}</b></div>
+                <div class="ary-sub-invoice-row"><span>Seller Email</span><b>${safe(sellerEmailSafe() || "-")}</b></div>
+                <div class="ary-sub-invoice-row"><span>Plan</span><b>${safe(h.plan || "-")}</b></div>
+                <div class="ary-sub-invoice-row"><span>Amount</span><b>${money(h.amount)}</b></div>
+                <div class="ary-sub-invoice-row"><span>Payment Method</span><b>${safe(h.method || "-")}</b></div>
+                <div class="ary-sub-invoice-row"><span>Payment By</span><b>${safe(paidBy)}</b></div>
+                <div class="ary-sub-invoice-row"><span>Payment ID</span><b>${safe(h.paymentId || "-")}</b></div>
+                <div class="ary-sub-invoice-row"><span>Start Date</span><b>${safe(dateText(h.startDate))}</b></div>
+                <div class="ary-sub-invoice-row"><span>End Date</span><b>${safe(dateText(h.endDate))}</b></div>
+                <div class="ary-sub-invoice-row"><span>Status</span><b>${safe(h.status || "Active")}</b></div>
+            </div>
+        `;
+    };
+
+    window.printSubscriptionInvoiceByIndex = async function(index){
+        if(!cachedSubHistoryRows.length){
+            await getSubscriptionHistoryRows();
+        }
+
+        const h = cachedSubHistoryRows[index] || {};
+        const s = getSellerSafe();
+        const paidBy = h.paidBy || s.companyName || s.shopName || s.name || sellerEmailSafe() || "-";
+
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>${safe(invoiceNo(h,index))}</title>
+                <style>
+                    body{font-family:Arial,sans-serif;color:#0f172a;padding:28px;background:#fff;}
+                    .paper{max-width:850px;margin:0 auto;}
+                    .top{display:flex;justify-content:space-between;gap:14px;border-bottom:3px solid #111827;padding-bottom:16px;margin-bottom:18px;}
+                    h1{margin:0;font-size:30px;}
+                    p{margin:5px 0;}
+                    .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #e2e8f0;padding:11px 0;font-size:14px;}
+                    .row span{color:#64748b;font-weight:700;}
+                    .row b{text-align:right;}
+                </style>
+            </head>
+            <body>
+                <div class="paper">
+                    <div class="top">
+                        <div>
+                            <h1>Aryanta.in</h1>
+                            <p><b>Seller Subscription Invoice</b></p>
+                            <p>support@aryanta.in · 6206318133</p>
+                        </div>
+                        <div style="text-align:right;font-size:12px;">
+                            <b>Invoice Date</b><br>${safe(dateText(h.startDate) || new Date().toLocaleString("en-IN"))}
+                        </div>
+                    </div>
+                    <div class="row"><span>Invoice No.</span><b>${safe(invoiceNo(h,index))}</b></div>
+                    <div class="row"><span>Seller</span><b>${safe(paidBy)}</b></div>
+                    <div class="row"><span>Seller Email</span><b>${safe(sellerEmailSafe() || "-")}</b></div>
+                    <div class="row"><span>Plan</span><b>${safe(h.plan || "-")}</b></div>
+                    <div class="row"><span>Amount</span><b>${money(h.amount)}</b></div>
+                    <div class="row"><span>Payment Method</span><b>${safe(h.method || "-")}</b></div>
+                    <div class="row"><span>Payment By</span><b>${safe(paidBy)}</b></div>
+                    <div class="row"><span>Payment ID</span><b>${safe(h.paymentId || "-")}</b></div>
+                    <div class="row"><span>Start Date</span><b>${safe(dateText(h.startDate))}</b></div>
+                    <div class="row"><span>End Date</span><b>${safe(dateText(h.endDate))}</b></div>
+                    <div class="row"><span>Status</span><b>${safe(h.status || "Active")}</b></div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        const w = window.open("", "_blank");
+        if(!w){
+            if(typeof showToast === "function") showToast("Popup blocked. Please allow popups to print invoice.","warning");
+            return;
+        }
+
+        w.document.open();
+        w.document.write(html);
+        w.document.close();
+        setTimeout(() => {
+            try{
+                w.focus();
+                w.print();
+            }catch(e){}
+        }, 400);
+    };
+
+    const oldLoadSubscriptionsUI = window.loadSubscriptionsUI;
+
+    window.loadSubscriptionsUI = async function(){
+        try{
+            if(typeof oldLoadSubscriptionsUI === "function"){
+                await oldLoadSubscriptionsUI.apply(this, arguments);
+            }
+        }catch(e){}
+
+        hideOldInlineHistoryBox();
+
+        const page = $("subscriptionInvoiceHistoryPage");
+        if(page) page.classList.remove("active");
+    };
+
+    try{
+        loadSubscriptionsUI = window.loadSubscriptionsUI;
+    }catch(e){}
+
+    const oldShowSection = window.showSection;
+
+    window.showSection = async function(section){
+        const page = $("subscriptionInvoiceHistoryPage");
+        if(page) page.classList.remove("active");
+
+        const result = typeof oldShowSection === "function"
+            ? await oldShowSection.apply(this, arguments)
+            : undefined;
+
+        if(section === "subscription"){
+            setTimeout(hideOldInlineHistoryBox, 80);
+            setTimeout(hideOldInlineHistoryBox, 300);
+        }
+
+        return result;
+    };
+
+    try{
+        showSection = window.showSection;
+    }catch(e){}
+
+    setTimeout(hideOldInlineHistoryBox, 300);
+})();
+/* ===== FIX: Manual Free Subscription Choice Only ===== */
+(function(){
+    const PATCH_ID = "ARYANTA_MANUAL_FREE_TRIAL_CHOICE_LOCK_2026_05_25";
+    if(window[PATCH_ID]) return;
+    window[PATCH_ID] = true;
+
+    const $ = id => document.getElementById(id);
+
+    function txt(v){
+        return v === undefined || v === null ? "" : String(v);
+    }
+
+    function low(v){
+        return txt(v).toLowerCase().trim();
+    }
+
+    function safe(v){
+        return txt(v).replace(/[&<>"']/g, function(c){
+            return {
+                "&":"&amp;",
+                "<":"&lt;",
+                ">":"&gt;",
+                '"':"&quot;",
+                "'":"&#039;"
+            }[c];
+        });
+    }
+
+    function toast(msg,type){
+        try{
+            if(typeof showToast === "function") showToast(msg,type || "info");
+            else alert(msg);
+        }catch(e){
+            console.log(msg);
+        }
+    }
+
+    function nowIso(){
+        return new Date().toISOString();
+    }
+
+    function addDays(date,days){
+        const d = new Date(date);
+        d.setDate(d.getDate() + Number(days || 0));
+        return d;
+    }
+
+    function dbSafe(){
+        try{
+            if(typeof db !== "undefined" && db) return db;
+            if(window.db) return window.db;
+        }catch(e){}
+        return null;
+    }
+
+    function sellerSafe(){
+        try{
+            if(typeof activeSeller !== "undefined" && activeSeller) return activeSeller;
+            if(window.activeSeller) return window.activeSeller;
+        }catch(e){}
+
+        try{
+            return JSON.parse(localStorage.getItem("sellerToken") || "null") || {};
+        }catch(e){
+            return {};
+        }
+    }
+
+    function sellerEmail(){
+        const s = sellerSafe();
+        return low(s.email || s.sellerEmail || s.mail);
+    }
+
+    function sellerDocId(){
+        const s = sellerSafe();
+        return txt(s.email || s.sellerEmail || sellerEmail()).trim();
+    }
+
+    function planKey(v){
+        const s = sellerSafe();
+        const p = low(v || s.subscription || s.subscriptionName || s.plan || s.package || "Basic");
+        if(p.includes("pro")) return "Pro";
+        if(p.includes("growth") || p.includes("growt") || p.includes("grow")) return "Growth";
+        return "Basic";
+    }
+
+    function currentPlan(){
+        return planKey();
+    }
+
+    function hist(){
+        const s = sellerSafe();
+        return Array.isArray(s.subHistory) ? s.subHistory : [];
+    }
+
+    function isAutoGrowthEntry(h){
+        const source = low(h && h.source);
+        const method = low(h && (h.method || h.paymentMethod));
+        const amount = Number(h && (h.amount || h.price || 0));
+
+        return (
+            source.includes("new-seller-2-month-growth-trial") ||
+            method.includes("new seller free trial") ||
+            (
+                planKey(h && (h.plan || h.planName)) === "Growth" &&
+                amount === 0 &&
+                source.includes("trial")
+            )
+        );
+    }
+
+    function hasManualChoice(){
+        const s = sellerSafe();
+
+        return !!(
+            s.subscriptionTrialChoice ||
+            s.trialChoiceLocked ||
+            s.freeTrialChosenAt ||
+            s.growthTrialManuallyActivated ||
+            s.proTrialManuallyActivated ||
+            s.freeGrowthTrialClaimedAt ||
+            s.freeProTrialClaimedAt
+        );
+    }
+
+    function chosenTrial(){
+        const s = sellerSafe();
+
+        if(s.subscriptionTrialChoice) return planKey(s.subscriptionTrialChoice);
+        if(s.growthTrialManuallyActivated || s.freeGrowthTrialClaimedAt) return "Growth";
+        if(s.proTrialManuallyActivated || s.freeProTrialClaimedAt) return "Pro";
+
+        const h = hist();
+        const manual = h.find(x => low(x.source).includes("seller-click-free") || low(x.source).includes("manual-free-trial"));
+        if(manual) return planKey(manual.plan || manual.planName);
+
+        return "";
+    }
+
+    function autoGrowthLooksWrong(){
+        const s = sellerSafe();
+        const h = hist();
+
+        if(hasManualChoice()) return false;
+        if(currentPlan() !== "Growth") return false;
+        if(!(s.freeGrowthTrialRedeemed || s.newSellerGrowthTrialRedeemed || s.growthTrialRedeemedAt)) return false;
+
+        const autoEntries = h.filter(isAutoGrowthEntry);
+        const paidEntries = h.filter(x => Number(x.amount || x.price || 0) > 0);
+
+        if(paidEntries.length > 0) return false;
+        if(autoEntries.length > 0) return true;
+
+        return false;
+    }
+
+    async function undoAutomaticGrowthTrial(){
+        if(!autoGrowthLooksWrong()) return false;
+
+        const database = dbSafe();
+        const cleanHistory = hist().filter(h => !isAutoGrowthEntry(h));
+
+        const payload = {
+            subscription:"Basic",
+            subscriptionName:"Basic",
+            plan:"Basic",
+            subscriptionAmount:0,
+            subscriptionPaymentStatus:"Not Activated",
+            subscriptionCommissionPercent:6,
+            subStartDate:null,
+            subEndDate:null,
+            subscriptionEndDate:null,
+            growthTrialRedeemedAt:null,
+            freeGrowthTrialRedeemed:false,
+            newSellerGrowthTrialRedeemed:false,
+            canClaimFreePro:true,
+            canClaimFreeGrowth:true,
+            trialChoiceLocked:false,
+            subscriptionTrialChoice:"",
+            blockedTrialPlan:"",
+            subHistory:cleanHistory,
+            updatedAt:nowIso()
+        };
+
+        try{
+            if(database && sellerDocId()){
+                await database.collection("sellers").doc(sellerDocId()).set(payload,{merge:true});
+            }
+        }catch(e){}
+
+        try{
+            Object.assign(activeSeller,payload);
+            localStorage.setItem("sellerToken",JSON.stringify(activeSeller));
+        }catch(e){}
+
+        toast("Auto Growth trial removed. Seller must click free trial manually.","info");
+        return true;
+    }
+
+    function ensureStyle(){
+        if($("manualTrialChoiceStyle")) return;
+
+        const st = document.createElement("style");
+        st.id = "manualTrialChoiceStyle";
+        st.textContent = `
+            .ary-trial-card{
+                position:relative;
+                background:var(--white);
+                border:1px solid var(--border-color);
+                border-radius:22px;
+                padding:22px;
+                box-shadow:var(--shadow-sm);
+                overflow:hidden;
+            }
+            .ary-trial-card.active{
+                border-color:var(--success);
+                box-shadow:0 12px 32px rgba(16,185,129,.18);
+            }
+            .ary-trial-card.locked{
+                opacity:.62;
+                filter:grayscale(.2);
+            }
+            .ary-trial-tag{
+                display:inline-flex;
+                align-items:center;
+                gap:7px;
+                font-size:11px;
+                font-weight:950;
+                padding:7px 10px;
+                border-radius:999px;
+                background:var(--surface-2);
+                color:var(--text-main);
+                margin-bottom:12px;
+            }
+            .ary-trial-card h4{
+                font-size:21px;
+                font-weight:950;
+                margin:0 0 8px 0;
+                color:var(--text-main);
+            }
+            .ary-trial-price{
+                font-size:28px;
+                font-weight:950;
+                margin:10px 0;
+                color:var(--primary);
+            }
+            .ary-trial-list{
+                display:grid;
+                gap:9px;
+                margin:16px 0;
+                color:var(--text-light);
+                font-weight:750;
+                font-size:13px;
+                line-height:1.45;
+            }
+            .ary-trial-list div{
+                display:flex;
+                gap:9px;
+                align-items:flex-start;
+            }
+            .ary-trial-list i{
+                color:var(--success);
+                margin-top:2px;
+            }
+            .ary-trial-lock-note{
+                background:#fff7ed;
+                color:#9a3412;
+                border:1px solid #fed7aa;
+                padding:10px 12px;
+                border-radius:14px;
+                font-size:12px;
+                font-weight:900;
+                margin:12px 0;
+            }
+            body.dark-theme .ary-trial-lock-note{
+                background:#451a03;
+                color:#fed7aa;
+                border-color:#9a3412;
+            }
+        `;
+        document.head.appendChild(st);
+    }
+
+    function trialButton(plan){
+        const chosen = chosenTrial();
+        const active = currentPlan() === plan;
+        const other = plan === "Growth" ? "Pro" : "Growth";
+
+        if(chosen && chosen !== plan){
+            return `
+                <button class="btn-outline w-100" disabled>
+                    <i class="fas fa-lock"></i> Locked — ${chosen} Free Selected
+                </button>
+            `;
+        }
+
+        if(chosen === plan || active){
+            return `
+                <button class="btn-outline w-100" disabled>
+                    <i class="fas fa-check-circle"></i> Active / Claimed
+                </button>
+            `;
+        }
+
+        if(plan === "Growth"){
+            return `
+                <button class="btn-prime w-100" onclick="activateManualFreeTrial('Growth')">
+                    <i class="fas fa-gift"></i> Activate 2 Months Free Growth
+                </button>
+            `;
+        }
+
+        return `
+            <button class="btn-prime w-100" onclick="activateManualFreeTrial('Pro')">
+                <i class="fas fa-gift"></i> Activate 1 Month Free Pro
+            </button>
+        `;
+    }
+
+    function renderTrialUI(){
+        ensureStyle();
+
+        const cards = $("subscriptionCards");
+        const notice = $("subscriptionAdminNotice");
+
+        if(!cards) return;
+
+        const chosen = chosenTrial();
+        const plan = currentPlan();
+
+        if(notice){
+            notice.style.display = "block";
+            notice.innerHTML = `
+                <div style="display:flex;align-items:flex-start;gap:12px;">
+                    <i class="fas fa-circle-info" style="font-size:20px;color:var(--warning);margin-top:2px;"></i>
+                    
+                </div>
+            `;
+        }
+
+        cards.innerHTML = `
+            <div class="ary-trial-card ${plan === "Basic" ? "active" : ""}">
+                <span class="ary-trial-tag"><i class="fas fa-store"></i> Default</span>
+                <h4>Basic Seller</h4>
+                <div class="ary-trial-price">Free</div>
+                <div class="ary-trial-list">
+                    <div><i class="fas fa-check"></i><span>Default seller access.</span></div>
+                    <div><i class="fas fa-check"></i><span>No free trial used yet.</span></div>
+                    <div><i class="fas fa-check"></i><span>Growth and Pro free buttons remain available until seller chooses one.</span></div>
+                </div>
+                ${plan === "Basic" ? `
+                    <button class="btn-outline w-100" disabled>
+                        <i class="fas fa-check"></i> Current Plan
+                    </button>
+                ` : `
+                    <button class="btn-outline w-100" onclick="switchToBasicWithConfirm && switchToBasicWithConfirm()">
+                        <i class="fas fa-pause"></i> Switch / Pause to Basic
+                    </button>
+                `}
+            </div>
+
+            <div class="ary-trial-card ${plan === "Growth" ? "active" : ""} ${chosen && chosen !== "Growth" ? "locked" : ""}">
+                <span class="ary-trial-tag"><i class="fas fa-chart-line"></i> 2 Months Free</span>
+                <h4>Growth Plan</h4>
+                <div class="ary-trial-price">₹0 <small style="font-size:12px;color:var(--text-light);">for 2 months</small></div>
+                <div class="ary-trial-list">
+                    <div><i class="fas fa-check"></i><span>2 months free Growth access.</span></div>
+                    <div><i class="fas fa-check"></i><span>Growth tools and lower commission enabled after click.</span></div>
+                    <div><i class="fas fa-check"></i><span>Choosing Growth blocks the free Pro option.</span></div>
+                </div>
+                ${chosen && chosen !== "Growth" ? `<div class="ary-trial-lock-note">Free Growth blocked because ${safe(chosen)} free trial was selected.</div>` : ""}
+                ${trialButton("Growth")}
+                <button class="btn-outline w-100" style="margin-top:10px;" onclick="processSubscription && processSubscription('Growth','online')">
+                    <i class="fas fa-credit-card"></i> Pay Growth ₹259/month
+                </button>
+            </div>
+
+            <div class="ary-trial-card ${plan === "Pro" ? "active" : ""} ${chosen && chosen !== "Pro" ? "locked" : ""}">
+                <span class="ary-trial-tag"><i class="fas fa-crown"></i> 1 Month Free</span>
+                <h4>Pro Plan</h4>
+                <div class="ary-trial-price">₹0 <small style="font-size:12px;color:var(--text-light);">for 1 month</small></div>
+                <div class="ary-trial-list">
+                    <div><i class="fas fa-check"></i><span>1 month free Pro access.</span></div>
+                    <div><i class="fas fa-check"></i><span>Pro tools and best commission enabled after click.</span></div>
+                    <div><i class="fas fa-check"></i><span>Choosing Pro blocks the free Growth option.</span></div>
+                </div>
+                ${chosen && chosen !== "Pro" ? `<div class="ary-trial-lock-note">Free Pro blocked because ${safe(chosen)} free trial was selected.</div>` : ""}
+                ${trialButton("Pro")}
+                <button class="btn-outline w-100" style="margin-top:10px;" onclick="processSubscription && processSubscription('Pro','online')">
+                    <i class="fas fa-credit-card"></i> Pay Pro ₹459/month
+                </button>
+            </div>
+
+            <div style="grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap;">
+                <button class="btn-outline" onclick="showSubscriptionDetails && showSubscriptionDetails()">
+                    <i class="fas fa-receipt"></i> Subscription Invoice / History
+                </button>
+            </div>
+        `;
+    }
+
+    async function saveSellerPatch(payload){
+        const database = dbSafe();
+
+        try{
+            if(database && sellerDocId()){
+                await database.collection("sellers").doc(sellerDocId()).set(payload,{merge:true});
+            }
+        }catch(e){
+            throw e;
+        }
+
+        try{
+            Object.assign(activeSeller,payload);
+            localStorage.setItem("sellerToken",JSON.stringify(activeSeller));
+        }catch(e){}
+    }
+
+    window.activateManualFreeTrial = async function(plan){
+        plan = planKey(plan);
+
+        if(plan !== "Growth" && plan !== "Pro"){
+            return toast("Only Growth or Pro free trial can be activated.","error");
+        }
+
+        const chosen = chosenTrial();
+
+        if(chosen && chosen !== plan){
+            return toast(`You already selected ${chosen} free trial. Other free option is locked.`,"warning");
+        }
+
+        if(chosen === plan){
+            return toast(`${plan} free trial is already claimed.`,"warning");
+        }
+
+        const database = dbSafe();
+
+        if(!sellerEmail() || !sellerDocId()){
+            return toast("Seller account not loaded. Please login again.","error");
+        }
+
+        const start = new Date();
+        const days = plan === "Growth" ? 60 : 30;
+        const end = addDays(start,days);
+        const other = plan === "Growth" ? "Pro" : "Growth";
+        const commission = plan === "Growth" ? 4 : 2.5;
+
+        const cleanHistory = hist().filter(h => !isAutoGrowthEntry(h));
+
+        const entry = {
+            plan:plan,
+            planName:plan,
+            amount:0,
+            price:0,
+            method:"Manual Free Trial",
+            paymentMethod:"Free Trial",
+            startDate:start.toISOString(),
+            endDate:end.toISOString(),
+            status:"Active",
+            source:plan === "Growth" ? "seller-click-free-growth-2-month" : "seller-click-free-pro-1-month",
+            createdAt:nowIso(),
+            trialChoiceLocked:true,
+            blockedTrialPlan:other,
+            commissionPercent:commission
+        };
+
+        const payload = {
+            subscription:plan,
+            subscriptionName:plan,
+            plan:plan,
+            subStartDate:start.toISOString(),
+            subEndDate:end.toISOString(),
+            subscriptionEndDate:end.toISOString(),
+            subscriptionCommissionPercent:commission,
+            subscriptionAmount:0,
+            subscriptionPaymentStatus:"Free Trial",
+            subscriptionTrialChoice:plan,
+            trialChoiceLocked:true,
+            freeTrialChosenAt:nowIso(),
+            blockedTrialPlan:other,
+            canClaimFreeGrowth:plan === "Growth",
+            canClaimFreePro:plan === "Pro",
+            freeGrowthTrialRedeemed:plan === "Growth",
+            freeProTrialRedeemed:plan === "Pro",
+            growthTrialManuallyActivated:plan === "Growth",
+            proTrialManuallyActivated:plan === "Pro",
+            freeGrowthTrialClaimedAt:plan === "Growth" ? nowIso() : null,
+            freeProTrialClaimedAt:plan === "Pro" ? nowIso() : null,
+            growthTrialRedeemedAt:plan === "Growth" ? nowIso() : null,
+            newSellerGrowthTrialRedeemed:plan === "Growth",
+            subHistory:[...cleanHistory,entry],
+            updatedAt:nowIso()
+        };
+
+        try{
+            await saveSellerPatch(payload);
+
+            try{
+                if(database){
+                    await database.collection("seller_subscription_payments").add({
+                        sellerEmail:sellerEmail(),
+                        sellerName:sellerSafe().companyName || sellerSafe().shopName || "",
+                        plan:plan,
+                        planName:plan,
+                        amount:0,
+                        status:"Free Trial",
+                        method:"Manual Free Trial",
+                        source:entry.source,
+                        startDate:start.toISOString(),
+                        endDate:end.toISOString(),
+                        blockedTrialPlan:other,
+                        createdAt:nowIso()
+                    });
+                }
+            }catch(e){}
+
+            toast(`${plan} free trial activated. ${other} free option is now locked.`,"success");
+
+            renderTrialUI();
+
+            try{
+                if(typeof updateBrandingLimitText === "function") updateBrandingLimitText();
+            }catch(e){}
+
+            try{
+                if(typeof updatePlanGatesFinal === "function") updatePlanGatesFinal();
+            }catch(e){}
+
+        }catch(e){
+            toast("Free trial activation failed. Please try again.","error");
+        }
+    };
+
+    const oldRedeemGrowthFreeMonth = window.redeemGrowthFreeMonth;
+    window.redeemGrowthFreeMonth = function(){
+        return window.activateManualFreeTrial("Growth");
+    };
+
+    const oldActivateFreeSubscription = window.activateFreeSubscription;
+    window.activateFreeSubscription = function(plan){
+        return window.activateManualFreeTrial(planKey(plan));
+    };
+
+    const oldProcessSubscription = window.processSubscription;
+    window.processSubscription = function(plan,method){
+        const m = low(method);
+
+        if(m === "free" || m === "free_month" || m === "free-trial" || m === "trial"){
+            return window.activateManualFreeTrial(plan);
+        }
+
+        if(typeof oldProcessSubscription === "function"){
+            return oldProcessSubscription.apply(this,arguments);
+        }
+
+        toast("Subscription payment function not ready.","error");
+    };
+
+    const oldLoadSubscriptionsUI = window.loadSubscriptionsUI;
+    window.loadSubscriptionsUI = async function(){
+        await undoAutomaticGrowthTrial();
+
+        let res;
+        try{
+            if(typeof oldLoadSubscriptionsUI === "function"){
+                res = await oldLoadSubscriptionsUI.apply(this,arguments);
+            }
+        }catch(e){}
+
+        setTimeout(renderTrialUI,80);
+        setTimeout(renderTrialUI,300);
+        return res;
+    };
+
+    try{
+        loadSubscriptionsUI = window.loadSubscriptionsUI;
+    }catch(e){}
+
+    const oldShowSection = window.showSection;
+    window.showSection = async function(section){
+        await undoAutomaticGrowthTrial();
+
+        let res;
+        if(typeof oldShowSection === "function"){
+            res = await oldShowSection.apply(this,arguments);
+        }
+
+        if(section === "subscription"){
+            setTimeout(renderTrialUI,120);
+            setTimeout(renderTrialUI,450);
+        }
+
+        return res;
+    };
+
+    try{
+        showSection = window.showSection;
+    }catch(e){}
+
+    async function boot(){
+        await undoAutomaticGrowthTrial();
+
+        const sec = $("subscriptionSection");
+        if(sec && sec.classList.contains("active")){
+            renderTrialUI();
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded",function(){
+        setTimeout(boot,300);
+        setTimeout(boot,1200);
+        setTimeout(boot,2400);
+    });
+
+    setTimeout(boot,700);
+    setTimeout(boot,1600);
+    setTimeout(boot,3200);
+})();
+/* ===== FIX: Razorpay key missing even when Cloudflare has key ===== */
+(function(){
+    const PATCH_ID = "ARYANTA_RAZORPAY_KEY_NORMALIZER_FIX_2026_05_25";
+    if(window[PATCH_ID]) return;
+    window[PATCH_ID] = true;
+
+    const API_URL = typeof API_BASE_URL !== "undefined"
+        ? API_BASE_URL
+        : "https://rough-field-c679.official-aryanta.workers.dev";
+
+    function toast(msg,type){
+        try{
+            if(typeof showToast === "function") showToast(msg,type || "info");
+            else alert(msg);
+        }catch(e){
+            console.log(msg);
+        }
+    }
+
+    function safeText(v){
+        return v === undefined || v === null ? "" : String(v).trim();
+    }
+
+    function getSeller(){
+        try{
+            if(typeof activeSeller !== "undefined" && activeSeller) return activeSeller;
+        }catch(e){}
+
+        try{
+            return JSON.parse(localStorage.getItem("sellerToken") || "null") || {};
+        }catch(e){
+            return {};
+        }
+    }
+
+    function getRazorpayFromObject(data){
+        if(!data || typeof data !== "object") return "";
+
+        return safeText(
+            data.razorpayKey ||
+            data.razorpay_key ||
+            data.razorpayKeyId ||
+            data.razorpay_key_id ||
+            data.RAZORPAY_KEY ||
+            data.RAZORPAY_KEY_ID ||
+            data.key ||
+            data.keyId ||
+            data.key_id ||
+            data.razorpay ||
+            data.paymentKey ||
+            data.payment_key ||
+            data.publicKey ||
+            data.public_key ||
+            ""
+        );
+    }
+
+    function isValidRazorpayKey(key){
+        key = safeText(key);
+        return key.startsWith("rzp_test_") || key.startsWith("rzp_live_");
+    }
+
+    function ensureApiKeysObject(){
+        if(typeof window.API_KEYS === "undefined"){
+            window.API_KEYS = {};
+        }
+
+        try{
+            if(typeof API_KEYS === "undefined"){
+                window.API_KEYS = window.API_KEYS || {};
+            }
+        }catch(e){}
+
+        try{
+            if(typeof API_KEYS !== "undefined" && API_KEYS){
+                if(!window.API_KEYS) window.API_KEYS = API_KEYS;
+            }
+        }catch(e){}
+    }
+
+    window.fetchRazorpayKeyFromCloudflare = async function(force){
+        ensureApiKeysObject();
+
+        try{
+            if(!force && typeof API_KEYS !== "undefined" && isValidRazorpayKey(API_KEYS.RAZORPAY)){
+                return API_KEYS.RAZORPAY;
+            }
+        }catch(e){}
+
+        try{
+            if(!force && window.API_KEYS && isValidRazorpayKey(window.API_KEYS.RAZORPAY)){
+                return window.API_KEYS.RAZORPAY;
+            }
+        }catch(e){}
+
+        let finalKey = "";
+
+        try{
+            const res = await fetch(`${API_URL}/get-api-keys`, {
+                method:"GET",
+                cache:"no-store",
+                headers:{
+                    "Accept":"application/json"
+                }
+            });
+
+            if(res.ok){
+                const data = await res.json();
+
+                finalKey =
+                    getRazorpayFromObject(data) ||
+                    getRazorpayFromObject(data.keys) ||
+                    getRazorpayFromObject(data.apiKeys) ||
+                    getRazorpayFromObject(data.payment) ||
+                    getRazorpayFromObject(data.razorpayConfig);
+            }
+        }catch(e){}
+
+        if(!isValidRazorpayKey(finalKey)){
+            try{
+                const res2 = await fetch(`${API_URL}/health`, {
+                    method:"GET",
+                    cache:"no-store",
+                    headers:{
+                        "Accept":"application/json"
+                    }
+                });
+
+                if(res2.ok){
+                    const data2 = await res2.json();
+
+                    finalKey =
+                        getRazorpayFromObject(data2) ||
+                        getRazorpayFromObject(data2.keys) ||
+                        getRazorpayFromObject(data2.apiKeys) ||
+                        getRazorpayFromObject(data2.payment) ||
+                        getRazorpayFromObject(data2.razorpayConfig);
+                }
+            }catch(e){}
+        }
+
+        if(isValidRazorpayKey(finalKey)){
+            try{
+                API_KEYS.RAZORPAY = finalKey;
+            }catch(e){}
+
+            window.API_KEYS = window.API_KEYS || {};
+            window.API_KEYS.RAZORPAY = finalKey;
+
+            return finalKey;
+        }
+
+        return "";
+    };
+
+    async function waitForRazorpayKey(){
+        let key = await window.fetchRazorpayKeyFromCloudflare(false);
+        if(isValidRazorpayKey(key)) return key;
+
+        for(let i = 0; i < 8; i++){
+            await new Promise(resolve => setTimeout(resolve, 350));
+            key = await window.fetchRazorpayKeyFromCloudflare(i > 2);
+            if(isValidRazorpayKey(key)) return key;
+        }
+
+        return "";
+    }
+
+    function planData(plan){
+        const p = safeText(plan).toLowerCase();
+
+        if(p.includes("pro")){
+            return {
+                key:"Pro",
+                name:"Pro",
+                price:459,
+                commissionPercent:2.5
+            };
+        }
+
+        if(p.includes("growth") || p.includes("grow")){
+            return {
+                key:"Growth",
+                name:"Growth",
+                price:259,
+                commissionPercent:4
+            };
+        }
+
+        return {
+            key:"Basic",
+            name:"Basic",
+            price:0,
+            commissionPercent:6
+        };
+    }
+
+    async function activatePaidPlanAfterRazorpay(plan, paymentId){
+        const seller = getSeller();
+
+        if(!seller || !seller.email){
+            toast("Seller account not loaded. Please login again.","error");
+            return;
+        }
+
+        const p = planData(plan);
+        const start = new Date();
+        const end = new Date();
+        end.setMonth(end.getMonth() + 1);
+
+        const record = {
+            plan:p.key,
+            planName:p.name,
+            amount:p.price,
+            price:p.price,
+            commissionPercent:p.commissionPercent,
+            duration:"month",
+            method:"Razorpay",
+            paymentMethod:"Razorpay",
+            razorpayPaymentId:paymentId || "",
+            status:"Paid",
+            startDate:start.toISOString(),
+            endDate:end.toISOString(),
+            createdAt:start.toISOString()
+        };
+
+        const oldHistory = Array.isArray(seller.subHistory) ? seller.subHistory : [];
+
+        const payload = {
+            subscription:p.key,
+            subscriptionName:p.name,
+            plan:p.key,
+            subStartDate:start.toISOString(),
+            subEndDate:end.toISOString(),
+            subscriptionEndDate:end.toISOString(),
+            subscriptionCommissionPercent:p.commissionPercent,
+            subscriptionAmount:p.price,
+            subscriptionPaymentStatus:"Paid",
+            subHistory:[...oldHistory, record],
+            updatedAt:start.toISOString()
+        };
+
+        try{
+            if(typeof db !== "undefined" && db){
+                await db.collection("sellers").doc(seller.email).set(payload,{merge:true});
+
+                try{
+                    await db.collection("seller_subscription_payments").add({
+                        sellerEmail:seller.email,
+                        sellerName:seller.companyName || seller.shopName || "",
+                        plan:p.key,
+                        planName:p.name,
+                        amount:p.price,
+                        status:"Paid",
+                        method:"Razorpay",
+                        paymentMethod:"Razorpay",
+                        razorpayPaymentId:paymentId || "",
+                        startDate:start.toISOString(),
+                        endDate:end.toISOString(),
+                        createdAt:start.toISOString()
+                    });
+                }catch(e){}
+            }
+
+            try{
+                Object.assign(activeSeller,payload);
+                localStorage.setItem("sellerToken",JSON.stringify(activeSeller));
+            }catch(e){}
+
+            toast(`${p.name} plan activated successfully.`,"success");
+
+            try{
+                if(typeof loadSubscriptionsUI === "function") loadSubscriptionsUI();
+            }catch(e){}
+
+            try{
+                if(typeof loadProfile === "function") loadProfile();
+            }catch(e){}
+
+        }catch(e){
+            toast("Payment done, but plan update failed. Please contact support with payment ID.","error");
+            console.error(e);
+        }
+    }
+
+    const oldProcessSubscription = window.processSubscription;
+
+    window.processSubscription = async function(plan, method){
+        const m = safeText(method || "online").toLowerCase();
+
+        if(m === "free" || m === "free_month" || m === "free-trial" || m === "trial"){
+            if(typeof window.activateManualFreeTrial === "function"){
+                return window.activateManualFreeTrial(plan);
+            }
+            if(typeof oldProcessSubscription === "function"){
+                return oldProcessSubscription.apply(this, arguments);
+            }
+        }
+
+        if(m === "payout" || m === "upcoming_payout"){
+            if(typeof oldProcessSubscription === "function"){
+                return oldProcessSubscription.apply(this, arguments);
+            }
+            return toast("Upcoming payout payment is not ready.","error");
+        }
+
+        const p = planData(plan);
+
+        if(p.price <= 0){
+            if(typeof window.activateFreeBasicPlan === "function"){
+                return window.activateFreeBasicPlan();
+            }
+            return toast("Basic plan is already free.","info");
+        }
+
+        const key = await waitForRazorpayKey();
+
+        if(!isValidRazorpayKey(key)){
+            toast("Razorpay public key not received from Cloudflare. Check /get-api-keys response key name.","error");
+            console.error("Razorpay key missing. Cloudflare must return key_id like rzp_live_xxx or rzp_test_xxx, not key_secret.");
+            return;
+        }
+
+        if(typeof Razorpay === "undefined"){
+            toast("Razorpay script not loaded. Refresh and try again.","error");
+            return;
+        }
+
+        const seller = getSeller();
+
+        const options = {
+            key:key,
+            amount:p.price * 100,
+            currency:"INR",
+            name:"Aryanta Subscription",
+            description:`${p.name} Seller Plan`,
+            handler:function(response){
+                activatePaidPlanAfterRazorpay(p.key, response.razorpay_payment_id || "");
+            },
+            prefill:{
+                name:seller.companyName || seller.shopName || "",
+                email:seller.email || "",
+                contact:seller.phone || ""
+            },
+            theme:{
+                color:"#111827"
+            }
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.open();
+    };
+
+    try{
+        processSubscription = window.processSubscription;
+    }catch(e){}
+
+    const oldPayAdOnline = window.payAdOnline;
+
+    window.payAdOnline = async function(){
+        const key = await waitForRazorpayKey();
+
+        if(!isValidRazorpayKey(key)){
+            toast("Razorpay key not loaded from Cloudflare. Cannot open payment.","error");
+            return;
+        }
+
+        try{
+            API_KEYS.RAZORPAY = key;
+        }catch(e){}
+
+        window.API_KEYS = window.API_KEYS || {};
+        window.API_KEYS.RAZORPAY = key;
+
+        if(typeof oldPayAdOnline === "function"){
+            return oldPayAdOnline.apply(this, arguments);
+        }
+    };
+
+    document.addEventListener("DOMContentLoaded",function(){
+        setTimeout(function(){
+            window.fetchRazorpayKeyFromCloudflare(true).then(function(key){
+                if(isValidRazorpayKey(key)){
+                    console.log("Razorpay key loaded from Cloudflare.");
+                }else{
+                    console.warn("Razorpay key still missing. Worker /get-api-keys must return razorpayKey or razorpayKeyId.");
+                }
+            });
+        },800);
+    });
+
+    setTimeout(function(){
+        window.fetchRazorpayKeyFromCloudflare(true);
+    },1200);
 })();
