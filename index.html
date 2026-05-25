@@ -13,7 +13,136 @@
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="style.css?v=7">
+    <style id="aryanta-mobile-scroll-filter-fix">
+        @media (max-width: 768px) {
+            #categoriesDisplayContainer.spacing-premium,
+            #categoriesDisplayContainer.flex-row-between,
+            #categoriesDisplayContainer {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 0 26px 0 !important;
+                padding: 0 15px 12px 15px !important;
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                justify-content: flex-start !important;
+                flex-wrap: nowrap !important;
+                gap: 10px !important;
+                overflow-x: auto !important;
+                overflow-y: hidden !important;
+                -webkit-overflow-scrolling: touch !important;
+                overscroll-behavior-x: contain !important;
+                scrollbar-width: none !important;
+                -ms-overflow-style: none !important;
+                touch-action: pan-x pan-y !important;
+                scroll-snap-type: x proximity;
+                white-space: nowrap !important;
+            }
+        
+            #categoriesDisplayContainer::-webkit-scrollbar {
+                display: none !important;
+                width: 0 !important;
+                height: 0 !important;
+            }
+        
+            #categoriesDisplayContainer .quick-action-buttons {
+                display: flex !important;
+                flex: 0 0 auto !important;
+                width: auto !important;
+                min-width: max-content !important;
+                max-width: none !important;
+                align-items: center !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                gap: 10px !important;
+                overflow: visible !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                white-space: nowrap !important;
+            }
+        
+            #categoriesDisplayContainer .quick-action-buttons button,
+            #categoriesDisplayContainer .global-filter-btn {
+                flex: 0 0 auto !important;
+                width: auto !important;
+                min-width: max-content !important;
+                white-space: nowrap !important;
+                scroll-snap-align: start;
+                touch-action: manipulation !important;
+            }
+        
+            #recentlyViewedContainer {
+                width: 100% !important;
+                max-width: 100% !important;
+                overflow: hidden !important;
+                padding: 0 0 0 15px !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+            }
+        
+            #recentShelfScroll {
+                width: 100% !important;
+                max-width: 100% !important;
+                overflow-x: auto !important;
+                overflow-y: hidden !important;
+                -webkit-overflow-scrolling: touch !important;
+                overscroll-behavior-x: contain !important;
+                scrollbar-width: none !important;
+                -ms-overflow-style: none !important;
+                touch-action: pan-x pan-y !important;
+                padding: 0 0 16px 0 !important;
+                margin: 0 !important;
+                scroll-snap-type: x proximity;
+            }
+        
+            #recentShelfScroll::-webkit-scrollbar {
+                display: none !important;
+                width: 0 !important;
+                height: 0 !important;
+            }
+        
+            #recentShelf {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                align-items: stretch !important;
+                gap: 12px !important;
+                width: max-content !important;
+                min-width: max-content !important;
+                max-width: none !important;
+                padding: 0 15px 0 0 !important;
+                margin: 0 !important;
+            }
+        
+            #recentShelf .recent-item-card {
+                flex: 0 0 235px !important;
+                width: 235px !important;
+                min-width: 235px !important;
+                max-width: 235px !important;
+                scroll-snap-align: start;
+                touch-action: pan-x pan-y !important;
+            }
+        
+            .custom-price-inputs {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr auto !important;
+                gap: 8px !important;
+                padding: 0 !important;
+            }
+        
+            .custom-price-inputs input {
+                min-width: 0 !important;
+                width: 100% !important;
+            }
+        
+            .custom-price-inputs .btn-go {
+                min-width: 54px !important;
+                padding-left: 14px !important;
+                padding-right: 14px !important;
+            }
+        }
+    </style>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -730,6 +859,8 @@ document.addEventListener('DOMContentLoaded', () => {
     bootHomeUltraFast();
 
     initMathematicalScroll();
+
+    setupInstantFilterControls();
     setupSearch("desktopSearchInput", ".desktop-clear", ".desktop-dropdown", "dMicBtn");
     setupSearch("mobileSearchInput", ".mobile-clear", ".mobile-dropdown", "mMicBtn");
 
@@ -1482,16 +1613,112 @@ window.loadMoreProducts = function(batchCount = SCROLL_BATCH) {
             applySidebarFilterLogic();
         }
         
+        function readCustomPriceRange() {
+            const minInput = document.getElementById('customMinPrice');
+            const maxInput = document.getElementById('customMaxPrice');
+            const rawMin = minInput ? minInput.value.trim() : "";
+            const rawMax = maxInput ? maxInput.value.trim() : "";
+            let min = rawMin === "" ? NaN : Number(rawMin);
+            let max = rawMax === "" ? NaN : Number(rawMax);
+
+            if (Number.isFinite(min) && min < 0) min = 0;
+            if (Number.isFinite(max) && max < 0) max = 0;
+
+            const hasMin = Number.isFinite(min);
+            const hasMax = Number.isFinite(max);
+
+            if (hasMin && hasMax && max < min) {
+                const oldMin = min;
+                min = max;
+                max = oldMin;
+                if (minInput) minInput.value = min;
+                if (maxInput) maxInput.value = max;
+            }
+
+            return {
+                hasCustom: hasMin || hasMax,
+                min: hasMin ? min : 0,
+                max: hasMax ? max : Infinity
+            };
+        }
+
+        function setupInstantFilterControls() {
+            const minInput = document.getElementById('customMinPrice');
+            const maxInput = document.getElementById('customMaxPrice');
+            const priceRadios = document.querySelectorAll('input[name="priceFilter"]');
+            const ratingRadios = document.querySelectorAll('input[name="ratingFilter"]');
+            let customFilterTimer = null;
+
+            const runFilterNow = () => {
+                clearTimeout(customFilterTimer);
+                applySidebarFilterLogic();
+            };
+
+            const runFilterSoon = () => {
+                clearTimeout(customFilterTimer);
+                customFilterTimer = setTimeout(() => applySidebarFilterLogic(), 120);
+            };
+
+            [minInput, maxInput].forEach(input => {
+                if (!input || input.dataset.instantFilterReady === "true") return;
+                input.dataset.instantFilterReady = "true";
+
+                input.addEventListener('input', () => {
+                    const allPriceRadio = document.querySelector('input[name="priceFilter"][value="all"]');
+                    if (allPriceRadio) allPriceRadio.checked = true;
+                    runFilterSoon();
+                });
+
+                input.addEventListener('change', runFilterNow);
+
+                input.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        runFilterNow();
+                        input.blur();
+                    }
+                });
+            });
+
+            document.querySelectorAll('.btn-go').forEach(btn => {
+                if (btn.dataset.instantFilterReady === "true") return;
+                btn.dataset.instantFilterReady = "true";
+                btn.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    runFilterNow();
+                });
+            });
+
+            priceRadios.forEach(radio => {
+                if (radio.dataset.instantFilterReady === "true") return;
+                radio.dataset.instantFilterReady = "true";
+                radio.addEventListener('change', () => {
+                    if (radio.checked && radio.value !== 'all') {
+                        if (minInput) minInput.value = "";
+                        if (maxInput) maxInput.value = "";
+                    }
+                    runFilterNow();
+                });
+            });
+
+            ratingRadios.forEach(radio => {
+                if (radio.dataset.instantFilterReady === "true") return;
+                radio.dataset.instantFilterReady = "true";
+                radio.addEventListener('change', runFilterNow);
+            });
+        }
+
         function applySidebarFilterLogic() {
-            const priceVal = document.querySelector('input[name="priceFilter"]:checked').value;
-            const rateVal = document.querySelector('input[name="ratingFilter"]:checked').value;
-            const cMin = parseFloat(document.getElementById('customMinPrice').value);
-            const cMax = parseFloat(document.getElementById('customMaxPrice').value);
+            const checkedPrice = document.querySelector('input[name="priceFilter"]:checked');
+            const checkedRating = document.querySelector('input[name="ratingFilter"]:checked');
+            const priceVal = checkedPrice ? checkedPrice.value : 'all';
+            const rateVal = checkedRating ? checkedRating.value : 'all';
+            const customRange = readCustomPriceRange();
             
             let filtered = getLightProducts();
             
-            const dInput = document.getElementById("desktopSearchInput").value.toLowerCase().trim();
-            const mInput = document.getElementById("mobileSearchInput").value.toLowerCase().trim();
+            const dInput = (document.getElementById("desktopSearchInput")?.value || "").toLowerCase().trim();
+            const mInput = (document.getElementById("mobileSearchInput")?.value || "").toLowerCase().trim();
             const query = dInput || mInput;
             
             if (query !== "") {
@@ -1503,7 +1730,6 @@ window.loadMoreProducts = function(batchCount = SCROLL_BATCH) {
                 
                 document.getElementById('mainBannerSection').classList.add('hidden-by-search');
                 document.getElementById('productShelf').classList.add('list-view');
-                // The Filter Container ALWAYS stays visible now.
                 document.getElementById('recentlyViewedContainer').style.display = 'none';
             } else {
                 document.getElementById('mainBannerSection').classList.remove('hidden-by-search');
@@ -1511,13 +1737,15 @@ window.loadMoreProducts = function(batchCount = SCROLL_BATCH) {
                 if(recentlyViewed.length > 0) document.getElementById('recentlyViewedContainer').style.display = 'block';
             }
 
-            if(!isNaN(cMin) && !isNaN(cMax) && cMax >= cMin) {
-                filtered = filtered.filter(p => Number(p.price) >= cMin && Number(p.price) <= cMax);
-                document.querySelector('input[name="priceFilter"][value="all"]').checked = true;
+            if(customRange.hasCustom) {
+                filtered = filtered.filter(p => {
+                    const price = Number(p.price || 0);
+                    return Number.isFinite(price) && price >= customRange.min && price <= customRange.max;
+                });
+                const allPriceRadio = document.querySelector('input[name="priceFilter"][value="all"]');
+                if (allPriceRadio) allPriceRadio.checked = true;
             } else if(priceVal !== 'all') {
-                document.getElementById('customMinPrice').value = "";
-                document.getElementById('customMaxPrice').value = "";
-                filtered = filtered.filter(p => Number(p.price) <= Number(priceVal));
+                filtered = filtered.filter(p => Number(p.price || 0) <= Number(priceVal));
             }
             
             if(rateVal === 'new') {
@@ -1526,7 +1754,7 @@ window.loadMoreProducts = function(batchCount = SCROLL_BATCH) {
                 filtered = filtered.filter(p => Number(p.avgRating) >= Number(rateVal));
             }
 
-            if(priceVal !== 'all' || rateVal !== 'all' || (!isNaN(cMin) && !isNaN(cMax))) {
+            if(priceVal !== 'all' || rateVal !== 'all' || customRange.hasCustom) {
                 document.getElementById('activeFilterNotice').style.display = 'block';
             } else {
                 document.getElementById('activeFilterNotice').style.display = 'none';
@@ -2011,6 +2239,9 @@ function enableRecentViewedScroll() {
     let isDown = false;
     let startX = 0;
     let scrollLeft = 0;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let draggedByTouch = false;
 
     scroller.addEventListener("mousedown", (e) => {
         isDown = true;
@@ -2034,8 +2265,34 @@ function enableRecentViewedScroll() {
         e.preventDefault();
         const x = e.pageX - scroller.offsetLeft;
         const walk = (x - startX) * 1.4;
+        if (Math.abs(walk) > 4) scroller.dataset.draggingClick = "true";
         scroller.scrollLeft = scrollLeft - walk;
     });
+
+    scroller.addEventListener("touchstart", (e) => {
+        const t = e.touches && e.touches[0];
+        if (!t) return;
+        touchStartX = t.clientX;
+        touchStartY = t.clientY;
+        draggedByTouch = false;
+    }, { passive: true });
+
+    scroller.addEventListener("touchmove", (e) => {
+        const t = e.touches && e.touches[0];
+        if (!t) return;
+        const dx = Math.abs(t.clientX - touchStartX);
+        const dy = Math.abs(t.clientY - touchStartY);
+        if (dx > 8 && dx > dy) draggedByTouch = true;
+    }, { passive: true });
+
+    scroller.addEventListener("click", (e) => {
+        if (draggedByTouch || scroller.dataset.draggingClick === "true") {
+            e.preventDefault();
+            e.stopPropagation();
+            scroller.dataset.draggingClick = "false";
+            draggedByTouch = false;
+        }
+    }, true);
 }
 
         function openSidebar(id = 'sidebar') { 
@@ -2111,6 +2368,7 @@ function enableRecentViewedScroll() {
             if(loaderTarget) infiniteScrollObserver.observe(loaderTarget);
 
             attachHorizontalScroll('recentShelfScroll');
+            attachHorizontalScroll('categoriesDisplayContainer');
         }
 
         function mathScientificFuzzyMatch(str, pattern) {
