@@ -86,7 +86,9 @@
             <div style="border-top: 1px solid var(--border-color); margin: 15px 20px;"></div>
             
             <div class="nav-item" onclick="showSection('inventory')"><i class="fas fa-box-open"></i> My Inventory</div>
-            <div class="nav-item" onclick="showSection('productPerformance')"><i class="fas fa-chart-line" style="color:#8b5cf6;"></i> Product Performance</div>
+            <div class="nav-item" onclick="showSection('lowStock')"><i class="fas fa-boxes-stacked" style="color:#ef4444;"></i> Low Stock Items <span id="badge-low-stock" class="nav-badge" style="background:#ef4444;">0</span></div>
+            <div class="nav-item" onclick="showSection('performance')"><i class="fas fa-chart-line" style="color:#7c3aed;"></i> Product Performance</div>
+            <div class="nav-item" onclick="showSection('returnTracking')"><i class="fas fa-location-crosshairs" style="color:#0ea5e9;"></i> Return Tracking</div>
             <div class="nav-item" onclick="showSection('newOrders')"><i class="fas fa-bell" style="color: var(--warning);"></i> New Orders <span id="badge-new-orders" class="nav-badge" style="background:var(--warning);">0</span></div>
             <div class="nav-item" onclick="showSection('breached')"><i class="fas fa-triangle-exclamation" style="color: var(--danger);"></i> Breached <span id="badge-breached" class="nav-badge" style="background:var(--danger);">0</span></div>
             <div class="nav-item" onclick="showSection('acceptedOrders')"><i class="fas fa-check-square" style="color: #60a5fa;"></i> Accepted Orders <span id="badge-accepted" class="nav-badge" style="background:#3b82f6;">0</span></div>
@@ -100,7 +102,6 @@
             
             <div class="nav-item" onclick="showSection('history')" style="margin-top:15px;"><i class="fas fa-history"></i> Order History</div>
             <div class="nav-item" onclick="showSection('returns')"><i class="fas fa-undo" style="color: var(--danger);"></i> Returns/Cancels</div>
-            <div class="nav-item" onclick="showSection('returnTracking')"><i class="fas fa-route" style="color:#14b8a6;"></i> Return Tracking</div>
             
             <div style="border-top: 1px solid var(--border-color); margin: 15px 20px;"></div>
             
@@ -108,7 +109,6 @@
             <div class="nav-item" onclick="showSection('payments')"><i class="fas fa-wallet" style="color: var(--success);"></i> Payments Ledger</div>
             <div class="nav-item" onclick="showSection('ads')"><i class="fas fa-bullhorn" style="color: #f472b6;"></i> Sponsored Ads</div>
             <div class="nav-item" onclick="showSection('subscription')"><i class="fas fa-crown" style="color: var(--warning);"></i> Subscriptions</div>
-            <div class="nav-item" onclick="showSection('achievements')"><i class="fas fa-trophy" style="color:#f59e0b;"></i> Achievements <span id="badge-achievements" class="nav-badge" style="background:#f59e0b;">0</span></div>
             
             <div style="border-top: 1px solid var(--border-color); margin: 15px 20px;"></div>
             
@@ -132,9 +132,6 @@
                             <div class="topbar-title mobile-hide">Hub <span id="sellerGreeting" style="color: var(--primary); font-size: 14px; font-weight:700;"></span></div>
                             <button type="button" class="topbar-icon-btn" onclick="showSection('settings')" aria-label="Settings" title="Settings">
                                 <i class="fas fa-cog"></i>
-                            </button>
-                            <button type="button" class="topbar-icon-btn" id="topbarNotifBtn" onclick="showSection('notifications')" aria-label="Notifications" title="Notifications">
-                                <i class="fas fa-bell"></i><span id="topbarNotifBadge" class="nav-badge">0</span>
                             </button>
                         </div>
                         <div class="topbar-actions">
@@ -166,7 +163,7 @@
                         </div>
                     </div>
 
-                    <div class="stats-grid">
+                    <div class="stats-grid dashboard-two-grid">
                         <div class="stat-card" style="background:#fdf4ff; border-color:#f5d0fe;">
                             <div class="smart-badge" style="background:var(--primary);">TODAY</div>
                             <h3 id="smartDailyOrders" style="color:var(--text-main);">0</h3>
@@ -182,24 +179,24 @@
                             <h3 id="stat-total-inventory" style="color:var(--danger);">0</h3>
                             <p style="color:var(--text-light);">Live SKUs <span id="smartRestock" style="color:var(--danger); font-weight:bold; margin-left:5px;"></span></p>
                         </div>
-                        <div class="stat-card" style="background:#f0fdfa; border-color:#a7f3d0;">
-                            <div class="smart-badge" style="background:var(--success);">AUDIENCE</div>
-                            <h3 id="stat-followers" style="color:var(--success);">0</h3>
-                            <p style="color:var(--text-light);">Store Total Followers</p>
-                        </div>
                     </div>
 
-                    <div class="stats-grid mt-20">
+                    <div class="stats-grid dashboard-two-grid mt-20">
                         <div class="stat-card"><h3 id="stat-total-pay" style="color:var(--success);">₹0</h3><p>Total Revenue (Delivered)</p></div>
                         <div class="stat-card"><h3 id="stat-pending-pay" style="color:#3b82f6;">₹0</h3><p>Upcoming Payouts</p></div>
                     </div>
                     
-                    <div class="stats-grid mt-20" id="dashboardProductIntelligence">
-                        <div class="stat-card"><div class="smart-badge" style="background:#8b5cf6;">VIEWS</div><h3 id="stat-product-views">0</h3><p>Total Product Views</p></div>
-                    </div>
-
-                    <div class="panel-box mt-20">
-                        <h4 style="margin-bottom: 20px; font-size:18px; font-weight:800;">7-Day Sales Trend</h4>
+                    <div class="panel-box mt-20 sales-trend-panel">
+                        <div class="chart-head-row">
+                            <div>
+                                <h4>7-Day Order Trend</h4>
+                                <p>Total seller orders vs cancelled/return orders from live DB.</p>
+                            </div>
+                            <div class="chart-legend-mini">
+                                <span><b class="dot orders"></b> Orders</span>
+                                <span><b class="dot cancel"></b> Cancelled/Returns</span>
+                            </div>
+                        </div>
                         <div style="position: relative; height: 250px; width: 100%;"><canvas id="salesChart"></canvas></div>
                     </div>
                 </section>
@@ -213,7 +210,7 @@
                         <h4 style="font-size:18px; font-weight:800; margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">Bank Settlement Details</h4>
                         <div style="max-width:400px; margin-bottom:30px;">
                             <label>IFSC Code</label><input type="text" id="profIfsc" class="input-field" placeholder="Enter IFSC">
-                            <label>Account Number</label><input type="text" id="profAcc" class="input-field" placeholder="Enter Account No" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')">
+                            <label>Account Number</label><input type="text" id="profAcc" class="input-field" placeholder="Enter Account No">
                             <button class="btn-prime" onclick="updateBankDetails()"><i class="fas fa-save"></i> Save Bank Info</button>
                         </div>
 
@@ -235,7 +232,7 @@
                 <section id="inventorySection" class="data-section">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
                         <h3 style="font-size:24px; font-weight:800;"><i class="fas fa-box-open"></i> My Inventory</h3>
-                        <div class="header-button-row"><button class="btn-prime" onclick="openItemModal()"><i class="fas fa-plus"></i> Add New Product</button></div>
+                        <button class="btn-prime" onclick="openItemModal()"><i class="fas fa-plus"></i> Add New Product</button>
                     </div>
                     
                     
@@ -257,6 +254,41 @@
                 </section>
 
                 
+
+
+                <section id="lowStockSection" class="data-section">
+                    <div class="ary-page-head">
+                        <div>
+                            <h3><i class="fas fa-boxes-stacked"></i> Low Stock Items</h3>
+                            <p>Products with stock 7 or less. Stock update here will not send product to QC again.</p>
+                        </div>
+                        <button class="btn-outline" onclick="loadLowStockItems()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    </div>
+                    <div class="table-container"><table class="admin-table"><thead><tr><th>Product</th><th>SKU</th><th>Current Stock</th><th>Direct Update</th><th>Status</th></tr></thead><tbody id="lowStockList"></tbody></table></div>
+                </section>
+
+                <section id="performanceSection" class="data-section">
+                    <div class="ary-page-head">
+                        <div>
+                            <h3><i class="fas fa-chart-line"></i> Product Performance</h3>
+                            <p id="performancePlanText">Plan based analytics.</p>
+                        </div>
+                        <button class="btn-outline" onclick="loadProductPerformance()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    </div>
+                    <div id="productPerformanceBox"></div>
+                </section>
+
+                <section id="returnTrackingSection" class="data-section">
+                    <div class="ary-page-head">
+                        <div>
+                            <h3><i class="fas fa-location-crosshairs"></i> Return Tracking</h3>
+                            <p>Go, Pro and Ultra sellers can track returns, cancels and RTO items here.</p>
+                        </div>
+                        <button class="btn-outline" onclick="loadReturnTracking()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    </div>
+                    <div id="returnTrackingBox"></div>
+                </section>
+
                 <section id="newOrdersSection" class="data-section">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
                         <h3 style="color: var(--warning); font-size:24px; font-weight:800;"><i class="fas fa-bell"></i> New Orders Control</h3>
@@ -299,12 +331,14 @@
                     </div>
                     <div class="panel-box" style="padding:15px; margin-bottom: 15px; display:flex; align-items:center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
                         <div style="display:flex; align-items:center;">
-                            <input type="checkbox" id="selectAllAcc" class="custom-cb" onclick="toggleSelectAll('.cb-acc', this)"> 
+                            <input type="checkbox" id="selectAllAcc" class="custom-cb" onclick="toggleSelectAllAcc(this)"> 
                             <label for="selectAllAcc" style="margin:0 0 0 10px; font-size:14px; cursor:pointer; font-weight: bold;">Select All</label>
                         </div>
-                        <div style="display:flex; gap: 15px;">
-                            <button class="btn-prime" style="background:#3b82f6;" onclick="processSlips('print')"><i class="fas fa-print"></i> Print Standard Slips</button>
-                            <button class="btn-prime" style="background:#8b5cf6;" onclick="downloadShippingInvoice('bulk')"><i class="fas fa-rocket"></i> Generate Shiprocket</button>
+                        <div class="ship-merge-actions">
+                            <button class="btn-prime" style="background:#3b82f6;" onclick="processSlips('print')"><i class="fas fa-print"></i> Print Aryanta Invoice</button>
+                            <button class="btn-prime" style="background:#0f766e;" onclick="downloadShiprocketSlipsBulk()"><i class="fas fa-file-invoice"></i> Download All Slips</button>
+                            <button class="btn-prime" style="background:#8b5cf6;" onclick="downloadShiprocketManifestsBulk()"><i class="fas fa-file-signature"></i> Download All Manifests</button>
+                            <button class="btn-outline" onclick="downloadShippingInvoice('bulk')"><i class="fas fa-rocket"></i> Generate Pack Only</button>
                         </div>
                     </div>
                     <div class="table-container"><table class="admin-table"><thead><tr><th style="width: 50px;">Select</th><th>Order Date</th><th>Order Ref</th><th>Item Details</th><th>Action</th></tr></thead><tbody id="acceptedOrdersList"></tbody></table></div>
@@ -378,46 +412,72 @@
 
                 
                 <section id="adsSection" class="data-section">
-                    <div class="section-head-row">
-                        <div>
-                            <h3 style="color:#ec4899; font-size:24px; font-weight:800; margin-bottom:6px;"><i class="fas fa-bullhorn"></i> Sponsored Ads</h3>
-                            <p class="muted-line">Sponsored ads are controlled by admin subscription settings. Basic includes only 1 free 24-hour highlight by default.</p>
-                        </div>
-                        <button class="btn-outline" onclick="cleanupExpiredSponsoredAds(true)"><i class="fas fa-rotate"></i> Sync Expired Ads</button>
-                    </div>
-                    <div id="adsPlanBox" class="panel-box mini-plan-box">Loading subscription ad rules...</div>
-                    <div class="table-container"><table class="admin-table"><thead><tr><th>Product</th><th>Current Ad Status</th><th>24h Window</th><th>Action</th></tr></thead><tbody id="adsList"></tbody></table></div>
+                    <h3 style="color: #ec4899; font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-bullhorn"></i> Sponsored Ads</h3>
+                    <div class="table-container"><table class="admin-table"><thead><tr><th>Product</th><th>Price</th><th>Ad Status</th><th>Action</th></tr></thead><tbody id="adsList"></tbody></table></div>
                 </section>
 
                 
                 <section id="subscriptionSection" class="data-section">
-                    <div class="section-head-row">
-                        <div>
-                            <h3 style="color:var(--warning); font-size:24px; font-weight:900; margin-bottom:6px;"><i class="fas fa-crown"></i> Subscription Access</h3>
-                            <p class="muted-line"></p>
-                        </div>
-                        <div class="header-button-row">
-                          </div>
+                    <h3 style="color: var(--warning); font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-crown"></i> Aryanta Store Subscriptions</h3>
+                    <div class="panel-box" style="margin-bottom:18px; background:var(--surface-2);">
+                        <strong>Current plan:</strong> <span id="currentPlanBadge" class="badge-ui">Basic / Free</span>
+                        <p style="margin-top:8px; color:var(--text-light); font-weight:700;">Payment records are saved to Firestore payment ledger. Sponsored and subscription payout deductions are also recorded.</p>
                     </div>
-                    <div id="subscriptionAdminNotice" class="panel-box mini-plan-box">Loading subscription payment plans...</div>
-                    <div id="subscriptionCards" class="admin-plan-grid"></div>
-                    <div id="subscriptionHistoryBox" class="panel-box mt-20" style="display:none;"></div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:22px;">
+                        <div class="plan-card">
+                            <div class="plan-badge" style="background:var(--surface-2); color:var(--text-main);">Free</div>
+                            <h3 style="font-size:24px; font-weight:900;">Basic Plan</h3>
+                            <p class="plan-price">₹<span>0</span> <span>/ forever</span></p>
+                            <ul class="plan-features">
+                                <li><i class="fas fa-check-circle"></i> Seller dashboard access</li>
+                                <li><i class="fas fa-check-circle"></i> QC product submission</li>
+                                <li><i class="fas fa-check-circle"></i> 1 logo + 1 banner update/month</li>
+                                <li><i class="fas fa-check-circle"></i> 7.5% commission logic</li>
+                            </ul>
+                            <button class="btn-outline w-100" onclick="processSubscription('Basic','free')">Use Basic</button>
+                        </div>
+                        <div class="plan-card">
+                            <h3 style="font-size:24px; font-weight:900;">Go Plan</h3>
+                            <p class="plan-price">₹<span id="priceGo">199</span> <span>/ <span class="txtDuration">month</span></span></p>
+                            <ul class="plan-features">
+                                <li><i class="fas fa-check-circle"></i> Verified Seller Badge</li>
+                                <li><i class="fas fa-check-circle"></i> 1 logo + 3 banner updates/month</li>
+                                <li><i class="fas fa-check-circle"></i> Sponsored ad support</li>
+                                <li><i class="fas fa-check-circle"></i> Priority review visibility</li>
+                            </ul>
+                            <button class="btn-prime w-100" onclick="processSubscription('Go','online')">Pay Now</button>
+                            <button class="btn-outline w-100" id="btnSubPayoutGo" onclick="processSubscription('Go','payout')">Pay from Payout</button>
+                        </div>
+                        <div class="plan-card pro">
+                            <div class="plan-badge">Popular</div>
+                            <h3 style="font-size:24px; font-weight:900; color:var(--primary);">Pro Plan</h3>
+                            <p class="plan-price">₹<span id="pricePro">499</span> <span>/ <span class="txtDuration">month</span></span></p>
+                            <ul class="plan-features">
+                                <li><i class="fas fa-check-circle"></i> Premium Seller Badge</li>
+                                <li><i class="fas fa-check-circle"></i> 3 logo + 6 banner updates/month</li>
+                                <li><i class="fas fa-check-circle"></i> Faster seller support</li>
+                                <li><i class="fas fa-check-circle"></i> Pro sponsored handling</li>
+                            </ul>
+                            <button class="btn-prime w-100" onclick="processSubscription('Pro','online')">Pay Now</button>
+                            <button class="btn-outline w-100" id="btnSubPayoutPro" onclick="processSubscription('Pro','payout')">Pay from Payout</button>
+                        </div>
+                        <div class="plan-card ultra">
+                            <div class="plan-badge" style="background:#111827; color:white;">Ultra</div>
+                            <h3 style="font-size:24px; font-weight:900; color:#111827;">Ultra Plan</h3>
+                            <p class="plan-price">₹<span id="priceUltra">999</span> <span>/ <span class="txtDuration">month</span></span></p>
+                            <ul class="plan-features">
+                                <li><i class="fas fa-check-circle"></i> Highest brand limits</li>
+                                <li><i class="fas fa-check-circle"></i> Premium sponsored workflow</li>
+                                <li><i class="fas fa-check-circle"></i> Advanced warranty support</li>
+                                <li><i class="fas fa-check-circle"></i> Top support routing</li>
+                            </ul>
+                            <button class="btn-prime w-100" onclick="processSubscription('Ultra','online')">Pay Now</button>
+                            <button class="btn-outline w-100" id="btnSubPayoutUltra" onclick="processSubscription('Ultra','payout')">Pay from Payout</button>
+                        </div>
+                    </div>
                 </section>
 
                 
-
-                <section id="achievementsSection" class="data-section">
-                    <div class="section-head-row">
-                        <div>
-                            <h3 style="font-size:24px;font-weight:900;color:#f59e0b;"><i class="fas fa-trophy"></i> Seller Achievements</h3>
-                            <p class="muted-line">Unlock seller powers, free sponsored slots and subscription reward requests as your Aryanta store grows.</p>
-                        </div>
-                        <button class="btn-outline" onclick="loadAchievements()"><i class="fas fa-sync"></i> Refresh</button>
-                    </div>
-                    <div id="achievementsSummary" class="ary-achievement-summary"></div>
-                    <div id="achievementsGrid" class="ary-achievement-grid"></div>
-                </section>
-
                 <section id="tutorialSection" class="data-section">
                     <h3 style="color: #c026d3; font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-video"></i> Guide & Resources</h3>
                     <div id="tutorialContentList" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:20px;">
@@ -431,7 +491,11 @@
                     <div class="panel-box" style="background:#eff6ff; border-color:#bfdbfe;">
                         <p style="font-size: 14px; color: #1e3a8a; font-weight:600; margin:0;">Any questions asked by customers on your product page will appear here for you to answer publicly.</p>
                     </div>
-                    <div id="aryQnaToolbar" class="ary-qna-toolbar"><button class="cat-pill active" id="qna-filter-new" onclick="setQnaFilter('new')"><i class="fas fa-circle-question"></i> New Questions</button><button class="cat-pill" id="qna-filter-answered" onclick="setQnaFilter('answered')"><i class="fas fa-check-circle"></i> Answered Ques</button><button class="cat-pill" id="qna-filter-all" onclick="setQnaFilter('all')"><i class="fas fa-layer-group"></i> All</button></div>
+                    <div class="ary-qna-filter-bar">
+                        <button type="button" class="ary-filter-pill active" id="qnaFilterAll" onclick="filterQna('All')"><i class="fas fa-layer-group"></i> All</button>
+                        <button type="button" class="ary-filter-pill" id="qnaFilterPending" onclick="filterQna('Pending')"><i class="fas fa-hourglass-half"></i> Pending</button>
+                        <button type="button" class="ary-filter-pill" id="qnaFilterAnswered" onclick="filterQna('Answered')"><i class="fas fa-circle-check"></i> Answered</button>
+                    </div>
                     <div class="table-container"><table class="admin-table"><thead><tr><th>Product</th><th>Customer Question & Your Answer</th><th>Status</th><th>Action</th></tr></thead><tbody id="qnaList"></tbody></table></div>
                 </section>
 
@@ -450,7 +514,7 @@
                     <div class="panel-box" style="max-width: 600px;">
                         <form onsubmit="event.preventDefault(); submitSupportTicket();">
                             <label>Issue Category</label>
-                            <select id="supCategory" class="input-field" required onchange="handleSupportCategoryChange()">
+                            <select id="supCategory" class="input-field" required>
                                 <option value="">-- Select Issue Type --</option>
                                 <option value="Payment/Payout Issue">Payment/Payout Issue</option>
                                 <option value="Order Cancellation Dispute">Order Cancellation Dispute</option>
@@ -459,16 +523,10 @@
                                 <option value="Customer Fraud">Customer Fraud / Dispute</option>
                                 <option value="Other">Other / General Query</option>
                             </select>
-                            <div id="supportIssueDetailBox" class="support-config-box" style="display:none;"></div>
-                            <div id="supportAttachmentBox" class="support-attach-box" style="display:none;">
-                                <label id="supportImageLabel" style="display:none;">Upload Image / Screenshot</label>
-                                <input type="file" id="supImage" class="input-field" accept="image/*" multiple style="display:none;">
-                                <label id="supportDocLabel" style="display:none;">Upload Document</label>
-                                <input type="file" id="supDoc" class="input-field" accept="image/*,.pdf,.doc,.docx" multiple style="display:none;">
-                                <button type="button" id="supportSkipDocBtn" class="btn-outline" style="display:none; margin-bottom:10px;" onclick="skipSupportDocument()"><i class="fas fa-forward"></i> Skip optional upload</button>
-                            </div>
                             <label>Callback Phone Number</label><input type="text" id="supPhone" class="input-field" required>
                             <label>Detailed Issue Description</label><textarea id="supDesc" class="input-field" style="height: 120px;" required></textarea>
+                            <label>Upload Proofs / Documents</label><input type="file" id="supFiles" class="input-field" multiple accept="image/*,.pdf,.doc,.docx">
+                            <div class="ary-muted">Attach images, PDF or documents for admin support.</div>
                             <button type="submit" class="btn-prime w-100" style="background:var(--warning); font-size:16px; padding:15px;">Raise Ticket securely</button>
                         </form>
                     </div>
@@ -483,22 +541,7 @@
                 </section>
 
                 
-
-                <section id="returnTrackingSection" class="data-section">
-                    <div class="section-head-row"><div><h3 style="font-size:24px;font-weight:900;color:#0f766e;"><i class="fas fa-route"></i> Return Tracking</h3><p class="muted-line">Delivered orders and cancelled-after-dispatch items appear here with 15-day/admin return window.</p></div><button class="btn-outline" onclick="loadReturnTracking()"><i class="fas fa-sync"></i> Refresh</button></div>
-                    <div id="returnTrackingList" class="return-grid"></div>
-                </section>
-
-                <section id="productPerformanceSection" class="data-section">
-                    <div class="section-head-row"><div><h3 style="font-size:24px;font-weight:900;color:#7c3aed;"><i class="fas fa-chart-line"></i> Product Performance</h3><p class="muted-line">Filter items from top-selling to loss-making, with delivered, cancelled, return and view stats.</p></div><button class="btn-outline" onclick="loadProductPerformance()"><i class="fas fa-sync"></i> Refresh</button></div>
-                    <div class="category-scroll-wrapper"><div class="category-filters">
-                        <button class="cat-pill active" id="perf-filter-all" onclick="setProductPerformanceFilter('all')"><i class="fas fa-layer-group"></i> All Products</button>
-                        <button class="cat-pill" id="perf-filter-top" onclick="setProductPerformanceFilter('top')"><i class="fas fa-arrow-trend-up"></i> Top Selling Items</button>
-                        <button class="cat-pill" id="perf-filter-loss" onclick="setProductPerformanceFilter('loss')"><i class="fas fa-arrow-trend-down"></i> All Loss / Loose Items</button>
-                    </div></div>
-                    <div id="productPerformanceList" class="performance-grid"></div>
-                </section>
-<section id="settingsSection" class="data-section">
+                <section id="settingsSection" class="data-section">
 
     <div class="settings-hero">
         <h2><i class="fas fa-cog"></i> Hub Configuration</h2>
@@ -776,15 +819,33 @@
                     <div><label>Selling Price (₹)</label><input type="number" id="itemPrice" class="input-field" required></div>
                 </div>
 
-                <div class="package-dim-box">
-                    <div class="package-dim-title"><i class="fas fa-box"></i> Package Details for Shiprocket</div>
-                    <p class="muted-line">Required for Shiprocket invoice/label generation. Use packed parcel size, not only product size.</p>
-                    <div class="package-dim-grid">
-                        <div><label>Package weight in kg</label><input type="number" step="0.01" min="0.01" id="itemPackageWeightKg" class="input-field" placeholder="Example: 0.50" required></div>
-                        <div><label>Package length in cm</label><input type="number" step="0.1" min="1" id="itemPackageLengthCm" class="input-field" placeholder="Example: 20" required></div>
-                        <div><label>Package breadth in cm</label><input type="number" step="0.1" min="1" id="itemPackageBreadthCm" class="input-field" placeholder="Example: 15" required></div>
-                        <div><label>Package height in cm</label><input type="number" step="0.1" min="1" id="itemPackageHeightCm" class="input-field" placeholder="Example: 8" required></div>
+                <div class="ary-package-box" id="aryPackageBox">
+                    <div class="ary-package-head">
+                        <i class="fas fa-box-open"></i>
+                        <div>
+                            <strong>Parcel & Delivery Package Details</strong>
+                            <span>Required for courier label, invoice and pickup processing. Enter packed parcel size.</span>
+                        </div>
                     </div>
+                    <div class="ary-package-grid">
+                        <div>
+                            <label>Package Weight (kg)</label>
+                            <input type="number" step="0.01" min="0.01" id="itemPackageWeightKg" class="input-field" placeholder="Example: 0.50" required>
+                        </div>
+                        <div>
+                            <label>Length (cm)</label>
+                            <input type="number" step="0.1" min="1" id="itemPackageLengthCm" class="input-field" placeholder="Example: 20" required>
+                        </div>
+                        <div>
+                            <label>Breadth / Width (cm)</label>
+                            <input type="number" step="0.1" min="1" id="itemPackageBreadthCm" class="input-field" placeholder="Example: 15" required>
+                        </div>
+                        <div>
+                            <label>Height (cm)</label>
+                            <input type="number" step="0.1" min="1" id="itemPackageHeightCm" class="input-field" placeholder="Example: 8" required>
+                        </div>
+                    </div>
+                    <p class="ary-package-note"><i class="fas fa-circle-info"></i> Use the final packed parcel measurement, not only product size.</p>
                 </div>
 
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
@@ -958,13 +1019,14 @@
                 <h3 style="font-size:24px; font-weight:800; margin-bottom:15px;">Shipping & Payment</h3>
                 <button class="btn-outline" style="margin-bottom:15px; padding:8px 12px;" onclick="goToB2bStep1()"><i class="fas fa-arrow-left"></i> Back</button>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                    <div><label>Order Qty (MOQ: <span id="b2bMoqLabel"></span>)</label><input type="number" id="b2bBuyQty" class="input-field" required></div>
+                    <div><label>Order Qty (MOQ: <span id="b2bMoqLabel"></span>)</label><input type="number" id="b2bBuyQty" class="input-field" required oninput="calcB2bTotal()"></div>
                     <div><label>Total Price (+₹70 Ship)</label><input type="text" id="b2bBuyTotal" class="input-field" disabled style="font-weight:bold; color:var(--primary);"></div>
                 </div>
                 <label>Full Shipping Address</label><input type="text" id="b2bBuyAddress" class="input-field" required>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
                     <div><label>City</label><input type="text" id="b2bBuyCity" class="input-field" required></div>
-                    <div><label>Pincode</label><input type="text" id="b2bBuyPin" class="input-field" required></div>
+                    <div><label>State</label><input type="text" id="b2bBuyState" class="input-field" required></div>
+                    <div><label>Pincode</label><input type="text" id="b2bBuyPin" class="input-field" required maxlength="6" inputmode="numeric"></div>
                 </div>
                 <button class="btn-prime w-100" style="background:var(--success); margin-bottom:10px; padding:15px;" onclick="processB2bBuy('online')">Pay Online (Razorpay)</button>
                 <button class="btn-prime w-100" style="background:var(--primary); padding:15px;" id="b2bPayoutBtn" onclick="processB2bBuy('payout')">Pay via Upcoming Payout</button>
@@ -1005,8 +1067,32 @@
     </div>
 
     
+
+    <div class="modal" id="profileEditModal">
+        <div class="modal-content ary-profile-edit-modal">
+            <span class="close-modal" onclick="closeModal('profileEditModal')"><i class="fas fa-times"></i></span>
+            <h3><i class="fas fa-user-pen"></i> Edit Profile Details</h3>
+            <p class="ary-muted">Email change needs OTP confirmation. Bank, phone, logo and banner changes are saved after OTP verification.</p>
+            <div class="ary-form-grid">
+                <div><label>Phone Number</label><input type="text" id="editSellerPhone" class="input-field" placeholder="Phone number"></div>
+                <div><label>Bank Account Number</label><input type="text" id="editSellerBank" class="input-field" placeholder="Account number"></div>
+                <div><label>IFSC Code</label><input type="text" id="editSellerIfsc" class="input-field" placeholder="IFSC code"></div>
+                <div><label>New Email</label><input type="email" id="editSellerEmail" class="input-field" placeholder="Email address"></div>
+            </div>
+            <div class="ary-brand-edit-row">
+                <div><label>Shop Logo</label><input type="file" id="editShopLogo" class="input-field" accept="image/*"></div>
+                <div><label>Shop Banner</label><input type="file" id="editShopBanner" class="input-field" accept="image/*"></div>
+            </div>
+            <div id="profileOtpBox" style="display:none;" class="ary-otp-box">
+                <label>OTP Confirmation</label><input type="text" id="profileEditOtp" class="input-field" maxlength="6" placeholder="Enter OTP">
+                <button class="btn-prime" onclick="verifyProfileEditOtp()"><i class="fas fa-check-circle"></i> Verify & Save</button>
+            </div>
+            <button class="btn-prime w-100" onclick="sendProfileEditOtp()"><i class="fas fa-paper-plane"></i> Send OTP & Continue</button>
+        </div>
+    </div>
+
     <div class="modal" id="notificationDetailModal">
-        <div class="modal-content" style="width: 500px;">
+        <div class="modal-content notification-modal-content" style="width: min(560px, 94vw);">
             <span class="close-modal" onclick="closeModal('notificationDetailModal')"><i class="fas fa-times"></i></span>
             <h3 style="font-size:24px; font-weight:800; margin-bottom:20px;">System Notice</h3>
             <div id="notifDetailContent"></div>
@@ -1070,66 +1156,27 @@
 
     
 
-    <div class="modal" id="returnClaimModal">
-        <div class="modal-content" style="width:560px;">
-            <span class="close-modal" onclick="closeModal('returnClaimModal')"><i class="fas fa-times"></i></span>
-            <h3 style="font-size:24px;font-weight:900;margin-bottom:15px;"><i class="fas fa-undo"></i> Claim Return</h3>
-            <input type="hidden" id="returnClaimOrderId"><input type="hidden" id="returnClaimProductId">
-            <label>Claim Title</label><input id="returnClaimTitle" class="input-field" placeholder="Example: Product returned damaged" required>
-            <label>Message to Admin</label><textarea id="returnClaimMessage" class="input-field" style="height:110px;" placeholder="Explain the issue clearly" required></textarea>
-            <label>Upload Proof Image</label><input id="returnClaimImage" type="file" class="input-field" accept="image/*">
-            <button class="btn-prime w-100" onclick="submitReturnClaim()"><i class="fas fa-paper-plane"></i> Send Claim Request</button>
-        </div>
-    </div>
-    <div class="modal" id="adminPopupModal">
-        <div class="modal-content" style="width:520px;text-align:center;">
-            <span class="close-modal" onclick="closeModal('adminPopupModal')"><i class="fas fa-times"></i></span>
-            <h3 id="adminPopupTitle" style="font-size:24px;font-weight:900;margin-bottom:12px;">Aryanta Notice</h3>
-            <p id="adminPopupMessage" style="font-size:15px;line-height:1.7;font-weight:700;color:var(--text-light);"></p>
-            <button class="btn-prime w-100" onclick="closeModal('adminPopupModal')">Okay</button>
-        </div>
-    </div>
-
-    
-    <!-- Aryanta Shiprocket/support fixed UI mounts - 2026-05-23 -->
-    <div id="aryantaShiprocketSheet" class="shiprocket-bottom-sheet" aria-live="polite">
-        <div class="shiprocket-sheet-card">
-            <div class="shiprocket-sheet-head">
+    <div id="shipProcessSheet" class="ship-process-overlay" aria-hidden="true">
+        <div class="ship-process-card">
+            <div class="ship-process-handle"></div>
+            <div class="ship-process-head">
                 <div>
-                    <b><i class="fas fa-rocket"></i> Shiprocket Invoice</b>
-                    <small id="shiprocketSheetSub">Preparing secure PDF download</small>
+                    <div class="ship-process-kicker">Shipping Request</div>
+                    <h3 id="shipProcessTitle">Preparing dispatch</h3>
+                    <p id="shipProcessSub">Please keep this page open while we create the courier documents.</p>
                 </div>
-                <button type="button" class="shiprocket-sheet-close" onclick="hideShiprocketSheet()"><i class="fas fa-times"></i></button>
+                <button type="button" class="ship-process-close" onclick="closeShipProcessSheet()" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-            <div id="shiprocketSheetBody" class="shiprocket-sheet-body"></div>
-            <div class="shiprocket-progress"><span id="shiprocketProgressBar"></span></div>
-            <div class="shiprocket-sheet-actions">
-                <button type="button" class="btn-outline" onclick="hideShiprocketSheet()"><i class="fas fa-minimize"></i> Keep Working</button>
-                <button type="button" id="shiprocketDownloadBtn" class="btn-prime" style="display:none;"><i class="fas fa-download"></i> Download PDF</button>
-            </div>
+            <div class="ship-progress-bar"><span id="shipProcessBar"></span></div>
+            <div id="shipProcessSteps" class="ship-process-steps"></div>
+            <div id="shipMergeActions" class="ship-merge-actions"></div>
+            <div id="shipProcessLinks" class="ship-process-links"></div>
         </div>
     </div>
 
-    <div class="modal" id="supportQuickModal">
-        <div class="modal-content support-quick-modal">
-            <span class="close-modal" onclick="closeModal('supportQuickModal')"><i class="fas fa-times"></i></span>
-            <h3><i class="fas fa-headset"></i> Admin Support Request</h3>
-            <p class="muted-line" id="supportQuickTitle">Describe your problem. Aryanta admin can call you back.</p>
-            <input type="hidden" id="supportModalCategory">
-            <label>Callback phone number</label>
-            <input type="text" id="supportModalPhone" class="input-field" placeholder="Seller phone number">
-            <label>Problem description</label>
-            <textarea id="supportModalDesc" class="input-field" style="height:130px;" placeholder="Explain the issue clearly for admin."></textarea>
-            <div class="support-upload-row">
-                <label class="support-upload-chip"><i class="fas fa-image"></i> Image <input type="file" id="supportModalImage" accept="image/*" multiple></label>
-                <label class="support-upload-chip"><i class="fas fa-file"></i> Document <input type="file" id="supportModalDoc" accept="image/*,pdf,doc,docx,.pdf,.doc,.docx" multiple></label>
-            </div>
-            <button class="btn-prime w-100" onclick="submitSupportTicket()"><i class="fas fa-paper-plane"></i> Send to Admin</button>
-        </div>
-    </div>
-    <!-- End Aryanta Shiprocket/support fixed UI mounts - 2026-05-23 -->
-
-<div id="printArea" style="display:none;"></div>
+    <div id="printArea" style="display:none;"></div>
 
     <div id="toastContainer"></div>
 
@@ -1139,7 +1186,7 @@
             var input=document.getElementById(inputId), label=document.getElementById(labelId);
             if(label) label.textContent = input && input.files && input.files[0] ? input.files[0].name : 'No file selected';
         };
-        window.openHowToSellPage = window.openHowToSellPage || function(){ if(confirm('This page will redirect to another tab. Are you sure?')) window.open('https://aryanta.in/getdetails','_blank','noopener'); };
+        window.openHowToSellPage = function(){ window.open('https://aryanta.in/getdetails','_blank','noopener'); };
         window.addEventListener('DOMContentLoaded', function(){
             if (typeof applyAryantaUiFixes === 'function') applyAryantaUiFixes();
         });
