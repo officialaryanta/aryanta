@@ -2387,7 +2387,7 @@ window.downloadShippingInvoice = async function(orderId){
             status: keepStatus,
             orderStatus: keepStatus,
             shippingProvider:"Shiprocket",
-            shiprocketFullPackGenerated:true,
+            shiprocketFullPackGenerated:Boolean(docs.invoice || docs.label || docs.manifest),
             shiprocketOrderId:fpText(fpFirst(data.shiprocketOrderId, data.order_id, data.orderId)),
             shiprocketShipmentId:fpText(fpFirst(data.shipmentId, data.shipment_id, data.shiprocketShipmentId)),
             shipmentId:fpText(fpFirst(data.shipmentId, data.shipment_id, data.shiprocketShipmentId)),
@@ -6634,7 +6634,7 @@ window.loadTutorials = function() {
         const keepStatus = txt(first(order.status, order.orderStatus, 'Accepted'));
         const updates = {
             status: keepStatus, orderStatus: keepStatus, shippingProvider:'Shiprocket',
-            shiprocketFullPackGenerated:true, shiprocketFullPackRequested:true, shiprocketFullPackStatus:'ready',
+            shiprocketFullPackGenerated:Boolean(docs.invoice || docs.label || docs.manifest), shiprocketFullPackRequested:true, shiprocketFullPackStatus:'ready',
             shiprocketOrderId:docs.shiprocketOrderId, shiprocket_order_id:docs.shiprocketOrderId,
             shiprocketShipmentId:docs.shipmentId, shipmentId:docs.shipmentId, shipment_id:docs.shipmentId,
             shiprocketAwbCode:docs.awb, awbCode:docs.awb, awb_code:docs.awb,
@@ -7533,6 +7533,11 @@ window.loadTutorials = function() {
         return srTxt(srFirst(order && order.order_no, order && order.orderNo, order && order.id, `ARY-${Date.now()}`));
     }
     function srSafeId(v){ return srTxt(v).replace(/[^a-zA-Z0-9_-]/g,'_'); }
+    function srShiprocketId(v){
+        const s = srTxt(v);
+        // Shiprocket internal order_id and shipment_id are numeric. Aryanta/channel ids like ARY-69306988 must never be treated as Shiprocket ids.
+        return /^\d{4,}$/.test(s) ? s : '';
+    }
     function srFindOrder(id){
         const key = srTxt(id);
         const rows = (window.sellerOrders || (typeof sellerOrders !== 'undefined' ? sellerOrders : []) || []);
@@ -7548,8 +7553,8 @@ window.loadTutorials = function() {
             invoice: srTxt(srFirst(obj.shiprocketInvoicePdfUrl, obj.shiprocketInvoiceUrl, obj.invoiceUrl, obj.invoice_url, obj.shiprocketPdfUrl, obj.invoice && obj.invoice.invoiceUrl)),
             label: srTxt(srFirst(obj.shiprocketLabelPdfUrl, obj.shiprocketLabelUrl, obj.shippingLabelUrl, obj.labelUrl, obj.label_url, obj.waybillUrl, obj.label && obj.label.labelUrl)),
             manifest: srTxt(srFirst(obj.shiprocketManifestPdfUrl, obj.shiprocketManifestUrl, obj.manifestUrl, obj.manifest_url, obj.manifest && obj.manifest.manifestUrl)),
-            shiprocketOrderId: srTxt(srFirst(obj.shiprocketOrderId, obj.shiprocket_order_id, obj.order_id, obj.orderId)),
-            shipmentId: srTxt(srFirst(obj.shiprocketShipmentId, obj.shipmentId, obj.shipment_id, obj.shiprocket_shipment_id)),
+            shiprocketOrderId: srShiprocketId(srFirst(obj.shiprocketOrderId, obj.shiprocket_order_id, obj.shiprocketInternalOrderId, obj.shiprocket_internal_order_id)),
+            shipmentId: srShiprocketId(srFirst(obj.shiprocketShipmentId, obj.shipmentId, obj.shipment_id, obj.shiprocket_shipment_id)),
             awb: srTxt(srFirst(obj.shiprocketAwbCode, obj.awbCode, obj.awb_code, obj.awb))
         };
     }
@@ -7559,13 +7564,13 @@ window.loadTutorials = function() {
             invoice: srTxt(srFirst(data.invoiceUrl, data.invoice_url, data.shiprocketInvoicePdfUrl, data.shiprocketInvoiceUrl, data.shiprocketPdfUrl, data.updates && data.updates.shiprocketInvoicePdfUrl)),
             label: srTxt(srFirst(data.labelUrl, data.label_url, data.shippingLabelUrl, data.shiprocketLabelUrl, data.shiprocketLabelPdfUrl, data.updates && data.updates.shiprocketLabelUrl)),
             manifest: srTxt(srFirst(data.manifestUrl, data.manifest_url, data.shiprocketManifestUrl, data.shiprocketManifestPdfUrl, data.updates && data.updates.shiprocketManifestUrl)),
-            shiprocketOrderId: srTxt(srFirst(data.shiprocketOrderId, data.shiprocket_order_id, data.order_id, data.orderId, data.updates && data.updates.shiprocketOrderId)),
-            shipmentId: srTxt(srFirst(data.shipmentId, data.shipment_id, data.shiprocketShipmentId, data.shiprocket_shipment_id, data.updates && data.updates.shiprocketShipmentId)),
+            shiprocketOrderId: srShiprocketId(srFirst(data.shiprocketOrderId, data.shiprocket_order_id, data.updates && data.updates.shiprocketOrderId, data.order_id, data.orderId)),
+            shipmentId: srShiprocketId(srFirst(data.shipmentId, data.shipment_id, data.shiprocketShipmentId, data.shiprocket_shipment_id, data.updates && data.updates.shiprocketShipmentId)),
             awb: srTxt(srFirst(data.awbCode, data.awb_code, data.awb, data.shiprocketAwbCode, data.updates && data.updates.shiprocketAwbCode))
         };
     }
     function srCanOpen(d){ return Boolean(d && (d.invoice || d.label || d.manifest)); }
-    function srFullReady(d){ return Boolean(d && d.invoice && d.label && d.shiprocketOrderId && d.shipmentId && d.awb && d.manifest); }
+    function srFullReady(d){ return Boolean(d && d.label && (d.shiprocketOrderId || d.shipmentId)); }
     function srAddLink(label,url){
         if(!url) return;
         try{ if(typeof addShipProcessLink === 'function') addShipProcessLink(label,url); }catch(e){}
@@ -7586,7 +7591,7 @@ window.loadTutorials = function() {
         div.className = 'ship-process-error';
         let extra = '';
         if(data && Array.isArray(data.missing) && data.missing.length) extra += `<br><small>Missing: ${srHtml(data.missing.join(', '))}</small>`;
-        if(data && data.shiprocketOrderId) extra += `<br><small>Shiprocket Order ID: ${srHtml(data.shiprocketOrderId)}</small>`;
+        if(data && srShiprocketId(data.shiprocketOrderId)) extra += `<br><small>Shiprocket Order ID: ${srHtml(srShiprocketId(data.shiprocketOrderId))}</small>`;
         if(data && data.shipmentId) extra += `<br><small>Shipment ID: ${srHtml(data.shipmentId)}</small>`;
         div.innerHTML = `<b>${srHtml(srOrderNo(order))}</b>: ${srHtml(msg)}${extra}`;
         box.appendChild(div);
@@ -7657,7 +7662,7 @@ window.loadTutorials = function() {
             status: keepStatus,
             orderStatus: keepStatus,
             shippingProvider:'Shiprocket',
-            shiprocketFullPackGenerated:true,
+            shiprocketFullPackGenerated:Boolean(docs.invoice || docs.label || docs.manifest),
             shiprocketFullPackRequested:true,
             shiprocketFullPackStatus: docs.manifest ? 'ready' : 'documents_ready',
             shiprocketOrderId: docs.shiprocketOrderId,
@@ -7730,7 +7735,8 @@ window.loadTutorials = function() {
         srProgress('create','running',`Order ${index}/${total}: requesting idempotent full-pack`,45);
         const res = await fetch(FULL_PACK_URL,{method:'POST',mode:'cors',cache:'no-store',headers:{'Content-Type':'application/json','Accept':'application/json','X-Requested-With':'AryantaSellerPanel'},body:JSON.stringify(payload)});
         const data = await srReadJson(res);
-        if(!res.ok || data.success === false){
+        const pendingButSaved = res.status === 202 && data && data.documentsPending;
+        if((!res.ok || data.success === false) && !pendingButSaved){
             const msg = srErrorMessage(data, `Shiprocket full-pack failed with ${res.status}`);
             await srSaveFailure(order,payload,data,msg);
             console.error('Aryanta Shiprocket idempotent full-pack failed',{status:res.status,data,payload});
@@ -7740,14 +7746,21 @@ window.loadTutorials = function() {
         if(!(docs.shiprocketOrderId || docs.shipmentId || docs.invoice || docs.label || docs.manifest)){
             const msg = 'Shiprocket did not return any saved order/document reference. Retry blocked to prevent duplicate order.';
             await srSaveFailure(order,payload,data,msg);
+            console.error('Aryanta Shiprocket full-pack returned no reusable reference',{status:res.status,data,payload});
             throw Object.assign(new Error(msg),{data});
         }
         await srSaveSuccess(order,payload,data,docs);
         if(docs.invoice) srAddLink(`Open invoice - ${srOrderNo(order)}`, docs.invoice);
         if(docs.label) srAddLink(`Open top label - ${srOrderNo(order)}`, docs.label);
         if(docs.manifest) srAddLink(`Open manifest - ${srOrderNo(order)}`, docs.manifest);
-        srProgress('save','done',`Order ${index}/${total}: saved Shiprocket document URLs`,88);
-        return {order,data,docs,reused:Boolean(data.reused)};
+        if(pendingButSaved || !docs.label){
+            const msg = srErrorMessage(data, 'Shiprocket IDs were saved, but shipping label PDF is still pending. Retry this button after a few seconds.');
+            srAddError(order,msg,data);
+            srProgress('save','done',`Order ${index}/${total}: Shiprocket IDs saved; label PDF pending`,88);
+            return {order,data,docs,reused:Boolean(data.reused),pending:true,message:msg};
+        }
+        srProgress('save','done',`Order ${index}/${total}: saved Shiprocket label/invoice URLs`,88);
+        return {order,data,docs,reused:Boolean(data.reused),pending:false};
     }
 
     window.callShiprocketFullPack = srCreateFullPack;
@@ -7771,7 +7784,11 @@ window.loadTutorials = function() {
             try{
                 const result = await srCreateFullPack(order,i+1,orders.length);
                 ok.push(result);
-                srProgress('create','done',`Order ${i+1}/${orders.length}: invoice/label URLs ready`,65);
+                if(result.pending || !(result.docs && result.docs.label)){
+                    srProgress('create','error',`Order ${i+1}/${orders.length}: Shiprocket record saved, label PDF pending`,65);
+                }else{
+                    srProgress('create','done',`Order ${i+1}/${orders.length}: shipping label URL ready`,65);
+                }
             }catch(e){
                 const msg = e && e.message ? e.message : String(e);
                 failed.push({order,error:msg,data:e && e.data});
@@ -7779,14 +7796,19 @@ window.loadTutorials = function() {
                 srAddError(order,msg,e && e.data);
             }
         }
+        const pending = ok.filter(x => x && (x.pending || !(x.docs && x.docs.label)));
         if(failed.length){
             if(sub) sub.innerText = `${ok.length} completed, ${failed.length} failed. Error details saved in shiprocket_document_recovery_requests.`;
             srProgress('done','error','Some Shiprocket documents failed',100);
             srToast(`${failed.length} Shiprocket pack failed.`, 'error');
+        }else if(pending.length){
+            if(sub) sub.innerText = `${ok.length - pending.length} label ready, ${pending.length} saved but label PDF pending. Retry this button; no duplicate Shiprocket order will be created.`;
+            srProgress('done','error','Some Shiprocket labels are pending',100);
+            srToast(`${pending.length} Shiprocket record saved, but label PDF is pending.`, 'warning');
         }else{
-            if(sub) sub.innerText = 'Shiprocket document URLs are saved/reused. Accepted status was preserved.';
+            if(sub) sub.innerText = 'Shiprocket shipping label URLs are saved/reused. Accepted status was preserved.';
             srProgress('done','done','Completed successfully',100);
-            srToast('Shiprocket invoice/label prepared successfully. No duplicate order created.', 'success');
+            srToast('Shiprocket shipping label prepared successfully. No duplicate order created.', 'success');
         }
         try{ if(typeof loadAcceptedOrders === 'function') loadAcceptedOrders(); }catch(e){}
         try{ if(typeof loadCompletedScanOrders === 'function') loadCompletedScanOrders(); }catch(e){}
