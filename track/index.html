@@ -369,6 +369,7 @@
                         <!-- Dynamic years injected here -->
                     </div>
                 </div>
+                
             </div>
             
             <div class="status-tabs" id="statusTabsContainer">
@@ -709,7 +710,7 @@
                         fuzzyMatch(p.name, t)
                     ));
                     dropdown.innerHTML = filtered.slice(0, 3).map(p => `
-                        <div class="search-item" onclick="window.location.href='https://aryanta.in/?product=${p.id}'">
+                        <div class="search-item" onclick="window.location.href='https://aryanta.in/product?id=${p.id}'">
                             <img src="${p.images && p.images.length > 0 ? p.images[0] : p.image}" style="width: 44px; height: 44px; object-fit: contain; border-radius: 6px; border: 1px solid var(--border);">
                             <div style="display:flex; flex-direction:column; overflow:hidden;">
                                 <span style="font-weight: 700; font-size: 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color: var(--text-main);">${p.name}</span>
@@ -740,7 +741,8 @@
         let actionType = "cancel"; 
         let currentTabFilter = 'all';
         let currentYearFilter = 'all';
-        let visibleOrders = 5; 
+        let visibleOrders = 5;
+        let currentSortMode = 'newest'; 
 
         async function init() {
             checkSession();
@@ -788,7 +790,7 @@
                       myOrders.push(data);
                   });
                   
-                  myOrders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                  myOrders = sortOrdersList(myOrders);
                   
                   sessionStorage.setItem(cacheKey, JSON.stringify(myOrders));
                   populateYearFilter();
@@ -882,6 +884,7 @@
                 return statusMatch && yearMatch && searchMatch;
             });
 
+            filteredOrders = sortOrdersList(filteredOrders);
             renderList();
         }
 
@@ -1001,7 +1004,7 @@
                     calcSubtotal += (price * qty);
                     let imgUrl = i.image || (i.images && i.images.length > 0 ? i.images[0] : "https://via.placeholder.com/60?text=Aryanta");
                     return `
-                    <div class="items-list-row" onclick="window.location.href='https://aryanta.in/?product=${i.id || ''}'" title="Click to view product">
+                    <div class="items-list-row" onclick="window.location.href='https://aryanta.in/product?id=${i.id || ''}'" title="Click to view product">
                         <img src="${imgUrl}" class="item-detail-img" alt="Item Image">
                         <div class="item-detail-info">
                             <strong style="font-size:15px; display:block; margin-bottom:5px;">${i.name || 'Item'}</strong> 
@@ -1063,7 +1066,7 @@
         function updateTimeline(order, isCOD, isClearedOnline, isDelivered, isCancelled) {
             const statusStr = (order.status || "Pending").toLowerCase();
             let currentIdx = 0;
-            if(statusStr.includes('process')) currentIdx = 1;
+            if(statusStr.includes('process') || statusStr.includes('accept') || statusStr.includes('confirm') || statusStr.includes('pack') || statusStr.includes('seller')) currentIdx = 1;
             if(statusStr.includes('ship')) currentIdx = 2;
             if(statusStr.includes('out') || statusStr.includes('near')) currentIdx = 3;
             if(isDelivered) currentIdx = 4;
@@ -1126,7 +1129,7 @@
                     else document.getElementById('step'+i).classList.add('active');
                 }
 
-                if (isCOD && !isClearedOnline && !isDelivered) {
+                if (false && isCOD && !isClearedOnline && !isDelivered) {
                     actionArea.innerHTML += `
                     <div class="pay-banner">
                         <div style="font-size: 18px;"><strong>Balance Due on Delivery</strong></div>
@@ -1158,7 +1161,7 @@
             if(!activeOrder || !activeOrder.items || activeOrder.items.length === 0) return;
             const productRoute = activeOrder.items[0].id || "";
             sysAlert("Would you like to visit the product page to repurchase this item?", "Buy Again", "info", () => {
-                window.location.href = `https://aryanta.in/?product=${productRoute}`;
+                window.location.href = `https://aryanta.in/product?id=${productRoute}`;
             }, true);
         }
 
@@ -1460,5 +1463,87 @@
         // Kickoff
         document.addEventListener('DOMContentLoaded', init);
     </script>
+
+<script id="aryanta-common-login-url-patch">
+(function(){
+  if (window.__aryantaCommonLoginUrlPatch) return;
+  window.__aryantaCommonLoginUrlPatch = true;
+  window.aryantaProductUrl = function(id){ return 'https://aryanta.in/product?id=' + encodeURIComponent(String(id || '').trim()); };
+  window.aryantaSearchUrl = function(q){ return 'https://aryanta.in/?search=' + encodeURIComponent(String(q || '').trim()); };
+  window.aryantaHasSession = function(){
+    try {
+      const raw = localStorage.getItem('active_session') || sessionStorage.getItem('active_session');
+      const s = raw ? JSON.parse(raw) : null;
+      return !!(s && s.email);
+    } catch(e){ return false; }
+  };
+  window.showLoginRequiredPopup = function(message){
+    let overlay = document.getElementById('aryantaLoginRequiredOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'aryantaLoginRequiredOverlay';
+      overlay.className = 'aryanta-login-required-overlay';
+      overlay.innerHTML = `
+        <div class="aryanta-login-required-box" role="dialog" aria-modal="true" aria-labelledby="aryantaLoginTitle">
+          <div class="aryanta-login-required-icon"><i class="fas fa-user-lock"></i></div>
+          <h3 id="aryantaLoginTitle">Login required</h3>
+          <p id="aryantaLoginMessage">Please login to continue securely on Aryanta.</p>
+          <div class="aryanta-login-required-actions">
+            <button type="button" class="aryanta-login-later-btn" id="aryantaLoginLaterBtn">Not now</button>
+            <button type="button" class="aryanta-login-now-btn" id="aryantaLoginNowBtn">Login</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.addEventListener('click', function(e){ if(e.target === overlay) overlay.classList.remove('show'); });
+      overlay.querySelector('#aryantaLoginLaterBtn').onclick = function(){ overlay.classList.remove('show'); };
+      overlay.querySelector('#aryantaLoginNowBtn').onclick = function(){ window.location.href = 'https://aryanta.in/login/'; };
+    }
+    const msg = overlay.querySelector('#aryantaLoginMessage');
+    if (msg) msg.textContent = message || 'Please login to continue securely on Aryanta.';
+    overlay.classList.add('show');
+  };
+})();
+</script>
+
+<script id="aryanta-track-sort-status-patch">
+(function(){
+  window.getOrderTime = function(order){
+    const raw = order && (order.timestamp || order.createdAt || order.date || order.orderDate || order.updatedAt);
+    const t = raw && raw.toDate ? raw.toDate().getTime() : new Date(raw || 0).getTime();
+    return Number.isFinite(t) ? t : 0;
+  };
+  window.sortOrdersList = function(list){
+    const arr = Array.isArray(list) ? [...list] : [];
+    return arr.sort(function(a,b){
+      const diff = window.getOrderTime(a) - window.getOrderTime(b);
+      return currentSortMode === 'oldest' ? diff : -diff;
+    });
+  };
+  window.setOrderSortMode = function(mode){
+    currentSortMode = mode === 'oldest' ? 'oldest' : 'newest';
+    const sel = document.getElementById('orderSortMode');
+    if (sel) sel.value = currentSortMode;
+    visibleOrders = 5;
+    if (typeof executeOrderFilter === 'function') executeOrderFilter();
+  };
+  document.addEventListener('DOMContentLoaded', function(){
+    const sel = document.getElementById('orderSortMode');
+    if (sel) sel.value = currentSortMode;
+  });
+  const oldShowDetail = window.showDetail;
+  if (typeof oldShowDetail === 'function') {
+    window.showDetail = function(id, pushHistory){
+      const res = oldShowDetail.apply(this, arguments);
+      try {
+        const st = String(activeOrder && (activeOrder.status || activeOrder.orderStatus || '') || '').toLowerCase();
+        const badge = document.getElementById('dispStatusBadge');
+        if (badge && (st.includes('accept') || st.includes('confirm') || st.includes('pack'))) badge.innerText = activeOrder.status || 'Accepted by seller';
+      } catch(e) {}
+      return res;
+    };
+  }
+})();
+</script>
+
 </body>
 </html>
