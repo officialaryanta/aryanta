@@ -2,7 +2,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="manifest" href="/manifest.json">
+    <!-- Manifest loads only on production domain to avoid local 404 warnings -->
+    <script>
+      (function(){
+        var h = location.hostname;
+        if (h && h !== '127.0.0.1' && h !== 'localhost') {
+          var m = document.createElement('link');
+          m.rel = 'manifest';
+          m.href = '/manifest.json';
+          document.head.appendChild(m);
+        }
+      })();
+    </script>
     <meta name="theme-color" content="#f5f5f7">
     <link rel="apple-touch-icon" href="/android-chrome-192x192.png">
     <meta charset="UTF-8">
@@ -13,7 +24,7 @@
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=7">
+    <link rel="stylesheet" href="style.css?v=100">
     <style id="aryanta-mobile-scroll-filter-fix">
         @media (max-width: 768px) {
             #categoriesDisplayContainer.spacing-premium,
@@ -950,8 +961,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('sidebarPrimeBadge').style.display = 'none';
 
         accBtn.innerHTML = `<i class="fas fa-user-circle" style="font-size:24px;"></i> <span class="desktop-only" style="margin-left:8px; font-weight:700;">Sign In</span>`;
-        accBtn.onclick = () => location.href = 'https://aryanta.in/login';
-        document.getElementById('sidebarAccountLink').onclick = () => location.href = 'https://aryanta.in/login';
+        accBtn.onclick = () => showLoginRequiredPopup('Login to view your Aryanta profile, wishlist and orders.');
+        document.getElementById('sidebarAccountLink').onclick = () => showLoginRequiredPopup('Login to view your Aryanta profile, wishlist and orders.');
     }
 }
 
@@ -2005,8 +2016,7 @@ function escapeHtml(str = "") {
         window.toggleCart = function(id) {
             const session = JSON.parse(localStorage.getItem('active_session'));
             if (!session || !session.email) {
-                showToast("Please login to add to cart!");
-                setTimeout(() => { window.location.href = 'https://aryanta.in/login'; }, 1500);
+                showLoginRequiredPopup('Please login to add this item to your cart.');
                 return;
             }
 
@@ -2034,8 +2044,7 @@ function escapeHtml(str = "") {
         window.directBuyNow = async function(id) {
             const session = JSON.parse(localStorage.getItem('active_session'));
             if (!session || !session.email) {
-                showToast("Please login to buy items!");
-                setTimeout(() => { window.location.href = 'https://aryanta.in/login'; }, 1500);
+                showLoginRequiredPopup('Please login to buy this product securely.');
                 return;
             }
 
@@ -2069,8 +2078,7 @@ function escapeHtml(str = "") {
         window.toggleWishlist = function(id) {
             const session = JSON.parse(localStorage.getItem('active_session'));
             if (!session || !session.email) {
-                showToast("Please login to add to wishlist!");
-                setTimeout(() => { window.location.href = 'https://aryanta.in/login'; }, 1500);
+                showLoginRequiredPopup('Please login to save this product to your wishlist.');
                 return;
             }
 
@@ -2542,5 +2550,104 @@ function enableRecentViewedScroll() {
             });
         }
     </script>
+
+<script id="aryanta-common-login-url-patch">
+(function(){
+  if (window.__aryantaCommonLoginUrlPatch) return;
+  window.__aryantaCommonLoginUrlPatch = true;
+  window.aryantaProductUrl = function(id){ return 'https://aryanta.in/product?id=' + encodeURIComponent(String(id || '').trim()); };
+  window.aryantaSearchUrl = function(q){ return 'https://aryanta.in/?search=' + encodeURIComponent(String(q || '').trim()); };
+  window.aryantaHasSession = function(){
+    try {
+      const raw = localStorage.getItem('active_session') || sessionStorage.getItem('active_session');
+      const s = raw ? JSON.parse(raw) : null;
+      return !!(s && s.email);
+    } catch(e){ return false; }
+  };
+  window.showLoginRequiredPopup = function(message){
+    let overlay = document.getElementById('aryantaLoginRequiredOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'aryantaLoginRequiredOverlay';
+      overlay.className = 'aryanta-login-required-overlay';
+      overlay.innerHTML = `
+        <div class="aryanta-login-required-box" role="dialog" aria-modal="true" aria-labelledby="aryantaLoginTitle">
+          <div class="aryanta-login-required-icon"><i class="fas fa-user-lock"></i></div>
+          <h3 id="aryantaLoginTitle">Login required</h3>
+          <p id="aryantaLoginMessage">Please login to continue securely on Aryanta.</p>
+          <div class="aryanta-login-required-actions">
+            <button type="button" class="aryanta-login-later-btn" id="aryantaLoginLaterBtn">Not now</button>
+            <button type="button" class="aryanta-login-now-btn" id="aryantaLoginNowBtn">Login</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.addEventListener('click', function(e){ if(e.target === overlay) overlay.classList.remove('show'); });
+      overlay.querySelector('#aryantaLoginLaterBtn').onclick = function(){ overlay.classList.remove('show'); };
+      overlay.querySelector('#aryantaLoginNowBtn').onclick = function(){ window.location.href = 'https://aryanta.in/login/'; };
+    }
+    const msg = overlay.querySelector('#aryantaLoginMessage');
+    if (msg) msg.textContent = message || 'Please login to continue securely on Aryanta.';
+    overlay.classList.add('show');
+  };
+})();
+</script>
+
+<script id="aryanta-main-search-login-patch">
+(function(){
+  function runIncomingSearch(){
+    try {
+      const params = new URLSearchParams(window.location.search || '');
+      const q = params.get('search') || params.get('q') || params.get('s') || '';
+      if (!q.trim()) return;
+      ['desktopSearchInput','mobileSearchInput'].forEach(function(id){
+        const input = document.getElementById(id);
+        if (input) {
+          input.value = q.trim();
+          input.dispatchEvent(new Event('input', { bubbles:true }));
+        }
+      });
+      setTimeout(function(){
+        if (typeof applySidebarFilterLogic === 'function') applySidebarFilterLogic();
+        const banner = document.getElementById('mainBannerSection');
+        const shelf = document.getElementById('productShelf');
+        if (banner) banner.classList.add('hidden-by-search');
+        if (shelf) shelf.classList.add('list-view');
+      }, 250);
+    } catch(e) {}
+  }
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(runIncomingSearch, 800); });
+
+  const wrapLogin = function(name, message){
+    const oldFn = window[name];
+    if (typeof oldFn !== 'function') return;
+    window[name] = function(){
+      if (!window.aryantaHasSession || !window.aryantaHasSession()) {
+        if (typeof window.showLoginRequiredPopup === 'function') window.showLoginRequiredPopup(message);
+        else if (typeof showToast === 'function') showToast(message);
+        return;
+      }
+      return oldFn.apply(this, arguments);
+    };
+  };
+  wrapLogin('toggleCart', 'Please login to add this item to your cart.');
+  wrapLogin('directBuyNow', 'Please login to buy this product securely.');
+  wrapLogin('toggleWishlist', 'Please login to save this product to your wishlist.');
+
+  const oldHandle = window.handleMicOrSearch;
+  if (typeof oldHandle === 'function') {
+    window.handleMicOrSearch = function(inputId, micBtnId){
+      const input = document.getElementById(inputId);
+      const btn = document.getElementById(micBtnId);
+      if (btn && (btn.classList.contains('fa-search') || btn.classList.contains('fa-arrow-right'))) {
+        if (typeof applySidebarFilterLogic === 'function') applySidebarFilterLogic();
+        document.querySelectorAll('.search-dropdown').forEach(d => d.style.display = 'none');
+        return;
+      }
+      return oldHandle.apply(this, arguments);
+    };
+  }
+})();
+</script>
+
 </body>
 </html>
