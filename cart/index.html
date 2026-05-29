@@ -14,7 +14,7 @@
     <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js" defer></script>
 
-   <link rel="stylesheet" href="style.css">
+   <link rel="stylesheet" href="https://aryanta.in/style.css">
    <style>
         .cart-img-box{width:92px;height:92px;border-radius:20px;overflow:hidden;background:linear-gradient(135deg,#f8fafc,#eef2ff);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex:0 0 92px;box-shadow:var(--shadow-sm)}
         .cart-img-box img{width:100%;height:100%;object-fit:cover;display:block;transition:.22s ease}
@@ -527,7 +527,7 @@
         }
 
         window.openProduct = function(id) {
-            window.location.href = 'https://aryanta.in/product/?id=' + encodeURIComponent(id);
+            window.location.href = 'https://aryanta.in/product?id=' + encodeURIComponent(id);
         };
 
         window.addEventListener('popstate', function(event) {
@@ -2070,7 +2070,7 @@
                 } else {
                     let amt = isCOD ? Math.max(0, window.state.shippingCost - deductions) : window.state.finalPayable;
                     btn.innerHTML = codRestricted
-                        ? `Pay Now Online ${window.money(amt)} <i class="fas fa-lock"></i>`
+                        ? `Secure Online Payment ${window.money(amt)} <i class="fas fa-lock"></i>`
                         : `Pay ${window.money(amt)} <i class="fas fa-lock"></i>`;
                 }
                 btn.onclick = window.processCheckout;
@@ -2180,7 +2180,7 @@
                     wBox.classList.remove('digital-info');
                     if (codRestricted) {
                         wBox.style.display = 'block';
-                        wBox.innerHTML = `<i class="fas fa-ban"></i> COD is not available right now because the cancellation limit was crossed. Please use Pay Now Online, Aryanta Wallet, or promo/redeem discount.`;
+                        wBox.innerHTML = `<i class="fas fa-ban"></i> COD is not available right now because the cancellation limit was crossed. Please use Secure Online Payment, Aryanta Wallet, or promo/redeem discount.`;
                     } else {
                         wBox.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Notice: Due to frequent past cancellations, you must pay the delivery charge upfront to place a Cash on Delivery order.`;
                     }
@@ -2221,7 +2221,7 @@
             if (isCOD && !window.requireAdvance) btn.innerHTML = 'Place Order <i class="fas fa-check"></i>';
             else if (amount <= 0) btn.innerHTML = 'Complete Order <i class="fas fa-check"></i>';
             else btn.innerHTML = codRestricted
-                ? `Pay Now Online ${window.money(amount)} <i class="fas fa-lock"></i>`
+                ? `Secure Online Payment ${window.money(amount)} <i class="fas fa-lock"></i>`
                 : `Pay ${window.money(amount)} <i class="fas fa-lock"></i>`;
             btn.disabled = false;
             window.updateWalletPayUI();
@@ -2278,7 +2278,7 @@
                 window.checkoutBusy = false;
                 window.updatePaymentUI();
                 window.resetCheckoutButton();
-                return window.showAlert('COD is not available right now. Please use Pay Now Online, Aryanta Wallet, or promo/redeem discount.', 'COD Not Available');
+                return window.showAlert('COD is not available right now. Please use Secure Online Payment, Aryanta Wallet, or promo/redeem discount.', 'COD Not Available');
             }
 
             if (isCOD && mode.hasEmailDelivery) {
@@ -2855,5 +2855,194 @@
         }
 
     </script>
+
+<script id="aryanta-common-login-url-patch">
+(function(){
+  if (window.__aryantaCommonLoginUrlPatch) return;
+  window.__aryantaCommonLoginUrlPatch = true;
+  window.aryantaProductUrl = function(id){ return 'https://aryanta.in/product?id=' + encodeURIComponent(String(id || '').trim()); };
+  window.aryantaSearchUrl = function(q){ return 'https://aryanta.in/?search=' + encodeURIComponent(String(q || '').trim()); };
+  window.aryantaHasSession = function(){
+    try {
+      const raw = localStorage.getItem('active_session') || sessionStorage.getItem('active_session');
+      const s = raw ? JSON.parse(raw) : null;
+      return !!(s && s.email);
+    } catch(e){ return false; }
+  };
+  window.showLoginRequiredPopup = function(message){
+    let overlay = document.getElementById('aryantaLoginRequiredOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'aryantaLoginRequiredOverlay';
+      overlay.className = 'aryanta-login-required-overlay';
+      overlay.innerHTML = `
+        <div class="aryanta-login-required-box" role="dialog" aria-modal="true" aria-labelledby="aryantaLoginTitle">
+          <div class="aryanta-login-required-icon"><i class="fas fa-user-lock"></i></div>
+          <h3 id="aryantaLoginTitle">Login required</h3>
+          <p id="aryantaLoginMessage">Please login to continue securely on Aryanta.</p>
+          <div class="aryanta-login-required-actions">
+            <button type="button" class="aryanta-login-later-btn" id="aryantaLoginLaterBtn">Not now</button>
+            <button type="button" class="aryanta-login-now-btn" id="aryantaLoginNowBtn">Login</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.addEventListener('click', function(e){ if(e.target === overlay) overlay.classList.remove('show'); });
+      overlay.querySelector('#aryantaLoginLaterBtn').onclick = function(){ overlay.classList.remove('show'); };
+      overlay.querySelector('#aryantaLoginNowBtn').onclick = function(){ window.location.href = 'https://aryanta.in/login/'; };
+    }
+    const msg = overlay.querySelector('#aryantaLoginMessage');
+    if (msg) msg.textContent = message || 'Please login to continue securely on Aryanta.';
+    overlay.classList.add('show');
+  };
+})();
+</script>
+
+<script id="aryanta-cart-charge-cod-patch">
+(function(){
+  if (window.__aryantaCartChargePatch) return;
+  window.__aryantaCartChargePatch = true;
+  window.ARYANTA_SHIPPING_PER_ITEM = 35;
+  window.ARYANTA_OTHER_CHARGE_PER_ITEM = 5;
+  window.ARYANTA_CANCEL_LIMIT = 3;
+
+  window.getSelectedPhysicalQtyCount = function(){
+    try {
+      return (window.getSelectedCartItems ? window.getSelectedCartItems() : (window.cart || []))
+        .filter(function(item){ return item && item.selected !== false && !(window.isEmailDeliveryItem && window.isEmailDeliveryItem(item)); })
+        .reduce(function(sum, item){ return sum + Math.max(1, Number(item.qty || item.quantity || 1) || 1); }, 0);
+    } catch(e){ return 0; }
+  };
+
+  window.calculateShippingCost = function(){
+    const count = window.getSelectedPhysicalQtyCount();
+    const shipping = count * window.ARYANTA_SHIPPING_PER_ITEM;
+    const other = count * window.ARYANTA_OTHER_CHARGE_PER_ITEM;
+    if (window.state) {
+      window.state.shippingItemCount = count;
+      window.state.shippingBaseCharge = shipping;
+      window.state.otherCharge = other;
+      window.state.handlingCharge = other;
+      window.state.perItemShippingCharge = window.ARYANTA_SHIPPING_PER_ITEM;
+      window.state.perItemOtherCharge = window.ARYANTA_OTHER_CHARGE_PER_ITEM;
+    }
+    return shipping + other;
+  };
+
+  function updateChargeSummary(){
+    try {
+      const count = window.getSelectedPhysicalQtyCount();
+      const shipping = count * window.ARYANTA_SHIPPING_PER_ITEM;
+      const other = count * window.ARYANTA_OTHER_CHARGE_PER_ITEM;
+      const total = shipping + other;
+      const el = document.getElementById('sumShipping');
+      if (el) {
+        if (count > 0) el.innerHTML = `<span class="aryanta-charge-summary">₹${total.toLocaleString('en-IN')}</span> <small>(₹35 shipping + ₹5 other × ${count})</small>`;
+        else el.innerText = 'No delivery charge';
+      }
+    } catch(e) {}
+  }
+
+  const oldRenderStep1 = window.renderStep1;
+  if (typeof oldRenderStep1 === 'function') {
+    window.renderStep1 = function(){
+      const res = oldRenderStep1.apply(this, arguments);
+      try {
+        document.querySelectorAll('.cart-item-wrapper').forEach(function(row, index){
+          const item = (window.cart || [])[index];
+          if (!item || (window.isEmailDeliveryItem && window.isEmailDeliveryItem(item))) return;
+          const meta = row.querySelector('.cart-smart-meta');
+          if (meta && !meta.querySelector('.aryanta-charge-chip')) {
+            meta.insertAdjacentHTML('beforeend', '<span class="aryanta-charge-chip"><i class="fas fa-truck-fast"></i> ₹35 ship + ₹5 other</span>');
+          }
+        });
+      } catch(e) {}
+      updateChargeSummary();
+      return res;
+    };
+  }
+
+  const oldUpdateTotals = window.updateTotals;
+  if (typeof oldUpdateTotals === 'function') {
+    window.updateTotals = function(){
+      if (window.state) window.state.shippingCost = window.calculateShippingCost();
+      const res = oldUpdateTotals.apply(this, arguments);
+      updateChargeSummary();
+      const btn = document.getElementById('btnNextStep');
+      if (btn) btn.innerHTML = btn.innerHTML.replace(/Pay Now Online/g, 'Secure Online Payment').replace(/Pay Now/g, 'Secure Pay');
+      return res;
+    };
+  }
+
+  const oldReset = window.resetCheckoutButton;
+  if (typeof oldReset === 'function') {
+    window.resetCheckoutButton = function(){
+      const res = oldReset.apply(this, arguments);
+      const btn = document.getElementById('btnNextStep');
+      if (btn) btn.innerHTML = btn.innerHTML.replace(/Pay Now Online/g, 'Secure Online Payment').replace(/Pay Now/g, 'Secure Pay');
+      return res;
+    };
+  }
+
+  function orderArrayFromResponse(data){
+    if (Array.isArray(data)) return data;
+    if (!data || typeof data !== 'object') return [];
+    for (const k of ['orders','items','data','results','documents']) if (Array.isArray(data[k])) return data[k];
+    return [];
+  }
+  function isCancelled(o){
+    const s = String([o.status,o.orderStatus,o.state,o.actionType,o.cancelStatus].filter(Boolean).join(' ')).toLowerCase();
+    return s.includes('cancel') || s.includes('return') || s.includes('refund');
+  }
+  window.refreshCancellationCountFromOrders = async function(){
+    if (!window.activeSession || !window.activeSession.email || !window.API_BASE_URL) return 0;
+    const email = encodeURIComponent(window.activeSession.email);
+    const urls = [`${window.API_BASE_URL}/orders?user_email=${email}`, `${window.API_BASE_URL}/orders?email=${email}`, `${window.API_BASE_URL}/get-orders?email=${email}`];
+    for (const url of urls) {
+      try {
+        const res = await fetch(url, { cache:'no-store', headers:{'Accept':'application/json'} });
+        if (!res.ok) continue;
+        const data = await res.json();
+        const list = orderArrayFromResponse(data);
+        if (!list.length) continue;
+        const count = list.filter(isCancelled).length;
+        sessionStorage.setItem('aryanta_cancelled_order_count', String(count));
+        if (window.userData) {
+          window.userData.cancelCount = Math.max(Number(window.userData.cancelCount || 0), count);
+          window.userData.cancelledOrders = count;
+        }
+        if (count >= window.ARYANTA_CANCEL_LIMIT) window.codUnavailableDueToCancellations = true;
+        if (typeof window.updatePaymentUI === 'function') window.updatePaymentUI();
+        return count;
+      } catch(e) {}
+    }
+    return 0;
+  };
+
+  const oldRefreshCOD = window.refreshCODRestrictionState;
+  if (typeof oldRefreshCOD === 'function') {
+    window.refreshCODRestrictionState = function(extraSource){
+      const res = oldRefreshCOD.apply(this, arguments);
+      const localCount = Number(sessionStorage.getItem('aryanta_cancelled_order_count') || 0);
+      if (localCount >= window.ARYANTA_CANCEL_LIMIT) {
+        window.codRestrictionCancelCount = localCount;
+        window.codUnavailableDueToCancellations = true;
+        window.codRestrictionReason = 'COD is not available because your last cancellation limit was crossed. Please use secure online payment, Aryanta Wallet, or promo/redeem discount.';
+        return true;
+      }
+      return res;
+    };
+  }
+
+  const oldFetchKeys = window.fetchKeysAndDB;
+  if (typeof oldFetchKeys === 'function') {
+    window.fetchKeysAndDB = async function(){
+      const res = await oldFetchKeys.apply(this, arguments);
+      window.refreshCancellationCountFromOrders().catch(function(){});
+      return res;
+    };
+  }
+})();
+</script>
+
 </body>
 </html>
