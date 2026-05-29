@@ -30,7 +30,7 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <!-- Centralized Stylesheet -->
-    <link rel="stylesheet" href="https://aryanta.in/style.css">
+    <link rel="stylesheet" href="style.css?v=100">
     <!-- Tab safety styles: keeps Highlights / Reviews / Product Queries switching working even if external CSS changes -->
     <style id="aryanta-tab-fix-style">
         .tabs-container .tab-content{display:none;}
@@ -808,7 +808,7 @@
                         const img = getProductImageSafe(p);
                         const tag = isSponsoredProduct(p) ? '<span class="s-sponsored-tag">Sponsored</span>' : (isBoostedProduct(p) ? '<span class="s-sponsored-tag boosted">Boosted</span>' : '');
                         return `
-                            <div class="search-item" onclick="window.location.href=${escapeAttr(JSON.stringify(getPublicProductUrl(p.id)))}">
+                            <div class="search-item" onclick="window.location.href=${escapeAttr(JSON.stringify(window.aryantaProductUrl(p.id)))}">
                                 <img src="${escapeAttr(img)}" loading="lazy" decoding="async" style="width: 44px; height: 44px; object-fit: contain; border-radius: 8px; border:1px solid var(--border); padding:2px;">
                                 <div style="display:flex; flex-direction:column; overflow:hidden; padding-left:5px; min-width:0; width:100%;">
                                     <span style="font-weight: 800; font-size: 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-main);">
@@ -1397,7 +1397,7 @@
         }
 
         function getPublicProductUrl(id) {
-            return `https://aryanta.in/product/?id=${encodeURIComponent(id || "")}`;
+            return `https://aryanta.in/product?id=${encodeURIComponent(id || "")}`;
         }
 
         function getRelativeProductUrl(id) {
@@ -1956,7 +1956,7 @@
                     }
 
                     lHtml += `
-                    <div class="linked-item" style="border-color: ${isCurrentProd ? 'var(--text-main)' : 'var(--border)'};" onclick="window.location.href=${escapeAttr(JSON.stringify(match ? getRelativeProductUrl(match[1]) : url))}">
+                    <div class="linked-item" style="border-color: ${isCurrentProd ? 'var(--text-main)' : 'var(--border)'};" onclick="window.location.href=${escapeAttr(JSON.stringify(match ? window.aryantaProductUrl(match[1]) : url))}">
                         <img src="${escapeAttr(vImg)}">
                         <span>${escapeHtmlText(vName)}</span>
                     </div>`;
@@ -1986,27 +1986,23 @@
                 document.getElementById('priceGraphSection').style.display = 'none';
                 document.getElementById('deliveryPreviewBox').style.display = 'none';
             } else {
-                let basePrice = Number(p.price);
-                let finalPrice = basePrice;
-                let stockNum = p.stock || 0; 
-                let mrp = p.mrp ? Number(p.mrp) : basePrice * 1.5;
+                const priceInfo = window.resolveAryantaAdminPrice ? window.resolveAryantaAdminPrice(p) : { basePrice: Number(p.price || 0), finalPrice: Number(p.price || 0), mrp: Number(p.mrp || p.price || 0), stockNum: Number(p.stock || 0), delta: 0 };
+                let basePrice = Number(priceInfo.basePrice || 0);
+                let finalPrice = Number(priceInfo.finalPrice || 0);
+                let stockNum = Number(priceInfo.stockNum || p.stock || 0);
+                let mrp = Number(priceInfo.mrp || finalPrice || basePrice || 0);
 
-                if (stockNum < 10) finalPrice = basePrice * 1.20;
-                else if (stockNum < 15) finalPrice = basePrice * 1.15;
-                else if (stockNum < 30) finalPrice = basePrice * 1.10;
-
-                if (finalPrice > mrp) finalPrice = mrp;
-                if (finalPrice > 2100 && basePrice <= 2100) finalPrice = 2100;
-
-                finalPrice = Math.round(finalPrice);
-                
                 currentFinalPrice = finalPrice;
-                currentNormalPrice = basePrice;
-                currentMaxPrice = mrp;
+                currentNormalPrice = basePrice || finalPrice;
+                currentMaxPrice = mrp || finalPrice;
+                p.price = finalPrice;
+                p.finalPrice = finalPrice;
 
                 document.getElementById('pPrice').innerText = `₹${finalPrice.toLocaleString('en-IN')}`;
 
                 if(mrp > finalPrice) {
+                    document.getElementById('pMrp').style.display = '';
+                    document.getElementById('pDiscount').style.display = '';
                     document.getElementById('pMrp').innerText = `₹${mrp.toLocaleString('en-IN')}`;
                     let disc = Math.round(((mrp - finalPrice) / mrp) * 100);
                     document.getElementById('pDiscount').innerText = `${disc}% OFF`;
@@ -2017,16 +2013,11 @@
 
                 let soldNumAll = p.soldAllTime || p.sold || 0;
                 let soldNumMonth = p.soldThisMonth || 0;
-                document.getElementById('pSoldAll').innerText = soldNumAll.toLocaleString();
-                document.getElementById('pSoldMonth').innerText = soldNumMonth.toLocaleString();
-                document.getElementById('pStock').innerText = stockNum.toLocaleString();
-
-                if (p.dynamicPrice && p.lastStockCheck === stockNum) {
-                    currentFinalPrice = p.dynamicPrice;
-                } else {
-                    simulateDBPriceUpdate(p.id, finalPrice, stockNum);
-                }
-            }
+                document.getElementById('pSoldAll').innerText = Number(soldNumAll || 0).toLocaleString();
+                document.getElementById('pSoldMonth').innerText = Number(soldNumMonth || 0).toLocaleString();
+                document.getElementById('pStock').innerText = Number(stockNum || 0).toLocaleString();
+                if (window.renderAryantaPriceChangeNote) window.renderAryantaPriceChangeNote(p, priceInfo);
+}
 
             // Return Policy
             const policyReturn = document.getElementById('policyReturn');
@@ -2100,128 +2091,7 @@
             
         }
 
-        async function simulateDBPriceUpdate(id, newPrice, stockNum) {
-            try {
-                await fetch(`${API_BASE_URL}/update-product`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: id, dynamicPrice: newPrice, lastStockCheck: stockNum, projectId: PROJECT_ID })
-                });
-            } catch(e) { console.error("Dynamic price sync failed", e); }
-        }
-
-        window.setMainImg = function(src, el, index = 0) {
-            currentGalleryIndex = Math.max(0, Number(index) || 0);
-            const img = document.getElementById('mainProductImage');
-            if (img) img.src = src;
-            document.querySelectorAll('.thumbnail-item').forEach(t => t.classList.remove('active'));
-            if (el) el.classList.add('active');
-        }
-
-        window.openFullscreenGallery = function(index = 0) {
-            if (!currentGalleryImages.length && currentProduct) currentGalleryImages = currentProduct.images || [currentProduct.image].filter(Boolean);
-            if (!currentGalleryImages.length) return;
-            currentGalleryIndex = Math.max(0, Math.min(Number(index) || 0, currentGalleryImages.length - 1));
-            const overlay = document.getElementById('fullscreenGallery');
-            if (!overlay) return;
-            renderFullscreenGallery();
-            overlay.classList.add('show');
-            document.body.style.overflow = 'hidden';
-        }
-
-        window.closeFullscreenGallery = function() {
-            const overlay = document.getElementById('fullscreenGallery');
-            if (overlay) overlay.classList.remove('show');
-            document.body.style.overflow = '';
-        }
-
-        window.moveGalleryImage = function(step = 1) {
-            if (!currentGalleryImages.length) return;
-            currentGalleryIndex = (currentGalleryIndex + step + currentGalleryImages.length) % currentGalleryImages.length;
-            renderFullscreenGallery();
-        }
-
-        window.selectGalleryImage = function(index = 0) {
-            currentGalleryIndex = Math.max(0, Math.min(Number(index) || 0, currentGalleryImages.length - 1));
-            renderFullscreenGallery();
-        }
-
-        function renderFullscreenGallery() {
-            const main = document.getElementById('galleryMainImage');
-            const row = document.getElementById('galleryThumbRow');
-            const count = document.getElementById('galleryImageCount');
-            const src = currentGalleryImages[currentGalleryIndex] || currentGalleryImages[0];
-            if (main) main.src = src;
-            if (count) count.innerText = `${currentGalleryIndex + 1} / ${currentGalleryImages.length}`;
-            if (row) {
-                row.innerHTML = currentGalleryImages.map((img, i) => `<img src="${escapeAttr(img)}" class="${i === currentGalleryIndex ? 'active' : ''}" onclick="selectGalleryImage(${i})" alt="Product thumbnail ${i + 1}">`).join('');
-            }
-        }
-
-        window.openAuthPrompt = function() {
-            document.getElementById('authPromptModal').classList.add('show');
-        }
-        window.closeAuthPrompt = function() {
-            document.getElementById('authPromptModal').classList.remove('show');
-        }
-
-
-        function prioritizeUserAction(btn, label) {
-            userActionPriority = true;
-            isFullCatalogLoading = false;
-            if (btn) {
-                btn.disabled = true;
-                btn.classList.add("is-processing");
-                if (label) btn.dataset.oldHtml = btn.innerHTML, btn.innerHTML = label;
-                setTimeout(() => {
-                    btn.disabled = false;
-                    btn.classList.remove("is-processing");
-                    if (btn.dataset.oldHtml) delete btn.dataset.oldHtml;
-                    userActionPriority = false;
-                    if (currentProduct) checkCartBtnStatus();
-                    try { renderSimilarProducts(); } catch(e) {}
-                }, 650);
-            } else {
-                setTimeout(() => { userActionPriority = false; }, 650);
-            }
-        }
-
-        function persistUserStateFast(type = "cart") {
-            if (!activeSession || !activeSession.email) return Promise.resolve();
-            saveCartLocallyAndRefresh();
-            const cartSnapshot = JSON.stringify(cart || []);
-            cartSyncInFlight = true;
-            const payload = JSON.stringify({
-                email: activeSession.email,
-                updates: { cart: cart, cartItems: cart, wishlist: wishlist, cartUpdatedAt: new Date().toISOString() },
-                projectId: PROJECT_ID
-            });
-            return fetch(`${API_BASE_URL}/update-user`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: payload,
-                keepalive: true
-            }).then(res => {
-                if (!res.ok) throw new Error(`Cart sync failed: ${res.status}`);
-                if (JSON.stringify(cart || []) === cartSnapshot) {
-                    userCartDirtyAt = Date.now();
-                    try { sessionStorage.setItem('aryanta_cart_dirty_at', String(userCartDirtyAt)); } catch(e) {}
-                }
-            }).catch(() => {
-                markCartDirty();
-            }).finally(() => {
-                cartSyncInFlight = false;
-                saveCartLocallyAndRefresh();
-                try { renderSimilarProducts(); } catch(e) {}
-            });
-        }
-
-        function getProductByIdFast(id) {
-            if (!id && currentProduct) return currentProduct;
-            const target = { id };
-            if (currentProduct && productsSameIdentity(currentProduct, target)) return currentProduct;
-            return allProducts.find(x => productsSameIdentity(x, target)) || null;
-        }
+        async function simulateDBPriceUpdate(id, newPrice, stockNum) { return; }
 
         function getGiftAwarePrice(p) {
             let priceToPush = Number(p?.price || currentFinalPrice || 0);
@@ -3815,5 +3685,144 @@
         }
 
     </script>
+
+<script id="aryanta-common-login-url-patch">
+(function(){
+  if (window.__aryantaCommonLoginUrlPatch) return;
+  window.__aryantaCommonLoginUrlPatch = true;
+  window.aryantaProductUrl = function(id){ return 'https://aryanta.in/product?id=' + encodeURIComponent(String(id || '').trim()); };
+  window.aryantaSearchUrl = function(q){ return 'https://aryanta.in/?search=' + encodeURIComponent(String(q || '').trim()); };
+  window.aryantaHasSession = function(){
+    try {
+      const raw = localStorage.getItem('active_session') || sessionStorage.getItem('active_session');
+      const s = raw ? JSON.parse(raw) : null;
+      return !!(s && s.email);
+    } catch(e){ return false; }
+  };
+  window.showLoginRequiredPopup = function(message){
+    let overlay = document.getElementById('aryantaLoginRequiredOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'aryantaLoginRequiredOverlay';
+      overlay.className = 'aryanta-login-required-overlay';
+      overlay.innerHTML = `
+        <div class="aryanta-login-required-box" role="dialog" aria-modal="true" aria-labelledby="aryantaLoginTitle">
+          <div class="aryanta-login-required-icon"><i class="fas fa-user-lock"></i></div>
+          <h3 id="aryantaLoginTitle">Login required</h3>
+          <p id="aryantaLoginMessage">Please login to continue securely on Aryanta.</p>
+          <div class="aryanta-login-required-actions">
+            <button type="button" class="aryanta-login-later-btn" id="aryantaLoginLaterBtn">Not now</button>
+            <button type="button" class="aryanta-login-now-btn" id="aryantaLoginNowBtn">Login</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.addEventListener('click', function(e){ if(e.target === overlay) overlay.classList.remove('show'); });
+      overlay.querySelector('#aryantaLoginLaterBtn').onclick = function(){ overlay.classList.remove('show'); };
+      overlay.querySelector('#aryantaLoginNowBtn').onclick = function(){ window.location.href = 'https://aryanta.in/login/'; };
+    }
+    const msg = overlay.querySelector('#aryantaLoginMessage');
+    if (msg) msg.textContent = message || 'Please login to continue securely on Aryanta.';
+    overlay.classList.add('show');
+  };
+})();
+</script>
+
+<script id="aryanta-product-price-graph-patch">
+(function(){
+  function num(v){ const n = Number(v); return Number.isFinite(n) ? n : 0; }
+  function firstNum(){ for (let i=0;i<arguments.length;i++){ const n=num(arguments[i]); if(n>0) return n; } return 0; }
+  window.resolveAryantaAdminPrice = function(p){
+    p = p || {};
+    const history = window.getAryantaPriceHistory ? window.getAryantaPriceHistory(p) : [];
+    const latest = history.length ? history[history.length - 1] : null;
+    const adminPrice = firstNum(
+      p.adminPrice, p.updatedPrice, p.approvedPrice, p.finalPrice, p.sellingPrice,
+      p.salePrice, p.offerPrice, latest && (latest.newPrice || latest.price || latest.after), p.price
+    );
+    const basePrice = firstNum(
+      p.basePrice, p.originalSellerPrice, p.sellerPrice, p.oldPrice, p.previousPrice,
+      latest && (latest.oldPrice || latest.before || latest.from), p.price, adminPrice
+    );
+    const mrp = Math.max(firstNum(p.mrp, p.maxPrice, p.originalPrice, p.listPrice, adminPrice, basePrice), adminPrice, basePrice);
+    return {
+      basePrice: Math.round(basePrice || adminPrice || 0),
+      finalPrice: Math.round(adminPrice || basePrice || 0),
+      mrp: Math.round(mrp || adminPrice || basePrice || 0),
+      stockNum: num(p.stock || p.qty || p.quantity || p.availableStock || 0),
+      delta: Math.round((adminPrice || 0) - (basePrice || adminPrice || 0)),
+      latest
+    };
+  };
+  window.getAryantaPriceHistory = function(p){
+    p = p || {};
+    const raw = p.priceHistory || p.adminPriceHistory || p.priceUpdates || p.priceLog || p.price_history || [];
+    let list = Array.isArray(raw) ? raw : [];
+    list = list.map(function(x, i){
+      if (typeof x === 'number') return { price:x, newPrice:x, at:i };
+      if (!x || typeof x !== 'object') return null;
+      return {
+        oldPrice: num(x.oldPrice || x.before || x.from || x.previousPrice),
+        newPrice: num(x.newPrice || x.after || x.to || x.price || x.finalPrice),
+        price: num(x.price || x.newPrice || x.after || x.to || x.finalPrice),
+        at: x.at || x.date || x.createdAt || x.updatedAt || x.time || i,
+        reason: x.reason || x.note || x.source || 'Admin update'
+      };
+    }).filter(Boolean).filter(function(x){ return (x.newPrice || x.price) > 0; });
+    if (!list.length) {
+      const info = window.resolveAryantaAdminPrice ? null : null;
+    }
+    list.sort(function(a,b){ return new Date(a.at).getTime() - new Date(b.at).getTime(); });
+    return list;
+  };
+  window.renderAryantaPriceChangeNote = function(p, info){
+    const block = document.getElementById('priceDisplayBlock') || document.querySelector('.price-block') || document.getElementById('pPrice')?.parentElement;
+    if (!block) return;
+    block.querySelectorAll('.aryanta-price-change-note').forEach(function(n){ n.remove(); });
+    const delta = Number(info && info.delta || 0);
+    if (!delta) return;
+    const cls = delta < 0 ? 'aryanta-price-change-note down' : 'aryanta-price-change-note';
+    const icon = delta < 0 ? 'fa-arrow-trend-down' : 'fa-arrow-trend-up';
+    const txt = delta < 0
+      ? `Admin price decreased by ₹${Math.abs(delta).toLocaleString('en-IN')} from ₹${Number(info.basePrice).toLocaleString('en-IN')}.`
+      : `Admin price increased by ₹${delta.toLocaleString('en-IN')} from ₹${Number(info.basePrice).toLocaleString('en-IN')}.`;
+    block.insertAdjacentHTML('beforeend', `<div class="${cls}"><i class="fas ${icon}"></i><span>${txt}</span></div>`);
+  };
+  window.drawGraph = function(period, btnEl){
+    if(btnEl) { document.querySelectorAll('.graph-filters button').forEach(b => b.classList.remove('active')); btnEl.classList.add('active'); }
+    const canvas = document.getElementById('priceCanvas'); if(!canvas) return;
+    const parent = canvas.parentElement || canvas;
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const w0 = Math.max(280, parent.clientWidth || 320), h0 = 210;
+    canvas.width = Math.floor(w0*dpr); canvas.height = Math.floor(h0*dpr); canvas.style.width=w0+'px'; canvas.style.height=h0+'px';
+    const ctx = canvas.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w0,h0);
+    const css = getComputedStyle(document.body);
+    const text = css.getPropertyValue('--text-main').trim() || '#1d1d1f';
+    const muted = css.getPropertyValue('--text-muted').trim() || '#86868b';
+    const accent = css.getPropertyValue('--accent').trim() || '#0066cc';
+    const success = css.getPropertyValue('--success').trim() || '#34c759';
+    const border = css.getPropertyValue('--border').trim() || 'rgba(0,0,0,.12)';
+    const info = window.resolveAryantaAdminPrice ? window.resolveAryantaAdminPrice(window.currentProduct || {}) : {basePrice:currentNormalPrice, finalPrice:currentFinalPrice, mrp:currentMaxPrice, delta:0};
+    let hist = window.getAryantaPriceHistory ? window.getAryantaPriceHistory(window.currentProduct || {}) : [];
+    if (!hist.length) hist = [{price:info.basePrice, newPrice:info.basePrice, at:'Start'}, {price:info.finalPrice, newPrice:info.finalPrice, at:'Now'}];
+    const values = hist.map(x => Number(x.newPrice || x.price || info.finalPrice)).filter(x => x>0);
+    if (values[values.length-1] !== info.finalPrice) values.push(info.finalPrice);
+    const min = Math.max(0, Math.min.apply(null, values.concat([info.basePrice, info.finalPrice])) * .96);
+    const max = Math.max.apply(null, values.concat([info.mrp, info.basePrice, info.finalPrice])) * 1.04;
+    const range = Math.max(1, max-min);
+    const padL=45,padR=18,padT=28,padB=34, w=w0-padL-padR, h=h0-padT-padB;
+    ctx.strokeStyle=border; ctx.lineWidth=1; ctx.beginPath(); for(let i=0;i<=4;i++){let y=padT+h/4*i;ctx.moveTo(padL,y);ctx.lineTo(w0-padR,y);} ctx.stroke();
+    const pts = values.map((v,i)=>({x:padL+(i/Math.max(1,values.length-1))*w,y:padT+h-((v-min)/range)*h,v}));
+    ctx.beginPath(); pts.forEach((p,i)=> i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.strokeStyle = info.delta >= 0 ? success : accent; ctx.lineWidth=3; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.stroke();
+    pts.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=info.delta>=0?success:accent;ctx.stroke();});
+    ctx.fillStyle=muted; ctx.font='800 11px Plus Jakarta Sans, sans-serif'; ctx.textAlign='left';
+    ctx.fillText('Old ₹'+Math.round(info.basePrice || values[0]).toLocaleString('en-IN'), 8, padT+4);
+    ctx.fillText('Low ₹'+Math.round(min).toLocaleString('en-IN'), 8, h0-padB+4);
+    ctx.fillStyle=text; ctx.font='900 14px Plus Jakarta Sans, sans-serif'; ctx.textAlign='right';
+    const deltaText = Number(info.delta || 0) ? ` (${info.delta>0?'+':'-'}₹${Math.abs(info.delta).toLocaleString('en-IN')})` : '';
+    ctx.fillText('Now ₹'+Math.round(info.finalPrice).toLocaleString('en-IN')+deltaText, w0-padR, 18);
+  };
+})();
+</script>
+
 </body>
 </html>
