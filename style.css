@@ -3166,3 +3166,467 @@ img{max-width:100%;height:auto;}
 /* Track sort select */
 .order-sort-select{height:52px;border:1px solid var(--border);background:var(--surface);color:var(--text-main);border-radius:18px;padding:0 14px;font-weight:900;box-shadow:var(--shadow-sm);outline:none;}
 @media(max-width:640px){.order-sort-select{width:100%;}}
+
+
+/* =========================================================
+   Aryanta Home Patch: special day, bigger search, same buttons,
+   better search result grid, mobile-safe banners, smart UI.
+   Added without removing existing CSS.
+   ========================================================= */
+:root{
+    --aryanta-radius-xl: 26px;
+    --aryanta-btn-radius: 999px;
+    --aryanta-card-border: 1px solid var(--border);
+}
+
+/* Bigger premium search like marketplace header */
+.desktop-search.nav-search{
+    width: min(760px, 56vw) !important;
+    max-width: 760px !important;
+    min-height: 56px !important;
+    padding: 12px 22px !important;
+    border-radius: 24px !important;
+}
+.nav-search input{
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.1px;
+}
+.cat-trigger{font-size:20px!important;padding-right:10px!important;}
+.search-dropdown{
+    border-radius: 24px !important;
+    padding: 12px !important;
+    max-height: 440px !important;
+    overflow-y: auto !important;
+}
+.search-item{
+    padding: 14px !important;
+    border-radius: 18px !important;
+    min-height: 68px;
+    border:1px solid transparent;
+}
+.search-item:hover{border-color:var(--border);}
+.search-item img{width:52px!important;height:52px!important;border-radius:14px!important;background:var(--bg-color);}
+.search-item-copy{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1;}
+.search-item-title{font-weight:900;line-height:1.25;display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap;}
+.search-item-price{font-weight:900;color:var(--text-main);font-size:13px;}
+.search-meta-line{font-size:11px;color:var(--text-muted);font-weight:800;display:flex;gap:6px;flex-wrap:wrap;}
+.search-sponsored{background:linear-gradient(135deg, rgba(255,59,48,.13), rgba(255,183,3,.11));border-color:rgba(255,59,48,.22)!important;}
+.search-random-tag,.s-top-tag{background:rgba(41,151,255,.13)!important;color:var(--accent)!important;}
+.s-sponsored-tag{white-space:nowrap;}
+
+/* One row = 2 search/list items on PC/tablet, 1 item on mobile */
+.product-list.list-view{
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    max-width: 1180px !important;
+    gap: 20px !important;
+}
+.product-list.list-view .list-item-card{
+    flex-direction: row !important;
+    align-items: stretch !important;
+    gap: 18px !important;
+    min-height: 190px;
+    padding: 18px !important;
+}
+.product-list.list-view .list-image-container{
+    width: 158px !important;
+    height: 158px !important;
+    min-width: 158px !important;
+    border-radius: 18px !important;
+}
+.product-list.list-view .list-info{min-width:0;align-items:flex-start!important;justify-content:flex-start!important;}
+.product-list.list-view .list-info h4{
+    font-size: 18px !important;
+    line-height:1.25!important;
+    padding-right: 34px;
+    word-break: break-word;
+    -webkit-line-clamp: 2;
+}
+.product-list.list-view .list-actions{
+    flex-direction: row !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin-top: auto !important;
+}
+.product-list.list-view .btn-list-buy,
+.product-list.list-view .btn-list-add{min-width:0;}
+
+/* Product card polish and same button design */
+.list-item-card{overflow:hidden;}
+.list-info h4{padding-right:34px;word-break:break-word;}
+.btn-prime,.btn-outline,.global-filter-btn,.btn-list-buy,.btn-list-add,.btn-add,.btn-remove,.btn-go,.cat-pill,.btn-mini,.aryanta-smart-chip{
+    border-radius: var(--aryanta-btn-radius) !important;
+    font-weight: 900 !important;
+    letter-spacing: -0.2px;
+}
+.btn-list-buy,.btn-list-add,.btn-add,.btn-remove{
+    min-height: 46px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    border-width:1px!important;
+}
+.btn-list-buy{background:var(--text-main)!important;color:var(--bg-color)!important;border-color:var(--text-main)!important;}
+.btn-list-add,.btn-add{background:var(--surface)!important;color:var(--text-main)!important;border-color:var(--border)!important;}
+.btn-remove{background:rgba(255,59,48,.12)!important;color:var(--danger)!important;border-color:rgba(255,59,48,.20)!important;}
+
+/* Banner: fit image without cutting on phone and long screens */
+.banner-slider-container,#mainBannerSection{
+    max-width: 1320px !important;
+    border-radius: 26px !important;
+}
+.f-slide{
+    background-size: contain !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-color: var(--surface) !important;
+}
+.banner-slider{background:linear-gradient(135deg, rgba(255,255,255,.5), rgba(134,134,139,.10))!important;}
+
+/* Admin special-day design mode */
+body.aryanta-event-mode{
+    --accent: var(--event-accent, #ff3b30);
+}
+body.aryanta-event-mode .top-bar{
+    background: linear-gradient(90deg, rgba(255,59,48,.18), var(--surface), rgba(255,183,3,.14)) !important;
+}
+.special-day-hero{
+    position:relative;
+    overflow:hidden;
+    border-radius:34px;
+    border:1px solid rgba(255,255,255,.18);
+    margin: 14px auto 28px;
+    width:min(1320px, calc(100% - 40px));
+    padding: clamp(26px, 5vw, 56px);
+    background:
+      radial-gradient(circle at top left, color-mix(in srgb, var(--event-accent, #ff3b30) 38%, transparent), transparent 38%),
+      linear-gradient(135deg, rgba(255,59,48,.22), rgba(255,183,3,.14), var(--surface));
+    box-shadow:0 28px 80px rgba(0,0,0,.16);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:24px;
+}
+.special-day-hero:before{
+    content:"";position:absolute;inset:-40%;background:linear-gradient(120deg, transparent, rgba(255,255,255,.32), transparent);transform:rotate(12deg);animation:aryantaHeroShine 5s ease-in-out infinite;pointer-events:none;
+}
+@keyframes aryantaHeroShine{0%,70%,100%{translate:-40% 0;}85%{translate:40% 0;}}
+.special-day-pill{
+    background:var(--event-accent,#ff3b30)!important;color:#fff!important;border-radius:999px!important;padding:8px 14px!important;font-weight:950!important;display:inline-flex!important;gap:8px!important;align-items:center!important;
+}
+.special-day-hero h1{font-size:clamp(30px,5vw,62px)!important;line-height:1!important;margin:16px 0 12px!important;letter-spacing:-2px!important;}
+.special-day-hero p{font-size:clamp(14px,2vw,18px)!important;max-width:680px!important;font-weight:800!important;color:var(--text-main)!important;opacity:.88;}
+.special-day-btn{background:var(--text-main)!important;color:var(--bg-color)!important;border:none!important;border-radius:999px!important;padding:16px 24px!important;font-weight:950!important;box-shadow:var(--shadow-lg)!important;white-space:nowrap;}
+
+/* Guest/login smart popup */
+.aryanta-login-required-overlay{
+    position:fixed;inset:0;z-index:10080;background:rgba(0,0,0,.42);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:none;align-items:center;justify-content:center;padding:18px;
+}
+.aryanta-login-required-overlay.show{display:flex;}
+.aryanta-login-required-box{
+    width:min(94vw,460px);position:relative;background:var(--surface);color:var(--text-main);border:1px solid var(--border);box-shadow:0 28px 90px rgba(0,0,0,.30);border-radius:32px;padding:34px 26px;text-align:center;animation:aryantaPop .34s cubic-bezier(.2,.9,.2,1.2);
+}
+@keyframes aryantaPop{from{transform:translateY(18px) scale(.96);opacity:0;}to{transform:translateY(0) scale(1);opacity:1;}}
+.aryanta-login-required-close{position:absolute;top:14px;right:14px;width:38px;height:38px;border:1px solid var(--border);border-radius:50%;background:var(--surface);color:var(--text-muted);display:grid;place-items:center;font-size:16px;cursor:pointer;}
+.aryanta-login-required-icon{width:68px;height:68px;border-radius:24px;display:grid;place-items:center;margin:0 auto 18px;background:linear-gradient(135deg, rgba(41,151,255,.18), rgba(52,199,89,.15));font-size:30px;color:var(--accent);}
+.aryanta-login-required-box h3{font-size:24px;font-weight:950;letter-spacing:-.8px;margin-bottom:10px;}
+.aryanta-login-required-box p{font-size:15px;line-height:1.6;color:var(--text-muted);font-weight:750;margin-bottom:22px;}
+.aryanta-login-required-actions{display:flex;gap:12px;}
+.aryanta-login-later-btn,.aryanta-login-now-btn{flex:1;border:1px solid var(--border);border-radius:999px;padding:14px 16px;font-weight:950;cursor:pointer;}
+.aryanta-login-later-btn{background:var(--surface);color:var(--text-main);}
+.aryanta-login-now-btn{background:var(--text-main);color:var(--bg-color);}
+
+/* Smart chips and trust strip */
+.aryanta-smart-strip{width:min(1320px, calc(100% - 40px));margin:0 auto 24px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;}
+.aryanta-smart-strip::-webkit-scrollbar{display:none;}
+.aryanta-smart-chip{flex:0 0 auto;border:1px solid var(--border);background:var(--surface);color:var(--text-main);box-shadow:var(--shadow-sm);padding:11px 16px;font-size:13px;display:inline-flex;align-items:center;gap:8px;}
+.aryanta-smart-chip.active{background:var(--text-main);color:var(--bg-color);}
+
+@media(max-width: 900px){
+    .desktop-search.nav-search{width:min(58vw,620px)!important;}
+    .product-list.list-view{grid-template-columns:1fr!important;max-width:720px!important;}
+}
+@media(max-width: 768px){
+    .desktop-search{display:none!important;}
+    .mobile-only-search{display:block!important;}
+    .search-container .nav-search{min-height:58px!important;border-radius:22px!important;padding:12px 18px!important;}
+    .search-container{padding:10px 12px!important;}
+    .banner-slider-container,#mainBannerSection{width:100%!important;max-width:100%!important;margin:4px 0 18px!important;border-radius:0!important;aspect-ratio:16/9!important;}
+    .banner-slider{border-radius:0!important;border-left:0!important;border-right:0!important;}
+    .product-list{grid-template-columns:1fr!important;gap:12px!important;padding:0 12px 80px!important;}
+    .product-list.list-view{grid-template-columns:1fr!important;padding:0 12px 80px!important;}
+    .product-list.list-view .list-item-card{min-height:150px!important;gap:12px!important;padding:14px!important;}
+    .product-list.list-view .list-image-container{width:124px!important;height:124px!important;min-width:124px!important;}
+    .list-item-card{padding:12px!important;border-radius:20px!important;}
+    .list-image-container{height:150px!important;border-radius:16px!important;}
+    .list-info h4{font-size:14px!important;line-height:1.25!important;padding-right:28px;}
+    .list-info .price{font-size:19px!important;margin-bottom:10px!important;}
+    .list-actions{gap:8px!important;}
+    .btn-list-buy,.btn-list-add{padding:11px 10px!important;font-size:12px!important;min-height:40px;}
+    .special-day-hero{width:calc(100% - 24px)!important;display:block;text-align:left;border-radius:26px;margin-top:12px;padding:26px 20px;}
+    .special-day-btn{width:100%;margin-top:18px;}
+    .aryanta-login-required-actions{flex-direction:column;}
+}
+@media(max-width: 430px){
+    .product-list:not(.list-view){grid-template-columns:1fr!important;gap:10px!important;}
+    .list-image-container{height:132px!important;}
+    .list-actions{flex-direction:column!important;}
+}
+
+
+/* =========================================================
+   Aryanta special-day final fix: NO popup, full page design changes.
+   Admin special day only changes theme/CSS, hero/bar/cards/buttons.
+   ========================================================= */
+body.aryanta-event-mode {
+    --accent: var(--event-accent, #ff3b30) !important;
+    --special-accent: var(--event-accent, #ff3b30);
+    --special-accent-2: var(--event-accent-2, #ffb703);
+    background:
+      radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--special-accent) 18%, transparent), transparent 34%),
+      radial-gradient(circle at 96% 8%, color-mix(in srgb, var(--special-accent-2) 18%, transparent), transparent 32%),
+      linear-gradient(180deg, color-mix(in srgb, var(--bg-color) 86%, var(--special-accent) 7%), var(--bg-color) 58%) !important;
+}
+body.aryanta-event-dark {
+    --bg-color:#050505;
+    --surface:rgba(22,22,24,.82);
+    --text-main:#ffffff;
+    --text-muted:#b8b8bd;
+    --border:rgba(255,255,255,.14);
+}
+body.aryanta-event-light {
+    --surface:rgba(255,255,255,.82);
+}
+body.aryanta-event-mode .top-bar,
+body.aryanta-event-mode .search-container {
+    background: linear-gradient(90deg,
+        color-mix(in srgb, var(--special-accent) 16%, var(--surface)),
+        var(--surface),
+        color-mix(in srgb, var(--special-accent-2) 16%, var(--surface))) !important;
+    border-bottom:1px solid color-mix(in srgb, var(--special-accent) 28%, var(--border)) !important;
+    box-shadow:0 14px 40px color-mix(in srgb, var(--special-accent) 12%, transparent) !important;
+}
+body.aryanta-event-mode .brand-logo .prime-dot,
+body.aryanta-event-mode .cat-trigger,
+body.aryanta-event-mode .menu-trigger:hover {
+    color: var(--special-accent) !important;
+}
+body.aryanta-event-mode .nav-search {
+    border-color: color-mix(in srgb, var(--special-accent) 34%, var(--border)) !important;
+    box-shadow: 0 16px 42px color-mix(in srgb, var(--special-accent) 10%, transparent) !important;
+}
+body.aryanta-event-mode .festive-bar {
+    display:block;
+    background:linear-gradient(90deg, var(--special-accent), var(--special-accent-2), var(--special-accent)) !important;
+    box-shadow:0 12px 35px color-mix(in srgb, var(--special-accent) 32%, transparent) !important;
+}
+body.aryanta-event-mode .banner-slider,
+body.aryanta-event-mode .list-item-card,
+body.aryanta-event-mode .filter-group,
+body.aryanta-event-mode .cat-pill,
+body.aryanta-event-mode .btn-outline,
+body.aryanta-event-mode .aryanta-smart-chip {
+    border-color: color-mix(in srgb, var(--special-accent) 28%, var(--border)) !important;
+    box-shadow:0 18px 44px color-mix(in srgb, var(--special-accent) 10%, transparent), var(--shadow-sm) !important;
+}
+body.aryanta-event-mode .list-item-card::before {
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:linear-gradient(135deg, color-mix(in srgb, var(--special-accent) 10%, transparent), transparent 40%, color-mix(in srgb, var(--special-accent-2) 8%, transparent));
+    opacity:.9;
+}
+body.aryanta-event-mode .list-info,
+body.aryanta-event-mode .list-image-container,
+body.aryanta-event-mode .wishlist-btn,
+body.aryanta-event-mode .list-actions { position:relative; z-index:1; }
+body.aryanta-event-mode .btn-list-buy,
+body.aryanta-event-mode .btn-prime,
+body.aryanta-event-mode .global-filter-btn,
+body.aryanta-event-mode .special-day-btn,
+body.aryanta-event-mode .cat-pill.active,
+body.aryanta-event-mode .aryanta-smart-chip.active {
+    background:linear-gradient(135deg, var(--special-accent), var(--special-accent-2)) !important;
+    color:#fff !important;
+    border-color:transparent !important;
+    box-shadow:0 16px 34px color-mix(in srgb, var(--special-accent) 28%, transparent) !important;
+}
+body.aryanta-event-mode .btn-list-add,
+body.aryanta-event-mode .btn-add {
+    background: color-mix(in srgb, var(--surface) 80%, var(--special-accent) 8%) !important;
+    color: var(--text-main) !important;
+    border-color: color-mix(in srgb, var(--special-accent) 32%, var(--border)) !important;
+}
+body.aryanta-event-mode .price,
+body.aryanta-event-mode .list-info .price {
+    color: var(--special-accent) !important;
+    text-shadow:0 8px 26px color-mix(in srgb, var(--special-accent) 18%, transparent);
+}
+body.aryanta-event-mode .special-day-hero {
+    background:
+      radial-gradient(circle at top left, color-mix(in srgb, var(--special-accent) 42%, transparent), transparent 40%),
+      radial-gradient(circle at bottom right, color-mix(in srgb, var(--special-accent-2) 34%, transparent), transparent 42%),
+      linear-gradient(135deg, color-mix(in srgb, var(--surface) 78%, var(--special-accent) 14%), color-mix(in srgb, var(--surface) 78%, var(--special-accent-2) 12%)) !important;
+    border:1px solid color-mix(in srgb, var(--special-accent) 38%, var(--border)) !important;
+}
+/* Keep special-day modal disabled even if an older browser cached script tries to open it */
+body.aryanta-event-mode #systemPopup.special-day-popup,
+body.aryanta-event-mode .special-day-popup { display:none !important; }
+@media(max-width:768px){
+  body.aryanta-event-mode { background-size: auto !important; }
+  body.aryanta-event-mode .special-day-hero { margin-top:10px !important; }
+}
+
+
+/* =========================================================
+   FINAL: Admin Special Day = Ultra Luxury Whole-Store Theme + Popup
+   Fast static CSS only, no heavy laggy animation.
+   ========================================================= */
+body.aryanta-ultra-luxury {
+    --lux-bg: #050506;
+    --lux-surface: rgba(18, 18, 22, 0.88);
+    --lux-border: rgba(255, 255, 255, 0.13);
+    --lux-gold: var(--event-accent, #d6a84f);
+    --lux-purple: var(--event-accent-2, #8b5cf6);
+    --lux-cyan: var(--event-accent-3, #00d4ff);
+    --bg-color: var(--lux-bg) !important;
+    --surface: var(--lux-surface) !important;
+    --text-main: #fffaf0 !important;
+    --text-muted: #bbb4a6 !important;
+    --border: var(--lux-border) !important;
+    --accent: var(--lux-gold) !important;
+    background:
+        radial-gradient(circle at 8% -4%, color-mix(in srgb, var(--lux-gold) 24%, transparent), transparent 36%),
+        radial-gradient(circle at 92% 2%, color-mix(in srgb, var(--lux-purple) 22%, transparent), transparent 34%),
+        radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--lux-cyan) 10%, transparent), transparent 44%),
+        linear-gradient(180deg, #030304, #0b0b10 45%, #050506) !important;
+}
+body.aryanta-ultra-luxury .festive-bar {
+    display:flex !important;
+    align-items:center;
+    justify-content:center;
+    gap:12px;
+    min-height:38px;
+    padding:9px 14px !important;
+    background:linear-gradient(90deg, #050506, color-mix(in srgb, var(--lux-gold) 34%, #111), color-mix(in srgb, var(--lux-purple) 28%, #111), #050506) !important;
+    border-bottom:1px solid color-mix(in srgb, var(--lux-gold) 38%, transparent);
+    box-shadow:0 12px 34px color-mix(in srgb, var(--lux-gold) 18%, transparent) !important;
+    color:#fff8df !important;
+    text-transform:none !important;
+    letter-spacing:.2px !important;
+}
+body.aryanta-ultra-luxury .lux-dot{width:8px;height:8px;border-radius:99px;background:var(--lux-gold);box-shadow:0 0 18px var(--lux-gold);display:inline-flex;}
+body.aryanta-ultra-luxury .top-bar,
+body.aryanta-ultra-luxury .search-container {
+    background:linear-gradient(90deg, rgba(8,8,10,.92), rgba(22,20,28,.88), rgba(8,8,10,.92)) !important;
+    border-bottom:1px solid color-mix(in srgb, var(--lux-gold) 34%, transparent) !important;
+    box-shadow:0 18px 44px rgba(0,0,0,.38) !important;
+}
+body.aryanta-ultra-luxury .brand-logo,
+body.aryanta-ultra-luxury .menu-trigger,
+body.aryanta-ultra-luxury .cart-icon,
+body.aryanta-ultra-luxury .user-trigger { color:#fff8df !important; }
+body.aryanta-ultra-luxury .brand-img{border:1px solid color-mix(in srgb, var(--lux-gold) 55%, transparent);box-shadow:0 0 24px color-mix(in srgb, var(--lux-gold) 28%, transparent);}
+body.aryanta-ultra-luxury .nav-search {
+    min-height:62px !important;
+    border-radius:999px !important;
+    background:linear-gradient(135deg, rgba(255,255,255,.09), rgba(255,255,255,.04)) !important;
+    border:1px solid color-mix(in srgb, var(--lux-gold) 36%, rgba(255,255,255,.1)) !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 18px 50px rgba(0,0,0,.28) !important;
+}
+body.aryanta-ultra-luxury .nav-search input { color:#fffaf0 !important;font-size:16px !important;font-weight:850 !important; }
+body.aryanta-ultra-luxury .nav-search input::placeholder{color:rgba(255,250,240,.62) !important;}
+body.aryanta-ultra-luxury .cat-trigger,
+body.aryanta-ultra-luxury .prime-dot{color:var(--lux-gold)!important;}
+body.aryanta-ultra-luxury .banner-slider,
+body.aryanta-ultra-luxury .list-item-card,
+body.aryanta-ultra-luxury .filter-group,
+body.aryanta-ultra-luxury .cat-pill,
+body.aryanta-ultra-luxury .btn-outline,
+body.aryanta-ultra-luxury .aryanta-smart-chip,
+body.aryanta-ultra-luxury .recent-item-card,
+body.aryanta-ultra-luxury .modal-content,
+body.aryanta-ultra-luxury .side-panel {
+    background:linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.035)) !important;
+    border:1px solid color-mix(in srgb, var(--lux-gold) 28%, rgba(255,255,255,.12)) !important;
+    box-shadow:0 22px 52px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+body.aryanta-ultra-luxury .list-item-card{overflow:hidden;}
+body.aryanta-ultra-luxury .list-item-card::before{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(135deg, color-mix(in srgb, var(--lux-gold) 15%, transparent), transparent 36%, color-mix(in srgb, var(--lux-purple) 11%, transparent));
+    z-index:0;
+}
+body.aryanta-ultra-luxury .list-image-container,
+body.aryanta-ultra-luxury .list-info,
+body.aryanta-ultra-luxury .list-actions,
+body.aryanta-ultra-luxury .wishlist-icon{position:relative;z-index:1;}
+body.aryanta-ultra-luxury .list-image-container{background:rgba(255,255,255,.055)!important;border:1px solid rgba(255,255,255,.08);}
+body.aryanta-ultra-luxury .list-info h4{color:#fff8df!important;}
+body.aryanta-ultra-luxury .list-info .price,
+body.aryanta-ultra-luxury .price{color:var(--lux-gold)!important;text-shadow:0 0 22px color-mix(in srgb, var(--lux-gold) 24%, transparent);}
+body.aryanta-ultra-luxury .btn-list-buy,
+body.aryanta-ultra-luxury .btn-prime,
+body.aryanta-ultra-luxury .global-filter-btn,
+body.aryanta-ultra-luxury .special-day-btn,
+body.aryanta-ultra-luxury .cat-pill.active,
+body.aryanta-ultra-luxury .aryanta-smart-chip.active{
+    background:linear-gradient(135deg, var(--lux-gold), #f7d88a 48%, var(--lux-purple)) !important;
+    color:#0a0805 !important;
+    border:0 !important;
+    border-radius:999px !important;
+    font-weight:950 !important;
+    box-shadow:0 18px 36px color-mix(in srgb, var(--lux-gold) 22%, transparent) !important;
+}
+body.aryanta-ultra-luxury .btn-list-add,
+body.aryanta-ultra-luxury .btn-add{
+    background:rgba(255,255,255,.06)!important;
+    color:#fff8df!important;
+    border:1px solid color-mix(in srgb, var(--lux-gold) 28%, rgba(255,255,255,.1))!important;
+    border-radius:999px!important;
+}
+body.aryanta-ultra-luxury .search-dropdown{
+    background:rgba(10,10,14,.96)!important;
+    border:1px solid color-mix(in srgb, var(--lux-gold) 32%, rgba(255,255,255,.12))!important;
+    box-shadow:0 26px 70px rgba(0,0,0,.46)!important;
+}
+body.aryanta-ultra-luxury .search-item{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.045)!important;}
+body.aryanta-ultra-luxury .search-item:hover{border-color:color-mix(in srgb, var(--lux-gold) 42%, transparent)!important;background:rgba(255,255,255,.08)!important;}
+body.aryanta-ultra-luxury .aryanta-ai-correct-hint{border-color:color-mix(in srgb, var(--lux-cyan) 38%, transparent)!important;}
+body.aryanta-ultra-luxury .ultra-luxury-hero{
+    display:flex;align-items:center;justify-content:space-between;gap:24px;
+    width:min(1180px, calc(100% - 40px));margin:16px auto 28px;padding:32px;
+    border-radius:34px;position:relative;overflow:hidden;
+    background:
+      radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--lux-gold) 34%, transparent), transparent 36%),
+      radial-gradient(circle at 92% 12%, color-mix(in srgb, var(--lux-purple) 30%, transparent), transparent 38%),
+      linear-gradient(135deg, rgba(255,255,255,.105), rgba(255,255,255,.04)) !important;
+    border:1px solid color-mix(in srgb, var(--lux-gold) 36%, rgba(255,255,255,.13))!important;
+    box-shadow:0 30px 90px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.09)!important;
+}
+body.aryanta-ultra-luxury .ultra-luxury-hero h1{font-size:clamp(32px,5vw,68px)!important;line-height:.95!important;letter-spacing:-2.5px!important;margin:12px 0!important;color:#fff8df!important;}
+body.aryanta-ultra-luxury .ultra-luxury-hero p{font-size:clamp(14px,2vw,18px)!important;color:#e8dcc2!important;font-weight:800!important;max-width:680px!important;}
+body.aryanta-ultra-luxury .special-day-pill{background:rgba(255,255,255,.1)!important;color:#fff8df!important;border:1px solid color-mix(in srgb,var(--lux-gold) 38%,transparent);}
+.special-luxury-points{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;}
+.special-luxury-points span{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.06);border-radius:999px;padding:9px 12px;font-size:12px;font-weight:900;color:#fff8df;}
+.aryanta-special-live-overlay{position:fixed;inset:0;background:rgba(0,0,0,.52);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);z-index:10040;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .18s ease, visibility .18s ease;}
+.aryanta-special-live-overlay.show{opacity:1;visibility:visible;pointer-events:auto;}
+.aryanta-special-live-box{width:min(94vw,460px);position:relative;text-align:center;border-radius:32px;padding:34px 26px;background:linear-gradient(145deg, rgba(18,18,22,.96), rgba(34,28,44,.94));border:1px solid color-mix(in srgb,var(--event-accent,#d6a84f) 42%,rgba(255,255,255,.14));box-shadow:0 34px 100px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.1);color:#fff8df;}
+.aryanta-special-live-close{position:absolute;top:14px;right:14px;width:38px;height:38px;border-radius:99px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#fff;display:grid;place-items:center;cursor:pointer;}
+.aryanta-special-live-icon{width:70px;height:70px;margin:0 auto 16px;border-radius:24px;display:grid;place-items:center;background:linear-gradient(135deg,var(--event-accent,#d6a84f),var(--event-accent-2,#8b5cf6));color:#090806;font-size:30px;box-shadow:0 18px 38px color-mix(in srgb,var(--event-accent,#d6a84f) 28%,transparent);}
+.aryanta-special-live-kicker{display:inline-flex;margin-bottom:10px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.07);border-radius:99px;padding:7px 12px;font-size:11px;font-weight:950;text-transform:uppercase;letter-spacing:.7px;color:#ffe7a8;}
+.aryanta-special-live-box h3{font-size:28px;line-height:1.1;margin:6px 0 12px;font-weight:950;letter-spacing:-.8px;}
+.aryanta-special-live-box p{font-size:15px;line-height:1.65;color:#ded3bd;font-weight:750;margin:0 0 24px;}
+.aryanta-special-live-actions{display:grid;grid-template-columns:1fr 1.3fr;gap:12px;}
+.aryanta-special-live-actions button{min-height:48px;border-radius:999px;font-weight:950;cursor:pointer;border:1px solid rgba(255,255,255,.14);}
+.aryanta-special-live-later{background:rgba(255,255,255,.06);color:#fff8df;}
+.aryanta-special-live-shop{background:linear-gradient(135deg,var(--event-accent,#d6a84f),var(--event-accent-2,#8b5cf6));color:#090806;border:0!important;}
+@media(max-width:768px){
+    body.aryanta-ultra-luxury .ultra-luxury-hero{width:calc(100% - 24px);display:block;padding:24px 18px;border-radius:28px;margin-top:10px;}
+    body.aryanta-ultra-luxury .ultra-luxury-hero .special-day-btn{width:100%;margin-top:18px;}
+    body.aryanta-ultra-luxury .nav-search{min-height:58px!important;}
+    .aryanta-special-live-actions{grid-template-columns:1fr;}
+    .aryanta-special-live-box{border-radius:26px;padding:30px 20px;}
+}
