@@ -30,7 +30,7 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <!-- Centralized Stylesheet -->
-    <link rel="stylesheet" href="https://aryanta.in/style.css">
+    <link rel="stylesheet" href="style.css?v=10">
     <!-- Tab safety styles: keeps Highlights / Reviews / Product Queries switching working even if external CSS changes -->
     <style id="aryanta-tab-fix-style">
         .tabs-container .tab-content{display:none;}
@@ -203,7 +203,7 @@
         <section class="product-container">
             <div class="product-gallery">
                 <div class="main-image-wrapper" id="imageWrapper">
-                    <!-- Fullscreen gallery enabled: click product image to open -->
+                    <!-- Disabled Fullscreen onClick logic per request -->
                     <img id="mainProductImage" src="" alt="Product Image" fetchpriority="high" decoding="async">
                     <button class="share-img-btn" onclick="copyProductLink()" title="Share Product">
                         <i class="fas fa-share-nodes"></i> Share
@@ -808,7 +808,7 @@
                         const img = getProductImageSafe(p);
                         const tag = isSponsoredProduct(p) ? '<span class="s-sponsored-tag">Sponsored</span>' : (isBoostedProduct(p) ? '<span class="s-sponsored-tag boosted">Boosted</span>' : '');
                         return `
-                            <div class="search-item" onclick="window.location.href=${escapeAttr(JSON.stringify(window.aryantaProductUrl(p.id)))}">
+                            <div class="search-item" onclick="window.location.href=${escapeAttr(JSON.stringify(getPublicProductUrl(p.id)))}">
                                 <img src="${escapeAttr(img)}" loading="lazy" decoding="async" style="width: 44px; height: 44px; object-fit: contain; border-radius: 8px; border:1px solid var(--border); padding:2px;">
                                 <div style="display:flex; flex-direction:column; overflow:hidden; padding-left:5px; min-width:0; width:100%;">
                                     <span style="font-weight: 800; font-size: 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-main);">
@@ -1397,7 +1397,7 @@
         }
 
         function getPublicProductUrl(id) {
-            return `https://aryanta.in/product?id=${encodeURIComponent(id || "")}`;
+            return `https://aryanta.in/product/?id=${encodeURIComponent(id || "")}`;
         }
 
         function getRelativeProductUrl(id) {
@@ -1956,7 +1956,7 @@
                     }
 
                     lHtml += `
-                    <div class="linked-item" style="border-color: ${isCurrentProd ? 'var(--text-main)' : 'var(--border)'};" onclick="window.location.href=${escapeAttr(JSON.stringify(match ? window.aryantaProductUrl(match[1]) : url))}">
+                    <div class="linked-item" style="border-color: ${isCurrentProd ? 'var(--text-main)' : 'var(--border)'};" onclick="window.location.href=${escapeAttr(JSON.stringify(match ? getRelativeProductUrl(match[1]) : url))}">
                         <img src="${escapeAttr(vImg)}">
                         <span>${escapeHtmlText(vName)}</span>
                     </div>`;
@@ -1986,23 +1986,19 @@
                 document.getElementById('priceGraphSection').style.display = 'none';
                 document.getElementById('deliveryPreviewBox').style.display = 'none';
             } else {
-                const priceInfo = window.resolveAryantaAdminPrice ? window.resolveAryantaAdminPrice(p) : { basePrice: Number(p.price || 0), finalPrice: Number(p.price || 0), mrp: Number(p.mrp || p.price || 0), stockNum: Number(p.stock || 0), delta: 0 };
-                let basePrice = Number(priceInfo.basePrice || 0);
-                let finalPrice = Number(priceInfo.finalPrice || 0);
-                let stockNum = Number(priceInfo.stockNum || p.stock || 0);
-                let mrp = Number(priceInfo.mrp || finalPrice || basePrice || 0);
+                let basePrice = Number(firstNonEmpty(p.price, p.salePrice, p.sellingPrice, p.finalPrice, p.offerPrice, 0)) || 0;
+                let finalPrice = Math.round(basePrice);
+                let stockNum = Number(firstNonEmpty(p.stock, p.quantity, p.qty, p.availableStock, 0)) || 0;
+                let mrp = Number(firstNonEmpty(p.mrp, p.maxPrice, p.originalPrice, p.marketPrice, basePrice)) || basePrice;
 
+                
                 currentFinalPrice = finalPrice;
-                currentNormalPrice = basePrice || finalPrice;
-                currentMaxPrice = mrp || finalPrice;
-                p.price = finalPrice;
-                p.finalPrice = finalPrice;
+                currentNormalPrice = basePrice;
+                currentMaxPrice = mrp;
 
                 document.getElementById('pPrice').innerText = `₹${finalPrice.toLocaleString('en-IN')}`;
 
                 if(mrp > finalPrice) {
-                    document.getElementById('pMrp').style.display = '';
-                    document.getElementById('pDiscount').style.display = '';
                     document.getElementById('pMrp').innerText = `₹${mrp.toLocaleString('en-IN')}`;
                     let disc = Math.round(((mrp - finalPrice) / mrp) * 100);
                     document.getElementById('pDiscount').innerText = `${disc}% OFF`;
@@ -2013,11 +2009,13 @@
 
                 let soldNumAll = p.soldAllTime || p.sold || 0;
                 let soldNumMonth = p.soldThisMonth || 0;
-                document.getElementById('pSoldAll').innerText = Number(soldNumAll || 0).toLocaleString();
-                document.getElementById('pSoldMonth').innerText = Number(soldNumMonth || 0).toLocaleString();
-                document.getElementById('pStock').innerText = Number(stockNum || 0).toLocaleString();
-                if (window.renderAryantaPriceChangeNote) window.renderAryantaPriceChangeNote(p, priceInfo);
-}
+                document.getElementById('pSoldAll').innerText = soldNumAll.toLocaleString();
+                document.getElementById('pSoldMonth').innerText = soldNumMonth.toLocaleString();
+                document.getElementById('pStock').innerText = stockNum.toLocaleString();
+
+                // Dynamic price sync removed: keep DB selling price unchanged.
+                currentFinalPrice = finalPrice;
+            }
 
             // Return Policy
             const policyReturn = document.getElementById('policyReturn');
@@ -2079,6 +2077,7 @@
             } else { thumbCont.style.display = 'none'; }
 
             checkCartBtnStatus();
+            setTimeout(() => { if (typeof refreshAIProductIntelligence === 'function') refreshAIProductIntelligence('all'); }, 90);
         }
 
         function renderMarketplaceTrustGrid(p = {}) {
@@ -2091,7 +2090,123 @@
             
         }
 
-        async function simulateDBPriceUpdate(id, newPrice, stockNum) { return; }
+        async function simulateDBPriceUpdate(id, newPrice, stockNum) {
+            // Removed: product selling price must never be auto-changed from frontend.
+            return Promise.resolve({ skipped: true, id, newPrice, stockNum });
+        }
+
+        window.setMainImg = function(src, el, index = 0) {
+            currentGalleryIndex = Math.max(0, Number(index) || 0);
+            const img = document.getElementById('mainProductImage');
+            if (img) img.src = src;
+            document.querySelectorAll('.thumbnail-item').forEach(t => t.classList.remove('active'));
+            if (el) el.classList.add('active');
+        }
+
+        window.openFullscreenGallery = function(index = 0) {
+            if (!currentGalleryImages.length && currentProduct) currentGalleryImages = currentProduct.images || [currentProduct.image].filter(Boolean);
+            if (!currentGalleryImages.length) return;
+            currentGalleryIndex = Math.max(0, Math.min(Number(index) || 0, currentGalleryImages.length - 1));
+            const overlay = document.getElementById('fullscreenGallery');
+            if (!overlay) return;
+            renderFullscreenGallery();
+            overlay.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        window.closeFullscreenGallery = function() {
+            const overlay = document.getElementById('fullscreenGallery');
+            if (overlay) overlay.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        window.moveGalleryImage = function(step = 1) {
+            if (!currentGalleryImages.length) return;
+            currentGalleryIndex = (currentGalleryIndex + step + currentGalleryImages.length) % currentGalleryImages.length;
+            renderFullscreenGallery();
+        }
+
+        window.selectGalleryImage = function(index = 0) {
+            currentGalleryIndex = Math.max(0, Math.min(Number(index) || 0, currentGalleryImages.length - 1));
+            renderFullscreenGallery();
+        }
+
+        function renderFullscreenGallery() {
+            const main = document.getElementById('galleryMainImage');
+            const row = document.getElementById('galleryThumbRow');
+            const count = document.getElementById('galleryImageCount');
+            const src = currentGalleryImages[currentGalleryIndex] || currentGalleryImages[0];
+            if (main) main.src = src;
+            if (count) count.innerText = `${currentGalleryIndex + 1} / ${currentGalleryImages.length}`;
+            if (row) {
+                row.innerHTML = currentGalleryImages.map((img, i) => `<img src="${escapeAttr(img)}" class="${i === currentGalleryIndex ? 'active' : ''}" onclick="selectGalleryImage(${i})" alt="Product thumbnail ${i + 1}">`).join('');
+            }
+        }
+
+        window.openAuthPrompt = function() {
+            document.getElementById('authPromptModal').classList.add('show');
+        }
+        window.closeAuthPrompt = function() {
+            document.getElementById('authPromptModal').classList.remove('show');
+        }
+
+
+        function prioritizeUserAction(btn, label) {
+            userActionPriority = true;
+            isFullCatalogLoading = false;
+            if (btn) {
+                btn.disabled = true;
+                btn.classList.add("is-processing");
+                if (label) btn.dataset.oldHtml = btn.innerHTML, btn.innerHTML = label;
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.classList.remove("is-processing");
+                    if (btn.dataset.oldHtml) delete btn.dataset.oldHtml;
+                    userActionPriority = false;
+                    if (currentProduct) checkCartBtnStatus();
+                    try { renderSimilarProducts(); } catch(e) {}
+                }, 650);
+            } else {
+                setTimeout(() => { userActionPriority = false; }, 650);
+            }
+        }
+
+        function persistUserStateFast(type = "cart") {
+            if (!activeSession || !activeSession.email) return Promise.resolve();
+            saveCartLocallyAndRefresh();
+            const cartSnapshot = JSON.stringify(cart || []);
+            cartSyncInFlight = true;
+            const payload = JSON.stringify({
+                email: activeSession.email,
+                updates: { cart: cart, cartItems: cart, wishlist: wishlist, cartUpdatedAt: new Date().toISOString() },
+                projectId: PROJECT_ID
+            });
+            return fetch(`${API_BASE_URL}/update-user`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: payload,
+                keepalive: true
+            }).then(res => {
+                if (!res.ok) throw new Error(`Cart sync failed: ${res.status}`);
+                if (JSON.stringify(cart || []) === cartSnapshot) {
+                    userCartDirtyAt = Date.now();
+                    try { sessionStorage.setItem('aryanta_cart_dirty_at', String(userCartDirtyAt)); } catch(e) {}
+                }
+            }).catch(() => {
+                markCartDirty();
+            }).finally(() => {
+                cartSyncInFlight = false;
+                saveCartLocallyAndRefresh();
+                try { renderSimilarProducts(); } catch(e) {}
+            });
+        }
+
+        function getProductByIdFast(id) {
+            if (!id && currentProduct) return currentProduct;
+            const target = { id };
+            if (currentProduct && productsSameIdentity(currentProduct, target)) return currentProduct;
+            return allProducts.find(x => productsSameIdentity(x, target)) || null;
+        }
 
         function getGiftAwarePrice(p) {
             let priceToPush = Number(p?.price || currentFinalPrice || 0);
@@ -2341,121 +2456,27 @@
             }
         }
 
-        // --- ENHANCED: Stock Market Style Line Graph ---
-        window.drawGraph = function(period = '7d', btnEl) {
+        // --- Market Price Trend: DB history + Groq market intelligence only. It never changes selling price. ---
+        window.drawGraph = async function(period = '7d', btnEl) {
             if(btnEl) {
                 document.querySelectorAll('.graph-filters button').forEach(b => b.classList.remove('active'));
                 btnEl.classList.add('active');
             }
 
             const canvas = document.getElementById('priceCanvas');
-            if(!canvas) return;
+            if(!canvas || !currentProduct) return;
 
-            const parent = canvas.parentElement || canvas;
-            const css = getComputedStyle(document.body);
-            const textColor = css.getPropertyValue('--text-main').trim() || '#1d1d1f';
-            const mutedColor = css.getPropertyValue('--text-muted').trim() || '#86868b';
-            const successColor = css.getPropertyValue('--success').trim() || '#34c759';
-            const surfaceColor = css.getPropertyValue('--surface').trim() || '#ffffff';
-            const borderColor = css.getPropertyValue('--border').trim() || 'rgba(0,0,0,0.12)';
-
-            const dpr = Math.max(1, window.devicePixelRatio || 1);
-            const rectWidth = Math.max(280, parent.clientWidth || canvas.clientWidth || 320);
-            const rectHeight = 210;
-            canvas.width = Math.floor(rectWidth * dpr);
-            canvas.height = Math.floor(rectHeight * dpr);
-            canvas.style.width = rectWidth + 'px';
-            canvas.style.height = rectHeight + 'px';
-
-            const ctx = canvas.getContext('2d');
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            ctx.clearRect(0, 0, rectWidth, rectHeight);
-
-            const finalPrice = Math.max(1, Number(currentFinalPrice || currentProduct?.price || 1));
-            const normalPrice = Math.max(1, Number(currentNormalPrice || currentProduct?.price || finalPrice));
-            const maxPrice = Math.max(finalPrice, normalPrice, Number(currentMaxPrice || currentProduct?.mrp || finalPrice));
-            const minPrice = Math.min(finalPrice, normalPrice, maxPrice);
-            const range = Math.max(1, maxPrice - minPrice);
-            const points = period === '3m' ? 20 : (period === '6m' ? 30 : (period === 'all' ? 50 : 10));
-            const labels = [];
-            const data = [];
-
-            for(let i = 0; i < points; i++) {
-                const progress = i / Math.max(1, points - 1);
-                const wave = Math.sin(progress * Math.PI * 2.25) * range * 0.035;
-                const dropCurve = (maxPrice - finalPrice) * Math.pow(1 - progress, 2.15);
-                const val = Math.max(minPrice, Math.min(maxPrice, finalPrice + dropCurve + wave));
-                data.push(val);
-                labels.push(i);
+            const requestedPoints = period === '3m' ? 20 : (period === '6m' ? 30 : (period === 'all' ? 50 : 10));
+            let trend = typeof getStoredMarketTrend === 'function' ? getStoredMarketTrend(period) : null;
+            if (!trend || !Array.isArray(trend.points) || trend.points.length < 2) {
+                trend = typeof fetchGroqMarketTrend === 'function' ? await fetchGroqMarketTrend(period, requestedPoints).catch(() => null) : null;
             }
-
-            const padL = 42, padR = 16, padT = 26, padB = 32;
-            const w = rectWidth - padL - padR;
-            const h = rectHeight - padT - padB;
-            const coords = data.map((val, i) => ({
-                x: padL + (i / Math.max(1, data.length - 1)) * w,
-                y: padT + h - ((val - minPrice) / range) * h
-            }));
-
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = borderColor;
-            ctx.beginPath();
-            for(let i = 0; i <= 4; i++) {
-                const y = padT + (h / 4) * i;
-                ctx.moveTo(padL, y);
-                ctx.lineTo(rectWidth - padR, y);
+            if (!trend || !Array.isArray(trend.points) || trend.points.length < 2) {
+                trend = typeof buildFallbackDBPriceTrend === 'function'
+                    ? buildFallbackDBPriceTrend(period, requestedPoints)
+                    : { source: 'Prise', points: Array.from({ length: requestedPoints }, (_, i) => ({ label: String(i + 1), price: Math.max(1, Number(currentFinalPrice || currentProduct?.price || 1)) })) };
             }
-            ctx.stroke();
-
-            const gradient = ctx.createLinearGradient(0, padT, 0, rectHeight - padB);
-            gradient.addColorStop(0, 'rgba(52,199,89,0.30)');
-            gradient.addColorStop(1, 'rgba(52,199,89,0.02)');
-            ctx.beginPath();
-            ctx.moveTo(coords[0].x, coords[0].y);
-            for(let i = 1; i < coords.length; i++) {
-                const prev = coords[i - 1];
-                const cur = coords[i];
-                const midX = (prev.x + cur.x) / 2;
-                ctx.bezierCurveTo(midX, prev.y, midX, cur.y, cur.x, cur.y);
-            }
-            ctx.lineTo(coords[coords.length - 1].x, rectHeight - padB);
-            ctx.lineTo(coords[0].x, rectHeight - padB);
-            ctx.closePath();
-            ctx.fillStyle = gradient;
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.moveTo(coords[0].x, coords[0].y);
-            for(let i = 1; i < coords.length; i++) {
-                const prev = coords[i - 1];
-                const cur = coords[i];
-                const midX = (prev.x + cur.x) / 2;
-                ctx.bezierCurveTo(midX, prev.y, midX, cur.y, cur.x, cur.y);
-            }
-            ctx.strokeStyle = successColor;
-            ctx.lineWidth = 3;
-            ctx.lineCap = 'round';
-            ctx.stroke();
-
-            const last = coords[coords.length - 1];
-            ctx.beginPath();
-            ctx.arc(last.x, last.y, 5, 0, Math.PI * 2);
-            ctx.fillStyle = surfaceColor;
-            ctx.fill();
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = successColor;
-            ctx.stroke();
-
-            ctx.fillStyle = mutedColor;
-            ctx.font = '700 11px Plus Jakarta Sans, sans-serif';
-            ctx.fillText(`MRP ₹${Math.round(maxPrice).toLocaleString('en-IN')}`, 8, padT + 4);
-            ctx.fillText(`Low ₹${Math.round(minPrice).toLocaleString('en-IN')}`, 8, rectHeight - padB + 4);
-
-            ctx.fillStyle = textColor;
-            ctx.font = '900 14px Plus Jakarta Sans, sans-serif';
-            ctx.textAlign = 'right';
-            ctx.fillText(`Now ₹${Math.round(finalPrice).toLocaleString('en-IN')}`, rectWidth - padR, 18);
-            ctx.textAlign = 'left';
+            if (typeof renderPriceTrendCanvas === 'function') renderPriceTrendCanvas(canvas, trend, period);
         }
 
         window.openAddressModal = async function() {
@@ -3685,449 +3706,392 @@
         }
 
     </script>
+<script id="aryanta-ultimate-ai-patch">
 
-<script id="aryanta-common-login-url-patch">
-(function(){
-  if (window.__aryantaCommonLoginUrlPatch) return;
-  window.__aryantaCommonLoginUrlPatch = true;
-  window.aryantaProductUrl = function(id){ return 'https://aryanta.in/product?id=' + encodeURIComponent(String(id || '').trim()); };
-  window.aryantaSearchUrl = function(q){ return 'https://aryanta.in/?search=' + encodeURIComponent(String(q || '').trim()); };
-  window.aryantaHasSession = function(){
-    try {
-      const raw = localStorage.getItem('active_session') || sessionStorage.getItem('active_session');
-      const s = raw ? JSON.parse(raw) : null;
-      return !!(s && s.email);
-    } catch(e){ return false; }
-  };
-  window.showLoginRequiredPopup = function(message){
-    let overlay = document.getElementById('aryantaLoginRequiredOverlay');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'aryantaLoginRequiredOverlay';
-      overlay.className = 'aryanta-login-required-overlay';
-      overlay.innerHTML = `
-        <div class="aryanta-login-required-box" role="dialog" aria-modal="true" aria-labelledby="aryantaLoginTitle">
-          <div class="aryanta-login-required-icon"><i class="fas fa-user-lock"></i></div>
-          <h3 id="aryantaLoginTitle">Login required</h3>
-          <p id="aryantaLoginMessage">Please login to continue securely on Aryanta.</p>
-          <div class="aryanta-login-required-actions">
-            <button type="button" class="aryanta-login-later-btn" id="aryantaLoginLaterBtn">Not now</button>
-            <button type="button" class="aryanta-login-now-btn" id="aryantaLoginNowBtn">Login</button>
-          </div>
-        </div>`;
-      document.body.appendChild(overlay);
-      overlay.addEventListener('click', function(e){ if(e.target === overlay) overlay.classList.remove('show'); });
-      overlay.querySelector('#aryantaLoginLaterBtn').onclick = function(){ overlay.classList.remove('show'); };
-      overlay.querySelector('#aryantaLoginNowBtn').onclick = function(){ window.location.href = 'https://aryanta.in/login/'; };
+const ARYANTA_GROQ_MODEL = "openai/gpt-oss-20b";
+const ARYANTA_GROQ_PROXY_PATHS = ["/ai/groq"]; // one endpoint only; fallback endpoints caused duplicate 429 spam
+const ARYANTA_AI_CACHE_MS = 1000 * 60 * 60 * 6;
+const ARYANTA_AI_RATE_LIMIT_KEY = "ary_ai_groq_rate_limited_until";
+const ARYANTA_AI_INFLIGHT = new Map();
+
+function cleanGroqText(text) {
+    return String(text || '').replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
+}
+
+function extractGroqText(payload) {
+    if (!payload) return '';
+    if (typeof payload === 'string') return payload;
+    if (typeof payload.text === 'string') return payload.text;
+    if (typeof payload.output_text === 'string') return payload.output_text;
+    if (typeof payload.output === 'string') return payload.output;
+    if (payload.data && typeof payload.data === 'string') return payload.data;
+    if (payload.response && typeof payload.response === 'string') return payload.response;
+    if (Array.isArray(payload.output)) {
+        const parts = [];
+        payload.output.forEach(item => {
+            if (typeof item === 'string') parts.push(item);
+            if (item && typeof item.text === 'string') parts.push(item.text);
+            const content = item && item.content;
+            if (Array.isArray(content)) content.forEach(c => {
+                if (typeof c === 'string') parts.push(c);
+                if (c && typeof c.text === 'string') parts.push(c.text);
+                if (c && typeof c.output_text === 'string') parts.push(c.output_text);
+            });
+        });
+        return parts.join('\n').trim();
     }
-    const msg = overlay.querySelector('#aryantaLoginMessage');
-    if (msg) msg.textContent = message || 'Please login to continue securely on Aryanta.';
-    overlay.classList.add('show');
-  };
-})();
-</script>
+    if (payload.raw) return extractGroqText(payload.raw);
+    return '';
+}
 
-<script id="aryanta-product-gallery-price-repair-v2">
-(function(){
-  if (window.__aryantaProductGalleryPriceRepairV2) return;
-  window.__aryantaProductGalleryPriceRepairV2 = true;
+function parseGroqJSON(payload, fallback = null) {
+    if (payload && typeof payload.json === 'object' && payload.json) return payload.json;
+    if (payload && typeof payload.data === 'object' && payload.data) return payload.data;
+    const raw = cleanGroqText(extractGroqText(payload));
+    if (!raw) return fallback;
+    try { return JSON.parse(raw); } catch(e) {}
+    const match = raw.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+    if (match) { try { return JSON.parse(match[0]); } catch(e) {} }
+    return fallback;
+}
 
-  function safeNum(value, fallback = 0) {
-    const n = Number(value);
-    return Number.isFinite(n) ? n : fallback;
-  }
-
-  function firstNumber() {
-    for (let i = 0; i < arguments.length; i++) {
-      const n = safeNum(arguments[i], NaN);
-      if (Number.isFinite(n) && n > 0) return n;
-    }
-    return 0;
-  }
-
-  function money(value) {
-    return '₹' + Math.round(safeNum(value, 0)).toLocaleString('en-IN');
-  }
-
-  function getActiveProduct() {
-    try { if (typeof currentProduct !== 'undefined' && currentProduct) return currentProduct; } catch(e) {}
-    return window.currentProduct || {};
-  }
-
-  function getCurrentFinalPrice() {
-    try { if (typeof currentFinalPrice !== 'undefined' && Number(currentFinalPrice) > 0) return Number(currentFinalPrice); } catch(e) {}
-    const p = getActiveProduct();
-    return firstNumber(p.adminPrice, p.updatedPrice, p.approvedPrice, p.finalPrice, p.sellingPrice, p.salePrice, p.offerPrice, p.price, 1);
-  }
-
-  function getCurrentNormalPrice() {
-    try { if (typeof currentNormalPrice !== 'undefined' && Number(currentNormalPrice) > 0) return Number(currentNormalPrice); } catch(e) {}
-    const p = getActiveProduct();
-    return firstNumber(p.basePrice, p.originalSellerPrice, p.sellerPrice, p.oldPrice, p.previousPrice, p.price, getCurrentFinalPrice());
-  }
-
-  function getCurrentMaxPrice() {
-    try { if (typeof currentMaxPrice !== 'undefined' && Number(currentMaxPrice) > 0) return Number(currentMaxPrice); } catch(e) {}
-    const p = getActiveProduct();
-    return firstNumber(p.mrp, p.maxPrice, p.originalPrice, p.listPrice, getCurrentFinalPrice(), getCurrentNormalPrice());
-  }
-
-  function normalizeImageList(product) {
-    product = product || getActiveProduct();
-    const list = [];
-    const push = (v) => {
-      if (!v) return;
-      if (Array.isArray(v)) return v.forEach(push);
-      const s = String(v).trim();
-      if (s && !list.includes(s)) list.push(s);
-    };
-    push(product.images);
-    push(product.imageUrls);
-    push(product.gallery);
-    push(product.productImages);
-    push(product.image);
-    push(product.imageUrl);
-    push(product.img);
-    push(product.thumbnail);
-    return list.length ? list : ['https://aryanta.in/vurify/aryanta.jpeg'];
-  }
-
-  function writeGalleryImages(list) {
-    try {
-      if (typeof currentGalleryImages !== 'undefined') currentGalleryImages = list.slice();
-      if (typeof currentGalleryIndex !== 'undefined') currentGalleryIndex = Math.max(0, Math.min(currentGalleryIndex || 0, list.length - 1));
-    } catch(e) {}
-    window.currentGalleryImages = list.slice();
-    window.currentGalleryIndex = Math.max(0, Math.min(Number(window.currentGalleryIndex || 0), list.length - 1));
-  }
-
-  function readGalleryImages() {
-    let list = [];
-    try { if (typeof currentGalleryImages !== 'undefined' && Array.isArray(currentGalleryImages)) list = currentGalleryImages; } catch(e) {}
-    if (!list || !list.length) list = Array.isArray(window.currentGalleryImages) ? window.currentGalleryImages : [];
-    if (!list.length) list = normalizeImageList(getActiveProduct());
-    writeGalleryImages(list);
-    return list;
-  }
-
-  function readGalleryIndex() {
-    try { if (typeof currentGalleryIndex !== 'undefined') return Number(currentGalleryIndex) || 0; } catch(e) {}
-    return Number(window.currentGalleryIndex || 0) || 0;
-  }
-
-  function setGalleryIndex(index) {
-    const list = readGalleryImages();
-    const safe = Math.max(0, Math.min(Number(index) || 0, Math.max(0, list.length - 1)));
-    try { if (typeof currentGalleryIndex !== 'undefined') currentGalleryIndex = safe; } catch(e) {}
-    window.currentGalleryIndex = safe;
-    return safe;
-  }
-
-  window.setMainImg = function(src, el, index = 0) {
-    const list = readGalleryImages();
-    const chosenIndex = Number.isFinite(Number(index)) ? Number(index) : list.indexOf(src);
-    setGalleryIndex(chosenIndex >= 0 ? chosenIndex : 0);
-    const main = document.getElementById('mainProductImage');
-    if (main && src) {
-      main.src = src;
-      main.dataset.fullSrc = src;
-      main.style.cursor = 'zoom-in';
-    }
-    document.querySelectorAll('.thumbnail-item').forEach(t => t.classList.remove('active'));
-    if (el) el.classList.add('active');
-    renderFullscreenGallery();
-  };
-
-  window.openFullscreenGallery = function(index = readGalleryIndex()) {
-    const list = readGalleryImages();
-    if (!list.length) return;
-    setGalleryIndex(index);
-    const overlay = document.getElementById('fullscreenGallery');
-    if (!overlay) return;
-    renderFullscreenGallery();
-    overlay.classList.add('show');
-    overlay.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
-  };
-
-  window.closeFullscreenGallery = function() {
-    const overlay = document.getElementById('fullscreenGallery');
-    if (overlay) {
-      overlay.classList.remove('show');
-      overlay.setAttribute('aria-hidden', 'true');
-    }
-    document.body.style.overflow = '';
-  };
-
-  window.moveGalleryImage = function(step = 1) {
-    const list = readGalleryImages();
-    if (!list.length) return;
-    const next = (readGalleryIndex() + Number(step || 1) + list.length) % list.length;
-    setGalleryIndex(next);
-    const mainProduct = document.getElementById('mainProductImage');
-    if (mainProduct) mainProduct.src = list[next];
-    document.querySelectorAll('.thumbnail-item').forEach((t, i) => t.classList.toggle('active', i === next));
-    renderFullscreenGallery();
-  };
-
-  window.selectGalleryImage = function(index = 0) {
-    const list = readGalleryImages();
-    if (!list.length) return;
-    const safe = setGalleryIndex(index);
-    const mainProduct = document.getElementById('mainProductImage');
-    if (mainProduct) mainProduct.src = list[safe];
-    document.querySelectorAll('.thumbnail-item').forEach((t, i) => t.classList.toggle('active', i === safe));
-    renderFullscreenGallery();
-  };
-
-  function renderFullscreenGallery() {
-    const list = readGalleryImages();
-    if (!list.length) return;
-    const idx = setGalleryIndex(readGalleryIndex());
-    const main = document.getElementById('galleryMainImage');
-    const row = document.getElementById('galleryThumbRow');
-    const count = document.getElementById('galleryImageCount');
-    const src = list[idx] || list[0];
-    if (main) main.src = src;
-    if (count) count.innerText = (idx + 1) + ' / ' + list.length;
-    if (row) {
-      row.innerHTML = list.map((img, i) => '<img src="' + String(img).replaceAll('&','&amp;').replaceAll('"','&quot;') + '" class="' + (i === idx ? 'active' : '') + '" onclick="selectGalleryImage(' + i + ')" alt="Product thumbnail ' + (i + 1) + '">').join('');
-    }
-  }
-
-  function installGalleryClicks() {
-    const wrapper = document.getElementById('imageWrapper');
-    const main = document.getElementById('mainProductImage');
-    const share = wrapper ? wrapper.querySelector('.share-img-btn') : null;
-    if (share && share.dataset.stopGallery !== 'true') {
-      share.dataset.stopGallery = 'true';
-      share.addEventListener('click', function(e){ e.stopPropagation(); });
-    }
-    if (main) {
-      main.style.cursor = 'zoom-in';
-      main.onclick = function(e){ e.preventDefault(); e.stopPropagation(); openFullscreenGallery(readGalleryIndex()); };
-    }
-    if (wrapper && wrapper.dataset.galleryClickReady !== 'true') {
-      wrapper.dataset.galleryClickReady = 'true';
-      wrapper.addEventListener('click', function(e){
-        if (e.target.closest('.share-img-btn')) return;
-        openFullscreenGallery(readGalleryIndex());
-      });
-    }
-  }
-
-  window.openAuthPrompt = window.openAuthPrompt || function(message) {
-    const modal = document.getElementById('authPromptModal');
-    const msg = modal ? modal.querySelector('p') : null;
-    if (msg && message) msg.textContent = message;
-    if (modal) modal.classList.add('show');
-    else if (typeof window.showLoginRequiredPopup === 'function') window.showLoginRequiredPopup(message || 'Please login to continue securely on Aryanta.');
-    else if (typeof showAlert === 'function') showAlert(message || 'Please login to continue securely on Aryanta.', 'Login Required');
-    else alert(message || 'Please login to continue securely on Aryanta.');
-  };
-
-  window.closeAuthPrompt = window.closeAuthPrompt || function() {
-    const modal = document.getElementById('authPromptModal');
-    if (modal) modal.classList.remove('show');
-  };
-
-  window.getAryantaPriceHistory = function(product) {
-    const p = product || getActiveProduct() || {};
-    const raw = p.priceHistory || p.adminPriceHistory || p.priceUpdates || p.priceLog || p.price_history || p.marketPriceHistory || [];
-    let list = Array.isArray(raw) ? raw : (raw && typeof raw === 'object' ? Object.values(raw) : []);
-    list = list.map(function(x, i) {
-      if (typeof x === 'number') return { oldPrice: 0, newPrice: x, price: x, at: i, reason: 'Price update' };
-      if (!x || typeof x !== 'object') return null;
-      const newPrice = firstNumber(x.newPrice, x.after, x.to, x.price, x.finalPrice, x.adminPrice, x.updatedPrice);
-      const oldPrice = firstNumber(x.oldPrice, x.before, x.from, x.previousPrice, x.basePrice);
-      return {
-        oldPrice: oldPrice,
-        newPrice: newPrice,
-        price: firstNumber(newPrice, x.price),
-        at: x.at || x.date || x.createdAt || x.updatedAt || x.time || i,
-        reason: x.reason || x.note || x.source || 'Admin update'
-      };
-    }).filter(Boolean).filter(x => firstNumber(x.newPrice, x.price) > 0);
-    list.sort(function(a,b){
-      const ad = new Date(a.at).getTime();
-      const bd = new Date(b.at).getTime();
-      if (Number.isFinite(ad) && Number.isFinite(bd)) return ad - bd;
-      return 0;
-    });
-    return list;
-  };
-
-  window.resolveAryantaAdminPrice = function(product) {
-    const p = product || getActiveProduct() || {};
-    const history = window.getAryantaPriceHistory(p);
-    const latest = history.length ? history[history.length - 1] : null;
-    const finalPrice = firstNumber(
-      p.adminPrice, p.updatedPrice, p.approvedPrice, p.finalPrice, p.sellingPrice,
-      p.salePrice, p.offerPrice, latest && (latest.newPrice || latest.price), p.price,
-      getCurrentFinalPrice()
-    );
-    const basePrice = firstNumber(
-      p.basePrice, p.originalSellerPrice, p.sellerPrice, p.oldPrice, p.previousPrice,
-      latest && (latest.oldPrice || latest.before || latest.from), getCurrentNormalPrice(), p.price, finalPrice
-    );
-    const mrp = Math.max(firstNumber(p.mrp, p.maxPrice, p.originalPrice, p.listPrice, getCurrentMaxPrice(), finalPrice, basePrice), finalPrice, basePrice);
+function getAIUserContext() {
+    let loc = {};
+    try { loc = JSON.parse(getCookie('ary_ai_location') || '{}') || {}; } catch(e) {}
     return {
-      basePrice: Math.round(basePrice || finalPrice || 0),
-      finalPrice: Math.round(finalPrice || basePrice || 0),
-      mrp: Math.round(mrp || finalPrice || basePrice || 0),
-      stockNum: safeNum(p.stock || p.qty || p.quantity || p.availableStock, 0),
-      delta: Math.round((finalPrice || 0) - (basePrice || finalPrice || 0)),
-      latest: latest
+        city: activeSession?.city || loc.city || getCookie('ary_ai_city') || '',
+        pincode: activeSession?.pincode || loc.pincode || '',
+        country: loc.country || 'India',
+        preferredCategory: (getCookie('ary_pref_cat') || '').split('||')[0] || currentProduct?.category || '',
+        preferredKeyword: (getCookie('ary_pref_cat') || '').split('||')[1] || ''
     };
-  };
+}
 
-  window.renderAryantaPriceChangeNote = function(product, info) {
-    const block = document.getElementById('priceDisplayBlock') || document.querySelector('.price-block') || (document.getElementById('pPrice') && document.getElementById('pPrice').parentElement);
-    if (!block) return;
-    block.querySelectorAll('.aryanta-price-change-note').forEach(n => n.remove());
-    info = info || window.resolveAryantaAdminPrice(product || getActiveProduct());
-    const delta = Number(info.delta || 0);
-    if (!delta) return;
-    const cls = delta < 0 ? 'aryanta-price-change-note down' : 'aryanta-price-change-note';
-    const icon = delta < 0 ? 'fa-arrow-trend-down' : 'fa-arrow-trend-up';
-    const txt = delta < 0
-      ? 'Admin price decreased by ' + money(Math.abs(delta)) + ' from ' + money(info.basePrice) + '.'
-      : 'Admin price increased by ' + money(delta) + ' from ' + money(info.basePrice) + '.';
-    block.insertAdjacentHTML('beforeend', '<div class="' + cls + '"><i class="fas ' + icon + '"></i><span>' + txt + '</span></div>');
-  };
+function getAIProductSnapshot(p = currentProduct) {
+    if (!p) return {};
+    return {
+        id: String(firstNonEmpty(p.id, p.productId, p.itemId, p.docId, '')),
+        name: String(firstNonEmpty(p.name, p.title, p.productName, 'Aryanta Product')),
+        category: String(firstNonEmpty(p.category, p.type, 'General')),
+        brand: String(firstNonEmpty(p.brand, p.brandName, '')),
+        price: Number(firstNonEmpty(p.price, p.salePrice, p.sellingPrice, p.finalPrice, p.offerPrice, 0)) || 0,
+        mrp: Number(firstNonEmpty(p.mrp, p.maxPrice, p.originalPrice, 0)) || 0,
+        stock: Number(firstNonEmpty(p.stock, p.quantity, p.qty, p.availableStock, 0)) || 0,
+        desc: String(firstNonEmpty(p.desc, p.description, p.shortDescription, '')).slice(0, 1200),
+        highlights: Array.isArray(p.highlights) ? p.highlights.slice(0, 20) : String(p.highlights || '').split('\n').filter(Boolean).slice(0, 20),
+        rating: Number(firstNonEmpty(p.rating, p.avgRating, 0)) || 0,
+        reviewCount: Array.isArray(p.reviews) ? p.reviews.length : Number(firstNonEmpty(p.reviewCount, p.reviewsCount, 0)) || 0
+    };
+}
 
-  window.drawGraph = function(period = '7d', btnEl) {
-    if (btnEl) {
-      document.querySelectorAll('.graph-filters button').forEach(b => b.classList.remove('active'));
-      btnEl.classList.add('active');
-    }
-    const canvas = document.getElementById('priceCanvas');
-    if (!canvas) return;
-    const product = getActiveProduct();
-    const info = window.resolveAryantaAdminPrice(product);
-    window.renderAryantaPriceChangeNote(product, info);
-
-    let hist = window.getAryantaPriceHistory(product);
-    if (!hist.length) {
-      hist = [
-        { oldPrice: 0, newPrice: info.basePrice || info.finalPrice || 1, at: 'Start' },
-        { oldPrice: info.basePrice || info.finalPrice || 1, newPrice: info.finalPrice || info.basePrice || 1, at: 'Now' }
-      ];
+async function callGroqJSON(task, prompt, fallback = null, options = {}) {
+    const rateLimitedUntil = Number(sessionStorage.getItem(ARYANTA_AI_RATE_LIMIT_KEY) || 0);
+    if (rateLimitedUntil && Date.now() < rateLimitedUntil) {
+        return fallback;
     }
 
-    const periodLimit = period === '7d' ? 10 : (period === '3m' ? 20 : (period === '6m' ? 30 : 80));
-    hist = hist.slice(Math.max(0, hist.length - periodLimit));
-    const values = hist.map(x => firstNumber(x.newPrice, x.price, info.finalPrice)).filter(v => v > 0);
-    if (!values.length) values.push(info.basePrice || info.finalPrice || 1, info.finalPrice || info.basePrice || 1);
-    if (values[values.length - 1] !== info.finalPrice && info.finalPrice > 0) values.push(info.finalPrice);
+    const payload = {
+        task,
+        model: options.model || ARYANTA_GROQ_MODEL,
+        prompt,
+        input: prompt,
+        product: getAIProductSnapshot(),
+        userContext: getAIUserContext(),
+        projectId: PROJECT_ID,
+        wantJson: true,
+        useBrowserSearch: !!(options.useBrowserSearch || options.useGoogleSearch || options.realtime),
+        temperature: options.temperature ?? 0.25,
+        maxOutputTokens: options.maxOutputTokens || options.maxTokens || 1536,
+        cacheTtlMs: options.cacheTtlMs || ARYANTA_AI_CACHE_MS
+    };
 
+    const requestKey = `${task}:${getCurrentItemId ? getCurrentItemId() : ''}:${JSON.stringify(payload).length}:${payload.useBrowserSearch ? 'web' : 'noweb'}`;
+    if (ARYANTA_AI_INFLIGHT.has(requestKey)) return ARYANTA_AI_INFLIGHT.get(requestKey);
+
+    const runner = (async () => {
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), Number(options.timeoutMs || 18000));
+        try {
+            const res = await fetch(`${API_BASE_URL}${ARYANTA_GROQ_PROXY_PATHS[0]}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                cache: 'no-store',
+                signal: controller.signal
+            });
+            clearTimeout(t);
+
+            const data = await res.json().catch(() => null);
+            if (res.status === 429 || data?.rateLimited) {
+                const retryAfter = Number(res.headers.get('retry-after') || data?.retryAfter || data?.retryAfterSeconds || 60);
+                sessionStorage.setItem(ARYANTA_AI_RATE_LIMIT_KEY, String(Date.now() + Math.max(30, retryAfter) * 1000));
+                console.warn(`Groq rate limited. AI paused for ${Math.max(30, retryAfter)} seconds.`);
+                return fallback;
+            }
+            if (!res.ok || data?.success === false) return fallback;
+            const parsed = parseGroqJSON(data, data);
+            return parsed || fallback;
+        } catch(e) {
+            clearTimeout(t);
+            return fallback;
+        } finally {
+            setTimeout(() => ARYANTA_AI_INFLIGHT.delete(requestKey), 2000);
+        }
+    })();
+
+    ARYANTA_AI_INFLIGHT.set(requestKey, runner);
+    return runner;
+}
+
+function aiCacheKey(task, extra = '') {
+    const id = currentProduct ? getCurrentItemId() : 'none';
+    return `ary_ai_groq_${task}_${id}_${extra}`.replace(/[^a-zA-Z0-9_\-]/g, '_');
+}
+function getAICache(task, extra = '') {
+    try {
+        const cached = JSON.parse(sessionStorage.getItem(aiCacheKey(task, extra)) || 'null');
+        if (cached && cached.at && Date.now() - cached.at < ARYANTA_AI_CACHE_MS) return cached.value;
+    } catch(e) {}
+    return null;
+}
+function setAICache(task, extra, value) {
+    try { sessionStorage.setItem(aiCacheKey(task, extra), JSON.stringify({ at: Date.now(), value })); } catch(e) {}
+}
+
+async function saveAIFieldsToDB(fields = {}) {
+    if (!currentProduct || !getCurrentItemId()) return;
+    try {
+        await fetch(`${API_BASE_URL}/update-product`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: getCurrentItemId(), productId: getCurrentItemId(), itemId: getCurrentItemId(), aiProvider: 'groq', ...fields, projectId: PROJECT_ID })
+        });
+    } catch(e) { console.warn('AI DB save skipped:', e); }
+}
+
+async function refreshAIProductIntelligence(mode = 'all') {
+    if (!currentProduct || isGiftCardMode) return;
+    if (mode === 'highlights' || mode === 'all') enhanceHighlightsWithGroq().catch(() => {});
+    if (mode === 'all') {
+        buildAISmartCookies().catch(() => {});
+        // Do not auto redraw Market Price Trend here. The first page draw already renders it,
+        // and repeated AI graph calls can hit Groq rate limits.
+    }
+}
+window.refreshAIProductIntelligence = refreshAIProductIntelligence;
+
+async function enhanceHighlightsWithGroq() {
+    const box = document.getElementById('tabHighlightsContent');
+    if (!box || !currentProduct) return;
+    const existing = Array.isArray(currentProduct.highlights) ? currentProduct.highlights : String(currentProduct.highlights || '').split('\n').filter(Boolean);
+    if (existing.length >= 4 && currentProduct.aiHighlightsLocked !== true) return;
+
+    const cached = getAICache('highlights');
+    if (cached?.bullets?.length) return renderAIHighlights(cached);
+
+    const prompt = `Return only JSON. Create short buyer-friendly product highlights for this Aryanta product. Do not invent specs. Use only given product data. JSON format: {"bullets":["..."],"shortPitch":"..."}. Product: ${JSON.stringify(getAIProductSnapshot())}. User/location: ${JSON.stringify(getAIUserContext())}`;
+    const data = await callGroqJSON('product-highlights', prompt, null);
+    if (!data || !Array.isArray(data.bullets) || !data.bullets.length) return;
+    data.bullets = data.bullets.map(x => String(x).trim()).filter(Boolean).slice(0, 6);
+    setAICache('highlights', '', data);
+    currentProduct.aiHighlights = data;
+    renderAIHighlights(data);
+    saveAIFieldsToDB({ aiHighlights: data, aiHighlightsUpdatedAt: new Date().toISOString() });
+}
+
+function renderAIHighlights(data) {
+    const box = document.getElementById('tabHighlightsContent');
+    if (!box || !data?.bullets?.length) return;
+    box.innerHTML = `
+        <div class="ai-smart-badge"><i class="fas fa-sparkles"></i> Smart Highlights</div>
+        ${data.shortPitch ? `<p style="color:var(--text-main);font-weight:800;margin-bottom:12px;line-height:1.55;">${escapeHtmlText(data.shortPitch)}</p>` : ''}
+        <ul>${data.bullets.map(b => `<li>${escapeHtmlText(b)}</li>`).join('')}</ul>
+    `;
+}
+
+async function generateAIReviewInsights(reviews = []) {
+    const all = normalizeReviewsPayload(reviews || [], { assumeCurrentProduct: true });
+    if (!all.length) return buildLocalReviewInsights(all);
+    const compactReviews = all.map(r => ({ rating: getReviewRatingSafe(r), text: getReviewTextSafe(r).slice(0, 700) })).filter(r => r.rating || r.text);
+    const cached = getAICache('review-insight', String(compactReviews.length));
+    if (cached) return renderAIReviewInsightHTML(cached, compactReviews.length);
+
+    const prompt = `Return only JSON. Analyze every available customer review and advise whether a customer should buy this product. Be honest, concise, and do not make fake claims. JSON: {"verdict":"BUY|CONSIDER|WAIT|AVOID","summary":"...","pros":["..."],"cons":["..."],"buyerAdvice":"..."}. Product: ${JSON.stringify(getAIProductSnapshot())}. Reviews: ${JSON.stringify(compactReviews)}`;
+    const data = await callGroqJSON('review-insight', prompt, null);
+    if (!data || !data.summary) return buildLocalReviewInsights(all);
+    setAICache('review-insight', String(compactReviews.length), data);
+    saveAIFieldsToDB({ aiReviewInsight: data, aiReviewInsightUpdatedAt: new Date().toISOString() });
+    return renderAIReviewInsightHTML(data, compactReviews.length);
+}
+window.generateAIReviewInsights = generateAIReviewInsights;
+
+function renderAIReviewInsightHTML(data, count) {
+    const verdict = String(data.verdict || 'CONSIDER').toUpperCase();
+    const pros = Array.isArray(data.pros) ? data.pros.slice(0, 4) : [];
+    const cons = Array.isArray(data.cons) ? data.cons.slice(0, 4) : [];
+    return `
+        <div class="ai-smart-badge"><i class="fas fa-sparkles"></i> Groq Review Verdict: ${escapeHtmlText(verdict)}</div>
+        <p style="margin:0 0 12px;color:var(--text-main);font-weight:800;line-height:1.6;">${escapeHtmlText(data.summary || '')}</p>
+        <div class="ai-insight-grid">
+            <div class="ai-insight-card"><strong>Why buyers may like it</strong><span>${pros.length ? pros.map(escapeHtmlText).join(' • ') : 'No strong positive pattern yet.'}</span></div>
+            <div class="ai-insight-card"><strong>Check before buying</strong><span>${cons.length ? cons.map(escapeHtmlText).join(' • ') : 'No repeated negative issue found yet.'}</span></div>
+        </div>
+        <p style="margin:12px 0 0;color:var(--text-muted);font-size:12px;font-weight:800;line-height:1.5;">${escapeHtmlText(data.buyerAdvice || '')} Analyzed ${count} review(s).</p>`;
+}
+
+async function generateAIQuestionAnswer(question, existingQA = []) {
+    const reviews = normalizeReviewsPayload(currentProduct?.reviews || window.allFetchedReviews || [], { assumeCurrentProduct: true })
+        .map(r => ({ rating: getReviewRatingSafe(r), text: getReviewTextSafe(r).slice(0, 500) })).slice(0, 80);
+    const qas = existingQA.map(q => ({ question: q.question || q.q || '', answer: q.answer || q.a || '' })).filter(q => q.question || q.answer).slice(0, 80);
+    const prompt = `Return only JSON: {"answer":"..."}. Answer the customer's product question using product data, previous Q&A, and reviews. If exact information is missing, say it is not clearly available and suggest checking seller/admin details. Keep answer under 65 words. Product: ${JSON.stringify(getAIProductSnapshot())}. ExistingQA:${JSON.stringify(qas)}. Reviews:${JSON.stringify(reviews)}. Customer question: ${JSON.stringify(question)}`;
+    const data = await callGroqJSON('product-question-answer', prompt, null);
+    const answer = String(data?.answer || '').replace(/\s+/g, ' ').trim();
+    return answer || 'This detail is not clearly available from the current product data. Please check seller details or Aryanta support before buying.';
+}
+window.generateAIQuestionAnswer = generateAIQuestionAnswer;
+
+function normalizeTrendPoints(raw, points) {
+    const arr = Array.isArray(raw?.points) ? raw.points : (Array.isArray(raw) ? raw : []);
+    return arr.map((x, i) => {
+        const price = Number(x.price || x.value || x.amount || x.marketPrice || 0);
+        return { label: String(x.label || x.date || x.month || (i + 1)), price: Math.max(1, Math.round(price)), note: String(x.note || '') };
+    }).filter(x => Number.isFinite(x.price) && x.price > 0).slice(-points);
+}
+
+function getStoredMarketTrend(period) {
+    const fromCache = getAICache('market-trend', period);
+    if (fromCache?.points?.length) return fromCache;
+    const p = currentProduct || {};
+    const candidates = [p.aiMarketTrend, p.marketPriceTrend, p.priceTrend, p.priceHistory, p.marketHistory];
+    for (const c of candidates) {
+        const points = normalizeTrendPoints(c, period === '3m' ? 20 : (period === '6m' ? 30 : (period === 'all' ? 50 : 10)));
+        if (points.length >= 2) return { points, source: c?.source || 'DB saved trend' };
+    }
+    return null;
+}
+
+async function fetchGroqMarketTrend(period, points) {
+    const cached = getAICache('market-trend', period);
+    if (cached?.points?.length) return cached;
+    const product = getAIProductSnapshot();
+    const prompt = `Return only JSON. Using current browser/market knowledge when available, estimate an India market price trend for this product/category for period ${period}. Do not change Aryanta selling price. Return ${points} points. JSON: {"source":"Groq market estimate","points":[{"label":"...","price":123,"note":"..."}],"summary":"..."}. Product:${JSON.stringify(product)} User/location:${JSON.stringify(getAIUserContext())}`;
+    const data = await callGroqJSON('market-price-trend', prompt, null, { useBrowserSearch: true, temperature: 0.2, maxOutputTokens: 1536, cacheTtlMs: ARYANTA_AI_CACHE_MS, timeoutMs: 20000 });
+    const normalized = { ...data, points: normalizeTrendPoints(data, points), source: data?.source || 'Groq market estimate' };
+    if (normalized.points.length >= 2) {
+        setAICache('market-trend', period, normalized);
+        currentProduct.aiMarketTrend = normalized;
+        saveAIFieldsToDB({ aiMarketTrend: normalized, aiMarketTrendUpdatedAt: new Date().toISOString() });
+        return normalized;
+    }
+    return null;
+}
+window.fetchGroqMarketTrend = fetchGroqMarketTrend;
+
+function buildFallbackDBPriceTrend(period, points) {
+    const price = Math.max(1, Number(currentFinalPrice || currentProduct?.price || 1));
+    const list = [];
+    for (let i = 0; i < points; i++) list.push({ label: String(i + 1), price, note: 'DB selling price baseline' });
+    return { source: 'DB price baseline', points: list, summary: 'No external market trend available yet.' };
+}
+
+function renderPriceTrendCanvas(canvas, trend, period) {
     const parent = canvas.parentElement || canvas;
-    const dpr = Math.max(1, window.devicePixelRatio || 1);
-    const w0 = Math.max(280, parent.clientWidth || canvas.clientWidth || 320);
-    const h0 = 220;
-    canvas.width = Math.floor(w0 * dpr);
-    canvas.height = Math.floor(h0 * dpr);
-    canvas.style.width = w0 + 'px';
-    canvas.style.height = h0 + 'px';
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, w0, h0);
-
     const css = getComputedStyle(document.body);
-    const text = css.getPropertyValue('--text-main').trim() || '#1d1d1f';
-    const muted = css.getPropertyValue('--text-muted').trim() || '#86868b';
-    const accent = css.getPropertyValue('--accent').trim() || '#0066cc';
-    const success = css.getPropertyValue('--success').trim() || '#34c759';
-    const border = css.getPropertyValue('--border').trim() || 'rgba(0,0,0,.12)';
-    const lineColor = info.delta >= 0 ? success : accent;
+    const textColor = css.getPropertyValue('--text-main').trim() || '#1d1d1f';
+    const mutedColor = css.getPropertyValue('--text-muted').trim() || '#86868b';
+    const successColor = css.getPropertyValue('--success').trim() || '#34c759';
+    const surfaceColor = css.getPropertyValue('--surface').trim() || '#ffffff';
+    const borderColor = css.getPropertyValue('--border').trim() || 'rgba(0,0,0,0.12)';
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const rectWidth = Math.max(320, canvas.clientWidth || canvas.parentElement?.clientWidth || 620);
+    const rectHeight = 250;
+    canvas.width = Math.floor(rectWidth * dpr);
+    canvas.height = Math.floor(rectHeight * dpr);
+    canvas.style.width = rectWidth + 'px';
+    canvas.style.height = rectHeight + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,rectWidth,rectHeight);
+    const points = Array.isArray(trend?.points) && trend.points.length ? trend.points : buildFallbackDBPriceTrend(period, 10).points;
+    const prices = points.map(p => Number(p.price) || 0);
+    const maxPrice = Math.max(...prices, Number(currentFinalPrice || 0), 1);
+    const minPrice = Math.min(...prices.filter(v => v > 0), Number(currentFinalPrice || maxPrice), maxPrice);
+    const padL = 38, padR = 14, padT = 28, padB = 34;
+    const w = rectWidth - padL - padR;
+    const h = rectHeight - padT - padB;
+    const range = Math.max(1, maxPrice - minPrice);
 
-    const minRaw = Math.min.apply(null, values.concat([info.basePrice, info.finalPrice]).filter(v => v > 0));
-    const maxRaw = Math.max.apply(null, values.concat([info.mrp, info.basePrice, info.finalPrice]).filter(v => v > 0));
-    const min = Math.max(0, minRaw * 0.96);
-    const max = Math.max(maxRaw * 1.04, min + 1);
-    const range = Math.max(1, max - min);
-    const padL = 52, padR = 18, padT = 32, padB = 38;
-    const w = w0 - padL - padR;
-    const h = h0 - padT - padB;
-
-    ctx.strokeStyle = border;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
+    ctx.fillStyle = surfaceColor; ctx.fillRect(0, 0, rectWidth, rectHeight);
+    ctx.strokeStyle = borderColor; ctx.lineWidth = 1;
     for (let i = 0; i <= 4; i++) {
-      const y = padT + (h / 4) * i;
-      ctx.moveTo(padL, y);
-      ctx.lineTo(w0 - padR, y);
+        const y = padT + (h * i / 4);
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(rectWidth - padR, y); ctx.stroke();
     }
-    ctx.stroke();
-
-    const pts = values.map((v, i) => ({
-      x: padL + (i / Math.max(1, values.length - 1)) * w,
-      y: padT + h - ((v - min) / range) * h,
-      v: v
-    }));
-
-    if (pts.length === 1) {
-      pts.push({ x: padL + w, y: pts[0].y, v: pts[0].v });
-    }
-
-    const grad = ctx.createLinearGradient(0, padT, 0, padT + h);
-    grad.addColorStop(0, 'rgba(52,199,89,0.24)');
-    grad.addColorStop(1, 'rgba(52,199,89,0.02)');
+    const xy = points.map((p, i) => ({ x: padL + (points.length === 1 ? 0 : w * i / (points.length - 1)), y: padT + h - ((Number(p.price) - minPrice) / range) * h, p }));
     ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-    ctx.lineTo(pts[pts.length - 1].x, padT + h);
-    ctx.lineTo(pts[0].x, padT + h);
-    ctx.closePath();
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    ctx.beginPath();
-    pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
-    ctx.strokeStyle = lineColor;
-    ctx.lineWidth = 3;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.stroke();
-
-    pts.forEach(p => {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
-      ctx.fillStyle = '#fff';
-      ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = lineColor;
-      ctx.stroke();
-    });
-
-    ctx.fillStyle = muted;
-    ctx.font = '800 11px Plus Jakarta Sans, sans-serif';
+    xy.forEach((pt, i) => { if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y); });
+    ctx.lineWidth = 3; ctx.strokeStyle = successColor; ctx.stroke();
+    xy.forEach(pt => { ctx.beginPath(); ctx.arc(pt.x, pt.y, 3.8, 0, Math.PI * 2); ctx.fillStyle = successColor; ctx.fill(); });
+    ctx.fillStyle = mutedColor; ctx.font = '700 11px Plus Jakarta Sans, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(`High ₹${Math.round(maxPrice).toLocaleString('en-IN')}`, 8, padT + 4);
+    ctx.fillText(`Low ₹${Math.round(minPrice).toLocaleString('en-IN')}`, 8, rectHeight - padB + 4);
+    ctx.fillStyle = textColor; ctx.font = '900 14px Plus Jakarta Sans, sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(`DB price ₹${Math.round(currentFinalPrice || currentProduct?.price || 0).toLocaleString('en-IN')}`, rectWidth - padR, 18);
     ctx.textAlign = 'left';
-    ctx.fillText('Old ' + money(info.basePrice || values[0]), 8, padT + 4);
-    ctx.fillText('Low ' + money(min), 8, h0 - padB + 4);
-    ctx.fillStyle = text;
-    ctx.font = '900 14px Plus Jakarta Sans, sans-serif';
-    ctx.textAlign = 'right';
-    const deltaText = Number(info.delta || 0) ? ' (' + (info.delta > 0 ? '+' : '-') + money(Math.abs(info.delta)) + ')' : '';
-    ctx.fillText('Now ' + money(info.finalPrice || values[values.length - 1]) + deltaText, w0 - padR, 18);
-  };
 
-  document.addEventListener('DOMContentLoaded', function() {
-    installGalleryClicks();
-    setTimeout(installGalleryClicks, 350);
-    setTimeout(function(){ try { drawGraph('7d'); } catch(e) {} }, 800);
-    setTimeout(function(){ try { drawGraph('7d'); } catch(e) {} }, 1800);
-  });
+    let note = parent.querySelector('.ai-price-note');
+    if (!note) { note = document.createElement('div'); note.className = 'ai-price-note'; parent.appendChild(note); }
+    note.innerHTML = `<i class="fas fa-circle-info"></i> ${escapeHtmlText(trend.summary || trend.source || 'Market trend')} `;
+}
 
-  document.addEventListener('keydown', function(e) {
-    const galleryOpen = document.getElementById('fullscreenGallery')?.classList.contains('show');
-    if (!galleryOpen) return;
-    if (e.key === 'Escape') closeFullscreenGallery();
-    if (e.key === 'ArrowLeft') moveGalleryImage(-1);
-    if (e.key === 'ArrowRight') moveGalleryImage(1);
-  });
-})();
+async function buildAISmartCookies() {
+    if (!currentProduct) return;
+    const ctx = getAIUserContext();
+    const pref = `${currentProduct.category || ''}||${String(currentProduct.name || '').split(' ')[0] || ''}`;
+    setCookie('ary_pref_cat', pref, 30);
+    setCookie('ary_ai_last_product', JSON.stringify(getAIProductSnapshot()), 15);
+    if (ctx.city) setCookie('ary_ai_city', ctx.city, 30);
+    if (!navigator.geolocation || getCookie('ary_ai_location')) return;
+    navigator.geolocation.getCurrentPosition(pos => {
+        const loc = { lat: Number(pos.coords.latitude.toFixed(3)), lng: Number(pos.coords.longitude.toFixed(3)), country: 'India' };
+        setCookie('ary_ai_location', JSON.stringify(loc), 15);
+        try { renderSimilarProducts(); } catch(e) {}
+    }, () => {}, { enableHighAccuracy:false, timeout: 2500, maximumAge: 86400000 });
+}
+
+function getAISmartRankScore(p) {
+    if (!p) return 0;
+    const ctx = getAIUserContext();
+    const name = String(p.name || p.title || '').toLowerCase();
+    const category = String(p.category || '').toLowerCase();
+    const prefRaw = getCookie('ary_pref_cat') || '';
+    const [prefCat = '', prefKw = ''] = prefRaw.split('||');
+    let score = 0;
+    if (prefCat && category === String(prefCat).toLowerCase()) score += 80;
+    if (prefKw && name.includes(String(prefKw).toLowerCase())) score += 35;
+    if (currentProduct && p.category === currentProduct.category) score += 40;
+    if (ctx.city && String(p.city || p.sellerCity || p.location || '').toLowerCase().includes(String(ctx.city).toLowerCase())) score += 25;
+    score += Math.min(20, Number(p.rating || p.avgRating || 0) * 4);
+    score += isNewProduct(p) ? 12 : 0;
+    score += isSponsoredProduct(p) ? 10 : 0;
+    score += isBoostedProduct(p) ? 8 : 0;
+    return score;
+}
+window.getAISmartRankScore = getAISmartRankScore;
+
+const __oldRenderQACard = typeof renderQACard === 'function' ? renderQACard : null;
+if (__oldRenderQACard) {
+    renderQACard = function(qa, fullMode = false) {
+        const html = __oldRenderQACard(qa, fullMode);
+        if (!qa?.aiGenerated) return html;
+        return html.replace('<div class="qna-card"', '<div class="qna-card ai-generated"')
+                   .replace('<div class="qna-q"', '<div class="ai-qna-pill"><i class="fas fa-sparkles"></i> AI answered from product data</div><div class="qna-q"');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    buildAISmartCookies().catch(() => {});
+});
 </script>
 
 </body>
