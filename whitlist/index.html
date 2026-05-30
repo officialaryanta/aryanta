@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+      (function(){
+        var h = location.hostname;
+        if (h && h !== "127.0.0.1" && h !== "localhost") {
+          var m = document.createElement("link");
+          m.rel = "manifest";
+          m.href = "/manifest.json";
+          document.head.appendChild(m);
+        }
+      })();
+    </script>
+    <meta name="theme-color" content="#f5f5f7">
+    <link rel="apple-touch-icon" href="/android-chrome-192x192.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>Aryanta | My Wishlist</title>
+    <meta name="description" content="View, manage, and shop products saved in your Aryanta wishlist.">
+
+    <link rel="preconnect" href="https://rough-field-c679.official-aryanta.workers.dev" crossorigin>
+    <link rel="dns-prefetch" href="//rough-field-c679.official-aryanta.workers.dev">
+
+    <link rel="stylesheet" href="style.css?v=wishlist-smart-1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="page-loader" id="pageLoader">
+        <div class="spinner"></div>
+        <h4>ARYANTA</h4>
+        <p>Opening your wishlist</p>
+    </div>
+
+    <header class="top-bar glass-effect">
+        <div class="nav-left">
+            <button class="icon-button menu-trigger" onclick="openSidebar()" aria-label="Open menu">
+                <i class="fas fa-bars-staggered"></i>
+            </button>
+            <div class="brand-logo" onclick="goHome()" role="button" tabindex="0">
+                <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta Logo" class="brand-img">
+                <span>ARYANTA<span class="prime-dot">.</span></span>
+            </div>
+        </div>
+
+        <div class="wishlist-search nav-search">
+            <i class="fas fa-magnifying-glass"></i>
+            <input type="search" id="wishlistSearchInput" autocomplete="off" spellcheck="false"
+                   placeholder="Search saved products, category, product ID...">
+            <button class="search-clear" id="clearSearchBtn" onclick="clearWishlistSearch()" aria-label="Clear search" style="display:none;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="nav-actions">
+            <button class="icon-button nav-link-button" onclick="goHome()" title="Home" aria-label="Home">
+                <i class="fas fa-home"></i>
+            </button>
+            <button class="icon-button nav-link-button" onclick="goCart()" title="Cart" aria-label="Cart">
+                <i class="fas fa-shopping-bag"></i>
+                <span class="badge" id="cartBadge">0</span>
+            </button>
+        </div>
+    </header>
+
+    <aside class="side-panel" id="sidebar" aria-label="Aryanta menu">
+        <div class="panel-header">
+            <button class="close-sidebar" onclick="closeSidebar()" aria-label="Close menu">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="user-profile-card">
+                <div class="avatar-wrapper">
+                    <img id="sidebarAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Guest" alt="avatar" class="avatar-img">
+                    <div class="prime-badge" id="sidebarPrimeBadge" style="display:none;"><i class="fas fa-crown"></i></div>
+                </div>
+                <div class="user-greeting">
+                    <span id="sidebarUser">Welcome Guest</span>
+                    <small id="sidebarRole">Sign in for best experience</small>
+                </div>
+            </div>
+        </div>
+
+        <nav class="panel-links">
+            <a href="https://aryanta.in/"><i class="fas fa-compass"></i> Discover</a>
+            <a href="https://aryanta.in/cart/"><i class="fas fa-shopping-cart"></i> My Cart</a>
+            <a href="https://aryanta.in/wishlist/" class="active"><i class="fas fa-heart"></i> My Wishlist</a>
+            <a href="https://aryanta.in/track/"><i class="fas fa-box-open"></i> My Orders</a>
+            <a href="https://aryanta.in/warrenty/"><i class="fas fa-shield-alt"></i> Claim Warranty</a>
+            <a href="https://aryanta.in/vurify/"><i class="fas fa-store"></i> Sell on Our Platform</a>
+            <a href="https://aryanta.in/settings/"><i class="fas fa-cog"></i> Settings</a>
+            <a href="https://aryanta.in/support/"><i class="fas fa-headset"></i> Support</a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="btn-sidebar-logout" id="sidebarLogoutBtn" onclick="logOut()" style="display:none;">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </aside>
+
+    <div class="dimmer" id="overlay" onclick="closeSidebar()"></div>
+
+    <main class="main-content">
+        <section class="wishlist-hero">
+            <div>
+                <span class="eyebrow"><i class="fas fa-heart"></i> Aryanta Saved Picks</span>
+                <h1>My Wishlist</h1>
+                <p id="wishlistSmartNote">Your saved products will appear here with smarter shopping actions.</p>
+            </div>
+            <div class="hero-actions">
+                <span id="wishlistCount" class="count-pill">0 Items</span>
+                <button class="btn-outline" onclick="goHome()"><i class="fas fa-compass"></i> Discover More</button>
+            </div>
+        </section>
+
+        <section class="toolbar-card">
+            <div class="toolbar-left">
+                <button class="filter-pill active" data-sort="smart" onclick="setWishlistSort('smart', this)">
+                    <i class="fas fa-sparkles"></i> Smart
+                </button>
+                <button class="filter-pill" data-sort="low" onclick="setWishlistSort('low', this)">
+                    <i class="fas fa-arrow-down-wide-short"></i> Price Low
+                </button>
+                <button class="filter-pill" data-sort="high" onclick="setWishlistSort('high', this)">
+                    <i class="fas fa-arrow-up-wide-short"></i> Price High
+                </button>
+                <button class="filter-pill" data-sort="new" onclick="setWishlistSort('new', this)">
+                    <i class="fas fa-clock"></i> New
+                </button>
+            </div>
+            <button class="btn-danger-soft" onclick="clearWishlistConfirm()">
+                <i class="fas fa-trash"></i> Clear Wishlist
+            </button>
+        </section>
+
+        <section class="product-list" id="wishlistPageShelf" aria-live="polite"></section>
+    </main>
+
+    <section class="full-page right-slide" id="wishlistProductPage" aria-label="Wishlist product details">
+        <div class="full-page-header glass-effect">
+            <button class="btn-back" onclick="closeProductView()"><i class="fas fa-arrow-left"></i> Back to Wishlist</button>
+            <button class="icon-button" onclick="shareCurrentProduct()" title="Share product" aria-label="Share product">
+                <i class="fas fa-share-nodes"></i>
+            </button>
+        </div>
+        <div class="full-page-body product-page-body">
+            <div class="product-hero">
+                <div class="product-visual prime-visual-bg">
+                    <img id="wpImage" src="" alt="Product" class="main-prod-img">
+                    <div class="thumb-row" id="wpThumbs"></div>
+                </div>
+
+                <div class="product-data">
+                    <div class="flex-row-between w-100 product-meta-line">
+                        <span class="category-tag"><i class="fas fa-crown"></i> Aryanta Quality</span>
+                        <button class="wishlist-heart" id="wpWishlistBtn" title="Remove from Wishlist">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                    </div>
+
+                    <h1 id="wpName" class="display-title">Product Name</h1>
+                    <div class="seller-info" id="wpSellerInfo"></div>
+
+                    <div class="price-block">
+                        <h2 class="display-price">
+                            <span id="wpMrp" class="mrp-display" style="display:none;"></span>
+                            <span id="wpPrice">₹0</span>
+                        </h2>
+                        <span id="wpDiscount" class="discount-chip" style="display:none;"></span>
+                        <span class="inclusive-taxes">Inclusive of all taxes</span>
+                    </div>
+
+                    <div class="divider-elegant"></div>
+                    <p id="wpDesc" class="display-desc">Description goes here.</p>
+                    <div class="smart-panel" id="wpSmartPanel"></div>
+                    <div class="divider-elegant"></div>
+
+                    <div class="action-dock">
+                        <button class="btn-add-cart" id="wpAddToCartBtn"><i class="fas fa-shopping-bag"></i> Add to Bag</button>
+                        <button class="btn-buy-now" id="wpBuyNowBtn"><i class="fas fa-bolt"></i> Buy Now</button>
+                    </div>
+
+                    <div class="trust-badges">
+                        <div class="badge-item"><i class="fas fa-shield-alt"></i> <span>Secure Payment</span></div>
+                        <div class="badge-item"><i class="fas fa-truck-fast"></i> <span>Fast Shipping</span></div>
+                        <div class="badge-item"><i class="fas fa-undo"></i> <span>7 Days Return</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="modal-overlay" id="authPromptModal">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeAuthPrompt()" aria-label="Close"><i class="fas fa-times"></i></button>
+            <div class="modal-icon"><i class="fas fa-user-lock"></i></div>
+            <h3>Login for better shopping</h3>
+            <p>Sign in to sync your wishlist, cart, orders, and recommendations across devices.</p>
+            <div class="modal-actions">
+                <button class="btn-outline" onclick="closeAuthPrompt()">Not now</button>
+                <button class="btn-prime" onclick="goLogin()">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeConfirm()" aria-label="Close"><i class="fas fa-times"></i></button>
+            <div class="modal-icon danger"><i class="fas fa-trash"></i></div>
+            <h3>Clear wishlist?</h3>
+            <p>This will remove all saved products from this browser and sync to your account if logged in.</p>
+            <div class="modal-actions">
+                <button class="btn-outline" onclick="closeConfirm()">Cancel</button>
+                <button class="btn-danger" onclick="clearWishlistNow()">Clear</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastNotification" class="toast-notification">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">Action successful</span>
+    </div>
+
+    <script>
+        const API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
+        const FALLBACK_IMG = "https://aryanta.in/vurify/aryanta.jpeg";
+
+        let activeSession = readJson("active_session", null);
+        let localWishlist = loadWishlistIds();
+        let allProducts = [];
+        let renderedProducts = [];
+        let currentViewedProduct = null;
+        let wishlistSort = "smart";
+        let toastTimer = null;
+
+        function readJson(key, fallback) {
+            try { return JSON.parse(localStorage.getItem(key) || "null") ?? fallback; }
+            catch(e) { return fallback; }
+        }
+
+        function writeJson(key, value) {
+            try { localStorage.setItem(key, JSON.stringify(value)); } catch(e) {}
+        }
+
+        function loadWishlistIds() {
+            const a = readJson("local_wishlist", []);
+            const b = readJson("aryanta_wishlist", []);
+            const merged = [...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])]
+                .map(x => String(typeof x === "object" ? (x.id || x.productId || "") : x).trim())
+                .filter(Boolean);
+            return [...new Set(merged)];
+        }
+
+        function saveWishlistIds() {
+            writeJson("local_wishlist", localWishlist);
+            writeJson("aryanta_wishlist", localWishlist);
+            updateWishlistCount();
+        }
+
+        function getBaseUrl() {
+            return "https://aryanta.in";
+        }
+
+        function goHome() { window.location.href = getBaseUrl() + "/"; }
+        function goCart() { window.location.href = getBaseUrl() + "/cart/"; }
+        function goLogin() { window.location.href = getBaseUrl() + "/login/"; }
+        function productUrl(id) { return getBaseUrl() + "/product/?id=" + encodeURIComponent(id); }
+
+        function openSidebar() {
+            document.getElementById("sidebar").classList.add("open");
+            document.getElementById("overlay").classList.add("show");
+            document.body.style.overflow = "hidden";
+        }
+
+        function closeSidebar() {
+            document.getElementById("sidebar").classList.remove("open");
+            document.getElementById("overlay").classList.remove("show");
+            document.body.style.overflow = "";
+        }
+
+        function showToast(message, type = "success") {
+            const toast = document.getElementById("toastNotification");
+            document.getElementById("toastMessage").innerText = message;
+            toast.className = "toast-notification show " + type;
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.remove("show"), 2600);
+        }
+
+        function openAuthPrompt() {
+            document.getElementById("authPromptModal").classList.add("show");
+            document.body.style.overflow = "hidden";
+        }
+
+        function closeAuthPrompt() {
+            document.getElementById("authPromptModal").classList.remove("show");
+            document.body.style.overflow = "";
+        }
+
+        function closeConfirm() {
+            document.getElementById("confirmModal").classList.remove("show");
+            document.body.style.overflow = "";
+        }
+
+        function updateCartBadge() {
+            const cart = readJson("local_cart", []);
+            const count = Array.isArray(cart) ? cart.reduce((s, item) => s + Number(item.qty || item.quantity || 1), 0) : 0;
+            const badge = document.getElementById("cartBadge");
+            badge.innerText = count;
+            badge.classList.toggle("show", count > 0);
+        }
+
+        function updateUserBox() {
+            activeSession = readJson("active_session", null);
+            if (!activeSession) {
+                document.getElementById("sidebarUser").innerText = "Welcome Guest";
+                document.getElementById("sidebarRole").innerText = "Sign in for best experience";
+                document.getElementById("sidebarLogoutBtn").style.display = "none";
+                return;
+            }
+            document.getElementById("sidebarUser").innerText = activeSession.name || activeSession.displayName || "Aryanta User";
+            document.getElementById("sidebarRole").innerText = activeSession.isPrime ? "Prime Member" : "Store Member";
+            document.getElementById("sidebarAvatar").src = activeSession.avatar || activeSession.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(activeSession.email || activeSession.name || "Aryanta")}`;
+            document.getElementById("sidebarPrimeBadge").style.display = activeSession.isPrime ? "flex" : "none";
+            document.getElementById("sidebarLogoutBtn").style.display = "flex";
+        }
+
+        function logOut() {
+            localStorage.removeItem("active_session");
+            activeSession = null;
+            updateUserBox();
+            closeSidebar();
+            showToast("Logged out");
+        }
+
+        async function initWishlist() {
+            updateUserBox();
+            updateCartBadge();
+            setupSearch();
+            await loadProducts();
+            await loadUserWishlistIfPossible();
+            renderWishlist();
+            setTimeout(() => document.getElementById("pageLoader").classList.add("hidden"), 250);
+            if (!activeSession) setTimeout(openAuthPrompt, 900);
+        }
+
+        async function loadProducts() {
+            const cached = readJson("cached_products", []);
+            allProducts = Array.isArray(cached) ? cached.map(normalizeProduct) : [];
+
+            if (!allProducts.length) {
+                setShelfLoading("Loading wishlist products...");
+            }
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/products?limit=1000`, { cache: "no-store" });
+                const payload = await res.json();
+                const rows = extractRows(payload).map(normalizeProduct).filter(p => p.id);
+                if (rows.length) {
+                    allProducts = rows;
+                    writeJson("cached_products", rows);
+                }
+            } catch(e) {
+                if (!allProducts.length) {
+                    setShelfError("Failed to load products. Check your internet and try again.");
+                }
+            }
+        }
+
+        async function loadUserWishlistIfPossible() {
+            if (!activeSession || !activeSession.email) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(activeSession.email)}`, { cache: "no-store" });
+                const data = await res.json();
+                const user = data.user || data.data || data;
+                if (Array.isArray(user.wishlist)) {
+                    const dbIds = user.wishlist.map(x => String(typeof x === "object" ? (x.id || x.productId || "") : x).trim()).filter(Boolean);
+                    localWishlist = [...new Set([...localWishlist, ...dbIds])];
+                    saveWishlistIds();
+                }
+            } catch(e) {}
+        }
+
+        function extractRows(payload) {
+            if (Array.isArray(payload)) return payload;
+            return payload.products || payload.data || payload.items || payload.rows || [];
+        }
+
+        function normalizeProduct(p) {
+            const id = String(p.id || p.productId || p.sku || p.uid || "").trim();
+            const images = Array.isArray(p.images) ? p.images.filter(Boolean) : [];
+            const image = p.image || p.thumbnail || p.mainImage || images[0] || FALLBACK_IMG;
+            const name = String(p.name || p.title || p.productName || "Aryanta Product").trim();
+            const price = Number(p.price || p.salePrice || p.finalPrice || p.amount || 0) || 0;
+            const mrp = Number(p.mrp || p.marketPrice || p.oldPrice || p.maxPrice || 0) || 0;
+            const category = String(p.category || p.cat || p.type || "General").trim();
+            return {
+                ...p,
+                id,
+                productId: id,
+                name,
+                title: name,
+                image,
+                images: images.length ? images : [image],
+                price,
+                mrp,
+                category,
+                desc: p.desc || p.description || p.details || "",
+                sellerName: p.sellerName || p.shopName || p.storeName || (!p.sellerEmail || p.sellerEmail === "admin" ? "Aryanta Admin" : "Aryanta Seller"),
+                sellerEmail: p.sellerEmail || p.email || "",
+                avgRating: p.avgRating || p.rating || "New",
+                stock: Number(p.stock ?? p.quantity ?? p.qty ?? 999),
+                createdAt: p.createdAt || p.addedAt || p.timestamp || ""
+            };
+        }
+
+        function money(n) {
+            return "₹" + Number(n || 0).toLocaleString("en-IN");
+        }
+
+        function escapeHtml(value) {
+            return String(value || "").replace(/[&<>"']/g, ch => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;" }[ch]));
+        }
+
+        function productSearchText(p) {
+            return [
+                p.id, p.productId, p.sku, p.name, p.title, p.category, p.brand, p.sellerName,
+                p.sellerEmail, p.desc, p.tags, p.color, p.size, p.material, p.model
+            ].flat().filter(Boolean).join(" ").toLowerCase();
+        }
+
+        function fuzzyScore(query, product) {
+            const q = normalizeQuery(query);
+            if (!q) return 1;
+            const text = productSearchText(product);
+            const words = q.split(/\s+/).filter(Boolean);
+            let score = 0;
+            for (const word of words) {
+                if (text.includes(word)) score += 10;
+                else score += softWordScore(word, text);
+            }
+            if (String(product.id || "").toLowerCase().includes(q)) score += 18;
+            if (String(product.name || "").toLowerCase().includes(q)) score += 14;
+            if (String(product.category || "").toLowerCase().includes(q)) score += 11;
+            return score;
+        }
+
+        function normalizeQuery(q) {
+            return String(q || "")
+                .toLowerCase()
+                .replace(/[^a-z0-9₹\s-]/g, " ")
+                .replace(/\s+/g, " ")
+                .trim();
+        }
+
+        function softWordScore(word, text) {
+            if (!word || word.length < 3) return 0;
+            const chunks = text.split(/[^a-z0-9]+/).filter(Boolean).slice(0, 250);
+            let best = 0;
+            for (const c of chunks) {
+                const d = levenshtein(word, c);
+                const maxLen = Math.max(word.length, c.length);
+                const similarity = 1 - d / maxLen;
+                if (similarity > best) best = similarity;
+            }
+            return best >= 0.72 ? Math.round(best * 8) : 0;
+        }
+
+        function levenshtein(a, b) {
+            if (a === b) return 0;
+            if (!a) return b.length;
+            if (!b) return a.length;
+            const prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+            const curr = new Array(b.length + 1);
+            for (let i = 1; i <= a.length; i++) {
+                curr[0] = i;
+                for (let j = 1; j <= b.length; j++) {
+                    const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+                    curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+                }
+                for (let j = 0; j <= b.length; j++) prev[j] = curr[j];
+            }
+            return prev[b.length];
+        }
+
+        function setupSearch() {
+            const input = document.getElementById("wishlistSearchInput");
+            input.addEventListener("input", () => {
+                document.getElementById("clearSearchBtn").style.display = input.value.trim() ? "grid" : "none";
+                renderWishlist();
+            });
+            input.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") renderWishlist(true);
+            });
+        }
+
+        function clearWishlistSearch() {
+            document.getElementById("wishlistSearchInput").value = "";
+            document.getElementById("clearSearchBtn").style.display = "none";
+            renderWishlist();
+        }
+
+        function setWishlistSort(sort, btn) {
+            wishlistSort = sort;
+            document.querySelectorAll(".filter-pill").forEach(b => b.classList.remove("active"));
+            if (btn) btn.classList.add("active");
+            renderWishlist();
+        }
+
+        function getWishedProducts() {
+            const ids = new Set(localWishlist.map(String));
+            const products = allProducts.filter(p => ids.has(String(p.id)) || ids.has(String(p.productId)));
+            const missingIds = localWishlist.filter(id => !products.some(p => String(p.id) === String(id)));
+            const missingProducts = missingIds.map(id => normalizeProduct({ id, name: "Saved product", desc: "This product is saved, but latest details are not loaded yet.", price: 0, image: FALLBACK_IMG }));
+            return [...products, ...missingProducts];
+        }
+
+        function applySort(rows) {
+            const out = [...rows];
+            if (wishlistSort === "low") out.sort((a, b) => Number(a.price) - Number(b.price));
+            else if (wishlistSort === "high") out.sort((a, b) => Number(b.price) - Number(a.price));
+            else if (wishlistSort === "new") out.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+            else {
+                out.sort((a, b) => {
+                    const sponsorA = (a.sponsored || a.isSponsored) ? 1 : 0;
+                    const sponsorB = (b.sponsored || b.isSponsored) ? 1 : 0;
+                    const stockA = Number(a.stock || 0) > 0 ? 1 : 0;
+                    const stockB = Number(b.stock || 0) > 0 ? 1 : 0;
+                    return sponsorB - sponsorA || stockB - stockA || Number(b.price || 0) - Number(a.price || 0);
+                });
+            }
+            return out;
+        }
+
+        function updateWishlistCount(count) {
+            const total = typeof count === "number" ? count : getWishedProducts().length;
+            document.getElementById("wishlistCount").innerText = `${total} ${total === 1 ? "Item" : "Items"}`;
+            const totalValue = getWishedProducts().reduce((s, p) => s + Number(p.price || 0), 0);
+            document.getElementById("wishlistSmartNote").innerText =
+                total > 0 ? `You saved ${total} product${total === 1 ? "" : "s"} worth ${money(totalValue)}. Tap any item for quick view, cart, or checkout.`
+                          : "Your saved products will appear here with smarter shopping actions.";
+        }
+
+        function renderWishlist(fromEnter = false) {
+            const container = document.getElementById("wishlistPageShelf");
+            const query = document.getElementById("wishlistSearchInput").value.trim();
+            let wishedProducts = getWishedProducts();
+
+            if (query) {
+                wishedProducts = wishedProducts
+                    .map(p => ({ p, score: fuzzyScore(query, p) }))
+                    .filter(x => x.score >= 6)
+                    .sort((a, b) => b.score - a.score)
+                    .map(x => x.p);
+            } else {
+                wishedProducts = applySort(wishedProducts);
+            }
+
+            renderedProducts = wishedProducts;
+            updateWishlistCount(wishedProducts.length);
+
+            if (!getWishedProducts().length) {
+                container.innerHTML = emptyWishlistHtml();
+                return;
+            }
+
+            if (!wishedProducts.length) {
+                container.innerHTML = `
+                    <div class="panel-box empty-state">
+                        <i class="fas fa-magnifying-glass"></i>
+                        <h3>No saved product matched</h3>
+                        <p>Try product ID, brand, category, or a simpler word. Spelling mistakes are supported too.</p>
+                        <button class="btn-prime" onclick="clearWishlistSearch()">Show All Wishlist</button>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = wishedProducts.map(productCardHtml).join("");
+            if (fromEnter) showToast(`${wishedProducts.length} saved item${wishedProducts.length > 1 ? "s" : ""} found`);
+        }
+
+        function emptyWishlistHtml() {
+            return `
+                <div class="panel-box empty-state">
+                    <i class="fas fa-heart-broken"></i>
+                    <h3>Your wishlist is empty</h3>
+                    <p>Save products you love and come back anytime to compare, buy, or share.</p>
+                    <button class="btn-prime" onclick="goHome()"><i class="fas fa-compass"></i> Discover Products</button>
+                </div>`;
+        }
+
+        function productCardHtml(p) {
+            const img = p.image || p.images?.[0] || FALLBACK_IMG;
+            const rating = p.avgRating && p.avgRating !== "New" ? `<i class="fas fa-star"></i> ${escapeHtml(p.avgRating)}` : `<i class="fas fa-star muted-star"></i> New`;
+            const mrp = Number(p.mrp || 0);
+            const price = Number(p.price || 0);
+            const mrpHTML = mrp > price ? `<span class="mrp-small">${money(mrp)}</span>` : "";
+            const discount = mrp > price && price > 0 ? Math.round((mrp - price) * 100 / mrp) : 0;
+            const sellerVerified = (!p.sellerEmail || p.sellerEmail === "admin" || /admin/i.test(p.sellerName || ""));
+            const stockClass = Number(p.stock || 0) <= 0 ? "out" : Number(p.stock || 0) < 7 ? "low" : "ok";
+            const stockText = Number(p.stock || 0) <= 0 ? "Out of stock" : Number(p.stock || 0) < 7 ? "Low stock" : "In stock";
+
+            return `
+                <article class="list-item-card fade-in-up" onclick="openProductView('${escapeHtml(p.id)}')">
+                    <button class="remove-wish" onclick="event.stopPropagation(); removeFromWishlist('${escapeHtml(p.id)}')" title="Remove from Wishlist">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    ${p.sponsored || p.isSponsored ? `<span class="sponsored-badge">Sponsored</span>` : ""}
+                    ${discount ? `<span class="discount-floating">${discount}% OFF</span>` : ""}
+                    <div class="list-image">
+                        <img src="${escapeHtml(img)}" alt="${escapeHtml(p.name)}" loading="lazy" onerror="this.src='${FALLBACK_IMG}'">
+                    </div>
+                    <div class="list-info">
+                        <div class="card-meta">
+                            <span class="category-mini">${escapeHtml(p.category)}</span>
+                            <span class="stock-chip ${stockClass}">${stockText}</span>
+                        </div>
+                        <h4>${escapeHtml(p.name)}</h4>
+                        <div class="stars">${rating}</div>
+                        <div class="seller-line">
+                            Sold by ${escapeHtml(p.sellerName || "Aryanta Admin")}
+                            ${sellerVerified ? `<i class="fas fa-check-circle"></i>` : ""}
+                        </div>
+                        <div class="price">${mrpHTML}<strong>${money(price)}</strong></div>
+                        <div class="list-actions">
+                            <button class="btn-list-add" onclick="event.stopPropagation(); addToCartAndRedirect('${escapeHtml(p.id)}', false)">
+                                <i class="fas fa-shopping-bag"></i> Add
+                            </button>
+                            <button class="btn-list-buy" onclick="event.stopPropagation(); buyNowAndRedirect('${escapeHtml(p.id)}')">
+                                <i class="fas fa-bolt"></i> Buy
+                            </button>
+                        </div>
+                    </div>
+                </article>`;
+        }
+
+        function setShelfLoading(message) {
+            document.getElementById("wishlistPageShelf").innerHTML = `
+                <div class="panel-box empty-state"><div class="spinner inline"></div><h3>${escapeHtml(message)}</h3></div>`;
+        }
+
+        function setShelfError(message) {
+            document.getElementById("wishlistPageShelf").innerHTML = `
+                <div class="panel-box empty-state error"><i class="fas fa-triangle-exclamation"></i><h3>${escapeHtml(message)}</h3><button class="btn-prime" onclick="location.reload()">Retry</button></div>`;
+        }
+
+        function findProductById(id) {
+            return allProducts.find(p => String(p.id) === String(id) || String(p.productId) === String(id))
+                || normalizeProduct({ id, name: "Saved product", price: 0, image: FALLBACK_IMG });
+        }
+
+        function openProductView(id) {
+            currentViewedProduct = findProductById(id);
+            if (!currentViewedProduct) return;
+
+            const p = currentViewedProduct;
+            document.getElementById("wpName").innerText = p.name;
+            document.getElementById("wpDesc").innerText = p.desc || "High-quality product selected for you.";
+            document.getElementById("wpPrice").innerText = money(p.price);
+
+            const mrp = Number(p.mrp || 0);
+            const price = Number(p.price || 0);
+            const mrpEl = document.getElementById("wpMrp");
+            const discountEl = document.getElementById("wpDiscount");
+
+            if (mrp > price) {
+                mrpEl.innerText = money(mrp);
+                mrpEl.style.display = "inline";
+                discountEl.innerText = `${Math.round((mrp - price) * 100 / mrp)}% OFF`;
+                discountEl.style.display = "inline-flex";
+            } else {
+                mrpEl.style.display = "none";
+                discountEl.style.display = "none";
+            }
+
+            const sellerVerified = (!p.sellerEmail || p.sellerEmail === "admin" || p.sellerName === "Aryanta Admin");
+            const verifiedUI = sellerVerified
+                ? `<span class="verified-badge admin-badge"><i class="fas fa-shield-alt"></i> Aryanta Verified</span>`
+                : (p.isSellerVerified ? `<span class="verified-badge seller-badge"><i class="fas fa-check-circle"></i> Verified Seller</span>` : "");
+
+            document.getElementById("wpSellerInfo").innerHTML =
+                `Sold by: <strong>${escapeHtml(p.sellerName || "Aryanta Admin")}</strong><br>${verifiedUI}`;
+
+            const images = (Array.isArray(p.images) && p.images.length ? p.images : [p.image || FALLBACK_IMG]).filter(Boolean);
+            setOverlayImage(images[0]);
+            document.getElementById("wpThumbs").innerHTML = images.slice(0, 8).map((src, i) =>
+                `<img src="${escapeHtml(src)}" class="${i === 0 ? "active" : ""}" onclick="setOverlayImage('${escapeHtml(src)}', this)" onerror="this.src='${FALLBACK_IMG}'" alt="thumbnail">`
+            ).join("");
+
+            document.getElementById("wpSmartPanel").innerHTML = smartProductPanel(p);
+            document.getElementById("wpAddToCartBtn").onclick = () => addToCartAndRedirect(p.id, false);
+            document.getElementById("wpBuyNowBtn").onclick = () => buyNowAndRedirect(p.id);
+            document.getElementById("wpWishlistBtn").onclick = () => {
+                removeFromWishlist(p.id);
+                closeProductView();
+            };
+
+            document.getElementById("wishlistProductPage").classList.add("open");
+            document.body.style.overflow = "hidden";
+        }
+
+        function setOverlayImage(src, thumb) {
+            document.getElementById("wpImage").src = src || FALLBACK_IMG;
+            document.querySelectorAll("#wpThumbs img").forEach(x => x.classList.remove("active"));
+            if (thumb) thumb.classList.add("active");
+        }
+
+        function smartProductPanel(p) {
+            const scoreParts = [];
+            if (Number(p.stock || 0) > 0) scoreParts.push("available now");
+            if (Number(p.mrp || 0) > Number(p.price || 0)) scoreParts.push("has offer pricing");
+            if (p.avgRating && p.avgRating !== "New") scoreParts.push("has customer rating");
+            if (p.sponsored || p.isSponsored) scoreParts.push("promoted item");
+            const text = scoreParts.length ? scoreParts.join(", ") : "saved for later";
+            return `
+                <div class="smart-row"><i class="fas fa-sparkles"></i><span>Smart note: This product is ${escapeHtml(text)}.</span></div>
+                <div class="smart-row"><i class="fas fa-fingerprint"></i><span>ID: ${escapeHtml(p.id)}</span></div>
+                <div class="smart-row"><i class="fas fa-layer-group"></i><span>Category: ${escapeHtml(p.category)}</span></div>`;
+        }
+
+        function closeProductView() {
+            document.getElementById("wishlistProductPage").classList.remove("open");
+            document.body.style.overflow = "";
+            currentViewedProduct = null;
+        }
+
+        async function syncWishlistToDb() {
+            if (!activeSession || !activeSession.email) return;
+            try {
+                await fetch(`${API_BASE_URL}/update-user`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        email: activeSession.email,
+                        updates: { wishlist: localWishlist },
+                        projectId: "aryanta-mart-a8893"
+                    })
+                });
+            } catch(e) {}
+        }
+
+        async function removeFromWishlist(id) {
+            localWishlist = localWishlist.filter(itemId => String(itemId) !== String(id));
+            saveWishlistIds();
+            renderWishlist();
+            showToast("Item removed from Wishlist");
+            await syncWishlistToDb();
+        }
+
+        function clearWishlistConfirm() {
+            if (!localWishlist.length) return showToast("Wishlist is already empty", "info");
+            document.getElementById("confirmModal").classList.add("show");
+            document.body.style.overflow = "hidden";
+        }
+
+        async function clearWishlistNow() {
+            localWishlist = [];
+            saveWishlistIds();
+            closeConfirm();
+            renderWishlist();
+            showToast("Wishlist cleared");
+            await syncWishlistToDb();
+        }
+
+        function addToCartAndRedirect(id, redirect = true) {
+            const p = findProductById(id);
+            if (!p || !p.id) return showToast("Product not found", "error");
+            if (Number(p.stock || 0) <= 0) return showToast("This product is out of stock", "error");
+
+            let cart = readJson("local_cart", []);
+            if (!Array.isArray(cart)) cart = [];
+            const existing = cart.find(i => String(i.id || i.productId) === String(id));
+            if (existing) existing.qty = Number(existing.qty || existing.quantity || 1) + 1;
+            else cart.push({ ...p, qty: 1, quantity: 1, addedAt: new Date().toISOString() });
+
+            writeJson("local_cart", cart);
+            updateCartBadge();
+            showToast("Added to cart");
+            if (redirect) setTimeout(goCart, 450);
+        }
+
+        function buyNowAndRedirect(id) {
+            const p = findProductById(id);
+            if (!p || !p.id) return showToast("Product not found", "error");
+            if (Number(p.stock || 0) <= 0) return showToast("This product is out of stock", "error");
+            writeJson("local_cart", [{ ...p, qty: 1, quantity: 1, buyNow: true, addedAt: new Date().toISOString() }]);
+            updateCartBadge();
+            showToast("Ready for checkout");
+            setTimeout(() => { window.location.href = getBaseUrl() + "/cart/?buyNow=1"; }, 450);
+        }
+
+        function shareCurrentProduct() {
+            if (!currentViewedProduct) return;
+            const url = productUrl(currentViewedProduct.id);
+            const title = currentViewedProduct.name || "Aryanta Product";
+            if (navigator.share) {
+                navigator.share({ title, url }).catch(() => {});
+            } else {
+                navigator.clipboard?.writeText(url);
+                showToast("Product link copied");
+            }
+        }
+
+        window.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                closeSidebar();
+                closeProductView();
+                closeAuthPrompt();
+                closeConfirm();
+            }
+        });
+
+        initWishlist();
+    </script>
+</body>
+</html>
