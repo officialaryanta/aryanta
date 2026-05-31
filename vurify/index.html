@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en" translate="yes">
 <head>
@@ -46,8 +47,20 @@
         .brand-word { display: flex; flex-direction: column; line-height: 1.05; }
         .brand-word strong { font-size: 18px; font-weight: 900; letter-spacing: 0.08em; }
         .brand-word span { color: var(--muted); font-size: 12px; font-weight: 700; margin-top: 5px; }
-        .top-help { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; font-weight: 700; text-decoration: none; background: #fff; border: 1px solid var(--line); padding: 10px 14px; border-radius: 999px; box-shadow: 0 8px 24px rgba(16,24,40,0.06); }
+        .top-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+        .top-help { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; font-weight: 700; text-decoration: none; background: #fff; border: 1px solid var(--line); padding: 10px 14px; border-radius: 999px; box-shadow: 0 8px 24px rgba(16,24,40,0.06); white-space: nowrap; }
         .top-help i { color: var(--accent); }
+        .top-home { color: var(--brand); border-color: rgba(124,58,237,0.26); background: #faf5ff; }
+        .top-home i { color: var(--accent); }
+
+        .address-helper { border: 1px solid rgba(124,58,237,0.22); border-radius: 22px; background: linear-gradient(135deg, #ffffff, #faf5ff); padding: 18px; box-shadow: 0 14px 34px rgba(124,58,237,0.08); }
+        .address-helper-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+        .address-helper-head strong { display: block; color: var(--brand); font-size: 15px; font-weight: 900; margin-bottom: 3px; }
+        .address-helper-head span { display: block; color: var(--muted); font-size: 13px; line-height: 1.5; font-weight: 600; }
+        .location-btn { flex: 0 0 auto; min-height: 46px; padding: 11px 16px; border-color: rgba(124,58,237,0.28); color: var(--accent); background: #fff; }
+        .location-status { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 16px; background: #fff; border: 1px solid var(--line); color: var(--muted); font-size: 13px; line-height: 1.5; font-weight: 700; }
+        .location-status.show { display: block; }
+        .field-hint { display: block; color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 7px; font-weight: 600; }
 
         .container { width: min(1180px, calc(100% - 32px)); margin: 34px auto 70px; display: grid; grid-template-columns: 0.92fr 1.45fr; gap: 26px; align-items: start; }
         .company-panel { position: sticky; top: 96px; border-radius: var(--radius); overflow: hidden; background: linear-gradient(158deg, #111827 0%, #29135f 58%, #5b21b6 100%); color: #fff; box-shadow: var(--shadow); min-height: 620px; padding: 30px; display: flex; flex-direction: column; justify-content: space-between; }
@@ -133,10 +146,53 @@
         .btn-pay { background: var(--success); color: #fff; box-shadow: 0 14px 28px rgba(3,152,85,0.18); }
         .btn-pay:hover { background: #027a48; transform: translateY(-2px); }
 
+
+
+        .shop-name-control { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: stretch; }
+        .suggest-btn { flex: 0 0 auto; min-height: 54px; padding: 12px 16px; border-color: rgba(124,58,237,0.28); color: var(--accent); background: #fff; }
+        .name-status { display:none; margin-top: 9px; font-size: 12px; font-weight: 800; line-height: 1.45; }
+        .name-status.show { display:block; }
+        .doc-scan-card { display:none; margin: 8px 0 14px; padding: 12px 14px; border-radius: 16px; border: 1px solid var(--line); background:#fff; color: var(--muted); font-size: 12px; line-height: 1.55; font-weight: 750; }
+        .doc-scan-card.show { display:block; }
+        .doc-scan-card.ok { border-color:#abefc6; background:#ecfdf3; color:#067647; }
+        .doc-scan-card.warn { border-color:#fedf89; background:#fffaeb; color:#93370d; }
+        .doc-scan-card.bad { border-color:#fecdca; background:#fef3f2; color:#b42318; }
+        .upload-symbol { width: 58px; height: 58px; border-radius: 20px; display:grid; place-items:center; margin:0 auto 12px; background:#fff; color:var(--accent); font-size: 25px; font-weight: 1000; box-shadow: 0 10px 22px rgba(124,58,237,0.12); }
+        .img-preview-meta { position:absolute; left:8px; bottom:8px; right:8px; padding:6px 8px; border-radius: 12px; background: rgba(16,24,40,0.72); color:#fff; font-size:10px; line-height:1.35; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .suggestion-overlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:22px; background:rgba(16,24,40,0.76); backdrop-filter:blur(14px); z-index:29000; }
+        .suggestion-box { width:min(100%, 620px); background:#fff; border-radius:30px; padding:26px; box-shadow:0 30px 90px rgba(16,24,40,0.34); animation:modalIn .24s ease both; }
+        .suggestion-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:16px; }
+        .suggestion-head h2 { font-size:26px; line-height:1.08; letter-spacing:-.04em; font-weight:900; color:var(--brand); }
+        .suggestion-head p { color:var(--muted); font-size:13px; line-height:1.55; font-weight:650; margin-top:6px; }
+        .close-suggest { width:42px; height:42px; border-radius:14px; background:#f2f4f7; color:var(--brand); cursor:pointer; flex:0 0 auto; }
+        .suggest-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:12px; }
+        .suggest-card { text-align:left; padding:14px; border:1px solid var(--line); background:#fff; border-radius:18px; cursor:pointer; transition:.2s ease; }
+        .suggest-card:hover { border-color:rgba(124,58,237,.55); box-shadow:0 12px 28px rgba(124,58,237,.12); transform: translateY(-1px); }
+        .suggest-card strong { display:block; color:var(--brand); font-size:14px; font-weight:900; margin-bottom:5px; }
+        .suggest-card span { display:block; color:var(--success); font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:.06em; }
+        .suggest-loading { padding:18px; border:1px dashed #d6bbfb; border-radius:18px; background:#faf5ff; color:var(--accent); font-weight:900; text-align:center; }
+        .review-grid { display:grid; gap:14px; }
+        .review-section { border:1px solid var(--line); border-radius:22px; background:#fff; padding:18px; }
+        .review-section h3 { display:flex; align-items:center; gap:8px; color:var(--accent); font-size:12px; text-transform:uppercase; letter-spacing:.08em; font-weight:900; margin-bottom:10px; }
+        .review-table { display:grid; gap:0; }
+        .review-row { display:grid; grid-template-columns: 190px 1fr; gap:14px; padding:10px 0; border-top:1px solid #f2f4f7; }
+        .review-row:first-child { border-top:0; }
+        .review-row span { color:var(--muted); font-size:13px; font-weight:800; }
+        .review-row strong { color:var(--brand); font-size:13px; line-height:1.45; word-break:break-word; }
+
         #welcomeOverlay, .alert-overlay, #uploadingOverlay, #successModal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; padding: 22px; }
         #welcomeOverlay { display: flex; z-index: 10000; background: radial-gradient(circle at top, rgba(124,58,237,0.32), transparent 34%), rgba(16,24,40,0.78); backdrop-filter: blur(18px); transition: opacity 0.35s ease; }
         .welcome-box { width: min(100%, 560px); background: #fff; border-radius: 32px; padding: 30px; box-shadow: 0 34px 90px rgba(16,24,40,0.35); border: 1px solid rgba(255,255,255,0.48); animation: modalIn 0.36s ease both; }
         .welcome-head { text-align: center; margin-bottom: 22px; }
+
+        .welcome-logo-icon { width: 90px; height: 90px; border-radius: 30px; margin: 0 auto 18px; display: grid; place-items: center; position: relative; overflow: hidden; background: linear-gradient(135deg, #101828 0%, #7c3aed 55%, #14b8a6 100%); color: #fff; box-shadow: 0 22px 48px rgba(124,58,237,0.26); }
+        .welcome-logo-icon span { position: absolute; inset: auto auto 10px 12px; font-size: 16px; font-weight: 1000; letter-spacing: 0.08em; opacity: 0.86; }
+        .welcome-logo-icon i { font-size: 34px; transform: translateY(-5px); }
+        .welcome-actions { display: grid; gap: 12px; margin-top: 22px; }
+        .welcome-actions .main-action { width: 100%; min-height: 60px; font-size: 16px; }
+        .welcome-actions-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .welcome-actions-row .btn { min-width: 0; padding-left: 12px; padding-right: 12px; }
+        .edit-profile-note { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 14px; border-radius: 18px; font-size: 14px; line-height: 1.55; font-weight: 750; margin: 16px 0; }
         .welcome-logo { width: 86px; height: 86px; border-radius: 26px; object-fit: cover; box-shadow: 0 18px 42px rgba(124,58,237,0.24); margin-bottom: 18px; }
         .welcome-icon { width: 78px; height: 78px; display: grid; place-items: center; margin: 0 auto 18px; border-radius: 28px; background: var(--accent-soft); color: var(--accent); font-size: 32px; }
         .welcome-icon.warning { background: var(--warning-soft); color: var(--warning); }
@@ -187,6 +243,11 @@
         @media (max-width: 650px) {
             .top-shell { width: min(100% - 22px, 1180px); min-height: 66px; }
             .brand-word span, .top-help span { display: none; }
+            .top-actions { gap: 8px; }
+            .top-help { padding: 10px 12px; }
+            .address-helper { padding: 16px; }
+            .address-helper-head { align-items: stretch; }
+            .location-btn { width: 100%; }
             .container { width: min(100% - 20px, 1180px); margin-bottom: 34px; gap: 18px; }
             .company-panel { padding: 22px; border-radius: 24px; }
             .company-footer, .support-card { grid-template-columns: 1fr; }
@@ -201,6 +262,12 @@
             .radio-switch { width: 100%; }
             .btn-group { flex-direction: column; }
             .btn { width: 100%; }
+            .welcome-actions-row { grid-template-columns: 1fr 1fr; }
+            .welcome-actions-row .btn { min-height: 52px; font-size: 13px; gap: 7px; }
+            .shop-name-control { grid-template-columns: 1fr; }
+            .suggest-btn { width: 100%; }
+            .suggest-grid { grid-template-columns: 1fr; }
+            .review-row { grid-template-columns: 1fr; gap:5px; }
             .welcome-box, .success-box, .alert-box { border-radius: 24px; padding: 22px; }
             .quick-stats { grid-template-columns: 1fr; }
             .otp-input { letter-spacing: 10px; padding-left: 24px; }
@@ -212,24 +279,27 @@
         <div class="welcome-box">
             <div id="welcomeStateInitial">
                 <div class="welcome-head">
-                    <img class="welcome-logo" src="aryanta.jpeg" alt="Aryanta Logo" onerror="this.src='https://via.placeholder.com/100/101828/fff?text=A'">
+                    <div class="welcome-logo-icon" aria-label="Aryanta seller welcome"><span></span><i class="fas fa-bag-shopping"></i></div>
                     <h2>Start selling with Aryanta</h2>
                     <p>Create your seller request in a few steps. We review each business before giving seller access.</p>
                 </div>
                 <div class="quick-stats">
-                    <div class="quick-stat"><strong>5</strong><span>Easy steps</span></div>
+                    <div class="quick-stat"><strong>6</strong><span>Safe steps</span></div>
                     <div class="quick-stat"><strong>24h</strong><span>Review goal</span></div>
                     <div class="quick-stat"><strong>Secure</strong><span>Data check</span></div>
                 </div>
-                <div class="btn-group" style="border-top:0; padding-top:0; margin-top:22px; flex-direction:column;">
-                    <button class="btn btn-primary" id="newSellerBtn" onclick="showRegistrationState()"><i class="fas fa-store"></i> Apply as Seller</button>
-                    <button class="btn btn-secondary" onclick="window.location.href='https://aryanta.in/seller'"><i class="fas fa-arrow-right-to-bracket"></i> Seller Login</button>
+                <div class="welcome-actions">
+                    <button class="btn btn-primary main-action" id="newSellerBtn" onclick="showRegistrationState()"><i class="fas fa-rocket"></i> Apply as Seller</button>
+                    <div class="welcome-actions-row">
+                        <button class="btn btn-secondary" onclick="window.location.href='https://aryanta.in'"><i class="fas fa-house-chimney"></i> Back to Home</button>
+                        <button class="btn btn-secondary" onclick="window.location.href='https://aryanta.in/seller'"><i class="fas fa-right-to-bracket"></i> Seller Login</button>
+                    </div>
                 </div>
             </div>
 
             <div id="welcomeStateReg" style="display:none;">
                 <div class="welcome-head">
-                    <div class="welcome-icon"><i class="fas fa-address-card"></i></div>
+                    <div class="welcome-icon"><i class="fas fa-user-pen"></i></div>
                     <h2>Enter your details</h2>
                     <p>Use the same email and mobile number that you want to connect with your seller account.</p>
                 </div>
@@ -249,7 +319,7 @@
 
             <div id="welcomeStateOTP" style="display:none;">
                 <div class="welcome-head">
-                    <div class="welcome-icon"><i class="fas fa-shield-halved"></i></div>
+                    <div class="welcome-icon"><i class="fas fa-fingerprint"></i></div>
                     <h2>Verify OTP</h2>
                     <p>Enter the 4-digit code sent to your registered email address.</p>
                 </div>
@@ -265,7 +335,7 @@
 
             <div id="welcomeStateExists" style="display:none;">
                 <div class="welcome-head">
-                    <div class="welcome-icon success"><i class="fas fa-user-check"></i></div>
+                    <div class="welcome-icon success"><i class="fas fa-circle-user"></i></div>
                     <h2>Seller account found</h2>
                     <p>These details are already linked with an Aryanta seller account. Please login to continue.</p>
                 </div>
@@ -274,14 +344,14 @@
                     <div class="support-item"><div class="icon-box"><i class="fas fa-phone"></i></div><div><span>WhatsApp support</span><strong><a href="https://wa.me/916206318133" target="_blank" rel="noopener">6206318133</a></strong></div></div>
                 </div>
                 <div class="btn-group" style="border-top:0; padding-top:0; margin-top:10px; flex-direction:column;">
-                    <button class="btn btn-primary" onclick="window.location.href='https://aryanta.in/seller'"><i class="fas fa-arrow-right-to-bracket"></i> Open Seller Login</button>
+                    <button class="btn btn-primary" onclick="window.location.href='https://aryanta.in/seller'"><i class="fas fa-right-to-bracket"></i> Open Seller Login</button>
                     <button class="btn btn-secondary" onclick="showRegistrationState()">Use Different Details</button>
                 </div>
             </div>
 
             <div id="welcomeStatePending" style="display:none;">
                 <div class="welcome-head">
-                    <div class="welcome-icon warning"><i class="fas fa-hourglass-half"></i></div>
+                    <div class="welcome-icon warning"><i class="fas fa-clock-rotate-left"></i></div>
                     <h2>Your request is pending</h2>
                     <p>Your seller details are already registered with Aryanta. You do not need another OTP.</p>
                 </div>
@@ -293,8 +363,24 @@
                     <div class="support-item"><div class="icon-box"><i class="fas fa-headset"></i></div><div><span>WhatsApp support</span><strong><a href="https://wa.me/916206318133" target="_blank" rel="noopener">6206318133</a></strong></div></div>
                 </div>
                 <div class="btn-group" style="border-top:0; padding-top:0; margin-top:10px; flex-direction:column;">
-                    <button class="btn btn-primary" onclick="window.location.href='https://aryanta.in'"><i class="fas fa-house"></i> Go to Home</button>
+                    <button class="btn btn-primary" onclick="window.location.href='https://aryanta.in'"><i class="fas fa-house-chimney"></i> Go to Home</button>
                     <button class="btn btn-secondary" onclick="showRegistrationState()">Check Different Details</button>
+                </div>
+            </div>
+
+            <div id="welcomeStateIncomplete" style="display:none;">
+                <div class="welcome-head">
+                    <div class="welcome-icon"><i class="fas fa-pen-to-square"></i></div>
+                    <h2>Edit your seller profile</h2>
+                    <p>Your seller profile is saved, but the final request is not submitted yet. Complete all 6 steps, then the pending message will show.</p>
+                </div>
+                <div class="edit-profile-note" id="incompleteProfileText"><i class="fas fa-circle-info"></i> Please review your saved details and submit the final request.</div>
+                <div class="welcome-actions">
+                    <button class="btn btn-primary main-action" onclick="startEditPendingApplication()"><i class="fas fa-shield-halved"></i> Verify OTP & Edit Profile</button>
+                    <div class="welcome-actions-row">
+                        <button class="btn btn-secondary" onclick="window.location.href='https://aryanta.in'"><i class="fas fa-house-chimney"></i> Home</button>
+                        <button class="btn btn-secondary" onclick="showRegistrationState()"><i class="fas fa-user-pen"></i> Different Details</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -306,19 +392,21 @@
                 <div class="brand-logo"><i class="fas fa-bag-shopping"></i></div>
                 <div class="brand-word"><strong>ARYANTA</strong><span>Seller Registration</span></div>
             </div>
-            <a class="top-help" href="mailto:support@aryanta.in"><i class="fas fa-life-ring"></i><span>Need help?</span></a>
+            <div class="top-actions">
+                <a class="top-help top-home" href="https://aryanta.in"><i class="fas fa-house-chimney"></i><span>Back to Home</span></a>
+            </div>
         </div>
     </header>
 
     <main class="container">
         <aside class="company-panel">
             <div class="company-content">
-                <div class="eyebrow"><i class="fas fa-sparkles"></i> Official seller onboarding</div>
+                <div class="eyebrow"><i class="fas fa-bolt"></i> Official seller onboarding</div>
                 <h2>Build your store with a trusted marketplace.</h2>
                 <p>Submit your business details, KYC documents, and bank information. Aryanta checks each request to keep buyers and sellers safe.</p>
                 <div class="value-list">
                     <div class="value-item"><i class="fas fa-lock"></i><div><strong>Secure review</strong><span>Your application is saved for admin verification.</span></div></div>
-                    <div class="value-item"><i class="fas fa-file-circle-check"></i><div><strong>Simple documents</strong><span>Aadhaar, PAN, optional GST, business, and bank details.</span></div></div>
+                    <div class="value-item"><i class="fas fa-file-shield"></i><div><strong>Simple documents</strong><span>Aadhaar, PAN, optional GST, business, and bank details.</span></div></div>
                     <div class="value-item"><i class="fas fa-bell"></i><div><strong>Clear status</strong><span>Registered requests show reference number and pending status.</span></div></div>
                 </div>
             </div>
@@ -332,16 +420,16 @@
             <div class="stepper-container">
                 <div class="stepper" id="stepper">
                     <div class="progress-bar" id="progressBar"></div>
-                    <div class="step active" id="indicator1"><div class="step-circle"><i class="fas fa-user"></i></div><div class="step-label">Details</div></div>
-                    <div class="step" id="indicator2"><div class="step-circle"><i class="fas fa-id-card"></i></div><div class="step-label">KYC</div></div>
-                    <div class="step" id="indicator3"><div class="step-circle"><i class="fas fa-store"></i></div><div class="step-label">Business</div></div>
-                    <div class="step" id="indicator4"><div class="step-circle"><i class="fas fa-building-columns"></i></div><div class="step-label">Bank</div></div>
-                    <div class="step" id="indicator5"><div class="step-circle"><i class="fas fa-check"></i></div><div class="step-label">Review</div></div>
+                    <div class="step active" id="indicator1"><div class="step-circle"><i class="fas fa-user-pen"></i></div><div class="step-label">Details</div></div>
+                    <div class="step" id="indicator2"><div class="step-circle"><i class="fas fa-fingerprint"></i></div><div class="step-label">KYC</div></div>
+                    <div class="step" id="indicator3"><div class="step-circle"><i class="fas fa-shop"></i></div><div class="step-label">Business</div></div>
+                    <div class="step" id="indicator4"><div class="step-circle"><i class="fas fa-wallet"></i></div><div class="step-label">Bank</div></div>
+                    <div class="step" id="indicator5"><div class="step-circle"><i class="fas fa-clipboard-check"></i></div><div class="step-label">Review</div></div>
                 </div>
             </div>
 
             <div class="form-panel active" id="step1">
-                <div class="panel-title"><i class="fas fa-user-circle"></i> Applicant details</div>
+                <div class="panel-title"><i class="fas fa-user-pen"></i> Applicant details</div>
                 <p class="panel-note">Tell us who is applying for the seller account.</p>
                 <div class="input-grid">
                     <div class="input-group full"><label class="input-label" for="p_name">Full Legal Name</label><input type="text" id="p_name" class="modern-input" placeholder="Name as per documents" required></div>
@@ -356,23 +444,23 @@
             </div>
 
             <div class="form-panel" id="step2">
-                <div class="panel-title"><i class="fas fa-file-shield"></i> KYC documents</div>
+                <div class="panel-title"><i class="fas fa-fingerprint"></i> KYC documents</div>
                 <p class="panel-note">Upload clear images. You can add up to two images for each document.</p>
                 <div class="input-group full">
                     <label class="input-label">Aadhaar Card <span style="color:var(--danger)">*</span></label>
                     <div class="file-upload-box" data-type="aadhaar">
                         <input type="file" id="k_aadhaar" class="file-input" accept="image/*" multiple data-type="aadhaar" onchange="handleFileUpload(this)">
-                        <div><i class="fas fa-cloud-arrow-up"></i><h4>Upload Aadhaar</h4><p>Drag, drop, or tap to browse</p></div>
+                        <div><div class="upload-symbol">ID</div><h4>Upload Aadhaar</h4><p>Background check: Indian Govt ID + compressed image</p></div>
                     </div>
-                    <div class="preview-grid" id="preview_aadhaar"></div>
+                    <div class="doc-scan-card" id="doc_status_aadhaar"></div><div class="preview-grid" id="preview_aadhaar"></div>
                 </div>
                 <div class="input-group full">
                     <label class="input-label">PAN Card <span style="color:var(--danger)">*</span></label>
                     <div class="file-upload-box" data-type="pan">
                         <input type="file" id="k_pan" class="file-input" accept="image/*" multiple data-type="pan" onchange="handleFileUpload(this)">
-                        <div><i class="fas fa-id-badge"></i><h4>Upload PAN</h4><p>Drag, drop, or tap to browse</p></div>
+                        <div><div class="upload-symbol">PAN</div><h4>Upload PAN</h4><p>Background check: PAN/Govt tax document + compressed image</p></div>
                     </div>
-                    <div class="preview-grid" id="preview_pan"></div>
+                    <div class="doc-scan-card" id="doc_status_pan"></div><div class="preview-grid" id="preview_pan"></div>
                 </div>
                 <div class="input-group full toggle-container">
                     <div class="toggle-label"><i class="fas fa-receipt"></i> Do you have a GST certificate?</div>
@@ -385,33 +473,59 @@
                     <label class="input-label">GST Certificate <span style="color:var(--danger)">*</span></label>
                     <div class="file-upload-box" data-type="gst">
                         <input type="file" id="k_gst" class="file-input" accept="image/*" multiple data-type="gst" onchange="handleFileUpload(this)">
-                        <div><i class="fas fa-file-signature"></i><h4>Upload GST</h4><p>Drag, drop, or tap to browse</p></div>
+                        <div><div class="upload-symbol">GST</div><h4>Upload GST</h4><p>Background check: GST certificate + compressed image</p></div>
                     </div>
-                    <div class="preview-grid" id="preview_gst"></div>
+                    <div class="doc-scan-card" id="doc_status_gst"></div><div class="preview-grid" id="preview_gst"></div>
                 </div>
                 <div class="btn-group"><button type="button" class="btn btn-secondary" onclick="prevStep(2, 1)"><i class="fas fa-arrow-left"></i> Back</button><button type="button" class="btn btn-primary" onclick="validateStep2()">Continue to Business <i class="fas fa-arrow-right"></i></button></div>
             </div>
 
             <div class="form-panel" id="step3">
-                <div class="panel-title"><i class="fas fa-store-alt"></i> Business details</div>
+                <div class="panel-title"><i class="fas fa-shop"></i> Business details</div>
                 <p class="panel-note">Add the shop or company details that will appear in your seller records. The pickup address must include House No / Flat No / Road No so courier pickup can be activated after approval.</p>
                 <div class="input-grid">
-                    <div class="input-group full"><label class="input-label" for="s_name">Business / Shop Name</label><input type="text" id="s_name" class="modern-input" placeholder="Official business name" required></div>
+                    <div class="input-group full">
+                        <label class="input-label" for="s_name">Business / Shop Name</label>
+                        <div class="shop-name-control">
+                            <input type="text" id="s_name" class="modern-input" placeholder="Official business name" required oninput="checkShopNameTyping()">
+                            <button type="button" class="btn btn-secondary suggest-btn" onclick="openShopNameSuggestions()"><i class="fas fa-wand-magic"></i> Suggest Names</button>
+                        </div>
+                        <div class="name-status" id="shopNameStatus"></div>
+                    </div>
                     <div class="input-group"><label class="input-label" for="s_phone">Business Phone</label><input type="tel" id="s_phone" class="modern-input" placeholder="Business contact number" inputmode="numeric" maxlength="10" required></div>
                     <div class="input-group"><label class="input-label" for="s_email">Business Email</label><input type="email" id="s_email" class="modern-input" placeholder="business@example.com" required></div>
-                    <div class="input-group full">
-                        <label class="input-label" for="s_address_line1">Pickup / Business Address Line 1</label>
-                        <input type="text" id="s_address_line1" class="modern-input" placeholder="House No 12, Road No 5, Market/Area" required>
-                        <div class="error-line" id="s_address_line1_error">Please include House No / Flat No / Road No in address line 1.</div>
+                    <div class="input-group full address-helper">
+                        <div class="address-helper-head">
+                            <div>
+                                <strong><i class="fas fa-location-dot" style="color:var(--accent);"></i> Pickup address helper</strong>
+                                <span>Fill these small boxes instead of one confusing line. We will automatically make the correct Pickup / Business Address Line 1 for courier pickup.</span>
+                            </div>
+                            <button type="button" class="btn btn-secondary location-btn" onclick="useMyLocation()"><i class="fas fa-crosshairs"></i> Use My Location</button>
+                        </div>
+                        <div class="location-status" id="locationStatus">Location status will show here.</div>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label" for="s_house_no">House / Flat / Shop No</label>
+                        <input type="text" id="s_house_no" class="modern-input" placeholder="Example: House No 12 / Shop 5" required oninput="getBusinessPickupFields()">
+                        <span class="field-hint">Required for courier and Shiprocket pickup.</span>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label" for="s_pickup_line">Road / Street / Market</label>
+                        <input type="text" id="s_pickup_line" class="modern-input" placeholder="Example: Road No 5, Main Market" required oninput="getBusinessPickupFields()">
+                        <span class="field-hint">Write road, lane, gali, market, or building name.</span>
                     </div>
                     <div class="input-group full">
                         <label class="input-label" for="s_address_2">Area / Landmark</label>
-                        <input type="text" id="s_address_2" class="modern-input" placeholder="Near landmark, building, locality" required>
+                        <input type="text" id="s_address_2" class="modern-input" placeholder="Near landmark, building, locality" required oninput="getBusinessPickupFields()">
+                        <div class="error-line" id="s_address_line1_error">Please add House / Flat / Shop No and Road / Street / Market.</div>
                     </div>
-                    <div class="input-group"><label class="input-label" for="s_city">Pickup City</label><input type="text" id="s_city" class="modern-input" placeholder="City" required></div>
-                    <div class="input-group"><label class="input-label" for="s_state">Pickup State</label><input type="text" id="s_state" class="modern-input" placeholder="State" required></div>
-                    <div class="input-group"><label class="input-label" for="s_pincode">Pickup Pincode</label><input type="text" id="s_pincode" class="modern-input" placeholder="6-digit pincode" inputmode="numeric" maxlength="6" required></div>
+                    <div class="input-group"><label class="input-label" for="s_city">Pickup City</label><input type="text" id="s_city" class="modern-input" placeholder="City" required oninput="getBusinessPickupFields()"></div>
+                    <div class="input-group"><label class="input-label" for="s_state">Pickup State</label><input type="text" id="s_state" class="modern-input" placeholder="State" required oninput="getBusinessPickupFields()"></div>
+                    <div class="input-group"><label class="input-label" for="s_pincode">Pickup Pincode</label><input type="text" id="s_pincode" class="modern-input" placeholder="6-digit pincode" inputmode="numeric" maxlength="6" required oninput="this.value = cleanPin(this.value); getBusinessPickupFields();"></div>
+                    <input type="hidden" id="s_address_line1">
                     <input type="hidden" id="s_address">
+                    <input type="hidden" id="s_latitude">
+                    <input type="hidden" id="s_longitude">
                     <div class="input-group"><label class="input-label" for="s_turnover">Annual Turnover</label><select id="s_turnover" class="modern-input" required><option value="">Select range</option><option value="Under 1 Lakhs">Under ₹1 Lakh</option><option value="Under 5 Lakhs">Under ₹5 Lakhs</option><option value="Under 10 Lakhs">Under ₹10 Lakhs</option><option value="10 - 50 Lakhs">₹10 Lakhs - ₹50 Lakhs</option><option value="Above 50 Lakhs">Above ₹50 Lakhs</option></select></div>
                     <div class="input-group"><label class="input-label" for="s_employees">Total Employees</label><input type="number" id="s_employees" class="modern-input" placeholder="Staff count" required></div>
                 </div>
@@ -419,7 +533,7 @@
             </div>
 
             <div class="form-panel" id="step4">
-                <div class="panel-title"><i class="fas fa-building-columns"></i> Bank details</div>
+                <div class="panel-title"><i class="fas fa-wallet"></i> Bank details</div>
                 <p class="panel-note">This bank account will be used for seller payments after approval.</p>
                 <div class="input-grid">
                     <div class="input-group full"><label class="input-label" for="k_ifsc">Bank IFSC Code</label><input type="text" id="k_ifsc" class="modern-input" placeholder="Example: SBIN0001234" maxlength="11" style="text-transform:uppercase;" onkeyup="this.value = this.value.toUpperCase();" required><div id="ifsc_error" class="error-line">Invalid IFSC format.</div></div>
@@ -432,13 +546,27 @@
             <div class="form-panel" id="step5">
                 <div class="panel-title"><i class="fas fa-clipboard-check"></i> Review and submit</div>
                 <p class="panel-note">Check your details before sending your request to Aryanta admin.</p>
-                <div class="summary-box"><h3><i class="fas fa-user"></i> Applicant</h3><div class="summary-row"><span>Legal Name</span><strong id="sum_name">--</strong></div><div class="summary-row"><span>Mobile</span><strong id="sum_phone">--</strong></div><div class="summary-row"><span>Email</span><strong id="sum_email">--</strong></div></div>
-                <div class="summary-box"><h3><i class="fas fa-store"></i> Business and bank</h3><div class="summary-row"><span>Business Name</span><strong id="sum_shopName">--</strong></div><div class="summary-row"><span>Pickup Address</span><strong id="sum_pickupAddress">--</strong></div><div class="summary-row"><span>Bank IFSC</span><strong id="sum_ifsc">--</strong></div></div>
+                <div id="reviewAllDetails" class="review-grid"></div>
                 <div class="summary-box"><h3><i class="fas fa-paperclip"></i> Uploaded documents</h3><div id="sum_images"></div></div>
                 <div class="btn-group"><button type="button" class="btn btn-secondary" onclick="prevStep(5, 4)"><i class="fas fa-pen-to-square"></i> Edit</button><button type="button" class="btn btn-pay" onclick="submitFinalApplication()">Submit Request <i class="fas fa-paper-plane"></i></button></div>
             </div>
         </form>
     </main>
+
+
+
+    <div class="suggestion-overlay" id="shopSuggestModal" role="dialog" aria-modal="true" aria-labelledby="shopSuggestTitle">
+        <div class="suggestion-box">
+            <div class="suggestion-head">
+                <div>
+                    <h2 id="shopSuggestTitle">Choose a trusted shop name</h2>
+                    <p>These 6 Indian-style names are checked against existing Aryanta seller records before showing.</p>
+                </div>
+                <button type="button" class="close-suggest" onclick="closeShopNameSuggestions()"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div id="shopSuggestList" class="suggest-grid"><div class="suggest-loading"><i class="fas fa-spinner fa-spin"></i> Creating safe names...</div></div>
+        </div>
+    </div>
 
     <div class="alert-overlay" id="alertModal" role="dialog" aria-modal="true" aria-labelledby="alertTitle">
         <div class="alert-box">
@@ -459,7 +587,7 @@
         <div class="success-box">
             <div class="success-symbol"><i class="fas fa-check"></i></div>
             <h2>Request submitted</h2>
-            <p>Your seller request is now under review. After verification, Aryanta admin will share your account access details through your registered contact.</p>
+            <p>Your request is now under review. After verification, Aryanta admin will share your account access details through your registered contact.</p>
             <div style="margin-top:24px;" class="input-label">Reference Number</div>
             <div class="ref-box" id="refNumberDisplay">--</div>
             <div class="status-note">For more details, contact admin at support@aryanta.in or WhatsApp 6206318133.</div>
@@ -478,7 +606,10 @@
         const SUPPORT_PHONE = "6206318133";
 
         let uploadedDocs = { aadhaar: [], pan: [], gst: [] };
+        let docChecks = { aadhaar: [], pan: [], gst: [] };
         let pendingApplicantData = null;
+        let editOtpMode = false;
+        let shopNameTypingTimer = null;
         let db = null;
         let generatedRawOTP = "";
         let hashedOTP = "";
@@ -542,24 +673,145 @@
             return el ? String(el.value || "").trim() : "";
         }
 
+        function setFieldValue(id, value, overwrite = true) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (overwrite || !String(el.value || "").trim()) {
+                el.value = String(value || "").trim();
+            }
+        }
+
+        function showLocationStatus(message, type = "info") {
+            const box = document.getElementById('locationStatus');
+            if (!box) return;
+            box.classList.add('show');
+            box.innerHTML = message;
+            box.style.borderColor = type === "success" ? "#abefc6" : type === "error" ? "#fecdca" : "var(--line)";
+            box.style.color = type === "success" ? "#067647" : type === "error" ? "#b42318" : "var(--muted)";
+            box.style.background = type === "success" ? "#ecfdf3" : type === "error" ? "#fef3f2" : "#fff";
+        }
+
+        function splitSavedPickupLine(line) {
+            const raw = String(line || "").trim();
+            if (!raw) return { houseNo: "", pickupLine: "" };
+            const parts = raw.split(',').map(x => x.trim()).filter(Boolean);
+            const houseMatch = raw.match(/(?:house|flat|shop|plot|door|room|h\.?\s*no\.?|ward|block|sector)?\s*(?:no\.?\s*)?[a-z0-9\/-]*\d[a-z0-9\/-]*/i);
+            if (parts.length > 1) {
+                return { houseNo: parts[0], pickupLine: parts.slice(1).join(', ') };
+            }
+            if (houseMatch) {
+                const houseNo = houseMatch[0].trim();
+                const pickupLine = raw.replace(houseMatch[0], '').replace(/^\s*,\s*/, '').trim();
+                return { houseNo, pickupLine: pickupLine || raw };
+            }
+            return { houseNo: "", pickupLine: raw };
+        }
+
         function hasDetailedPickupLine(line) {
-            const v = String(line || "").toLowerCase();
+            const v = String(line || "").toLowerCase().trim();
             const hasNumber = /\d/.test(v);
-            const hasAddressWord = /(house|flat|road|rd|shop|plot|building|bldg|floor|lane|gali|street|st|h\.?\s*no|door|ward|sector|block)/i.test(v);
-            return hasNumber && hasAddressWord;
+            const hasAddressWord = /(house|flat|road|rd\b|shop|plot|building|bldg|floor|lane|gali|street|st\b|h\.?\s*no|door|ward|sector|block|market|marg|chowk|colony|near)/i.test(v);
+            const hasEnoughText = v.replace(/[\s,.-]/g, '').length >= 8;
+            return hasNumber && (hasAddressWord || hasEnoughText);
         }
 
         function getBusinessPickupFields() {
-            const line1 = getValue('s_address_line1') || getValue('s_address');
+            const houseNo = getValue('s_house_no');
+            const pickupLine = getValue('s_pickup_line');
+            let line1 = [houseNo, pickupLine].filter(Boolean).join(', ');
+            if (!line1) line1 = getValue('s_address_line1') || getValue('s_address');
+
             const line2 = getValue('s_address_2');
             const city = getValue('s_city');
             const state = getValue('s_state');
             const pin = cleanPin(getValue('s_pincode'));
+            const latitude = getValue('s_latitude');
+            const longitude = getValue('s_longitude');
             const full = [line1, line2, city, state, pin].filter(Boolean).join(', ');
-            const hidden = document.getElementById('s_address');
-            if (hidden) hidden.value = full;
-            return { line1, line2, city, state, pin, full };
+
+            setFieldValue('s_address_line1', line1, true);
+            setFieldValue('s_address', full, true);
+            return { houseNo, pickupLine, line1, line2, city, state, pin, latitude, longitude, full };
         }
+
+        async function reverseGeoLookup(lat, lng) {
+            const result = { house: "", road: "", area: "", city: "", state: "", pin: "" };
+            try {
+                const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&addressdetails=1&zoom=18`;
+                const response = await fetch(url, { headers: { "Accept": "application/json" } });
+                const data = await response.json().catch(() => ({}));
+                const a = data.address || {};
+                result.house = [a.house_number, a.building, a.shop].filter(Boolean).join(', ');
+                result.road = [a.road, a.pedestrian, a.footway, a.path, a.marketplace, a.commercial].filter(Boolean)[0] || "";
+                result.area = [a.neighbourhood, a.suburb, a.city_district, a.locality, data.name].filter(Boolean).filter((v, i, arr) => arr.indexOf(v) === i).slice(0, 2).join(', ');
+                result.city = a.city || a.town || a.village || a.municipality || a.county || "";
+                result.state = a.state || "";
+                result.pin = cleanPin(a.postcode || "");
+            } catch(e) {
+                console.warn('Nominatim reverse geocode failed:', e);
+            }
+            if (!result.city || !result.state || !result.pin) {
+                try {
+                    const url2 = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lng)}&localityLanguage=en`;
+                    const r2 = await fetch(url2, { headers: { "Accept": "application/json" } });
+                    const d2 = await r2.json().catch(() => ({}));
+                    result.city = result.city || d2.city || d2.locality || d2.principalSubdivision || "";
+                    result.state = result.state || d2.principalSubdivision || "";
+                    result.pin = result.pin || cleanPin(d2.postcode || "");
+                    result.area = result.area || [d2.locality, d2.localityInfo?.administrative?.[3]?.name].filter(Boolean).join(', ');
+                } catch(e) {
+                    console.warn('BigDataCloud reverse geocode failed:', e);
+                }
+            }
+            return result;
+        }
+
+        async function useMyLocation() {
+            if (!navigator.geolocation) {
+                return showAlert("Location Not Supported", "Your browser does not support location access. Please enter the pickup address manually.");
+            }
+
+            showLocationStatus('<i class="fas fa-spinner fa-spin"></i> Asking for location permission...', 'info');
+
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const lat = Number(position.coords.latitude).toFixed(7);
+                const lng = Number(position.coords.longitude).toFixed(7);
+                setFieldValue('s_latitude', lat, true);
+                setFieldValue('s_longitude', lng, true);
+                showLocationStatus(`<i class="fas fa-circle-check"></i> GPS found. Filling address boxes now...`, 'success');
+
+                try {
+                    const a = await reverseGeoLookup(lat, lng);
+                    setFieldValue('s_house_no', a.house || getValue('s_house_no') || '', true);
+                    setFieldValue('s_pickup_line', a.road || a.area || getValue('s_pickup_line') || '', true);
+                    setFieldValue('s_address_2', a.area || getValue('s_address_2') || '', true);
+                    setFieldValue('s_city', a.city || getValue('s_city') || '', true);
+                    setFieldValue('s_state', a.state || getValue('s_state') || '', true);
+                    setFieldValue('s_pincode', a.pin || getValue('s_pincode') || '', true);
+                    const pickup = getBusinessPickupFields();
+                    const missing = [];
+                    if (!pickup.houseNo) missing.push('House / Flat / Shop No');
+                    if (!pickup.pickupLine) missing.push('Road / Street / Market');
+                    if (!pickup.city) missing.push('City');
+                    if (!pickup.state) missing.push('State');
+                    if (!pickup.pin) missing.push('Pincode');
+                    if (missing.length) {
+                        showLocationStatus(`<i class="fas fa-triangle-exclamation"></i> GPS saved (${lat}, ${lng}). Some fields could not be detected automatically: ${missing.join(', ')}. Please type them and then continue.`, 'error');
+                    } else {
+                        showLocationStatus(`<i class="fas fa-circle-check"></i> Location filled successfully. Please check House / Shop No and edit if needed. Coordinates saved: ${lat}, ${lng}`, 'success');
+                    }
+                } catch (error) {
+                    console.warn('Reverse geocode failed:', error);
+                    getBusinessPickupFields();
+                    showLocationStatus(`<i class="fas fa-circle-check"></i> GPS coordinates saved: ${lat}, ${lng}. Please type the address boxes manually.`, 'success');
+                }
+            }, (error) => {
+                const msg = error.code === 1 ? "Location permission was blocked. Please allow location access or enter the address manually." : "Could not get your location. Please check GPS/internet and try again.";
+                showLocationStatus(`<i class="fas fa-triangle-exclamation"></i> ${msg}`, 'error');
+                showAlert("Location Access Needed", msg);
+            }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 600000 });
+        }
+
 
         function safeDocId(v) {
             return String(v || "").trim().toLowerCase().replace(/[\/?#\[\]\s]+/g, "_").slice(0, 450) || `seller-${Date.now()}`;
@@ -586,7 +838,7 @@
         }
 
         function hideAllWelcomeStates() {
-            ['welcomeStateInitial', 'welcomeStateReg', 'welcomeStateOTP', 'welcomeStateExists', 'welcomeStatePending'].forEach(id => {
+            ['welcomeStateInitial', 'welcomeStateReg', 'welcomeStateOTP', 'welcomeStateExists', 'welcomeStatePending', 'welcomeStateIncomplete'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.style.display = 'none';
             });
@@ -621,6 +873,129 @@
             return safeDocId(email || phone || Date.now()).toUpperCase();
         }
 
+        function isSubmittedApplicationComplete(app) {
+            const d = (app && (app.application || app.data)) || app || {};
+            const personal = d.personal || {};
+            const shop = d.shop || {};
+            const kyc = d.kyc || {};
+            const statusText = String(d.approvalStatus || d.status || '').toLowerCase();
+            const stepsDone = Number(d.stepsCompleted || d.completedSteps || 0);
+            const submittedSignal =
+                d.applicationComplete === true ||
+                stepsDone >= 6 ||
+                Boolean(d.submittedAt && (d.referenceNo || d.refNo || d.applicationId)) ||
+                statusText.includes('pending verification') ||
+                (statusText === 'pending' && Boolean(d.submittedAt || d.referenceNo));
+
+            const email = cleanEmail(d.email || personal.email || shop.email);
+            const phone = cleanPhone(d.phone || personal.phone || shop.phone);
+            const personalOK = Boolean(personal.name && personal.address && personal.city && personal.state && cleanPin(personal.pincode).length === 6 && email && phone);
+            const pickupLine = shop.address || shop.pickup_address || shop.fullAddress || shop.pickupAddress || '';
+            const businessOK = Boolean(shop.name && (shop.phone || phone) && (shop.email || email) && pickupLine && shop.city && shop.state && cleanPin(shop.pincode || shop.pin_code).length === 6 && shop.turnover && shop.employees);
+            const bankOK = Boolean(kyc.ifsc && kyc.accountNo);
+            const docsOK = Array.isArray(kyc.aadhaarImages) && kyc.aadhaarImages.length > 0 && Array.isArray(kyc.panImages) && kyc.panImages.length > 0;
+
+            return Boolean(submittedSignal && personalOK && businessOK && bankOK && docsOK);
+        }
+
+        function getDuplicateStatusFromApplication(app) {
+            return isSubmittedApplicationComplete(app) ? 'pending' : 'incomplete';
+        }
+
+        function showIncompleteApplication(data) {
+            pendingApplicantData = data || pendingApplicantData || {};
+            const ref = getApplicationReference(pendingApplicantData);
+            const box = document.getElementById('incompleteProfileText');
+            if (box) {
+                box.innerHTML = `<i class="fas fa-circle-info"></i> Saved profile found${ref ? ` — Reference: <b>${ref}</b>` : ''}. `;
+            }
+            document.getElementById('uploadingOverlay').style.display = 'none';
+            showWelcomeState('welcomeStateIncomplete');
+        }
+
+        function setActiveFormStep(stepNo) {
+            for (let i = 1; i <= 5; i++) {
+                const panel = document.getElementById(`step${i}`);
+                const indicator = document.getElementById(`indicator${i}`);
+                if (panel) panel.classList.toggle('active', i === stepNo);
+                if (indicator) {
+                    indicator.classList.toggle('active', i === stepNo);
+                    indicator.classList.toggle('completed', i < stepNo);
+                }
+            }
+            const percent = ((stepNo - 1) / 4) * 80;
+            const bar = document.getElementById('progressBar');
+            if (bar) bar.style.width = `${percent}%`;
+            window.scrollTo(0, 0);
+        }
+
+        function loadApplicationIntoForm(data, fallbackEmail, fallbackPhone) {
+            const d = data || {};
+            const email = cleanEmail(fallbackEmail || d.email || d.personal?.email || d.shop?.email || document.getElementById('init_email')?.value);
+            const phone = cleanPhone(fallbackPhone || d.phone || d.personal?.phone || d.shop?.phone || document.getElementById('init_phone')?.value);
+
+            setFieldValue('p_email', email, true);
+            setFieldValue('p_phone', phone, true);
+            setFieldValue('s_email', d.shop?.email || email, true);
+            setFieldValue('s_phone', d.shop?.phone || phone, true);
+
+            if (d.personal) {
+                setFieldValue('p_name', d.personal.name || '', true);
+                setFieldValue('p_address', d.personal.address || '', true);
+                setFieldValue('p_city', d.personal.city || '', true);
+                setFieldValue('p_state', d.personal.state || '', true);
+                setFieldValue('p_pincode', d.personal.pincode || '', true);
+            }
+            if (d.shop) {
+                setFieldValue('s_name', d.shop.name || '', true);
+                const savedAddressLine1 = d.shop.address || d.shop.pickup_address || '';
+                const savedAddress2 = d.shop.address_2 || d.shop.landmark || d.shop.pickup_address_2 || '';
+                const parsedPickup = splitSavedPickupLine(savedAddressLine1);
+                setFieldValue('s_house_no', d.shop.addressHouseNo || d.shop.houseNo || parsedPickup.houseNo || '', true);
+                setFieldValue('s_pickup_line', d.shop.pickupLine || d.shop.road || parsedPickup.pickupLine || savedAddressLine1 || '', true);
+                setFieldValue('s_address_line1', savedAddressLine1, true);
+                setFieldValue('s_address_2', savedAddress2, true);
+                setFieldValue('s_city', d.shop.city || '', true);
+                setFieldValue('s_state', d.shop.state || '', true);
+                setFieldValue('s_pincode', d.shop.pincode || d.shop.pin_code || '', true);
+                setFieldValue('s_latitude', d.shop.latitude || '', true);
+                setFieldValue('s_longitude', d.shop.longitude || '', true);
+                setFieldValue('s_turnover', d.shop.turnover || '', true);
+                setFieldValue('s_employees', d.shop.employees || '', true);
+                setFieldValue('s_address', d.shop.fullAddress || [savedAddressLine1, savedAddress2, d.shop.city, d.shop.state, d.shop.pincode].filter(Boolean).join(', '), true);
+                getBusinessPickupFields();
+            }
+            if (d.kyc) {
+                setFieldValue('k_ifsc', d.kyc.ifsc || '', true);
+                setFieldValue('k_acc', d.kyc.accountNo || '', true);
+                setFieldValue('k_acc_verify', d.kyc.accountNo || '', true);
+                uploadedDocs.aadhaar = Array.isArray(d.kyc.aadhaarImages) ? d.kyc.aadhaarImages : [];
+                uploadedDocs.pan = Array.isArray(d.kyc.panImages) ? d.kyc.panImages : [];
+                uploadedDocs.gst = Array.isArray(d.kyc.gstImages) ? d.kyc.gstImages : [];
+                docChecks = d.kyc.docChecks || { aadhaar: [], pan: [], gst: [] };
+                docChecks.aadhaar = Array.isArray(docChecks.aadhaar) ? docChecks.aadhaar : [];
+                docChecks.pan = Array.isArray(docChecks.pan) ? docChecks.pan : [];
+                docChecks.gst = Array.isArray(docChecks.gst) ? docChecks.gst : [];
+                renderImagePreviews('aadhaar');
+                renderImagePreviews('pan');
+                renderImagePreviews('gst');
+            }
+        }
+
+        async function startEditPendingApplication() {
+            const d = pendingApplicantData || {};
+            const email = cleanEmail(d.email || d.personal?.email || d.shop?.email || document.getElementById('init_email')?.value);
+            const phone = cleanPhone(d.phone || d.personal?.phone || d.shop?.phone || document.getElementById('init_phone')?.value);
+            if (!email || !/^\d{10}$/.test(phone)) {
+                return showAlert("Verification Needed", "Please enter your registered email and 10-digit mobile number again to edit your saved profile.");
+            }
+            document.getElementById('init_email').value = email;
+            document.getElementById('init_phone').value = phone;
+            editOtpMode = true;
+            document.getElementById('uploadingOverlay').style.display = 'flex';
+            await triggerOTP(email, phone);
+        }
+
         function showPendingApplication(data) {
             pendingApplicantData = data || pendingApplicantData || {};
             const ref = getApplicationReference(pendingApplicantData);
@@ -648,6 +1023,8 @@
                 phone: phoneInput || "",
                 status: statusLabel,
                 approvalStatus: statusLabel === "Pending Verification" ? "pending" : "draft",
+                applicationComplete: statusLabel === "Pending Verification",
+                stepsCompleted: statusLabel === "Pending Verification" ? 6 : 0,
                 personal: {
                     name: document.getElementById('p_name').value || "",
                     phone: phoneInput || "",
@@ -662,18 +1039,23 @@
                     accountNo: document.getElementById('k_acc').value || "",
                     aadhaarImages: uploadedDocs.aadhaar || [],
                     panImages: uploadedDocs.pan || [],
-                    gstImages: uploadedDocs.gst || []
+                    gstImages: uploadedDocs.gst || [],
+                    docChecks: docChecks
                 },
                 shop: {
                     name: shopName,
                     phone: shopPhone,
                     email: shopEmail,
+                    addressHouseNo: pickupFields.houseNo,
+                    pickupLine: pickupFields.pickupLine,
                     address: pickupFields.line1,
                     address_2: pickupFields.line2,
                     landmark: pickupFields.line2,
                     city: pickupFields.city,
                     state: pickupFields.state,
                     pincode: pickupFields.pin,
+                    latitude: pickupFields.latitude,
+                    longitude: pickupFields.longitude,
                     fullAddress: pickupFields.full,
                     pickupAddress: pickupFields.full,
                     pickup_address: pickupFields.line1,
@@ -692,6 +1074,8 @@
                     state: pickupFields.state,
                     country: "India",
                     pin_code: pickupFields.pin,
+                    latitude: pickupFields.latitude,
+                    longitude: pickupFields.longitude,
                     address_type: "Others"
                 },
                 timestamp: now,
@@ -727,7 +1111,10 @@
             try {
                 const result = await apiPost('/seller/check', { email, phone, shopName });
                 if (result.status === 'active') return { status: 'active', data: result.seller || null };
-                if (result.status === 'pending') return { status: 'pending', data: result.application || result.data || null };
+                if (result.status === 'pending') {
+                    const appData = result.application || result.data || null;
+                    return { status: getDuplicateStatusFromApplication(appData), data: appData || { email, phone, shopName } };
+                }
             } catch (error) {
                 console.warn("Worker duplicate check skipped:", error);
             }
@@ -755,7 +1142,7 @@
                         const sellerShop = String(s.shop?.name || s.shopName || s.businessName || "").trim().toLowerCase();
                         if ((email && sellerEmail === email) || (phone && sellerPhone === phone) || (shopName && sellerShop === shopName)) pendingFound = { id: doc.id, ...s };
                     });
-                    if (pendingFound) return { status: "pending", data: pendingFound };
+                    if (pendingFound) return { status: getDuplicateStatusFromApplication(pendingFound), data: pendingFound };
                 }
             } catch (error) {
                 console.warn("Firebase duplicate check skipped:", error);
@@ -787,6 +1174,11 @@
 
             if (result.status === 'pending') {
                 showPendingApplication(result.data || { email, phone });
+                return;
+            }
+
+            if (result.status === 'incomplete') {
+                showIncompleteApplication(result.data || { email, phone });
                 return;
             }
 
@@ -857,46 +1249,11 @@
                     return showAlert("Wrong OTP", "The OTP you entered is not correct. Please check the code and try again.");
                 }
 
-                document.getElementById('p_email').value = email;
-                document.getElementById('p_phone').value = phone;
-                document.getElementById('s_email').value = email;
-                document.getElementById('s_phone').value = phone;
-
-                if (pendingApplicantData) {
-                    if (pendingApplicantData.personal) {
-                        document.getElementById('p_name').value = pendingApplicantData.personal.name || "";
-                        document.getElementById('p_address').value = pendingApplicantData.personal.address || "";
-                        document.getElementById('p_city').value = pendingApplicantData.personal.city || "";
-                        document.getElementById('p_state').value = pendingApplicantData.personal.state || "";
-                        document.getElementById('p_pincode').value = pendingApplicantData.personal.pincode || "";
-                    }
-                    if (pendingApplicantData.shop) {
-                        document.getElementById('s_name').value = pendingApplicantData.shop.name || "";
-                        const savedAddressLine1 = pendingApplicantData.shop.address || pendingApplicantData.shop.pickup_address || "";
-                        const savedAddress2 = pendingApplicantData.shop.address_2 || pendingApplicantData.shop.landmark || pendingApplicantData.shop.pickup_address_2 || "";
-                        if (document.getElementById('s_address_line1')) document.getElementById('s_address_line1').value = savedAddressLine1;
-                        if (document.getElementById('s_address_2')) document.getElementById('s_address_2').value = savedAddress2;
-                        if (document.getElementById('s_city')) document.getElementById('s_city').value = pendingApplicantData.shop.city || "";
-                        if (document.getElementById('s_state')) document.getElementById('s_state').value = pendingApplicantData.shop.state || "";
-                        if (document.getElementById('s_pincode')) document.getElementById('s_pincode').value = pendingApplicantData.shop.pincode || pendingApplicantData.shop.pin_code || "";
-                        document.getElementById('s_address').value = pendingApplicantData.shop.fullAddress || [savedAddressLine1, savedAddress2, pendingApplicantData.shop.city, pendingApplicantData.shop.state, pendingApplicantData.shop.pincode].filter(Boolean).join(', ');
-                        document.getElementById('s_turnover').value = pendingApplicantData.shop.turnover || "";
-                        document.getElementById('s_employees').value = pendingApplicantData.shop.employees || "";
-                        document.getElementById('s_email').value = pendingApplicantData.shop.email || email;
-                        document.getElementById('s_phone').value = pendingApplicantData.shop.phone || phone;
-                    }
-                    if (pendingApplicantData.kyc) {
-                        document.getElementById('k_ifsc').value = pendingApplicantData.kyc.ifsc || "";
-                        document.getElementById('k_acc').value = pendingApplicantData.kyc.accountNo || "";
-                        document.getElementById('k_acc_verify').value = pendingApplicantData.kyc.accountNo || "";
-                        uploadedDocs.aadhaar = Array.isArray(pendingApplicantData.kyc.aadhaarImages) ? pendingApplicantData.kyc.aadhaarImages : [];
-                        uploadedDocs.pan = Array.isArray(pendingApplicantData.kyc.panImages) ? pendingApplicantData.kyc.panImages : [];
-                        uploadedDocs.gst = Array.isArray(pendingApplicantData.kyc.gstImages) ? pendingApplicantData.kyc.gstImages : [];
-                        renderImagePreviews('aadhaar');
-                        renderImagePreviews('pan');
-                        renderImagePreviews('gst');
-                    }
+                loadApplicationIntoForm(pendingApplicantData || {}, email, phone);
+                if (editOtpMode) {
+                    showAlert("OTP Verified", "You can now edit your saved seller profile safely.", "success");
                 }
+                editOtpMode = false;
 
                 generatedRawOTP = "";
                 hashedOTP = "";
@@ -942,6 +1299,9 @@
 
         document.getElementById('alertModal').addEventListener('click', function(event) {
             if (event.target === this) closeAlert();
+        });
+        document.getElementById('shopSuggestModal')?.addEventListener('click', function(event) {
+            if (event.target === this) closeShopNameSuggestions();
         });
 
         document.addEventListener('keydown', function(event) {
@@ -992,6 +1352,9 @@
                     document.getElementById('welcomeOverlay').style.display = 'flex';
                     return showPendingApplication(isDuplicate.data || {});
                 }
+                if (isDuplicate && isDuplicate.status === 'incomplete') {
+                    pendingApplicantData = isDuplicate.data || pendingApplicantData;
+                }
             }
             transitionPanels(current, next);
         }
@@ -1018,6 +1381,50 @@
             saveProgressDraft();
         }
 
+        function getDocLabel(type) {
+            return type === 'aadhaar' ? 'Aadhaar' : type === 'pan' ? 'PAN' : 'GST';
+        }
+
+        function precheckIndianGovDoc(type, file) {
+            const name = String(file?.name || '').toLowerCase();
+            const sizeMb = (file?.size || 0) / (1024 * 1024);
+            const label = getDocLabel(type);
+            if (!file || !String(file.type || '').startsWith('image/')) {
+                return { ok:false, level:'bad', message:`${label}: Please upload a clear image file only.` };
+            }
+            if (sizeMb > 12) {
+                return { ok:false, level:'bad', message:`${label}: File is too large. Please upload a clear photo under 12 MB.` };
+            }
+            const suspicious = /(selfie|profile|logo|banner|product|item|catalog|poster|thumbnail|receipt|delivery|shipping)/i.test(name);
+            if (suspicious) {
+                return { ok:false, level:'bad', message:`${label}: This file name looks like a non-KYC image. Please upload the correct Government of India document.` };
+            }
+            const rules = {
+                aadhaar: /(aadhaar|aadhar|adhar|adhaar|uidai|identity|kyc|id|front|back)/i,
+                pan: /(\bpan\b|income.?tax|permanent.?account|nsdl|uti|kyc|tax)/i,
+                gst: /(gst|gstin|registration|certificate|tax)/i
+            };
+            const genericCamera = /(img|image|photo|scan|scanned|cam|camera|whatsapp|document|doc)/i.test(name);
+            if (rules[type].test(name)) {
+                return { ok:true, level:'ok', verified:true, message:`${label}: Government document pre-check passed. Image will still go for admin verification.` };
+            }
+            if (genericCamera || !name) {
+                return { ok:true, level:'warn', verified:false, message:`${label}: File accepted,` };
+            }
+            return { ok:false, level:'bad', message:`${label}: Could not identify this as the required Indian Government document. Please upload the correct ${label} image.` };
+        }
+
+        function setDocStatus(type, check) {
+            const box = document.getElementById(`doc_status_${type}`);
+            if (!box || !check) return;
+            box.className = `doc-scan-card show ${check.level || 'warn'}`;
+            box.innerHTML = `<i class="fas ${check.level === 'ok' ? 'fa-circle-check' : check.level === 'bad' ? 'fa-triangle-exclamation' : 'fa-circle-info'}"></i> ${check.message || ''}`;
+        }
+
+        function getDocSrc(item) {
+            return typeof item === 'string' ? item : (item && (item.src || item.url || item.dataUrl)) || '';
+        }
+
         async function handleFileUpload(input) {
             const type = input.dataset.type;
             const files = Array.from(input.files || []);
@@ -1028,15 +1435,30 @@
                 return;
             }
 
+            document.getElementById('uploadingOverlay').style.display = 'flex';
             for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const label = getDocLabel(type);
+                setOverlayText(`Checking ${label}...`, "Background document bot is checking file type, Govt-document name hint, and compressing the photo.");
                 try {
-                    let base64 = await resizeAndConvertImage(files[i]);
+                    const check = precheckIndianGovDoc(type, file);
+                    if (!check.ok) {
+                        setDocStatus(type, check);
+                        showAlert("Wrong Document", check.message);
+                        continue;
+                    }
+                    let base64 = await resizeAndConvertImage(file);
+                    const compressedKb = Math.max(1, Math.round((base64.length * 0.75) / 1024));
                     uploadedDocs[type].push(base64);
+                    const finalCheck = { ...check, fileName: file.name || `${label}.jpg`, compressedKb, uploadedAt: new Date().toISOString() };
+                    docChecks[type].push(finalCheck);
+                    setDocStatus(type, { ...finalCheck, message: `${check.message} Compressed size: ~${compressedKb} KB.` });
                 } catch(e) {
                     console.error(e);
                     showAlert("Upload Error", "One file could not be processed. Please upload a clear image.");
                 }
             }
+            document.getElementById('uploadingOverlay').style.display = 'none';
             renderImagePreviews(type);
             input.value = "";
             saveProgressDraft();
@@ -1044,20 +1466,33 @@
 
         function renderImagePreviews(type) {
             const container = document.getElementById(`preview_${type}`);
+            if (!container) return;
             container.innerHTML = "";
-            uploadedDocs[type].forEach((src, index) => {
+            uploadedDocs[type].forEach((item, index) => {
+                const src = getDocSrc(item);
+                const meta = docChecks[type]?.[index] || {};
+                const label = meta.verified ? 'Govt pre-check OK' : 'Manual check';
                 container.innerHTML += `
                     <div class="img-preview-card">
                         <img src="${src}" alt="${type} document preview">
+                        <div class="img-preview-meta">${label}${meta.compressedKb ? ` • ${meta.compressedKb} KB` : ''}</div>
                         <button type="button" class="delete-btn" onclick="deleteImage('${type}', ${index})" aria-label="Delete image"><i class="fas fa-trash"></i></button>
                     </div>
                 `;
             });
+            if (uploadedDocs[type].length && docChecks[type]?.[uploadedDocs[type].length - 1]) {
+                setDocStatus(type, docChecks[type][uploadedDocs[type].length - 1]);
+            }
         }
 
         function deleteImage(type, index) {
             uploadedDocs[type].splice(index, 1);
+            if (docChecks[type]) docChecks[type].splice(index, 1);
             renderImagePreviews(type);
+            if (!uploadedDocs[type].length) {
+                const box = document.getElementById(`doc_status_${type}`);
+                if (box) box.className = 'doc-scan-card';
+            }
             saveProgressDraft();
         }
 
@@ -1069,12 +1504,27 @@
                     const img = new Image();
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 600;
-                        const scaleSize = img.width > MAX_WIDTH ? MAX_WIDTH / img.width : 1;
-                        canvas.width = img.width * scaleSize;
-                        canvas.height = img.height * scaleSize;
-                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.6));
+                        let maxSide = 820;
+                        const targetBytes = 190 * 1024;
+                        let quality = 0.62;
+                        const draw = () => {
+                            const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+                            canvas.width = Math.max(1, Math.round(img.width * scale));
+                            canvas.height = Math.max(1, Math.round(img.height * scale));
+                            const ctx = canvas.getContext('2d');
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        };
+                        draw();
+                        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+                        let tries = 0;
+                        while ((dataUrl.length * 0.75) > targetBytes && tries < 8) {
+                            tries++;
+                            if (quality > 0.42) quality -= 0.07;
+                            else { maxSide = Math.max(520, Math.round(maxSide * 0.86)); draw(); }
+                            dataUrl = canvas.toDataURL('image/jpeg', quality);
+                        }
+                        resolve(dataUrl);
                     };
                     img.onerror = reject;
                     img.src = e.target.result;
@@ -1116,6 +1566,104 @@
             transitionPanels(2, 3);
         }
 
+
+
+        function escapeHtml(v) {
+            return String(v || '').replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+        }
+
+        function trustedShopNameCandidates() {
+            const cityRaw = getValue('s_city') || getValue('p_city') || 'India';
+            const city = cityRaw.replace(/[^a-zA-Z ]/g, '').trim().split(/\s+/)[0] || 'India';
+            const owner = (getValue('p_name').replace(/[^a-zA-Z ]/g, '').trim().split(/\s+/)[0] || 'Arya');
+            const roots = ['Bharat', 'Shree', 'Apna', city, owner, 'Trusted', 'Prime', 'Smart', 'Royal', 'City'];
+            const suffix = ['Mart', 'Bazaar', 'Store', 'Collection', 'Traders', 'Hub', 'Emporium', 'Shop'];
+            const raw = [
+                `${roots[1]} ${city} ${suffix[0]}`,
+                `${roots[2]} ${suffix[1]}`,
+                `${owner} ${suffix[2]}`,
+                `${city} ${suffix[5]}`,
+                `${roots[5]} ${suffix[6]}`,
+                `${roots[6]} ${suffix[3]}`,
+                `New ${city} ${suffix[7]}`,
+                `${roots[0]} ${suffix[4]}`,
+                `${roots[7]} ${suffix[0]}`,
+                `${roots[8]} ${suffix[2]}`
+            ];
+            return [...new Set(raw.map(n => n.replace(/\s+/g, ' ').trim()).filter(n => n.length >= 4))];
+        }
+
+        async function isShopNameAvailable(name) {
+            const currentEmail = cleanEmail(getValue('p_email') || getValue('init_email'));
+            const found = await checkDuplicateInDB({ shopName: name });
+            if (!found || found.status === 'none') return true;
+            const foundEmail = cleanEmail(found.data?.email || found.data?.personal?.email || found.data?.shop?.email);
+            return Boolean(currentEmail && foundEmail && foundEmail === currentEmail);
+        }
+
+        async function openShopNameSuggestions() {
+            const modal = document.getElementById('shopSuggestModal');
+            const list = document.getElementById('shopSuggestList');
+            if (!modal || !list) return;
+            modal.style.display = 'flex';
+            list.innerHTML = '<div class="suggest-loading"><i class="fas fa-spinner fa-spin"></i> Creating 6 trusted names and checking duplicates...</div>';
+            const candidates = trustedShopNameCandidates();
+            const available = [];
+            for (const name of candidates) {
+                try {
+                    if (await isShopNameAvailable(name)) available.push(name);
+                } catch(e) {
+                    console.warn('Shop name availability check failed for', name, e);
+                    available.push(name);
+                }
+                if (available.length >= 6) break;
+            }
+            let seed = 11;
+            while (available.length < 6) {
+                const extra = `${(getValue('s_city') || 'Aryanta').split(/\s+/)[0]} Trusted Mart ${seed}`;
+                if (!available.includes(extra)) available.push(extra);
+                seed += 7;
+            }
+            list.innerHTML = available.slice(0, 6).map(name => `<button type="button" class="suggest-card" onclick="applySuggestedShopName('${escapeHtml(name).replace(/'/g, "&#39;")}')"><strong>${escapeHtml(name)}</strong><span>Available name</span></button>`).join('');
+        }
+
+        function closeShopNameSuggestions() {
+            const modal = document.getElementById('shopSuggestModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function applySuggestedShopName(name) {
+            setFieldValue('s_name', name, true);
+            closeShopNameSuggestions();
+            const status = document.getElementById('shopNameStatus');
+            if (status) {
+                status.className = 'name-status show';
+                status.style.color = 'var(--success)';
+                status.innerHTML = '<i class="fas fa-circle-check"></i> Trusted and available shop name selected.';
+            }
+            saveProgressDraft();
+        }
+
+        function checkShopNameTyping() {
+            clearTimeout(shopNameTypingTimer);
+            const status = document.getElementById('shopNameStatus');
+            const name = getValue('s_name');
+            if (!status || !name) return;
+            status.className = 'name-status show';
+            status.style.color = 'var(--muted)';
+            status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking shop name...';
+            shopNameTypingTimer = setTimeout(async () => {
+                try {
+                    const ok = await isShopNameAvailable(name);
+                    status.style.color = ok ? 'var(--success)' : 'var(--danger)';
+                    status.innerHTML = ok ? '<i class="fas fa-circle-check"></i> Shop name looks available.' : '<i class="fas fa-triangle-exclamation"></i> This shop name is already used. Choose another name.';
+                } catch(e) {
+                    status.style.color = 'var(--warning)';
+                    status.innerHTML = '<i class="fas fa-circle-info"></i> Could not check now. It will be checked before submit.';
+                }
+            }, 450);
+        }
+
         async function validateStep3() {
             const inputs = document.getElementById('step3').querySelectorAll('input[required], select[required]');
             let isValid = true;
@@ -1131,14 +1679,16 @@
 
             const pickupFields = getBusinessPickupFields();
             const addrErr = document.getElementById('s_address_line1_error');
-            if (!hasDetailedPickupLine(pickupFields.line1)) {
-                const addrInput = document.getElementById('s_address_line1');
-                if (addrInput) addrInput.style.borderColor = "var(--danger)";
+            const houseInput = document.getElementById('s_house_no');
+            const pickupInput = document.getElementById('s_pickup_line');
+            if (!pickupFields.houseNo || !pickupFields.pickupLine || !hasDetailedPickupLine(pickupFields.line1)) {
+                if (houseInput && !pickupFields.houseNo) houseInput.style.borderColor = "var(--danger)";
+                if (pickupInput && !pickupFields.pickupLine) pickupInput.style.borderColor = "var(--danger)";
                 if (addrErr) addrErr.style.display = "block";
-                return showAlert("Complete Pickup Address", "Address line 1 must include House No / Flat No / Road No. Example: House No 12, Road No 5, Mango.");
+                return showAlert("Complete Pickup Address", "Please fill House / Flat / Shop No and Road / Street / Market. Example: House No 12 + Road No 5, Main Market.");
             } else {
-                const addrInput = document.getElementById('s_address_line1');
-                if (addrInput) addrInput.style.borderColor = "var(--line)";
+                if (houseInput) houseInput.style.borderColor = "var(--line)";
+                if (pickupInput) pickupInput.style.borderColor = "var(--line)";
                 if (addrErr) addrErr.style.display = "none";
             }
             if (!/^[1-9][0-9]{5}$/.test(pickupFields.pin)) {
@@ -1195,27 +1745,69 @@
             generateSummary();
         }
 
+        function maskAccount(v) {
+            const s = String(v || '').trim();
+            if (s.length <= 4) return s || '--';
+            return '••••••' + s.slice(-4);
+        }
+
+        function reviewRows(rows) {
+            return `<div class="review-table">${rows.map(([k,v]) => `<div class="review-row"><span>${escapeHtml(k)}</span><strong>${escapeHtml(v || '--')}</strong></div>`).join('')}</div>`;
+        }
+
         function generateSummary() {
-            document.getElementById('sum_name').innerText = document.getElementById('p_name').value;
-            document.getElementById('sum_phone').innerText = document.getElementById('p_phone').value;
-            document.getElementById('sum_email').innerText = document.getElementById('p_email').value;
-            document.getElementById('sum_shopName').innerText = document.getElementById('s_name').value;
             const pickupSummary = getBusinessPickupFields();
-            const pickupSummaryEl = document.getElementById('sum_pickupAddress');
-            if (pickupSummaryEl) pickupSummaryEl.innerText = pickupSummary.full || '--';
-            document.getElementById('sum_ifsc').innerText = document.getElementById('k_ifsc').value.toUpperCase();
+            const review = document.getElementById('reviewAllDetails');
+            if (review) {
+                const docText = [
+                    `Aadhaar: ${uploadedDocs.aadhaar.length} image(s)`,
+                    `PAN: ${uploadedDocs.pan.length} image(s)`,
+                    `GST: ${document.getElementById('gst_yes').checked ? uploadedDocs.gst.length + ' image(s)' : 'Not selected'}`
+                ].join(' | ');
+                review.innerHTML = `
+                    <div class="review-section"><h3><i class="fas fa-user-check"></i> Applicant Details</h3>${reviewRows([
+                        ['Full Legal Name', getValue('p_name')],
+                        ['Mobile Number', getValue('p_phone')],
+                        ['Email Address', getValue('p_email')],
+                        ['Residential Address', getValue('p_address')],
+                        ['City', getValue('p_city')],
+                        ['State', getValue('p_state')],
+                        ['Pincode', getValue('p_pincode')]
+                    ])}</div>
+                    <div class="review-section"><h3><i class="fas fa-shop"></i> Business & Pickup Details</h3>${reviewRows([
+                        ['Business / Shop Name', getValue('s_name')],
+                        ['Business Phone', getValue('s_phone')],
+                        ['Business Email', getValue('s_email')],
+                        ['House / Flat / Shop No', pickupSummary.houseNo],
+                        ['Road / Street / Market', pickupSummary.pickupLine],
+                        ['Area / Landmark', pickupSummary.line2],
+                        ['Full Pickup Address', pickupSummary.full],
+                        ['Pickup City', pickupSummary.city],
+                        ['Pickup State', pickupSummary.state],
+                        ['Pickup Pincode', pickupSummary.pin],
+                        ['GPS Coordinates', pickupSummary.latitude && pickupSummary.longitude ? `${pickupSummary.latitude}, ${pickupSummary.longitude}` : '--'],
+                        ['Annual Turnover', getValue('s_turnover')],
+                        ['Total Employees', getValue('s_employees')]
+                    ])}</div>
+                    <div class="review-section"><h3><i class="fas fa-building-columns"></i> Bank & Document Details</h3>${reviewRows([
+                        ['Bank IFSC', getValue('k_ifsc').toUpperCase()],
+                        ['Account Number', maskAccount(getValue('k_acc'))],
+                        ['Document Uploads', docText]
+                    ])}</div>
+                `;
+            }
 
             const imgContainer = document.getElementById('sum_images');
             let htmlContent = '<div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:10px;">';
 
             if (uploadedDocs.aadhaar.length > 0) {
-                htmlContent += `<div style="text-align:center;"><span style="font-size:11px; font-weight:900; color:var(--muted);">AADHAAR</span><br><img src="${uploadedDocs.aadhaar[0]}" style="width:82px; height:60px; object-fit:cover; border-radius:14px; border:1px solid var(--line); margin-top:7px;"></div>`;
+                htmlContent += `<div style="text-align:center;"><span style="font-size:11px; font-weight:900; color:var(--muted);">AADHAAR</span><br><img src="${getDocSrc(uploadedDocs.aadhaar[0])}" style="width:82px; height:60px; object-fit:cover; border-radius:14px; border:1px solid var(--line); margin-top:7px;"><div style="font-size:10px;color:var(--muted);font-weight:800;margin-top:4px;">${docChecks.aadhaar?.[0]?.compressedKb ? docChecks.aadhaar[0].compressedKb + ' KB' : 'Compressed'}</div></div>`;
             }
             if (uploadedDocs.pan.length > 0) {
-                htmlContent += `<div style="text-align:center;"><span style="font-size:11px; font-weight:900; color:var(--muted);">PAN</span><br><img src="${uploadedDocs.pan[0]}" style="width:82px; height:60px; object-fit:cover; border-radius:14px; border:1px solid var(--line); margin-top:7px;"></div>`;
+                htmlContent += `<div style="text-align:center;"><span style="font-size:11px; font-weight:900; color:var(--muted);">PAN</span><br><img src="${getDocSrc(uploadedDocs.pan[0])}" style="width:82px; height:60px; object-fit:cover; border-radius:14px; border:1px solid var(--line); margin-top:7px;"><div style="font-size:10px;color:var(--muted);font-weight:800;margin-top:4px;">${docChecks.pan?.[0]?.compressedKb ? docChecks.pan[0].compressedKb + ' KB' : 'Compressed'}</div></div>`;
             }
             if (uploadedDocs.gst.length > 0 && document.getElementById('gst_yes').checked) {
-                htmlContent += `<div style="text-align:center;"><span style="font-size:11px; font-weight:900; color:var(--muted);">GST</span><br><img src="${uploadedDocs.gst[0]}" style="width:82px; height:60px; object-fit:cover; border-radius:14px; border:1px solid var(--line); margin-top:7px;"></div>`;
+                htmlContent += `<div style="text-align:center;"><span style="font-size:11px; font-weight:900; color:var(--muted);">GST</span><br><img src="${getDocSrc(uploadedDocs.gst[0])}" style="width:82px; height:60px; object-fit:cover; border-radius:14px; border:1px solid var(--line); margin-top:7px;"><div style="font-size:10px;color:var(--muted);font-weight:800;margin-top:4px;">${docChecks.gst?.[0]?.compressedKb ? docChecks.gst[0].compressedKb + ' KB' : 'Compressed'}</div></div>`;
             }
 
             htmlContent += '</div>';
@@ -1230,6 +1822,8 @@
 
             const finalApplicationData = buildApplicationData("Pending Verification");
             finalApplicationData.approvalStatus = "pending";
+            finalApplicationData.applicationComplete = true;
+            finalApplicationData.stepsCompleted = 6;
             finalApplicationData.submittedAt = new Date().toISOString();
             finalApplicationData.referenceNo = finalApplicationData.referenceNo || "ARY-" + Math.floor(100000000 + Math.random() * 900000000);
 
