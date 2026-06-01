@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -3044,5 +3045,351 @@
 })();
 </script>
 
+
+
+<script id="aryanta-last3-cod-scroll-fix">
+(function(){
+  if (window.__aryantaLast3CODScrollFix) return;
+  window.__aryantaLast3CODScrollFix = true;
+
+  window.COD_CANCEL_LIMIT = 3;
+  window.ARYANTA_CANCEL_LIMIT = 3;
+  window.codRecentOrderStatus = {
+    checked: false,
+    loading: false,
+    blocked: false,
+    cancelCount: 0,
+    totalChecked: 0,
+    last3: [],
+    source: ''
+  };
+
+  function safeText(value){
+    return String(value == null ? '' : value).trim();
+  }
+
+  function normalizeEmail(value){
+    return safeText(value).toLowerCase();
+  }
+
+  function flattenDocValue(value){
+    try {
+      if (typeof window.flattenFirestoreValue === 'function') return window.flattenFirestoreValue(value);
+      if (!value || typeof value !== 'object') return value;
+      if ('stringValue' in value) return value.stringValue;
+      if ('integerValue' in value) return Number(value.integerValue);
+      if ('doubleValue' in value) return Number(value.doubleValue);
+      if ('booleanValue' in value) return !!value.booleanValue;
+      if ('timestampValue' in value) return value.timestampValue;
+      if ('arrayValue' in value) return (value.arrayValue.values || []).map(flattenDocValue);
+      if ('mapValue' in value) {
+        const out = {};
+        Object.entries(value.mapValue.fields || {}).forEach(([k, v]) => { out[k] = flattenDocValue(v); });
+        return out;
+      }
+    } catch(e) {}
+    return value;
+  }
+
+  function normalizeOrder(raw){
+    if (!raw || typeof raw !== 'object') return null;
+    let order = raw;
+    if (raw.fields && typeof raw.fields === 'object') {
+      order = {};
+      Object.entries(raw.fields).forEach(([k, v]) => { order[k] = flattenDocValue(v); });
+      order.id = order.id || order.orderId || safeText(raw.name).split('/').pop();
+    } else if (raw.document && typeof raw.document === 'object') {
+      order = normalizeOrder(raw.document) || raw;
+    }
+    return order && typeof order === 'object' ? order : null;
+  }
+
+  function collectOrders(data){
+    if (!data) return [];
+    if (Array.isArray(data)) return data.map(normalizeOrder).filter(Boolean);
+    if (typeof data !== 'object') return [];
+
+    const keys = ['orders', 'items', 'data', 'results', 'documents', 'orderList', 'userOrders', 'customerOrders'];
+    for (const key of keys) {
+      if (Array.isArray(data[key])) return data[key].map(normalizeOrder).filter(Boolean);
+    }
+    if (data.data && typeof data.data === 'object') {
+      for (const key of keys) {
+        if (Array.isArray(data.data[key])) return data.data[key].map(normalizeOrder).filter(Boolean);
+      }
+    }
+    if (data.orders && typeof data.orders === 'object') return Object.values(data.orders).map(normalizeOrder).filter(Boolean);
+    if (data.items && typeof data.items === 'object') return Object.values(data.items).map(normalizeOrder).filter(Boolean);
+    return [];
+  }
+
+  function pick(obj, keys){
+    for (const key of keys) {
+      if (obj && obj[key] !== undefined && obj[key] !== null && safeText(obj[key]) !== '') return obj[key];
+    }
+    return '';
+  }
+
+  function orderTime(order){
+    const value = pick(order, ['createdAt', 'created_at', 'orderCreatedAt', 'orderDate', 'orderedAt', 'placedAt', 'date', 'timestamp', 'time', 'updatedAt']);
+    if (typeof value === 'number') return value < 100000000000 ? value * 1000 : value;
+    if (value && typeof value === 'object') {
+      if (typeof value.seconds === 'number') return value.seconds * 1000;
+      if (typeof value._seconds === 'number') return value._seconds * 1000;
+      if (typeof value.toDate === 'function') return value.toDate().getTime();
+    }
+    const parsed = Date.parse(safeText(value));
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  function belongsToCurrentUser(order){
+    const session = window.activeSession || {};
+    const sessionEmail = normalizeEmail(session.email || window.userData?.email);
+    const sessionUid = safeText(session.uid || session.userId || session.id || window.userData?.uid || window.userData?.userId);
+
+    const orderEmail = normalizeEmail(pick(order, [
+      'email', 'userEmail', 'user_email', 'customerEmail', 'customer_email', 'buyerEmail', 'buyer_email',
+      'billingEmail', 'shippingEmail', 'contactEmail', 'createdByEmail'
+    ]));
+    const orderUid = safeText(pick(order, [
+      'uid', 'userId', 'userID', 'user_uid', 'customerUid', 'customerUID', 'customerId', 'customerID',
+      'buyerUid', 'buyerUID', 'buyerId', 'buyerID', 'createdBy', 'createdByUid', 'orderByUid'
+    ]));
+
+    if (sessionEmail && orderEmail && orderEmail === sessionEmail) return true;
+    if (sessionUid && orderUid && orderUid === sessionUid) return true;
+    return !orderEmail && !orderUid; // endpoint may already be filtered by the logged-in user
+  }
+
+  function isCancelledOrder(order){
+    const status = safeText([
+      order.status,
+      order.orderStatus,
+      order.order_status,
+      order.currentStatus,
+      order.fulfillmentStatus,
+      order.paymentStatus,
+      order.state,
+      order.cancelStatus,
+      order.actionType
+    ].filter(Boolean).join(' ')).toLowerCase();
+
+    if (!status) return false;
+    return /\bcancell?ed\b|\bcancel\b|\bcancelled\b|\bcanceled\b|customer_cancel|seller_cancel|admin_cancel/.test(status);
+  }
+
+  function makeOrderFetchUrls(){
+    if (!window.API_BASE_URL) return [];
+    const session = window.activeSession || {};
+    const email = encodeURIComponent(session.email || window.userData?.email || '');
+    const uid = encodeURIComponent(session.uid || session.userId || session.id || window.userData?.uid || window.userData?.userId || '');
+    const urls = [];
+    if (email) {
+      urls.push(`${window.API_BASE_URL}/orders?email=${email}&limit=20&_cod_last3=${Date.now()}`);
+      urls.push(`${window.API_BASE_URL}/orders?user_email=${email}&limit=20&_cod_last3=${Date.now()}`);
+      urls.push(`${window.API_BASE_URL}/get-orders?email=${email}&limit=20&_cod_last3=${Date.now()}`);
+      urls.push(`${window.API_BASE_URL}/user-orders?email=${email}&limit=20&_cod_last3=${Date.now()}`);
+    }
+    if (uid) {
+      urls.push(`${window.API_BASE_URL}/orders?uid=${uid}&limit=20&_cod_last3=${Date.now()}`);
+      urls.push(`${window.API_BASE_URL}/orders?userId=${uid}&limit=20&_cod_last3=${Date.now()}`);
+      urls.push(`${window.API_BASE_URL}/get-orders?uid=${uid}&limit=20&_cod_last3=${Date.now()}`);
+    }
+    return Array.from(new Set(urls));
+  }
+
+  window.refreshCancellationCountFromOrders = async function(force){
+    if (!window.activeSession || (!window.activeSession.email && !window.activeSession.uid) || !window.API_BASE_URL) {
+      window.codRecentOrderStatus = { checked: true, loading: false, blocked: false, cancelCount: 0, totalChecked: 0, last3: [], source: 'no-session' };
+      sessionStorage.setItem('aryanta_cod_last3_blocked', '0');
+      return 0;
+    }
+
+    if (window.codRecentOrderStatus.loading) return window.codRecentOrderStatus.cancelCount || 0;
+    if (!force && window.codRecentOrderStatus.checked) return window.codRecentOrderStatus.cancelCount || 0;
+
+    window.codRecentOrderStatus.loading = true;
+    const urls = makeOrderFetchUrls();
+
+    for (const url of urls) {
+      try {
+        const res = await fetch(url, { cache: 'no-store', headers: { 'Accept': 'application/json' } });
+        if (!res.ok) continue;
+        const data = await res.json();
+        const orders = collectOrders(data)
+          .filter(belongsToCurrentUser)
+          .sort((a, b) => orderTime(b) - orderTime(a));
+
+        const last3 = orders.slice(0, 3);
+        const cancelCount = last3.filter(isCancelledOrder).length;
+        const blocked = last3.length >= 3 && cancelCount >= 3;
+
+        window.codRecentOrderStatus = {
+          checked: true,
+          loading: false,
+          blocked,
+          cancelCount,
+          totalChecked: last3.length,
+          last3,
+          source: url
+        };
+
+        sessionStorage.setItem('aryanta_cod_last3_blocked', blocked ? '1' : '0');
+        sessionStorage.setItem('aryanta_cod_last3_cancel_count', String(cancelCount));
+        sessionStorage.setItem('aryanta_cod_last3_total', String(last3.length));
+
+        window.codRestrictionCancelCount = cancelCount;
+        window.codUnavailableDueToCancellations = blocked;
+        window.codRestrictionReason = blocked
+          ? 'COD is not available because your latest 3 orders are cancelled. Please use secure online payment.'
+          : '';
+
+        if (window.userData) {
+          delete window.userData.codBlocked;
+          delete window.userData.codDisabled;
+          delete window.userData.codUnavailable;
+          delete window.userData.codRestricted;
+          delete window.userData.disableCOD;
+          delete window.userData.forceOnlinePayment;
+          window.userData.cancelCount = cancelCount;
+        }
+
+        if (typeof window.updatePaymentUI === 'function') window.updatePaymentUI();
+        return cancelCount;
+      } catch(e) {}
+    }
+
+    window.codRecentOrderStatus = { checked: true, loading: false, blocked: false, cancelCount: 0, totalChecked: 0, last3: [], source: 'fetch-failed' };
+    sessionStorage.setItem('aryanta_cod_last3_blocked', '0');
+    if (typeof window.updatePaymentUI === 'function') window.updatePaymentUI();
+    return 0;
+  };
+
+  window.refreshCODRestrictionState = function(){
+    const blocked = !!(window.codRecentOrderStatus && window.codRecentOrderStatus.blocked) || sessionStorage.getItem('aryanta_cod_last3_blocked') === '1';
+    const count = Number(sessionStorage.getItem('aryanta_cod_last3_cancel_count') || window.codRecentOrderStatus?.cancelCount || 0) || 0;
+
+    window.codRestrictionCancelCount = count;
+    window.codUnavailableDueToCancellations = blocked;
+    window.codRestrictionReason = blocked
+      ? 'COD is not available because your latest 3 orders are cancelled. Please use secure online payment.'
+      : '';
+    return blocked;
+  };
+
+  window.isCODRestricted = function(){
+    return window.refreshCODRestrictionState();
+  };
+
+  const oldUpdatePaymentUI = window.updatePaymentUI;
+  if (typeof oldUpdatePaymentUI === 'function') {
+    window.updatePaymentUI = function(){
+      const result = oldUpdatePaymentUI.apply(this, arguments);
+      try {
+        const mode = window.refreshDeliveryModeState ? window.refreshDeliveryModeState() : {};
+        const codInput = document.querySelector('input[name="payMethod"][value="cod"]');
+        const codOption = document.getElementById('codPaymentOption');
+        const sub = document.getElementById('codSubtext');
+        const box = document.getElementById('codWarningBox');
+        const blocked = !mode.hasEmailDelivery && window.refreshCODRestrictionState();
+
+        if (!mode.hasEmailDelivery && !blocked) {
+          if (codOption) {
+            codOption.style.display = '';
+            codOption.classList.remove('cod-disabled');
+            codOption.setAttribute('aria-disabled', 'false');
+            codOption.title = '';
+          }
+          if (codInput) codInput.disabled = false;
+          if (sub) {
+            sub.style.color = 'var(--text-muted)';
+            sub.innerText = 'COD available. Pay when your order arrives.';
+          }
+          if (box && !(codInput && codInput.checked && window.requireAdvance)) box.style.display = 'none';
+        }
+
+        if (!mode.hasEmailDelivery && blocked) {
+          if (box) {
+            box.style.display = 'block';
+            box.classList.remove('digital-info');
+            box.innerHTML = '<i class="fas fa-ban"></i> COD is not available because your latest 3 orders are cancelled. Please use Secure Online Payment, Aryanta Wallet, or promo/redeem discount.';
+          }
+          if (sub) {
+            sub.style.color = 'var(--danger)';
+            sub.innerText = 'Unavailable: last 3 orders cancelled.';
+          }
+        }
+      } catch(e) {}
+      return result;
+    };
+  }
+
+  const oldProcessCheckout = window.processCheckout;
+  if (typeof oldProcessCheckout === 'function') {
+    window.processCheckout = async function(){
+      try {
+        const mode = window.refreshDeliveryModeState ? window.refreshDeliveryModeState() : {};
+        const checkedPay = document.querySelector('input[name="payMethod"]:checked');
+        const isCOD = checkedPay && checkedPay.value === 'cod';
+        if (isCOD && !mode.hasEmailDelivery) {
+          await window.refreshCancellationCountFromOrders(true);
+          window.updatePaymentUI();
+          if (window.refreshCODRestrictionState()) {
+            const codInput = document.querySelector('input[name="payMethod"][value="cod"]');
+            const onlineInput = document.querySelector('input[name="payMethod"][value="online"]');
+            if (codInput) {
+              codInput.checked = false;
+              codInput.disabled = true;
+            }
+            if (onlineInput) onlineInput.checked = true;
+            window.checkoutBusy = false;
+            if (typeof window.resetCheckoutButton === 'function') window.resetCheckoutButton();
+            return window.showAlert('COD is not available because your latest 3 orders are cancelled. Please use Secure Online Payment, Aryanta Wallet, or promo/redeem discount.', 'COD Not Available');
+          }
+        }
+      } catch(e) {}
+      return oldProcessCheckout.apply(this, arguments);
+    };
+  }
+
+  function scrollCheckoutToTop(){
+    try {
+      const target = document.querySelector('.cart-wrapper') || document.getElementById('stepperNav') || document.body;
+      const y = Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - 90);
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    } catch(e) {
+      try { window.scrollTo(0, 0); } catch(_) {}
+    }
+  }
+  window.scrollCheckoutToTop = scrollCheckoutToTop;
+
+  const oldGoStepForward = window.goStepForward;
+  if (typeof oldGoStepForward === 'function') {
+    window.goStepForward = async function(){
+      const before = window.currentStep;
+      const result = await oldGoStepForward.apply(this, arguments);
+      setTimeout(function(){
+        if (window.currentStep !== before && window.currentStep > 1) scrollCheckoutToTop();
+      }, 80);
+      return result;
+    };
+  }
+
+  const oldFetchKeysAndDB = window.fetchKeysAndDB;
+  if (typeof oldFetchKeysAndDB === 'function' && !oldFetchKeysAndDB.__last3CodWrapped) {
+    const wrapped = async function(){
+      const result = await oldFetchKeysAndDB.apply(this, arguments);
+      window.refreshCancellationCountFromOrders(true).catch(function(){});
+      return result;
+    };
+    wrapped.__last3CodWrapped = true;
+    window.fetchKeysAndDB = wrapped;
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    window.refreshCancellationCountFromOrders(true).catch(function(){});
+  });
+})();
+</script>
 </body>
 </html>
