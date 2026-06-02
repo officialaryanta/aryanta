@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,6 +8,8 @@
     <link rel="canonical" href="https://aryanta.in/seller">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="/manifest.json">
     
     
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono&display=swap" rel="stylesheet">
@@ -63,7 +66,7 @@
             <h2 id="statusTitle">Account Restricted</h2>
             <p id="statusMessage" style="color:var(--text-light);font-size:14px;font-weight:700;line-height:1.7;margin:10px 0 18px;">Your seller panel is temporarily unavailable.</p>
             <div id="suspendTimer" class="suspend-timer" style="display:none;"></div>
-            <button class="btn-outline w-100" style="margin-top:18px;" onclick="window.location.href='mailto:support@aryanta.in'"><i class="fas fa-envelope"></i> Contact Aryanta Company</button>
+            <button class="btn-prime w-100 restricted-support-btn" style="margin-top:18px;" onclick="window.location.href='tel:6414054676'"><i class="fas fa-phone-volume"></i> Get Support: 6414054676<br><small>Working hours: 8 AM to 5 PM</small></button>
         </div>
     </div>
 
@@ -80,43 +83,33 @@
             <h2><img src="https://aryanta.in/vurify/aryanta.jpeg" style="width:30px; border-radius:8px;"> Aryanta <span id="verifiedBadge" style="display:none; color:var(--success); font-size:14px; margin-left:5px;"><i class="fas fa-check-circle"></i></span></h2>
             
             <div class="nav-item active" onclick="showSection('home')"><i class="fas fa-chart-pie"></i> Dashboard</div>
-            <div class="nav-item" onclick="showSection('profile')"><i class="fas fa-user-circle"></i> Profile Info</div>
             <div class="nav-item" onclick="showSection('notifications')"><i class="fas fa-bell"></i> Notifications <span id="notifBadge" class="nav-badge">0</span></div>
             
             <div style="border-top: 1px solid var(--border-color); margin: 15px 20px;"></div>
             
             <div class="nav-item" onclick="showSection('inventory')"><i class="fas fa-box-open"></i> My Inventory</div>
             <div class="nav-item" onclick="showSection('lowStock')"><i class="fas fa-boxes-stacked" style="color:#ef4444;"></i> Low Stock Items <span id="badge-low-stock" class="nav-badge" style="background:#ef4444;">0</span></div>
-            <div class="nav-item" onclick="showSection('performance')"><i class="fas fa-chart-line" style="color:#7c3aed;"></i> Product Performance</div>
-            <div class="nav-item" onclick="showSection('returnTracking')"><i class="fas fa-location-crosshairs" style="color:#0ea5e9;"></i> Return Tracking</div>
             <div class="nav-item" onclick="showSection('newOrders')"><i class="fas fa-bell" style="color: var(--warning);"></i> New Orders <span id="badge-new-orders" class="nav-badge" style="background:var(--warning);">0</span></div>
             <div class="nav-item" onclick="showSection('breached')"><i class="fas fa-triangle-exclamation" style="color: var(--danger);"></i> Breached <span id="badge-breached" class="nav-badge" style="background:var(--danger);">0</span></div>
             <div class="nav-item" onclick="showSection('acceptedOrders')"><i class="fas fa-check-square" style="color: #60a5fa;"></i> Accepted Orders <span id="badge-accepted" class="nav-badge" style="background:#3b82f6;">0</span></div>
-            <div class="nav-item" onclick="showSection('completedScan')"><i class="fas fa-clipboard-check" style="color: var(--success);"></i> Completed Scan</div>
             <div class="nav-item" onclick="showSection('shippedOrders')"><i class="fas fa-truck-fast" style="color: var(--success);"></i> Shipped Orders</div>
-            <div class="nav-item" onclick="showSection('deliveredOrders')"><i class="fas fa-check-circle" style="color: var(--success);"></i> Delivered Orders</div>
             
             <div style="border-top: 1px solid var(--border-color); margin: 15px 20px;"></div>
-            
-            <div class="nav-item scan-btn-premium" onclick="openGlobalScanModal()"><i class="fas fa-qrcode"></i> Scan & Dispatch</div>
             
             <div class="nav-item" onclick="showSection('history')" style="margin-top:15px;"><i class="fas fa-history"></i> Order History</div>
-            <div class="nav-item" onclick="showSection('returns')"><i class="fas fa-undo" style="color: var(--danger);"></i> Returns/Cancels</div>
             
             <div style="border-top: 1px solid var(--border-color); margin: 15px 20px;"></div>
-            
-            <div class="nav-item" onclick="showSection('warranty')"><i class="fas fa-shield-alt" style="color: var(--success);"></i> Warranty Claims <span id="badge-warranty" class="nav-badge" style="background:var(--success);">0</span></div>
             <div class="nav-item" onclick="showSection('payments')"><i class="fas fa-wallet" style="color: var(--success);"></i> Payments Ledger</div>
             <div class="nav-item" onclick="showSection('ads')"><i class="fas fa-bullhorn" style="color: #f472b6;"></i> Sponsored Ads</div>
             <div class="nav-item" onclick="showSection('subscription')"><i class="fas fa-crown" style="color: var(--warning);"></i> Subscriptions</div>
             
             <div style="border-top: 1px solid var(--border-color); margin: 15px 20px;"></div>
-            
-            <div class="nav-item" onclick="openHowToSellPage()"><i class="fas fa-video" style="color: #c026d3;"></i> How to Sell</div>
             <div class="nav-item" onclick="showSection('qna')"><i class="fas fa-comments" style="color: #60a5fa;"></i> Customer Q&A</div>
             <div class="nav-item" onclick="showSection('buyB2b')"><i class="fas fa-shopping-bag" style="color: var(--success);"></i> Buy B2B Supplies</div>
             <div class="nav-item" onclick="showSection('support')"><i class="fas fa-headset" style="color: var(--warning);"></i> Admin Support</div>
             
+            <div class="nav-item" data-section="info" onclick="showSection('info')" style="margin-top:15px;"><i class="fas fa-circle-info" style="color:#0ea5e9;"></i> Info</div>
+
             <div class="nav-item" onclick="handleLogout()" style="color: var(--danger); margin-top:30px;"><i class="fas fa-sign-out-alt"></i> Secure Logout</div>
         </aside>
 
@@ -156,41 +149,60 @@
 
                 
                 <section id="homeSection" class="data-section active">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px;">
-                        <h3 style="font-size:24px; font-weight:800;">Business Overview</h3>
-                        <div style="font-weight: 800; color: var(--warning); background:#fffbeb; padding:10px 20px; border-radius:30px; border:1px solid #fcd34d; font-size:14px;">
+                    <div class="dashboard-head-pro">
+                        <div>
+                            <h3>Business Overview</h3>
+                            
+                        </div>
+                        <div class="rating-chip-pro">
                             <i class="fas fa-star"></i> Store Rating: <span id="topShopRating">N/A</span>
                         </div>
                     </div>
 
-                    <div class="stats-grid dashboard-two-grid">
-                        <div class="stat-card" style="background:#fdf4ff; border-color:#f5d0fe;">
-                            <div class="smart-badge" style="background:var(--primary);">TODAY</div>
-                            <h3 id="smartDailyOrders" style="color:var(--text-main);">0</h3>
-                            <p style="color:var(--text-light);">Orders Today <span id="smartDailyPct"></span></p>
+                    <div class="stats-grid dashboard-metric-grid">
+                        <div class="stat-card dash-click-card metric-purple" onclick="aryDashboardJump('ordersToday')" role="button" tabindex="0">
+                            <div class="smart-badge">TODAY</div>
+                            <h3 id="smartDailyOrders">0</h3>
+                            <p>Orders Today <span id="smartDailyPct"></span></p>
+                            <small>Open today/new order panel <i class="fas fa-arrow-right"></i></small>
                         </div>
-                        <div class="stat-card" style="background:#eff6ff; border-color:#bfdbfe;">
-                            <div class="smart-badge" style="background:var(--primary);">MONTHLY</div>
-                            <h3 id="smartMonthlyOrders" style="color:var(--text-main);">0</h3>
-                            <p style="color:var(--text-light);">Orders This Month</p>
+                        <div class="stat-card dash-click-card metric-blue" onclick="aryDashboardJump('ordersMonth')" role="button" tabindex="0">
+                            <div class="smart-badge">MONTHLY</div>
+                            <h3 id="smartMonthlyOrders">0</h3>
+                            <p>Orders This Month</p>
+                            <small>Open order history <i class="fas fa-arrow-right"></i></small>
                         </div>
-                        <div class="stat-card" style="background:#fff7ed; border-color:#fecdd3;">
-                            <div class="smart-badge" style="background:var(--danger);">INVENTORY</div>
-                            <h3 id="stat-total-inventory" style="color:var(--danger);">0</h3>
-                            <p style="color:var(--text-light);">Live SKUs <span id="smartRestock" style="color:var(--danger); font-weight:bold; margin-left:5px;"></span></p>
+                        <div class="stat-card dash-click-card metric-orange" onclick="aryDashboardJump('inventory')" role="button" tabindex="0">
+                            <div class="smart-badge">INVENTORY</div>
+                            <h3 id="stat-total-inventory">0</h3>
+                            <p>Live SKUs <span id="smartRestock"></span></p>
+                            <small>Open inventory <i class="fas fa-arrow-right"></i></small>
+                        </div>
+                        <div class="stat-card dash-click-card metric-green" onclick="aryDashboardJump('deliveredRevenue')" role="button" tabindex="0">
+                            <div class="smart-badge">REVENUE</div>
+                            <h3 id="stat-total-pay">₹0</h3>
+                            <p>Total Revenue (Delivered)</p>
+                            <small>Open delivered orders <i class="fas fa-arrow-right"></i></small>
+                        </div>
+                        <div class="stat-card dash-click-card metric-teal" onclick="aryDashboardJump('payouts')" role="button" tabindex="0">
+                            <div class="smart-badge">PAYOUTS</div>
+                            <h3 id="stat-pending-pay">₹0</h3>
+                            <p>Upcoming Payouts</p>
+                            <small>Open payments ledger <i class="fas fa-arrow-right"></i></small>
+                        </div>
+                        <div class="stat-card dash-click-card metric-red" onclick="aryDashboardJump('questions')" role="button" tabindex="0">
+                            <div class="smart-badge">QUESTIONS</div>
+                            <h3 id="stat-pending-qna">0</h3>
+                            <p>Total Pending Questions</p>
+                            <small>Open Customer Q&amp;A <i class="fas fa-arrow-right"></i></small>
                         </div>
                     </div>
 
-                    <div class="stats-grid dashboard-two-grid mt-20">
-                        <div class="stat-card"><h3 id="stat-total-pay" style="color:var(--success);">₹0</h3><p>Total Revenue (Delivered)</p></div>
-                        <div class="stat-card"><h3 id="stat-pending-pay" style="color:#3b82f6;">₹0</h3><p>Upcoming Payouts</p></div>
-                    </div>
-                    
                     <div class="panel-box mt-20 sales-trend-panel">
                         <div class="chart-head-row">
                             <div>
                                 <h4>7-Day Order Trend</h4>
-                                <p>Total seller orders vs cancelled/return orders from live DB.</p>
+                                
                             </div>
                             <div class="chart-legend-mini">
                                 <span><b class="dot orders"></b> Orders</span>
@@ -203,54 +215,52 @@
 
                 
                 <section id="profileSection" class="data-section">
-                    <h3 style="font-size:24px; font-weight:800; margin-bottom:20px;">Profile & KYC</h3>
-                    <div class="panel-box">
-                        <div id="profPersonalGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:25px;">Loading...</div>
-                        
-                        <h4 style="font-size:18px; font-weight:800; margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">Bank Settlement Details</h4>
-                        <div style="max-width:400px; margin-bottom:30px;">
-                            <label>IFSC Code</label><input type="text" id="profIfsc" class="input-field" placeholder="Enter IFSC">
-                            <label>Account Number</label><input type="text" id="profAcc" class="input-field" placeholder="Enter Account No">
-                            <button class="btn-prime" onclick="updateBankDetails()"><i class="fas fa-save"></i> Save Bank Info</button>
-                        </div>
-
-                        <div id="kycStatusBoxWrapper" style="display:none; padding:20px; border:2px dashed var(--danger); border-radius:12px; background:#fef2f2; text-align:center;">
-                            <h4 style="color:var(--danger); font-size:18px; margin-bottom:10px;"><i class="fas fa-exclamation-triangle"></i> KYC Upload Required</h4>
-                            <p style="margin-bottom:15px; font-weight:600;">Admin requires fresh Aadhaar/PAN/GST docs to approve payouts.</p>
-                            <button class="btn-prime" style="background:var(--danger);" onclick="openKycModal()"><i class="fas fa-upload"></i> Upload Documents</button>
-                        </div>
+                    <div class="ary-empty-card">
+                        <i class="fas fa-circle-info"></i>
+                        <h3>Profile Info moved</h3>
+                        <p>Seller profile is now available inside the new Info panel.</p>
+                        <button class="btn-prime" onclick="showSection('info')"><i class="fas fa-circle-info"></i> Open Info Panel</button>
                     </div>
                 </section>
 
                 
                 <section id="notificationsSection" class="data-section">
-                    <h3 style="font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-bell"></i> System Notifications</h3>
-                    <div id="fullNotifList" class="panel-box">Loading...</div>
+                    <div class="ary-page-head">
+                        <div>
+                            <h3><i class="fas fa-bell"></i> System Notifications</h3>
+                          
+                        </div>
+                    </div>
+                    <div id="fullNotifList" class="panel-box notification-panel-pro">Loading...</div>
                 </section>
 
                 
                 <section id="inventorySection" class="data-section">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
-                        <h3 style="font-size:24px; font-weight:800;"><i class="fas fa-box-open"></i> My Inventory</h3>
+                    <div class="inventory-hero-pro">
+                        <div>
+                            <span class="inventory-kicker">Inventory Control</span>
+                            <h3><i class="fas fa-box-open"></i> My Inventory</h3>
+                            <p>Manage live SKUs, QC status, stock health and pricing in one clean panel.</p>
+                        </div>
                         <button class="btn-prime" onclick="openItemModal()"><i class="fas fa-plus"></i> Add New Product</button>
                     </div>
-                    
-                    
-                    <div class="category-scroll-wrapper">
+
+                    <div class="inventory-summary-strip">
+                        <div><span>Total Products</span><strong id="inventoryTotalCount">0</strong></div>
+                        <div><span>Live / QC Pass</span><strong id="inventoryLiveCount">0</strong></div>
+                        <div><span>Low Under 10</span><strong id="inventoryLowCount">0</strong></div>
+                    </div>
+
+                    <div class="category-scroll-wrapper inventory-filter-wrap">
                         <div class="category-filters">
                             <button class="cat-pill active" id="qc-all" onclick="filterInventory('All')">All Items</button>
-                            <button class="cat-pill" id="qc-pass" onclick="filterInventory('Approved')"><i class="fas fa-check-circle" style="color:var(--success);"></i> QC Pass / Live</button>
-                            <button class="cat-pill" id="qc-pending" onclick="filterInventory('Pending')"><i class="fas fa-clock" style="color:var(--warning);"></i> QC Pending</button>
-                            <button class="cat-pill" id="qc-cancel" onclick="filterInventory('Rejected')"><i class="fas fa-times-circle" style="color:var(--danger);"></i> QC Cancelled</button>
+                            <button class="cat-pill" id="qc-pass" onclick="filterInventory('Approved')"><i class="fas fa-check-circle"></i> QC Pass / Live</button>
+                            <button class="cat-pill" id="qc-pending" onclick="filterInventory('Pending')"><i class="fas fa-clock"></i> QC Pending</button>
+                            <button class="cat-pill" id="qc-cancel" onclick="filterInventory('Rejected')"><i class="fas fa-times-circle"></i> QC Cancelled</button>
                         </div>
                     </div>
 
-                    <div class="table-container">
-                        <table class="admin-table">
-                            <thead><tr><th>SKU & Images</th><th>Product Title</th><th>Category & Status</th><th>Stock</th><th>Price Info</th><th>Actions</th></tr></thead>
-                            <tbody id="inventoryList"></tbody>
-                        </table>
-                    </div>
+                    <div id="inventoryList" class="inventory-grid-pro"></div>
                 </section>
 
                 
@@ -260,34 +270,15 @@
                     <div class="ary-page-head">
                         <div>
                             <h3><i class="fas fa-boxes-stacked"></i> Low Stock Items</h3>
-                            <p>Products with stock 7 or less. Stock update here will not send product to QC again.</p>
+                            <p>Products with stock under 10 are visuble here.</p>
                         </div>
-                        <button class="btn-outline" onclick="loadLowStockItems()"><i class="fas fa-sync-alt"></i> Refresh</button>
                     </div>
-                    <div class="table-container"><table class="admin-table"><thead><tr><th>Product</th><th>SKU</th><th>Current Stock</th><th>Direct Update</th><th>Status</th></tr></thead><tbody id="lowStockList"></tbody></table></div>
+                    <div class="table-container"><table class="admin-table"><thead><tr><th>Product</th><th>SKU</th><th>Current Stock</th><th>Direct Update</th></tr></thead><tbody id="lowStockList"></tbody></table></div>
                 </section>
 
-                <section id="performanceSection" class="data-section">
-                    <div class="ary-page-head">
-                        <div>
-                            <h3><i class="fas fa-chart-line"></i> Product Performance</h3>
-                            <p id="performancePlanText">Plan based analytics.</p>
-                        </div>
-                        <button class="btn-outline" onclick="loadProductPerformance()"><i class="fas fa-sync-alt"></i> Refresh</button>
-                    </div>
-                    <div id="productPerformanceBox"></div>
-                </section>
+                <!-- performanceSection removed as requested -->
 
-                <section id="returnTrackingSection" class="data-section">
-                    <div class="ary-page-head">
-                        <div>
-                            <h3><i class="fas fa-location-crosshairs"></i> Return Tracking</h3>
-                            <p>Go, Pro and Ultra sellers can track returns, cancels and RTO items here.</p>
-                        </div>
-                        <button class="btn-outline" onclick="loadReturnTracking()"><i class="fas fa-sync-alt"></i> Refresh</button>
-                    </div>
-                    <div id="returnTrackingBox"></div>
-                </section>
+                <!-- returnTrackingSection removed as requested -->
 
                 <section id="newOrdersSection" class="data-section">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
@@ -311,14 +302,13 @@
                 <section id="breachedSection" class="data-section">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
                         <h3 style="color: var(--danger); font-size:24px; font-weight:800;"><i class="fas fa-triangle-exclamation"></i> Breached Orders & Items</h3>
-                        <button class="btn-outline" onclick="loadBreachedOrders()"><i class="fas fa-sync-alt"></i> Refresh</button>
                     </div>
                     <div class="panel-box" style="background:#fff1f2; border-color:#fecdd3; margin-bottom:15px;">
                         <strong>Important:</strong> Orders shown here have missed the seller action SLA, were auto-cancelled for breach, or were manually flagged. Review and fix them before more penalties are applied.
                     </div>
                     <div class="table-container">
                         <table class="admin-table">
-                            <thead><tr><th>Date</th><th>Order / Item Ref</th><th>Items</th><th>Reason</th><th>Amount / Fine</th><th>Action</th></tr></thead>
+                            <thead><tr><th>Date</th><th>Order / Item Ref</th><th>Items</th><th>Reason</th><th>Amount / Fine</th></tr></thead>
                             <tbody id="breachedOrdersList"></tbody>
                         </table>
                     </div>
@@ -335,20 +325,14 @@
                             <label for="selectAllAcc" style="margin:0 0 0 10px; font-size:14px; cursor:pointer; font-weight: bold;">Select All</label>
                         </div>
                         <div class="ship-merge-actions">
-                            <button class="btn-prime" style="background:#3b82f6;" onclick="processSlips('print')"><i class="fas fa-print"></i> Print Aryanta Invoice</button>
-                            <button class="btn-prime" style="background:#0f766e;" onclick="downloadShiprocketSlipsBulk()"><i class="fas fa-file-invoice"></i> Download All Slips</button>
-                            <button class="btn-prime" style="background:#8b5cf6;" onclick="downloadShiprocketManifestsBulk()"><i class="fas fa-file-signature"></i> Download All Manifests</button>
-                            <button class="btn-outline" onclick="downloadShippingInvoice('bulk')"><i class="fas fa-rocket"></i> Generate Pack Only</button>
+                            <button class="btn-prime" style="background:#0f766e;" onclick="generateSelectedShiprocketInvoices()"><i class="fas fa-file-invoice"></i> Generate Shiprocket Invoice</button>
                         </div>
                     </div>
                     <div class="table-container"><table class="admin-table"><thead><tr><th style="width: 50px;">Select</th><th>Order Date</th><th>Order Ref</th><th>Item Details</th><th>Action</th></tr></thead><tbody id="acceptedOrdersList"></tbody></table></div>
                 </section>
 
                 
-                <section id="completedScanSection" class="data-section">
-                    <h3 style="color: var(--success); font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-clipboard-check"></i> Scanned & Ready to Ship</h3>
-                    <div class="table-container"><table class="admin-table"><thead><tr><th>Scan Date</th><th>Order Ref</th><th>Item Details</th><th>Status</th><th>Action</th></tr></thead><tbody id="completedScanList"></tbody></table></div>
-                </section>
+                <!-- completedScanSection removed as requested -->
 
                 
                 <section id="shippedOrdersSection" class="data-section">
@@ -364,7 +348,16 @@
                         <h3 style="font-size:24px; font-weight:800;"><i class="fas fa-history"></i> Full Order History</h3>
                         <button class="btn-prime" style="background:var(--success);" onclick="exportHistoryCSV()"><i class="fas fa-file-csv"></i> Export CSV</button>
                     </div>
-                    <div class="table-container"><table class="admin-table"><thead><tr><th>Date</th><th>Order Ref</th><th>Item Details</th><th>Amount</th><th>Status</th></tr></thead><tbody id="historyList"></tbody></table></div>
+                    <div class="category-scroll-wrapper" style="margin-bottom:15px;">
+                        <div class="category-filters history-filter-pills" id="historyFilterPills">
+                            <button class="cat-pill active" id="hist-all" onclick="setHistoryFilter('all')"><i class="fas fa-list"></i> See All Orders</button>
+                            <button class="cat-pill" id="hist-delivered" onclick="setHistoryFilter('delivered')"><i class="fas fa-check-circle"></i> See Delivered Orders</button>
+                            <button class="cat-pill" id="hist-shipped" onclick="setHistoryFilter('shipped')"><i class="fas fa-truck-fast"></i> See Shipped Orders</button>
+                            <button class="cat-pill" id="hist-cancelled" onclick="setHistoryFilter('cancelled')"><i class="fas fa-ban"></i> See Cancelled Orders</button>
+                            <button class="cat-pill" id="hist-return" onclick="setHistoryFilter('return')"><i class="fas fa-undo"></i> See Return Orders</button>
+                        </div>
+                    </div>
+                    <div class="table-container"><table class="admin-table"><thead><tr><th>Date</th><th>Order Ref</th><th>Item Details</th><th>Amount</th><th>Status / Details</th></tr></thead><tbody id="historyList"></tbody></table></div>
                 </section>
                 <section id="returnsSection" class="data-section">
                     <h3 style="color: var(--danger); font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-undo"></i> Returns & Cancellations</h3>
@@ -372,20 +365,7 @@
                 </section>
 
                 
-                <section id="warrantySection" class="data-section">
-                    <h3 style="color: var(--success); font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fas fa-shield-alt"></i> Warranty Claim Requests</h3>
-                    <div class="panel-box" style="background:#fffbeb; border-color:#fcd34d;">
-                        <p style="font-size: 14px; color: #b45309; font-weight:600; margin:0;">Accept valid claims within 48 Hrs to avoid ₹199 SLA fine. Cancelling incurs ₹300 fine. Approved warranties deduct zero amount.</p>
-                    </div>
-                    <div class="category-scroll-wrapper" style="margin:15px 0;">
-                        <div class="category-filters">
-                            <button class="cat-pill active" id="warranty-tab-requests" onclick="filterWarrantyPanel('requests')"><i class="fas fa-inbox"></i> Warranty Requests</button>
-                            <button class="cat-pill" id="warranty-tab-running" onclick="filterWarrantyPanel('running')"><i class="fas fa-spinner"></i> Running Warranty</button>
-                            <button class="cat-pill" id="warranty-tab-inventory" onclick="filterWarrantyPanel('inventory')"><i class="fas fa-boxes-stacked"></i> Inventory Warranty</button>
-                        </div>
-                    </div>
-                    <div class="table-container"><table class="admin-table"><thead><tr><th>Date</th><th>Product & Serial</th><th>Customer / Warranty Info</th><th>Status / SLA</th><th>Action</th></tr></thead><tbody id="warrantyList"></tbody></table></div>
-                </section>
+                <!-- warrantySection removed as requested -->
 
                 
                 <section id="paymentsSection" class="data-section">
@@ -509,7 +489,7 @@
                 <section id="supportSection" class="data-section">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
                         <h3 style="color: var(--warning); font-size:24px; font-weight:800;"><i class="fas fa-headset"></i> Help & Support Tickets</h3>
-                        <button class="btn-outline" onclick="showSection('oldTickets')"><i class="fas fa-history"></i> View My Tickets</button>
+                        <button class="btn-outline" onclick="showSection('oldTickets')"><i class="fas fa-history"></i> See My Ticket</button>
                     </div>
                     <div class="panel-box" style="max-width: 600px;">
                         <form onsubmit="event.preventDefault(); submitSupportTicket();">
@@ -525,8 +505,9 @@
                             </select>
                             <label>Callback Phone Number</label><input type="text" id="supPhone" class="input-field" required>
                             <label>Detailed Issue Description</label><textarea id="supDesc" class="input-field" style="height: 120px;" required></textarea>
-                            <label>Upload Proofs / Documents</label><input type="file" id="supFiles" class="input-field" multiple accept="image/*,.pdf,.doc,.docx">
+                            <label>Upload Proofs / Documents</label><input type="file" id="supFiles" class="input-field" multiple accept="image/*,.pdf,.doc,.docx" onchange="previewSupportFiles()">
                             <div class="ary-muted">Attach images, PDF or documents for admin support.</div>
+                            <div id="supportFilePreview" class="support-file-preview"></div>
                             <button type="submit" class="btn-prime w-100" style="background:var(--warning); font-size:16px; padding:15px;">Raise Ticket securely</button>
                         </form>
                     </div>
@@ -545,61 +526,10 @@
 
     <div class="settings-hero">
         <h2><i class="fas fa-cog"></i> Hub Configuration</h2>
-        <p>Manage store branding, seller workflow, dashboard security, theme and Aryanta version details.</p>
+        <p>Manage seller workflow, dashboard security, PWA install and Aryanta version details.</p>
     </div>
 
     <div class="panel-box" style="padding:0; overflow:hidden;">
-
-        
-        <div style="padding:25px; border-bottom:1px solid var(--border-color); background:var(--surface-2);">
-            <h4 style="font-size:18px; font-weight:800; margin-bottom:20px;">
-                <i class="fas fa-store"></i> Store Branding
-            </h4>
-
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px;">
-
-                <div class="branding-card">
-                    <div class="branding-card-head">
-                        <div>
-                            <strong>Store Logo</strong>
-                            <span id="logoLimitText">Limit: 1 upload/month (Free Plan)</span>
-                        </div>
-                        <button type="button" class="btn-outline branding-edit-btn" onclick="startBrandingEdit('logo')"><i class="fas fa-pen"></i> Edit</button>
-                    </div>
-                    <div class="brand-preview brand-preview-logo" id="storeLogoPreviewBox">
-                        <img id="storeLogoPreview" alt="Store Logo" style="display:none;">
-                        <div id="storeLogoEmpty" class="brand-empty"><i class="fas fa-store"></i><span>No logo added</span></div>
-                    </div>
-                    <input type="file" id="storeLogoInput" accept="image/*" class="hidden-file-input" onchange="previewBrandingFile('logo')">
-                    <div class="chosen-file-name" id="storeLogoFileName">No logo selected</div>
-                    <div class="branding-action-row" id="storeLogoActionRow" style="display:none;">
-                        <button type="button" class="btn-outline" onclick="cancelBrandingEdit('logo')"><i class="fas fa-times"></i> Cancel</button>
-                        <button type="button" class="btn-prime" onclick="uploadStoreBranding('logo')"><i class="fas fa-check"></i> Confirm Logo</button>
-                    </div>
-                </div>
-
-                <div class="branding-card">
-                    <div class="branding-card-head">
-                        <div>
-                            <strong>Store Banner</strong>
-                            <span id="bannerLimitText">Limit: 1 upload/month (Free Plan)</span>
-                        </div>
-                        <button type="button" class="btn-outline branding-edit-btn" onclick="startBrandingEdit('banner')"><i class="fas fa-pen"></i> Edit</button>
-                    </div>
-                    <div class="brand-preview brand-preview-banner" id="storeBannerPreviewBox">
-                        <img id="storeBannerPreview" alt="Store Banner" style="display:none;">
-                        <div id="storeBannerEmpty" class="brand-empty"><i class="fas fa-panorama"></i><span>No banner added</span></div>
-                    </div>
-                    <input type="file" id="storeBannerInput" accept="image/*" class="hidden-file-input" onchange="previewBrandingFile('banner')">
-                    <div class="chosen-file-name" id="storeBannerFileName">No banner selected</div>
-                    <div class="branding-action-row" id="storeBannerActionRow" style="display:none;">
-                        <button type="button" class="btn-outline" onclick="cancelBrandingEdit('banner')"><i class="fas fa-times"></i> Cancel</button>
-                        <button type="button" class="btn-prime" onclick="uploadStoreBranding('banner')"><i class="fas fa-check"></i> Confirm Banner</button>
-                    </div>
-                </div>
-
-            </div>
-        </div>
 
         
         <div style="padding:25px;">
@@ -627,22 +557,32 @@
                     </label>
                 </div>
 
-                <div class="setting-card-premium">
+                <div class="setting-card-premium app-install-card pwa-install-card app-install-card-pwa">
                     <div class="setting-left">
-                        <div class="setting-icon">
-                            <i class="fas fa-moon"></i>
-                        </div>
-
+                        <div class="setting-icon app-install-icon"><i class="fas fa-mobile-screen-button"></i></div>
                         <div>
-                            <div class="setting-title">Dark Theme</div>
-                            <div class="setting-sub">Switch dashboard to dark mode.</div>
+                            <div class="setting-title">Download PWA App</div>
+                            <div class="setting-sub">One tap install for supported mobile browsers. No warning message.</div>
                         </div>
                     </div>
+                    <button type="button" class="app-install-btn app-install-btn-pwa" onclick="installAryantaPwaApp()">
+                        <i class="fas fa-download"></i>
+                        <span>Install PWA</span>
+                    </button>
+                </div>
 
-                    <label class="premium-switch">
-                        <input type="checkbox" id="settingTheme" onchange="toggleSetting('theme')">
-                        <span class="switch-slider"></span>
-                    </label>
+                <div class="setting-card-premium app-install-card app-install-card-store">
+                    <div class="setting-left">
+                        <div class="setting-icon app-install-icon app-store-icon"><i class="fab fa-google-play"></i></div>
+                        <div>
+                            <div class="setting-title">Download the App</div>
+                            <div class="setting-sub">Open the Play Store app download status.</div>
+                        </div>
+                    </div>
+                    <button type="button" class="app-install-btn app-install-btn-store" onclick="downloadAryantaPlayStoreApp()">
+                        <i class="fab fa-google-play"></i>
+                        <span>Download the App</span>
+                    </button>
                 </div>
 
                 <div class="setting-card-premium">
@@ -749,12 +689,12 @@
 
                 <div class="version-card">
                     <span>Web Version</span>
-                    <strong>Web Build v2026.05.12</strong>
+                    <strong>Web Build v2026.06.01</strong>
                 </div>
 
                 <div class="version-card">
                     <span>Panel Type</span>
-                    <strong>Enterprise Seller Hub</strong>
+                    <strong>Seller Hub</strong>
                 </div>
 
             </div>
@@ -763,6 +703,69 @@
     </div>
 
 </section>
+
+<section id="infoSection" class="data-section">
+    <div class="info-hero-pro">
+        <button class="btn-outline info-back-btn" id="infoBackBtn" onclick="showInfoHome()" style="display:none;"><i class="fas fa-arrow-left"></i> Back</button>
+        <div>
+            <span>Seller Information</span>
+            <h3 id="infoPanelTitle"><i class="fas fa-circle-info"></i> Info Panel</h3>
+            <p id="infoPanelSub">Open profile, company files or Aryanta policy from one place.</p>
+        </div>
+    </div>
+
+    <div id="infoHomeGrid" class="info-home-grid">
+        <button class="info-menu-card" onclick="loadInfoProfile()">
+            <i class="fas fa-user-tie"></i>
+            <strong>Profile</strong>
+            <span>View seller profile with edit option.</span>
+        </button>
+        <button class="info-menu-card" onclick="loadInfoFiles()">
+            <i class="fas fa-folder-open"></i>
+            <strong>Files</strong>
+            <span>View admin-added files and images.</span>
+        </button>
+        <button class="info-menu-card" onclick="loadInfoBranding()">
+            <i class="fas fa-store"></i>
+            <strong>Store Branding</strong>
+            <span>View and edit store logo/banner. Last-update log removed.</span>
+        </button>
+        <button class="info-menu-card" onclick="loadInfoSubscriptionHistory()">
+            <i class="fas fa-receipt"></i>
+            <strong>My Subscription History</strong>
+            <span>View all plans purchased and full payment details.</span>
+        </button>
+        <button class="info-menu-card" onclick="loadInfoB2bOrders()">
+            <i class="fas fa-box-open"></i>
+            <strong>My B2B Orders</strong>
+            <span>View wholesale orders, items, quantity and expected delivery.</span>
+        </button>
+        <button class="info-menu-card" onclick="loadInfoAnalytics()">
+            <i class="fas fa-chart-line"></i>
+            <strong>Info Analytics</strong>
+            <span>Plan based top-selling, losing, Pro and Ultra product graphs.</span>
+        </button>
+        <button class="info-menu-card" onclick="loadInfoHowToSell()">
+            <i class="fas fa-video"></i>
+            <strong>How to Sell</strong>
+            <span>Open the seller learning page directly.</span>
+        </button>
+
+        <button class="info-menu-card" onclick="loadInfoCompanyDetails()">
+            <i class="fas fa-building"></i>
+            <strong>Company Details</strong>
+            <span>View Aryanta company profile, support details and social links.</span>
+        </button>
+        <button class="info-menu-card" onclick="loadInfoPolicy()">
+            <i class="fas fa-shield-halved"></i>
+            <strong>Policy</strong>
+            <span>Read Aryanta seller policy.</span>
+        </button>
+    </div>
+
+    <div id="infoDetailBox" class="panel-box info-detail-box" style="display:none;"></div>
+</section>
+
             </div>
         </main>
     </div>
@@ -1071,23 +1074,24 @@
     <div class="modal" id="profileEditModal">
         <div class="modal-content ary-profile-edit-modal">
             <span class="close-modal" onclick="closeModal('profileEditModal')"><i class="fas fa-times"></i></span>
-            <h3><i class="fas fa-user-pen"></i> Edit Profile Details</h3>
-            <p class="ary-muted">Email change needs OTP confirmation. Bank, phone, logo and banner changes are saved after OTP verification.</p>
+            <h3><i class="fas fa-building-columns"></i> Edit Bank Details</h3>
+            <p class="ary-muted">For safety, profile editing is limited to bank IFSC and account number only.</p>
             <div class="ary-form-grid">
-                <div><label>Phone Number</label><input type="text" id="editSellerPhone" class="input-field" placeholder="Phone number"></div>
                 <div><label>Bank Account Number</label><input type="text" id="editSellerBank" class="input-field" placeholder="Account number"></div>
                 <div><label>IFSC Code</label><input type="text" id="editSellerIfsc" class="input-field" placeholder="IFSC code"></div>
-                <div><label>New Email</label><input type="email" id="editSellerEmail" class="input-field" placeholder="Email address"></div>
             </div>
-            <div class="ary-brand-edit-row">
-                <div><label>Shop Logo</label><input type="file" id="editShopLogo" class="input-field" accept="image/*"></div>
-                <div><label>Shop Banner</label><input type="file" id="editShopBanner" class="input-field" accept="image/*"></div>
-            </div>
-            <div id="profileOtpBox" style="display:none;" class="ary-otp-box">
-                <label>OTP Confirmation</label><input type="text" id="profileEditOtp" class="input-field" maxlength="6" placeholder="Enter OTP">
-                <button class="btn-prime" onclick="verifyProfileEditOtp()"><i class="fas fa-check-circle"></i> Verify & Save</button>
-            </div>
-            <button class="btn-prime w-100" onclick="sendProfileEditOtp()"><i class="fas fa-paper-plane"></i> Send OTP & Continue</button>
+            <button class="btn-prime w-100" onclick="saveProfileBankOnly()"><i class="fas fa-save"></i> Save Bank Details</button>
+        </div>
+    </div>
+
+
+    <div class="modal" id="adminPopupModal">
+        <div class="modal-content admin-popup-card-final" style="width:min(520px,94vw); text-align:center;">
+            <span class="close-modal" onclick="closeModal('adminPopupModal')"><i class="fas fa-times"></i></span>
+            <div class="admin-popup-icon-final"><i class="fas fa-bullhorn"></i></div>
+            <h3 id="adminPopupTitle" style="font-size:24px; font-weight:900; margin-bottom:12px;">Aryanta Notice</h3>
+            <div id="adminPopupMessage" style="font-size:15px; line-height:1.7; font-weight:700; color:var(--text-main);"></div>
+            <div id="adminPopupLinkBox" style="margin-top:18px;"></div>
         </div>
     </div>
 
@@ -1186,7 +1190,7 @@
             var input=document.getElementById(inputId), label=document.getElementById(labelId);
             if(label) label.textContent = input && input.files && input.files[0] ? input.files[0].name : 'No file selected';
         };
-        window.openHowToSellPage = function(){ window.open('https://aryanta.in/getdetails','_blank','noopener'); };
+        if (typeof window.openHowToSellPage !== 'function') { window.openHowToSellPage = function(){ window.open('https://aryanta.in/getdetails','_blank','noopener'); }; }
         window.addEventListener('DOMContentLoaded', function(){
             if (typeof applyAryantaUiFixes === 'function') applyAryantaUiFixes();
         });
