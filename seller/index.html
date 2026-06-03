@@ -62,11 +62,14 @@
             </div>
         </div>
         <div class="login-box status-lock-box" id="statusBox" style="display:none; text-align:center;">
-            <div class="status-lock-icon"><i class="fas fa-shield-halved"></i></div>
+            <div class="status-lock-icon"><i class="fas fa-user-lock"></i></div>
             <h2 id="statusTitle">Account Restricted</h2>
             <p id="statusMessage" style="color:var(--text-light);font-size:14px;font-weight:700;line-height:1.7;margin:10px 0 18px;">Your seller panel is temporarily unavailable.</p>
             <div id="suspendTimer" class="suspend-timer" style="display:none;"></div>
             <button class="btn-prime w-100 restricted-support-btn" style="margin-top:18px;" onclick="window.location.href='tel:6414054676'"><i class="fas fa-phone-volume"></i> Get Support: 6414054676<br><small>Working hours: 8 AM to 5 PM</small></button>
+      <button class="btn-outline w-100" style="margin-top:12px; border-color: var(--danger); color: var(--danger);" onclick="handleLogout()">
+    <i class="fas fa-sign-out-alt"></i> Secure Logout
+</button>
         </div>
     </div>
 
@@ -116,7 +119,7 @@
         <main class="main-content">
             <div class="global-header-wrapper">
                 <div class="marquee-wrap">
-                    <div class="marquee-inner" id="sellerMarquee">We help to make your business no. 1. Thanks for choosing us! Keep growing with Aryanta Prime Seller Network.</div>
+                    <div class="marquee-inner" id="sellerMarquee">We help to make your business no. 1. Thanks for choosing us! Keep growing with Aryanta Seller Network.</div>
                 </div>
                 <div class="top-bar-container">
                     <header class="top-bar">
@@ -539,6 +542,8 @@
 
             <div class="settings-grid-premium">
 
+                
+
                 <div class="setting-card-premium">
                     <div class="setting-left">
                         <div class="setting-icon">
@@ -562,7 +567,7 @@
                         <div class="setting-icon app-install-icon"><i class="fas fa-mobile-screen-button"></i></div>
                         <div>
                             <div class="setting-title">Download PWA App</div>
-                            <div class="setting-sub">One tap install for supported mobile browsers. No warning message.</div>
+                            <div class="setting-sub">One tap install for supported mobile browsers.</div>
                         </div>
                     </div>
                     <button type="button" class="app-install-btn app-install-btn-pwa" onclick="installAryantaPwaApp()">
@@ -573,14 +578,14 @@
 
                 <div class="setting-card-premium app-install-card app-install-card-store">
                     <div class="setting-left">
-                        <div class="setting-icon app-install-icon app-store-icon"><i class="fab fa-google-play"></i></div>
+                        <div></div>
                         <div>
                             <div class="setting-title">Download the App</div>
-                            <div class="setting-sub">Open the Play Store app download status.</div>
+                            <div class="setting-sub">Click here to download the Aryanta Seller App </div>
                         </div>
                     </div>
                     <button type="button" class="app-install-btn app-install-btn-store" onclick="downloadAryantaPlayStoreApp()">
-                        <i class="fab fa-google-play"></i>
+                        
                         <span>Download the App</span>
                     </button>
                 </div>
@@ -644,6 +649,7 @@
                         <div class="setting-icon">
                             <i class="fas fa-shield-alt"></i>
                         </div>
+                        
 
                         <div>
                             <div class="setting-title">2FA Security</div>
@@ -660,7 +666,7 @@
             
                 <div class="setting-card-premium">
                     <div class="setting-left">
-                        <div class="setting-icon"><i class="fas fa-magnifying-glass-chart"></i></div>
+                        <div class="setting-icon"><i class="fas fa-search"></i></div>
                         <div>
                             <div class="setting-title">Show Search Suggestions</div>
                             <div class="setting-sub">Enable or disable dropdown suggestions in the top search bar.</div>
@@ -757,7 +763,7 @@
             <span>View Aryanta company profile, support details and social links.</span>
         </button>
         <button class="info-menu-card" onclick="loadInfoPolicy()">
-            <i class="fas fa-shield-halved"></i>
+            <i class="fas fa-shield-alt"></i>
             <strong>Policy</strong>
             <span>Read Aryanta seller policy.</span>
         </button>
@@ -1091,7 +1097,9 @@
             <div class="admin-popup-icon-final"><i class="fas fa-bullhorn"></i></div>
             <h3 id="adminPopupTitle" style="font-size:24px; font-weight:900; margin-bottom:12px;">Aryanta Notice</h3>
             <div id="adminPopupMessage" style="font-size:15px; line-height:1.7; font-weight:700; color:var(--text-main);"></div>
-            <div id="adminPopupLinkBox" style="margin-top:18px;"></div>
+            <button class="btn-prime w-100" style="margin-top: 20px;" onclick="closeModal('adminPopupModal')">
+                <i class="fas fa-check-circle"></i> I have read this
+            </button>
         </div>
     </div>
 
@@ -1186,6 +1194,432 @@
 
     <script src="seller.js"></script>
     <script>
+(function(){
+    window.__infoFileFilter = window.__infoFileFilter || "all";
+    window.__infoFilesCache = window.__infoFilesCache || null;
+    window.__infoFileTextCache = window.__infoFileTextCache || {};
+
+    function $(id){ return document.getElementById(id); }
+
+    function esc(v){
+        return String(v == null ? "" : v).replace(/[&<>"']/g, function(c){
+            return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+        });
+    }
+
+    function toast(msg,type){
+        try{
+            if(typeof showToast === "function") showToast(msg,type || "info");
+            else alert(msg);
+        }catch(e){
+            alert(msg);
+        }
+    }
+
+    function getDb(){
+        try{
+            if(typeof db !== "undefined" && db) return db;
+        }catch(e){}
+        return window.db || null;
+    }
+
+    function getSeller(){
+        try{
+            if(typeof activeSeller !== "undefined" && activeSeller) return activeSeller;
+        }catch(e){}
+        if(window.activeSeller) return window.activeSeller;
+        try{
+            return JSON.parse(localStorage.getItem("sellerToken") || "{}");
+        }catch(e){
+            return {};
+        }
+    }
+
+    function normalizeUrl(u){
+        u = String(u || "").trim();
+        if(!u) return "";
+        if(u.startsWith("http://") || u.startsWith("https://") || u.startsWith("data:")) return u;
+        return "https://" + u;
+    }
+
+    function extFromUrl(url){
+        const clean = String(url || "").split("?")[0].split("#")[0].toLowerCase();
+        const m = clean.match(/\.([a-z0-9]+)$/i);
+        return m ? m[1] : "";
+    }
+
+    function fileObj(i){
+        return (window.__infoFilesCache || [])[Number(i)] || null;
+    }
+
+    function enterInfo(){
+        try{
+            if(typeof activeSection === "function") activeSection("info");
+        }catch(e){}
+
+        const sec = $("infoSection");
+        if(sec){
+            document.querySelectorAll(".data-section").forEach(function(x){
+                x.classList.remove("active");
+            });
+            sec.classList.add("active");
+        }
+
+        if($("infoBackBtn")) $("infoBackBtn").style.display = "inline-flex";
+        if($("infoPanelTitle")) $("infoPanelTitle").innerHTML = '<i class="fas fa-folder-open"></i> Company Files';
+        if($("infoPanelSub")) $("infoPanelSub").innerText = "View admin-added files and images.";
+    }
+
+    window.setInfoFileFilter = function(type){
+        window.__infoFileFilter = type || "all";
+        window.renderInfoFilesFromCache();
+    };
+
+    window.showInfoHome = window.showInfoHome || function(){
+        const grid = $("infoHomeGrid");
+        const detail = $("infoDetailBox");
+
+        if(grid) grid.style.display = "grid";
+        if(detail){
+            detail.style.display = "none";
+            detail.innerHTML = "";
+        }
+
+        if($("infoBackBtn")) $("infoBackBtn").style.display = "none";
+        if($("infoPanelTitle")) $("infoPanelTitle").innerHTML = '<i class="fas fa-circle-info"></i> Info Panel';
+        if($("infoPanelSub")) $("infoPanelSub").innerText = "Open profile, company files or Aryanta policy from one place.";
+    };
+
+    window.openInfoImage = function(url){
+        url = normalizeUrl(url);
+
+        const old = $("infoImageFullModal");
+        if(old) old.remove();
+
+        const div = document.createElement("div");
+        div.id = "infoImageFullModal";
+        div.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:999999;display:flex;align-items:center;justify-content:center;padding:18px;";
+        div.innerHTML = `
+            <button onclick="document.getElementById('infoImageFullModal').remove()"
+                style="position:absolute;top:18px;right:18px;background:white;color:#111;border:0;border-radius:50%;width:42px;height:42px;font-size:22px;font-weight:900;cursor:pointer;">×</button>
+            <img src="${esc(url)}" style="max-width:96%;max-height:92vh;border-radius:16px;object-fit:contain;background:white;">
+        `;
+        document.body.appendChild(div);
+    };
+
+    window.openInfoImageByIndex = function(i){
+        const f = fileObj(i);
+        if(f) window.openInfoImage(f.url);
+    };
+
+    window.downloadInfoFile = function(url, name){
+        url = normalizeUrl(url);
+        if(!url) return toast("File link missing.", "error");
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.download = name || "";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    };
+
+    window.downloadInfoFileByIndex = function(i){
+        const f = fileObj(i);
+        if(f) window.downloadInfoFile(f.url, f.name);
+    };
+
+    window.openInfoFileByIndex = async function(i){
+        const f = fileObj(i);
+        if(!f) return toast("File not found.", "error");
+        return window.openInfoFile(f.url, f.name, f.ext);
+    };
+
+    window.openInfoFile = async function(url, name, forcedExt){
+        url = normalizeUrl(url);
+        if(!url) return toast("File link missing.", "error");
+
+        const ext = (forcedExt || extFromUrl(url)).toLowerCase();
+        const imageTypes = ["png","jpg","jpeg","webp","gif","svg","bmp"];
+        const textTypes = ["txt","csv","json","html","htm","css","js","md","xml","log"];
+        const officeTypes = ["doc","docx","xls","xlsx","ppt","pptx"];
+
+        if(imageTypes.includes(ext)){
+            window.openInfoImage(url);
+            return;
+        }
+
+        const old = $("infoFilePreviewModal");
+        if(old) old.remove();
+
+        const div = document.createElement("div");
+        div.id = "infoFilePreviewModal";
+        div.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.76);z-index:999999;display:flex;align-items:center;justify-content:center;padding:18px;";
+        div.innerHTML = `
+            <div style="background:white;color:#111;width:min(1040px,96vw);max-height:92vh;border-radius:18px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.35);">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid #e5e7eb;">
+                    <b style="word-break:break-word;">${esc(name || "File Preview")}</b>
+                    <button onclick="document.getElementById('infoFilePreviewModal').remove()"
+                        style="border:0;background:#111;color:white;border-radius:50%;width:34px;height:34px;font-size:18px;cursor:pointer;">×</button>
+                </div>
+                <div id="infoFilePreviewBody" style="padding:18px;overflow:auto;max-height:78vh;font-size:13px;line-height:1.6;">Loading...</div>
+            </div>
+        `;
+        document.body.appendChild(div);
+
+        const body = $("infoFilePreviewBody");
+        if(!body) return;
+
+        if(ext === "pdf"){
+            body.innerHTML = `
+                <iframe src="${esc(url)}" style="width:100%;height:72vh;border:0;border-radius:12px;background:#f1f5f9;"></iframe>
+                <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                    <button class="btn-prime" onclick="window.open('${esc(url)}','_blank','noopener')">
+                        <i class="fas fa-external-link-alt"></i> Open New Tab
+                    </button>
+                    <button class="btn-outline" onclick="downloadInfoFile('${esc(url)}')">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        if(officeTypes.includes(ext)){
+            const viewer = "https://docs.google.com/gview?embedded=1&url=" + encodeURIComponent(url);
+            body.innerHTML = `
+                <iframe src="${esc(viewer)}" style="width:100%;height:72vh;border:0;border-radius:12px;background:#f1f5f9;"></iframe>
+                <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                    <button class="btn-prime" onclick="window.open('${esc(url)}','_blank','noopener')">
+                        <i class="fas fa-external-link-alt"></i> Open Original
+                    </button>
+                    <button class="btn-outline" onclick="downloadInfoFile('${esc(url)}')">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                </div>
+                <p style="color:#64748b;margin-top:8px;font-weight:700;">
+                    If preview does not load, use Open Original. DOC/DOCX/XLSX are binary files, so they must not be shown as raw text.
+                </p>
+            `;
+            return;
+        }
+
+        if(textTypes.includes(ext)){
+            try{
+                if(!window.__infoFileTextCache[url]){
+                    const res = await fetch(url, {cache:"force-cache"});
+                    if(!res.ok) throw new Error("HTTP " + res.status);
+                    window.__infoFileTextCache[url] = await res.text();
+                }
+
+                const pre = document.createElement("pre");
+                pre.style.cssText = "white-space:pre-wrap;word-break:break-word;margin:0;font-family:Consolas,monospace;font-size:12px;line-height:1.55;";
+                pre.textContent = window.__infoFileTextCache[url];
+
+                body.innerHTML = "";
+                body.appendChild(pre);
+            }catch(e){
+                body.innerHTML = `
+                    <div style="text-align:center;padding:35px;">
+                        <h3>Cannot preview this text file</h3>
+                        <p style="color:#64748b;margin:10px 0 18px;">The link may be private, blocked by CORS, or missing.</p>
+                        <button class="btn-prime" onclick="window.open('${esc(url)}','_blank','noopener')">Open File</button>
+                        <button class="btn-outline" style="margin-left:8px;" onclick="downloadInfoFile('${esc(url)}')">Download</button>
+                    </div>
+                `;
+            }
+            return;
+        }
+
+        body.innerHTML = `
+            <div style="text-align:center;padding:35px;">
+                <i class="fas fa-file" style="font-size:55px;color:#64748b;margin-bottom:15px;"></i>
+                <h3>Preview not supported</h3>
+                <p style="color:#64748b;margin:10px 0 18px;">This file type cannot be safely converted to text in browser.</p>
+                <button class="btn-prime" onclick="window.open('${esc(url)}','_blank','noopener')">
+                    <i class="fas fa-external-link-alt"></i> Open File
+                </button>
+                <button class="btn-outline" style="margin-left:8px;" onclick="downloadInfoFile('${esc(url)}')">
+                    <i class="fas fa-download"></i> Download
+                </button>
+            </div>
+        `;
+    };
+
+    window.renderInfoFilesFromCache = function(){
+        const detail = $("infoDetailBox");
+        if(!detail) return;
+
+        let docs = window.__infoFilesCache || [];
+
+        if(window.__infoFileFilter === "images") docs = docs.filter(function(f){ return f.isImg; });
+        if(window.__infoFileFilter === "files") docs = docs.filter(function(f){ return !f.isImg; });
+
+        let html = `
+            <div class="info-detail-head-row">
+                <h4>Company Files</h4>
+                <button class="btn-outline" onclick="showInfoHome()"><i class="fas fa-arrow-left"></i> Back</button>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+                <button class="cat-pill ${window.__infoFileFilter === "all" ? "active" : ""}" onclick="setInfoFileFilter('all')">
+                    <i class="fas fa-layer-group"></i> All
+                </button>
+                <button class="cat-pill ${window.__infoFileFilter === "images" ? "active" : ""}" onclick="setInfoFileFilter('images')">
+                    <i class="fas fa-image"></i> Images
+                </button>
+                <button class="cat-pill ${window.__infoFileFilter === "files" ? "active" : ""}" onclick="setInfoFileFilter('files')">
+                    <i class="fas fa-file"></i> Files
+                </button>
+            </div>
+
+            <div class="info-file-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;">
+        `;
+
+        if(!docs.length){
+            html += `
+                <div class="ary-empty-card" style="grid-column:1/-1;">
+                    <i class="fas fa-folder-open"></i>
+                    <h3>No Files</h3>
+                </div>
+            `;
+        }else{
+            docs.forEach(function(f){
+                const realIndex = (window.__infoFilesCache || []).indexOf(f);
+
+                html += `
+                    <div class="info-file-card" style="border:1px solid var(--border-color);border-radius:18px;padding:14px;background:var(--white);box-shadow:var(--shadow-sm);">
+                        ${
+                            f.isImg
+                            ? `<img src="${esc(f.url)}" onclick="openInfoImageByIndex(${realIndex})" style="cursor:pointer;width:100%;height:160px;object-fit:cover;border-radius:14px;background:#f1f5f9;">`
+                            : `<div class="info-file-icon" style="height:160px;border-radius:14px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:44px;color:#64748b;"><i class="fas fa-file"></i></div>`
+                        }
+
+                        <h4 style="margin:10px 0;word-break:break-word;">${esc(f.name)}</h4>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+                            <button class="btn-prime" onclick="openInfoFileByIndex(${realIndex})">
+                                <i class="fas fa-eye"></i> Open
+                            </button>
+                            <button class="btn-outline" onclick="downloadInfoFileByIndex(${realIndex})">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        detail.innerHTML = html + "</div>";
+    };
+
+    window.loadInfoFiles = async function(){
+        enterInfo();
+
+        const grid = $("infoHomeGrid");
+        if(grid) grid.style.display = "none";
+
+        const detail = $("infoDetailBox");
+        if(!detail) return;
+
+        detail.style.display = "block";
+
+        if(window.__infoFilesCache){
+            window.renderInfoFilesFromCache();
+            return;
+        }
+
+        detail.innerHTML = '<div style="text-align:center;padding:40px;"><i class="fas fa-spinner fa-spin"></i> Loading files...</div>';
+
+        const database = getDb();
+        const seller = getSeller();
+        const myEmail = String(seller.email || "").toLowerCase().trim();
+
+        if(!database){
+            detail.innerHTML = `
+                <div class="ary-empty-card">
+                    <h3>Database not ready</h3>
+                    <p>Refresh once. If this stays, seller.js is not loading correctly.</p>
+                </div>
+            `;
+            return;
+        }
+
+        try{
+            const collections = ["seller_files","admin_info_files","company_files","info_files","seller_info_files"];
+            let rows = [];
+
+            for(const col of collections){
+                try{
+                    const snap = await database.collection(col).get();
+
+                    snap.forEach(function(doc){
+                        const d = doc.data() || {};
+                        const target = String(d.target || d.audience || d.visibility || d.for || "all").toLowerCase().trim();
+                        const fileSeller = String(d.sellerEmail || d.email || d.seller || d.vendorEmail || "").toLowerCase().trim();
+
+                        if(target === "all" || target === "seller" || target === "sellers" || target === myEmail || fileSeller === myEmail){
+                            rows.push(Object.assign({id:doc.id, sourceCollection:col}, d));
+                        }
+                    });
+                }catch(e){
+                    console.warn("Info files collection skipped:", col, e);
+                }
+            }
+
+            const out = [];
+
+            rows.forEach(function(f){
+                const files = Array.isArray(f.files) ? f.files : (Array.isArray(f.attachments) ? f.attachments : [f]);
+
+                files.forEach(function(x, idx){
+                    const url = normalizeUrl(
+                        x.fileUrl || x.url || x.downloadUrl || x.imageUrl || x.link ||
+                        f.fileUrl || f.url || f.downloadUrl || f.imageUrl || f.link || ""
+                    );
+
+                    if(!url) return;
+
+                    const name = x.fileName || x.name || x.title || f.fileName || f.name || f.title || (idx ? "Company File " + (idx + 1) : "Company File");
+                    const ext = extFromUrl(url) || String(x.type || x.fileType || f.type || f.fileType || "").toLowerCase().replace("image/","");
+                    const isImg = ["png","jpg","jpeg","webp","gif","svg","bmp"].includes(ext) || String(x.type || f.type || "").toLowerCase().includes("image");
+
+                    out.push({
+                        url: url,
+                        name: name,
+                        ext: ext,
+                        isImg: isImg,
+                        raw: f
+                    });
+                });
+            });
+
+            const seen = new Set();
+
+            window.__infoFilesCache = out.filter(function(f){
+                const key = f.url;
+                if(seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+
+            window.renderInfoFilesFromCache();
+
+        }catch(e){
+            console.error(e);
+            detail.innerHTML = `
+                <div class="ary-empty-card">
+                    <h3>Error loading files</h3>
+                    <p>${esc(e.message || e)}</p>
+                </div>
+            `;
+        }
+    };
+})();
+</script>
+    <script>
         window.updateChosenFileLabel = function(inputId, labelId){
             var input=document.getElementById(inputId), label=document.getElementById(labelId);
             if(label) label.textContent = input && input.files && input.files[0] ? input.files[0].name : 'No file selected';
@@ -1195,5 +1629,39 @@
             if (typeof applyAryantaUiFixes === 'function') applyAryantaUiFixes();
         });
     </script>
+    <div class="modal" id="appDownloadModal">
+        <div class="modal-content" style="text-align: center; width: 400px;">
+            <span class="close-modal" onclick="closeModal('appDownloadModal')"><i class="fas fa-times"></i></span>
+            
+            <!-- This is the 1 to 100% Loading Screen -->
+            <div id="downloadProgressSection">
+                <h3 style="font-size:24px; font-weight:800; margin-bottom:15px;">Downloading App</h3>
+                <i class="fas fa-cloud-download-alt" style="font-size: 40px; color: var(--primary); margin-bottom: 15px;"></i>
+                
+                <div style="background: var(--surface-2); border-radius: 10px; height: 20px; width: 100%; overflow: hidden; margin-bottom: 10px;">
+                    <div id="downloadProgressBar" style="background: var(--success); height: 100%; width: 0%; transition: width 0.2s;"></div>
+                </div>
+                
+                <h2 id="downloadPercentage" style="color: var(--primary); font-weight: 900;">0%</h2>
+                <p style="color: var(--text-light); font-size: 14px;">Please wait while the file downloads...</p>
+            </div>
+
+            <!-- This is the Steps Screen that shows after 100% -->
+            <div id="downloadStepsSection" style="display: none;">
+                <h3 style="font-size:24px; font-weight:800; color: var(--success); margin-bottom:15px;"><i class="fas fa-check-circle"></i> Download Started!</h3>
+                <div style="text-align: left; background: var(--surface-2); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color);">
+                    <p style="font-weight: 800; margin-bottom: 10px;">How to install:</p>
+                    <ol style="margin-left: 20px; font-size: 14px; color: var(--text-main); line-height: 1.6;">
+                        <li>Open your phone's <b>Notifications</b> panel or <b>Downloads</b> folder.</li>
+                        <li>Click on the downloaded file (<b>Aryanta_Seller_App.apk</b>).</li>
+                        <li>If a warning pops up, click <b>Settings</b> and turn on <b>"Allow from this source"</b>.</li>
+                        <li>Click <b>Install</b> and wait for it to finish.</li>
+                        <li>Click <b>Open</b> to launch the app!</li>
+                    </ol>
+                </div>
+                <button class="btn-prime w-100" style="margin-top: 15px;" onclick="closeModal('appDownloadModal')">Got it, Thanks!</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
