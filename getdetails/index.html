@@ -1,0 +1,2501 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Learn.aryanta</title>
+<style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      font-family: Inter, Arial, sans-serif;
+    }
+
+    :root {
+      --yellow: #ffc400;
+      --yellow-soft: #fff7cc;
+      --orange: #f97316;
+      --orange-dark: #ea580c;
+      --green: #049669;
+      --blue: #1769ff;
+      --dark: #090b12;
+      --text: #252b37;
+      --muted: #687386;
+      --line: #e8ecf3;
+      --white: #ffffff;
+      --bg: #fffaf0;
+      --shadow: 0 18px 55px rgba(15, 23, 42, 0.14);
+      --soft-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top right, rgba(255, 196, 0, 0.42), transparent 34%),
+        linear-gradient(180deg, #fff3a8 0%, #fffaf0 34%, #f8fafc 100%);
+      color: var(--dark);
+      overflow-x: hidden;
+    }
+
+    button,
+    a {
+      touch-action: manipulation;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: calc(10px + env(safe-area-inset-top)) 12px 10px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(232, 236, 243, 0.9);
+    }
+
+    .topbar-inner {
+      max-width: 1120px;
+      margin: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 15px;
+      object-fit: cover;
+      background: white;
+      border: 2px solid var(--yellow);
+      box-shadow: 0 8px 20px rgba(255, 196, 0, 0.28);
+      flex: 0 0 auto;
+    }
+
+    .brand {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .brand h1 {
+      font-size: 20px;
+      line-height: 1;
+      font-weight: 950;
+      letter-spacing: -0.6px;
+      color: var(--dark);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .brand p {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-chip {
+      border: 0;
+      border-radius: 999px;
+      min-height: 38px;
+      padding: 0 13px;
+      background: #111827;
+      color: white;
+      font-weight: 900;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(17, 24, 39, 0.14);
+    }
+
+    .nav-chip.yellow {
+      background: var(--yellow);
+      color: var(--dark);
+    }
+
+    .nav-chip.home {
+      display: none;
+      background: var(--orange);
+      color: white;
+    }
+
+    .hero {
+      max-width: 1120px;
+      margin: auto;
+      padding: 22px 14px 10px;
+    }
+
+    .hero-panel {
+      position: relative;
+      overflow: hidden;
+      border-radius: 34px;
+      background:
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.92), transparent 34%),
+        linear-gradient(135deg, #ffcc00, #ffb000);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+
+    .hero-panel:after {
+      content: "";
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      border-radius: 999px;
+      right: -90px;
+      top: -70px;
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #7c2d12;
+      padding: 8px 13px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 950;
+      margin-bottom: 14px;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .hero h2 {
+      font-size: clamp(31px, 7vw, 58px);
+      line-height: 0.98;
+      font-weight: 1000;
+      letter-spacing: -2px;
+      margin-bottom: 14px;
+      color: #090b12;
+    }
+
+    .hero p {
+      color: rgba(9, 11, 18, 0.78);
+      font-size: 15px;
+      line-height: 1.7;
+      max-width: 650px;
+      font-weight: 650;
+    }
+
+    .hero-mini-card {
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.76);
+      border-radius: 28px;
+      padding: 20px;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .hero-mini-card img {
+      width: 78px;
+      height: 78px;
+      border-radius: 25px;
+      object-fit: cover;
+      display: block;
+      margin-bottom: 14px;
+      border: 2px solid #facc15;
+    }
+
+    .hero-mini-card h3 {
+      font-size: 20px;
+      margin-bottom: 7px;
+      letter-spacing: -0.4px;
+    }
+
+    .hero-mini-card p {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 1120px;
+      margin: auto;
+      padding: 14px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 20px 0 12px;
+    }
+
+    .section-head h2 {
+      font-size: 22px;
+      letter-spacing: -0.6px;
+      font-weight: 950;
+    }
+
+    .section-head p {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .site-card,
+    .role-card {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 28px;
+      padding: 18px;
+      text-align: left;
+      cursor: pointer;
+      box-shadow: var(--soft-shadow);
+      transition: 0.18s ease;
+      width: 100%;
+    }
+
+    .site-card:active,
+    .role-card:active,
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .site-card:hover,
+    .role-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--yellow);
+      box-shadow: 0 18px 44px rgba(249, 115, 22, 0.15);
+    }
+
+    .card-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 20px;
+      display: grid;
+      place-items: center;
+      background: var(--yellow-soft);
+      color: #9a3412;
+      font-size: 26px;
+      margin-bottom: 14px;
+    }
+
+    .role-card .card-icon {
+      background: linear-gradient(135deg, #111827, #334155);
+      color: white;
+      box-shadow: 0 12px 26px rgba(15, 23, 42, 0.18);
+    }
+
+    .site-card h3,
+    .role-card h3 {
+      font-size: 18px;
+      font-weight: 950;
+      margin-bottom: 8px;
+      letter-spacing: -0.35px;
+    }
+
+    .site-card p,
+    .role-card p {
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .page {
+      display: none;
+      animation: pageIn 0.24s ease;
+    }
+
+    @keyframes pageIn {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .page-card {
+      overflow: hidden;
+      background: white;
+      border-radius: 34px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .page-cover {
+      padding: 22px;
+      background:
+        radial-gradient(circle at top right, rgba(255, 196, 0, 0.55), transparent 36%),
+        linear-gradient(135deg, #ffffff, #fff7cc);
+      border-bottom: 1px solid #fde68a;
+    }
+
+    .page-cover h2 {
+      font-size: clamp(28px, 6vw, 43px);
+      line-height: 1;
+      font-weight: 1000;
+      letter-spacing: -1.3px;
+      margin-bottom: 10px;
+    }
+
+    .page-cover p {
+      color: var(--muted);
+      font-weight: 650;
+      line-height: 1.7;
+      max-width: 780px;
+      font-size: 15px;
+    }
+
+    .page-body {
+      padding: 18px;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .btn {
+      min-height: 46px;
+      border: 0;
+      border-radius: 16px;
+      padding: 12px 16px;
+      color: white;
+      background: var(--dark);
+      font-weight: 950;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 12px 26px rgba(15, 23, 42, 0.16);
+    }
+
+    .btn.blue {
+      background: var(--blue);
+      box-shadow: 0 12px 26px rgba(23, 105, 255, 0.18);
+    }
+
+    .btn.orange {
+      background: var(--orange);
+      box-shadow: 0 12px 26px rgba(249, 115, 22, 0.18);
+    }
+
+    .btn.green {
+      background: var(--green);
+      box-shadow: 0 12px 26px rgba(4, 150, 105, 0.16);
+    }
+
+    .btn.light {
+      background: #f1f5f9;
+      color: var(--dark);
+      box-shadow: none;
+    }
+
+    .help-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .help-item {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: white;
+      overflow: hidden;
+    }
+
+    .help-q {
+      width: 100%;
+      border: 0;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px;
+      cursor: pointer;
+      text-align: left;
+      color: var(--dark);
+      font-size: 15px;
+      font-weight: 950;
+    }
+
+    .help-q-left {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0;
+    }
+
+    .help-q-left b {
+      width: 38px;
+      height: 38px;
+      border-radius: 15px;
+      display: grid;
+      place-items: center;
+      background: var(--yellow-soft);
+      color: #9a3412;
+      flex: 0 0 auto;
+      font-size: 18px;
+    }
+
+    .arrow {
+      font-size: 20px;
+      color: var(--muted);
+      transition: 0.18s ease;
+    }
+
+    .help-item.open .arrow {
+      transform: rotate(180deg);
+    }
+
+    .help-a {
+      display: none;
+      padding: 0 16px 16px 65px;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.75;
+    }
+
+    .help-a strong {
+      color: var(--dark);
+      font-weight: 950;
+    }
+
+    .help-item.open .help-a {
+      display: block;
+    }
+
+    .steps {
+      display: grid;
+      gap: 12px;
+      counter-reset: applyStep;
+    }
+
+    .step {
+      position: relative;
+      min-height: 86px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: #ffffff;
+      padding: 16px 16px 16px 68px;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.045);
+    }
+
+    .step:before {
+      counter-increment: applyStep;
+      content: counter(applyStep);
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      width: 38px;
+      height: 38px;
+      border-radius: 15px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #ffcc00, #f97316);
+      color: #111827;
+      font-weight: 1000;
+      box-shadow: 0 10px 22px rgba(249, 115, 22, 0.18);
+    }
+
+    .step h3 {
+      font-size: 16px;
+      font-weight: 950;
+      margin-bottom: 6px;
+    }
+
+    .step p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.65;
+      font-weight: 650;
+    }
+
+    .note-box {
+      border-radius: 26px;
+      border: 1px dashed #16a34a;
+      background: linear-gradient(135deg, #ecfdf5, #ffffff);
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin-top: 14px;
+    }
+
+    .note-check {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: var(--green);
+      color: white;
+      display: grid;
+      place-items: center;
+      font-size: 25px;
+      flex: 0 0 auto;
+    }
+
+    .note-box h3 {
+      color: #064e3b;
+      font-size: 17px;
+      font-weight: 950;
+      margin-bottom: 5px;
+    }
+
+    .note-box p {
+      color: #047857;
+      font-size: 14px;
+      line-height: 1.6;
+      font-weight: 700;
+    }
+
+    .seller-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .mini {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: white;
+      padding: 16px;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.045);
+    }
+
+    .mini h3 {
+      font-size: 16px;
+      font-weight: 950;
+      margin-bottom: 6px;
+    }
+
+    .mini p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+      font-weight: 650;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(2, 6, 23, 0.58);
+      backdrop-filter: blur(12px);
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-card {
+      width: min(430px, 100%);
+      overflow: hidden;
+      border-radius: 34px;
+      background: white;
+      box-shadow: 0 25px 85px rgba(0, 0, 0, 0.28);
+      animation: modalPop 0.2s ease;
+    }
+
+    @keyframes modalPop {
+      from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.96);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .modal-top {
+      padding: 22px 22px 12px;
+      text-align: center;
+      background: linear-gradient(180deg, #fff7cc, #ffffff);
+    }
+
+    .modal-top h2 {
+      font-size: 22px;
+      font-weight: 1000;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .modal-top p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+      font-weight: 650;
+    }
+
+    .redirect-logo {
+      width: 68px;
+      height: 68px;
+      border-radius: 24px;
+      object-fit: cover;
+      margin: 0 auto 12px;
+      display: block;
+      border: 2px solid var(--yellow);
+      background: white;
+    }
+
+    .count-wrap {
+      position: relative;
+      width: 92px;
+      height: 92px;
+      margin: 18px auto 0;
+    }
+
+    .count-wrap svg {
+      width: 92px;
+      height: 92px;
+      transform: rotate(-90deg);
+      display: block;
+    }
+
+    .track {
+      stroke: #e5e7eb;
+      stroke-width: 8;
+      fill: none;
+    }
+
+    .progress {
+      stroke: var(--blue);
+      stroke-width: 8;
+      fill: none;
+      stroke-linecap: round;
+      stroke-dasharray: 251.2;
+      stroke-dashoffset: 0;
+      animation: countdownStroke 3s linear forwards;
+    }
+
+    @keyframes countdownStroke {
+      to {
+        stroke-dashoffset: 251.2;
+      }
+    }
+
+    .count-number {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: 28px;
+      font-weight: 1000;
+      color: var(--blue);
+    }
+
+    .modal-actions {
+      padding: 16px 22px 22px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      background: white;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(18px + env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(120px);
+      background: #111827;
+      color: white;
+      z-index: 120;
+      border-radius: 18px;
+      padding: 13px 16px;
+      font-size: 13px;
+      font-weight: 900;
+      box-shadow: var(--shadow);
+      max-width: calc(100% - 28px);
+      text-align: center;
+      transition: 0.22s ease;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .bottom-space {
+      height: 30px;
+    }
+
+    @media (max-width: 900px) {
+      .hero-content,
+      .cards-grid,
+      .seller-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-panel {
+        border-radius: 28px;
+        padding: 18px;
+      }
+
+      .top-actions .nav-chip:not(.home):not(.yellow) {
+        display: none;
+      }
+
+      .wrap,
+      .hero {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+
+      .section-head {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+
+      .btn-row {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .btn {
+        width: 100%;
+      }
+
+      .help-q {
+        padding: 14px;
+        font-size: 14px;
+      }
+
+      .help-a {
+        padding: 0 14px 14px;
+      }
+
+      .page-cover,
+      .page-body {
+        padding: 16px;
+      }
+
+      .modal-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .video-shell {
+        border-radius: 26px;
+        padding: 12px;
+      }
+
+      .video-box {
+        border-radius: 20px;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .brand h1 {
+        font-size: 18px;
+      }
+
+      .logo {
+        width: 40px;
+        height: 40px;
+      }
+
+      .nav-chip {
+        min-height: 36px;
+        padding: 0 11px;
+      }
+
+      .page-card {
+        border-radius: 28px;
+      }
+
+      .site-card,
+      .role-card,
+      .help-item,
+      .step,
+      .mini {
+        border-radius: 22px;
+      }
+    }
+
+    /* Aryanta final professional CSS polish */
+    body {
+      background:
+        radial-gradient(circle at 10% 0%, rgba(255, 196, 0, 0.30), transparent 30%),
+        radial-gradient(circle at 90% 10%, rgba(249, 115, 22, 0.16), transparent 28%),
+        linear-gradient(180deg, #fffdf6 0%, #f8fafc 48%, #eef2f7 100%);
+    }
+
+    .topbar {
+      background: rgba(255, 255, 255, 0.82);
+      border-bottom: 1px solid rgba(226, 232, 240, 0.92);
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+    }
+
+    .topbar-inner {
+      min-height: 54px;
+    }
+
+    .brand h1 {
+      font-size: clamp(19px, 3vw, 24px);
+      letter-spacing: -0.8px;
+    }
+
+    .brand p.top-subtitle,
+    #homeTopBtn {
+      display: none !important;
+    }
+
+    .hero-panel,
+    .page-card {
+      border: 1px solid rgba(255, 255, 255, 0.78);
+      box-shadow: 0 28px 80px rgba(15, 23, 42, 0.12);
+    }
+
+    .site-card,
+    .role-card,
+    .help-item,
+    .step,
+    .mini,
+    .note-box {
+      box-shadow: 0 14px 36px rgba(15, 23, 42, 0.07);
+    }
+
+    .site-card,
+    .role-card,
+    .help-item,
+    .step,
+    .mini {
+      border-color: rgba(226, 232, 240, 0.98);
+    }
+
+    .role-card .card-icon,
+    .site-card .card-icon {
+      transform: translateZ(0);
+    }
+
+    .page-cover {
+      padding: clamp(18px, 4vw, 30px);
+      background:
+        radial-gradient(circle at 8% 0%, rgba(255, 255, 255, 0.95), transparent 30%),
+        radial-gradient(circle at 92% 10%, rgba(255, 196, 0, 0.42), transparent 36%),
+        linear-gradient(135deg, #ffffff 0%, #fff8d9 100%);
+    }
+
+    .page-body {
+      padding: clamp(16px, 3vw, 24px);
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    }
+
+    .apply-body {
+      padding-top: 20px;
+    }
+
+    .apply-steps-head,
+    .seller-help-head {
+      margin: 0 0 16px;
+      padding: 18px;
+      border: 1px solid rgba(253, 230, 138, 0.95);
+      border-radius: 26px;
+      background: linear-gradient(135deg, #fff7cc 0%, #ffffff 100%);
+      box-shadow: 0 14px 34px rgba(255, 196, 0, 0.12);
+    }
+
+    .apply-steps-head h2,
+    .seller-help-head h2 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .apply-steps-head h2:before {
+      content: "✓";
+      width: 34px;
+      height: 34px;
+      border-radius: 14px;
+      display: inline-grid;
+      place-items: center;
+      background: var(--yellow);
+      color: #111827;
+      font-size: 18px;
+      box-shadow: 0 10px 22px rgba(255, 196, 0, 0.25);
+    }
+
+    .seller-help-head h2:before {
+      content: "?";
+      width: 34px;
+      height: 34px;
+      border-radius: 14px;
+      display: inline-grid;
+      place-items: center;
+      background: #111827;
+      color: #ffffff;
+      font-size: 18px;
+      box-shadow: 0 10px 22px rgba(17, 24, 39, 0.18);
+    }
+
+    .apply-steps {
+      gap: 14px;
+    }
+
+    .apply-steps .step {
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, #ffffff 0%, #fffefa 100%);
+      border-color: rgba(253, 230, 138, 0.85);
+    }
+
+    .apply-steps .step:after {
+      content: "";
+      position: absolute;
+      right: -34px;
+      top: -34px;
+      width: 96px;
+      height: 96px;
+      border-radius: 999px;
+      background: rgba(255, 196, 0, 0.13);
+    }
+
+    .seller-help-list {
+      gap: 14px;
+    }
+
+    .seller-help-list .help-item {
+      border-radius: 26px;
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+      overflow: hidden;
+    }
+
+    .seller-help-list .help-q {
+      min-height: 68px;
+      padding: 17px;
+    }
+
+    .seller-help-list .help-a {
+      padding: 0 18px 18px 68px;
+    }
+
+    .help-actions {
+      margin-top: 14px;
+    }
+
+    .help-actions .btn {
+      min-height: 42px;
+      border-radius: 14px;
+      padding: 10px 15px;
+      font-size: 13px;
+    }
+
+    .answer-points {
+      margin: 10px 0 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+
+    .answer-points li {
+      position: relative;
+      padding-left: 20px;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.65;
+      font-weight: 650;
+    }
+
+    .answer-points li:before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: var(--orange);
+      font-weight: 1000;
+    }
+
+
+    .btn {
+      transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+    }
+
+    .btn:hover,
+    .nav-chip:hover {
+      filter: brightness(0.98);
+      transform: translateY(-1px);
+    }
+
+    @media (max-width: 900px) {
+      .top-actions {
+        display: none;
+      }
+
+      .apply-steps-head,
+      .seller-help-head {
+        padding: 16px;
+        border-radius: 22px;
+      }
+
+      .seller-help-list .help-a {
+        padding: 0 14px 14px;
+      }
+
+      .help-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+
+  
+
+    /* Aryanta help search + expanded FAQ polish */
+    .faq-search-panel {
+      margin: 0 0 16px;
+      padding: 16px;
+      border-radius: 26px;
+      background:
+        radial-gradient(circle at top right, rgba(255, 196, 0, 0.28), transparent 38%),
+        linear-gradient(135deg, #ffffff, #fffaf0);
+      border: 1px solid rgba(253, 186, 116, 0.55);
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+    }
+
+    .faq-search-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .faq-search-head h3 {
+      font-size: 18px;
+      font-weight: 1000;
+      letter-spacing: -0.35px;
+      color: var(--dark);
+    }
+
+    .faq-search-head p {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1.5;
+    }
+
+    .faq-search-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: white;
+      border: 1px solid rgba(226, 232, 240, 0.95);
+      border-radius: 19px;
+      padding: 8px 9px 8px 14px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.65), 0 8px 22px rgba(15, 23, 42, 0.045);
+    }
+
+    .faq-search-box span {
+      flex: 0 0 auto;
+      font-size: 18px;
+    }
+
+    .faq-search-box input {
+      min-width: 0;
+      flex: 1;
+      border: 0;
+      outline: 0;
+      color: var(--dark);
+      font-size: 14px;
+      font-weight: 800;
+      background: transparent;
+      padding: 10px 2px;
+    }
+
+    .faq-search-box input::placeholder {
+      color: #9aa4b2;
+      font-weight: 700;
+    }
+
+    .faq-search-box button {
+      border: 0;
+      border-radius: 14px;
+      background: #111827;
+      color: white;
+      font-size: 12px;
+      font-weight: 950;
+      padding: 10px 13px;
+      cursor: pointer;
+    }
+
+    .faq-suggestions {
+      display: none;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .faq-suggestions.show {
+      display: grid;
+    }
+
+    .faq-suggestion {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 16px;
+      padding: 10px 12px;
+      text-align: left;
+      color: var(--dark);
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.045);
+    }
+
+    .faq-suggestion small {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .faq-empty {
+      display: none;
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 16px;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #9a3412;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .faq-empty.show {
+      display: block;
+    }
+
+    .help-item.search-hidden {
+      display: none !important;
+    }
+
+    .help-actions .btn,
+    .help-a .btn-row .btn {
+      min-width: 145px;
+    }
+
+    @media (max-width: 700px) {
+      .faq-search-panel {
+        border-radius: 22px;
+        padding: 13px;
+      }
+
+      .faq-search-box {
+        border-radius: 17px;
+        gap: 7px;
+        padding-left: 11px;
+      }
+
+      .faq-search-box button {
+        padding: 9px 10px;
+      }
+
+      .faq-suggestions {
+        grid-template-columns: 1fr;
+      }
+    }
+
+
+    /* Aryanta v6: clean search, language choice, and speak buttons */
+    .faq-suggestions { display: none !important; }
+    .faq-search-panel.search-active {
+      border-color: rgba(23, 105, 255, 0.45);
+      box-shadow: 0 18px 42px rgba(23, 105, 255, 0.10);
+    }
+    .faq-search-count {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 15px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1d4ed8;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1.45;
+    }
+    .faq-search-count.show { display: block; }
+    .help-item.search-jumped {
+      outline: 3px solid rgba(23, 105, 255, 0.24);
+      box-shadow: 0 18px 42px rgba(23, 105, 255, 0.14);
+    }
+    .faq-search-box .clear-search-btn {
+      background: #f1f5f9;
+      color: var(--dark);
+    }
+    .answer-text {
+      margin-bottom: 12px;
+    }
+    .speak-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-width: 105px !important;
+      background: #f8fafc !important;
+      color: #111827 !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: none !important;
+    }
+    .speak-btn.speaking {
+      background: #dcfce7 !important;
+      border-color: #86efac !important;
+      color: #166534 !important;
+    }
+    .language-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 130;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(2, 6, 23, 0.68);
+      backdrop-filter: blur(14px);
+    }
+    .language-modal.show { display: flex; }
+    .language-card {
+      width: min(430px, 100%);
+      border-radius: 34px;
+      background: #ffffff;
+      box-shadow: 0 28px 90px rgba(0,0,0,0.28);
+      overflow: hidden;
+      animation: modalPop 0.22s ease;
+      border: 1px solid rgba(255,255,255,0.75);
+    }
+    .language-top {
+      padding: 24px 22px 16px;
+      background: radial-gradient(circle at top right, rgba(255,196,0,.42), transparent 42%), linear-gradient(135deg,#fff7cc,#ffffff);
+      text-align: center;
+    }
+    .language-top img {
+      width: 68px;
+      height: 68px;
+      border-radius: 24px;
+      object-fit: cover;
+      border: 2px solid var(--yellow);
+      background: #fff;
+      margin-bottom: 12px;
+    }
+    .language-top h2 {
+      font-size: 22px;
+      font-weight: 1000;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    .language-top p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.65;
+      font-weight: 700;
+    }
+    .language-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 18px 22px 22px;
+    }
+    .language-actions button {
+      min-height: 50px;
+      border: 0;
+      border-radius: 18px;
+      font-size: 15px;
+      font-weight: 1000;
+      cursor: pointer;
+      box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
+    }
+    .lang-english { background: #111827; color: #fff; }
+    .lang-hindi { background: var(--yellow); color: #111827; }
+    .language-floating-btn {
+      position: fixed;
+      right: 15px;
+      bottom: calc(78px + env(safe-area-inset-bottom));
+      z-index: 80;
+      border: 0;
+      border-radius: 999px;
+      padding: 11px 14px;
+      background: #111827;
+      color: white;
+      font-size: 12px;
+      font-weight: 1000;
+      box-shadow: 0 14px 32px rgba(15, 23, 42, 0.25);
+      cursor: pointer;
+    }
+    @media (max-width: 520px) {
+      .language-actions { grid-template-columns: 1fr; }
+      .language-floating-btn { right: 12px; bottom: calc(70px + env(safe-area-inset-bottom)); }
+      .faq-search-box { flex-wrap: wrap; }
+      .faq-search-box input { flex-basis: calc(100% - 35px); }
+      .faq-search-box button { flex: 1; }
+    }
+</style>
+</head>
+<body>
+<div aria-modal="true" class="language-modal" id="languageModal" role="dialog">
+<div class="language-card">
+<div class="language-top">
+<img alt="Aryanta" src="https://aryanta.in/vurify/aryanta.jpeg"/>
+<h2>Choose Language / भाषा चुनें</h2>
+<p>Select English or Hindi. The help answers will show in the selected language, and the Speak button will read that answer.</p>
+</div>
+<div class="language-actions">
+<button class="lang-english" onclick="setHelpLanguage('en')" type="button">English</button>
+<button class="lang-hindi" onclick="setHelpLanguage('hi')" type="button">हिंदी</button>
+</div>
+</div>
+</div>
+<button class="language-floating-btn" onclick="openLanguageModal()" type="button">🌐 <span id="activeLangLabel">English</span></button>
+<header class="topbar">
+<div class="topbar-inner">
+<img alt="Aryanta Logo" class="logo" src="https://aryanta.in/vurify/aryanta.jpeg"/>
+<div class="brand">
+<h1>Learn.aryanta</h1>
+<p class="top-subtitle"></p>
+</div>
+<div class="top-actions"><button aria-hidden="true" class="nav-chip home" id="homeTopBtn" onclick="showHome()" tabindex="-1">Home</button></div>
+</div>
+</header>
+<section id="homePage">
+<div class="hero">
+<div class="hero-panel">
+<div class="hero-content">
+<div>
+<div class="badge">✨ Official Aryanta Learning Page</div>
+<h2>Learn how to shop, sell and grow on Aryanta.</h2>
+<p>
+              This page helps customers, new seller applicants and active sellers. Open website links with a safe redirect popup.
+            </p>
+</div>
+<div class="hero-mini-card">
+<img alt="Aryanta" src="https://aryanta.in/vurify/aryanta.jpeg"/>
+<h3>Choose your path</h3>
+<p>
+              Tap your role below. Seller apply shows all 6 steps including OTP, KYC, GST option, business details and bank details.
+            </p>
+</div>
+</div>
+</div>
+</div>
+<main class="wrap">
+<section id="videoSection">
+<div class="section-head">
+</div>
+<div class="cards-grid">
+<button class="site-card" onclick="openRedirect('Aryanta Store', 'https://aryanta.in/', 'Redirecting you to Aryanta Store')">
+<div class="card-icon">🛍️</div>
+<h3>Aryanta Store</h3>
+<p>Open Aryanta shopping website, products, account, side bar and My Orders.</p>
+</button>
+<button class="site-card" onclick="openRedirect('Aryanta Apply Page', 'https://aryanta.in/vurify/', 'Redirecting you to Aryanta Apply Page')">
+<div class="card-icon">✅</div>
+<h3>Apply / Verify</h3>
+<p>Open the seller apply page to verify email, upload documents and submit application.</p>
+</button>
+<button class="site-card" onclick="openRedirect('Aryanta Seller Portal', 'https://aryanta.in/seller/', 'Redirecting you to Aryanta Seller Portal')">
+<div class="card-icon">🏪</div>
+<h3>Seller Portal</h3>
+<p>Open seller dashboard to manage products, orders, shop details, payments and support.</p>
+</button>
+</div>
+<div class="section-head">
+<div>
+<h2>Which one best describes you?</h2>
+<p>Tap one option and help will open below.</p>
+</div>
+</div>
+<div class="cards-grid">
+<button class="role-card" onclick="showPage('customer')">
+<div class="card-icon">👤</div>
+<h3>I am customer</h3>
+<p>Warranty, delete account, cancel order, track order and customer support guide.</p>
+</button>
+<button class="role-card" onclick="showPage('apply')">
+<div class="card-icon">🚀</div>
+<h3>I want to apply as seller</h3>
+<p>Full 6-step seller apply process with OTP, Aadhaar, PAN, GST, business and bank details.</p>
+</button>
+<button class="role-card" onclick="showPage('seller')">
+<div class="card-icon">📦</div>
+<h3>I am seller</h3>
+<p>Seller login, shop update, product management, orders, payout and support help.</p>
+</button>
+</div>
+</section></main>
+</section>
+<main class="wrap">
+<section class="page" id="customerPage">
+<div class="page-card">
+<div class="page-cover">
+<h2>I am customer</h2>
+<p>
+            Click any customer question. The answer will open below. You can also search customer help from the search box.
+          </p>
+<div class="btn-row">
+<button class="btn light" onclick="showHome()">Return Home</button>
+</div>
+</div>
+<div class="page-body">
+<div class="faq-search-panel" data-scope="customer">
+<div class="faq-search-head">
+<div>
+<h3>Search customer help</h3>
+<p>Type a word, press Enter or Search, and the page will jump to the best answer.</p>
+</div>
+</div>
+<div class="faq-search-box">
+<span>🔎</span>
+<input autocomplete="off" id="customerFaqSearch" oninput="filterHelpItems('customer')" onkeydown="handleHelpSearchKey(event, 'customer')" placeholder="Search and jump to answer..." type="text"/>
+<button onclick="openBestSearchMatch('customer')" type="button">Search</button><button class="clear-search-btn" onclick="clearHelpSearch('customer')" type="button">Clear</button></div>
+<div class="faq-suggestions" id="customerFaqSuggestions"></div>
+<div class="faq-search-count" id="customerFaqCount"></div><div class="faq-empty" id="customerFaqEmpty">No matching question found. Try another word like order, payment, product, support or account.</div>
+</div>
+<div class="help-list">
+<div class="help-item" id="cancel-order">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>❌</b><span class="q-label" data-en-text="How to cancel the order?" data-hi-text="ऑर्डर कैसे कैंसल करें?">How to cancel the order?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open aryanta.in, login, open the side bar and go to MY ORDERS. Click the order item you want to cancel, scroll down and press Cancel Order if the option is available. If the order is already packed, shipped or delivered, cancellation may not be possible and refund/support rules may apply." data-hi-text="aryanta.in खोलें, लॉगिन करें, साइड बार खोलें और MY ORDERS में जाएँ। जिस ऑर्डर को कैंसल करना है उस पर क्लिक करें, नीचे स्क्रोल करें और Cancel Order दबाएँ। अगर ऑर्डर पैक, शिप या डिलीवर हो चुका है, तो कैंसल का विकल्प नहीं मिल सकता और सपोर्ट/रिफंड नियम लागू होंगे।">Open aryanta.in, login, open the side bar and go to MY ORDERS. Click the order item you want to cancel, scroll down and press Cancel Order if the option is available. If the order is already packed, shipped or delivered, cancellation may not be possible and refund/support rules may apply.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn blue" onclick="openRedirect('Aryanta Store', 'https://aryanta.in/', 'Redirecting you to Aryanta Store')">Open Store</button><button class="btn green" onclick="shareHelp('cancel-order')">Share This</button></div></div>
+</div>
+<div class="help-item" id="track-order">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🚚</b><span class="q-label" data-en-text="How to track the order?" data-hi-text="ऑर्डर कैसे ट्रैक करें?">How to track the order?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open aryanta.in, go to the side bar, open MY ORDERS and click your order item. You will see order status, delivery progress, tracking details and latest update. Keep checking the same page for new delivery updates." data-hi-text="aryanta.in खोलें, साइड बार में MY ORDERS पर जाएँ और अपना ऑर्डर खोलें। वहाँ आपको ऑर्डर स्टेटस, डिलीवरी प्रोग्रेस, ट्रैकिंग डिटेल और नया अपडेट दिखेगा। नए अपडेट के लिए वही पेज चेक करते रहें।">Open aryanta.in, go to the side bar, open MY ORDERS and click your order item. You will see order status, delivery progress, tracking details and latest update. Keep checking the same page for new delivery updates.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn blue" onclick="openRedirect('Aryanta Store', 'https://aryanta.in/', 'Redirecting you to Aryanta Store')">Track From Store</button><button class="btn green" onclick="shareHelp('track-order')">Share This</button></div></div>
+</div>
+<div class="help-item" id="customer-support">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>💬</b><span class="q-label" data-en-text="How to contact Aryanta support?" data-hi-text="Aryanta सपोर्ट से कैसे संपर्क करें?">How to contact Aryanta support?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="For any help, contact Aryanta Support from the website, email support@aryanta.in, or call 6206318133. When asking for help, keep your registered phone/email and order ID ready so support can check faster." data-hi-text="किसी भी मदद के लिए वेबसाइट से Aryanta Support खोलें, support@aryanta.in पर ईमेल करें, या 6206318133 पर कॉल करें। सपोर्ट से बात करते समय अपना रजिस्टर्ड फोन/ईमेल और ऑर्डर ID तैयार रखें ताकि टीम जल्दी चेक कर सके।">For any help, contact Aryanta Support from the website, email support@aryanta.in, or call 6206318133. When asking for help, keep your registered phone/email and order ID ready so support can check faster.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn green" onclick="shareHelp('customer-support')">Share This</button></div></div>
+</div>
+<div class="help-item" id="delete-account">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🗑️</b><span class="q-label" data-en-text="How to delete my account?" data-hi-text="अपना अकाउंट कैसे डिलीट करें?">How to delete my account?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open aryanta.in and login to your account. Check the account/settings area for delete account option. If you cannot find it, contact Aryanta Support with your registered email/phone and request account deletion. Support may verify your identity before deleting." data-hi-text="aryanta.in खोलकर अपने अकाउंट में लॉगिन करें। अकाउंट या सेटिंग्स में delete account विकल्प देखें। अगर विकल्प नहीं मिलता है, तो Aryanta Support से अपने रजिस्टर्ड ईमेल/फोन के साथ अकाउंट डिलीट करने की रिक्वेस्ट करें। टीम पहले आपकी पहचान वेरीफाई कर सकती है।">Open aryanta.in and login to your account. Check the account/settings area for delete account option. If you cannot find it, contact Aryanta Support with your registered email/phone and request account deletion. Support may verify your identity before deleting.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn blue" onclick="openRedirect('Aryanta Store', 'https://aryanta.in/', 'Opening Aryanta Store')">Open Store</button></div></div>
+</div>
+<div class="help-item" id="return-refund">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>↩️</b><span class="q-label" data-en-text="How to return an item or request refund?" data-hi-text="आइटम return या refund कैसे माँगें?">How to return an item or request refund?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open MY ORDERS, select the order item and check if return/refund option is available. Submit the reason and required details. If the return window is closed or option is not showing, contact support with order ID, product photo and issue details." data-hi-text="MY ORDERS खोलें, ऑर्डर आइटम चुनें और देखें return/refund विकल्प उपलब्ध है या नहीं। कारण और जरूरी जानकारी भरकर सबमिट करें। अगर return window बंद है या विकल्प नहीं दिख रहा, तो ऑर्डर ID, प्रोडक्ट फोटो और समस्या के साथ सपोर्ट से संपर्क करें।">Open MY ORDERS, select the order item and check if return/refund option is available. Submit the reason and required details. If the return window is closed or option is not showing, contact support with order ID, product photo and issue details.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn blue" onclick="openRedirect('Aryanta Store', 'https://aryanta.in/', 'Opening Aryanta Store')">Open Store</button></div></div>
+</div>
+<div class="help-item" id="change-address">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>📍</b><span class="q-label" data-en-text="How to change delivery address after order?" data-hi-text="ऑर्डर के बाद delivery address कैसे बदलें?">How to change delivery address after order?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open MY ORDERS and check the order status. If the order is not packed or shipped, contact Aryanta Support immediately with order ID and the new address request. Once shipped, address change may not be possible." data-hi-text="MY ORDERS खोलें और ऑर्डर स्टेटस देखें। अगर ऑर्डर पैक या शिप नहीं हुआ है, तो तुरंत Aryanta Support से ऑर्डर ID और नए address की रिक्वेस्ट के साथ संपर्क करें। ऑर्डर शिप होने के बाद address बदलना संभव नहीं हो सकता।">Open MY ORDERS and check the order status. If the order is not packed or shipped, contact Aryanta Support immediately with order ID and the new address request. Once shipped, address change may not be possible.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn blue" onclick="openRedirect('Aryanta Store', 'https://aryanta.in/', 'Opening Aryanta Store')">Open Store</button></div></div>
+</div>
+<div class="help-item" id="customer-refund-status">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>💸</b><span class="q-label" data-en-text="How can I check refund or payment status?" data-hi-text="Refund या payment status कैसे चेक करें?">How can I check refund or payment status?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open MY ORDERS and click the related order. If refund is started, the refund/payment status may show there. If you cannot see it, contact support with order ID, payment method and registered phone number." data-hi-text="MY ORDERS खोलें और संबंधित ऑर्डर पर क्लिक करें। अगर refund शुरू हुआ है, तो refund/payment status वहाँ दिख सकता है। अगर status नहीं दिख रहा, तो ऑर्डर ID, payment method और रजिस्टर्ड फोन नंबर के साथ support से संपर्क करें।">Open MY ORDERS and click the related order. If refund is started, the refund/payment status may show there. If you cannot see it, contact support with order ID, payment method and registered phone number.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn blue" onclick="openRedirect('Aryanta Store', 'https://aryanta.in/', 'Opening Aryanta Store')">Open Store</button></div></div>
+</div>
+<div class="help-item" id="customer-damaged-wrong">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>📸</b><span class="q-label" data-en-text="What should I do if I receive damaged or wrong item?" data-hi-text="गलत या damaged item मिले तो क्या करें?">What should I do if I receive damaged or wrong item?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Take clear photos or video of the parcel and product immediately. Open MY ORDERS and request return/support if the option is available. Share order ID, photos and issue details with support so the team can check properly." data-hi-text="Parcel और product की साफ फोटो या वीडियो तुरंत लें। MY ORDERS खोलें और return/support विकल्प उपलब्ध हो तो request करें। Support को order ID, फोटो और issue details भेजें ताकि टीम सही तरीके से जांच कर सके।">Take clear photos or video of the parcel and product immediately. Open MY ORDERS and request return/support if the option is available. Share order ID, photos and issue details with support so the team can check properly.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn blue" onclick="openRedirect('Aryanta Store', 'https://aryanta.in/', 'Opening Aryanta Store')">Open Store</button></div></div>
+</div>
+<div class="help-item" id="customer-login-help">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🔐</b><span class="q-label" data-en-text="What if I cannot login to my customer account?" data-hi-text="Customer account में login न हो तो क्या करें?">What if I cannot login to my customer account?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Check that your phone/email and password or OTP are correct. Try refreshing the page and login again. If you still cannot login, contact support with your registered phone/email and explain the issue." data-hi-text="पहले phone/email, password या OTP सही है या नहीं चेक करें। पेज refresh करके फिर login करें। अगर फिर भी login नहीं हो रहा, तो अपने registered phone/email के साथ support से संपर्क करें और समस्या बताएं।">Check that your phone/email and password or OTP are correct. Try refreshing the page and login again. If you still cannot login, contact support with your registered phone/email and explain the issue.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn blue" onclick="openRedirect('Aryanta Store', 'https://aryanta.in/', 'Opening Aryanta Store')">Open Store</button></div></div>
+</div></div>
+</div>
+</div>
+</section>
+<section class="page" id="applyPage">
+<div class="page-card apply-card">
+<div class="page-cover">
+<h2>I want to apply as seller</h2>
+<p>
+            You can apply directly from the Aryanta apply link or from Aryanta Store side bar. This guide explains all steps properly.
+          </p>
+<div class="btn-row">
+<button class="btn blue" onclick="openRedirect('Aryanta Apply Page', 'https://aryanta.in/vurify/', 'Redirecting you to Aryanta Apply Page')">Open Apply Page</button>
+<button class="btn light" onclick="showHome()">Return Home</button>
+</div>
+</div>
+<div class="page-body apply-body">
+<div class="section-head apply-steps-head">
+<div>
+<h2>6 simple apply steps</h2>
+<p>Complete these steps carefully.</p>
+</div>
+</div>
+<div class="steps apply-steps">
+<div class="step">
+<h3>Open The Link</h3>
+<p>You can open the link by cliking "Open Apply Page" on top or go to the website open side bar clik Sell on Our Platform.</p>
+</div>
+<div class="step">
+<h3>Enter email and phone number</h3>
+<p>Enter your email and phone number. An OTP will be sent to your email. Enter the OTP and verify your contact.</p>
+</div>
+<div class="step">
+<h3>Enter personal details</h3>
+<p>Enter your name, address, contact information and required personal details correctly.</p>
+</div>
+<div class="step">
+<h3>Upload Aadhaar, PAN and GST if available</h3>
+<p>Upload your Aadhaar card image and PAN card image. If you have GST, click <strong>I have GST</strong> and upload GST. If you do not have GST  "SKIP IT" , continue to next step.</p>
+</div>
+<div class="step">
+<h3>Enter business details</h3>
+<p>Enter your shop name, business category, business details and store information. This helps users see your store on Aryanta.</p>
+</div>
+<div class="step">
+<h3>Enter bank details</h3>
+<p>Enter correct bank details to receive payment for your product orders. Check account number and IFSC before submitting.</p>
+</div>
+<div class="step">
+<h3>Review and submit</h3>
+<p>Review everything you uploaded and entered. Check images, personal details, business details and bank details. Then click <strong>Submit</strong>. After submit, you will see the application uploaded/authorized message.</p>
+</div>
+</div>
+<div class="note-box">
+<div class="note-check">✓</div>
+<div>
+<h3>After application submit</h3>
+<p>
+                Your seller application will go under review. After verification is complete, Aryanta Team- will send your PIN/account access details to your registered email, SMS or other communication method.
+              </p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="page" id="sellerPage">
+<div class="page-card seller-card">
+<div class="page-cover">
+<h2>I am seller</h2>
+<p>
+            This section is for active Aryanta sellers who already have seller access and want to manage shop, products, orders and support.
+          </p>
+<div class="btn-row">
+<button class="btn light" onclick="showHome()">Return Home</button>
+</div>
+</div>
+<div class="page-body">
+<div class="section-head seller-help-head">
+<div>
+<h2>Seller help options</h2>
+<p>Search or tap any question to open the answer.</p>
+</div>
+</div>
+<div class="faq-search-panel" data-scope="seller">
+<div class="faq-search-head">
+<div>
+<h3>Search seller help</h3>
+<p>Type a word, press Enter or Search, and the page will jump to the best answer.</p>
+</div>
+</div>
+<div class="faq-search-box">
+<span>🔎</span>
+<input autocomplete="off" id="sellerFaqSearch" oninput="filterHelpItems('seller')" onkeydown="handleHelpSearchKey(event, 'seller')" placeholder="Search and jump to answer..." type="text"/>
+<button onclick="openBestSearchMatch('seller')" type="button">Search</button><button class="clear-search-btn" onclick="clearHelpSearch('seller')" type="button">Clear</button></div>
+<div class="faq-suggestions" id="sellerFaqSuggestions"></div>
+<div class="faq-search-count" id="sellerFaqCount"></div><div class="faq-empty" id="sellerFaqEmpty">No matching question found. Try another word like order, payment, product, support or account.</div>
+</div>
+<div class="help-list seller-help-list">
+<div class="help-item" id="seller-login">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🔐</b><span class="q-label" data-en-text="How to login as seller?" data-hi-text="Seller के रूप में login कैसे करें?">How to login as seller?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open the Aryanta Seller Page. Login with the email ID and password sent by the company on your registered mail. If you did not receive the password, open the seller page, click Forgot Pass, enter your details, complete verification, and then try again. If your application is approved, you can login. For more help call 6206318133 or mail support@aryanta.in." data-hi-text="Aryanta Seller Page खोलें। कंपनी द्वारा registered mail पर भेजे गए email ID और password से login करें। अगर password नहीं मिला है, तो seller page पर Forgot Pass खोलें, details डालें, verification पूरा करें और फिर login करें। अगर application approved है, तो आप login कर पाएंगे। अधिक मदद के लिए 6206318133 पर कॉल करें या support@aryanta.in पर mail करें।">Open the Aryanta Seller Page. Login with the email ID and password sent by the company on your registered mail. If you did not receive the password, open the seller page, click Forgot Pass, enter your details, complete verification, and then try again. If your application is approved, you can login. For more help call 6206318133 or mail support@aryanta.in.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn blue" onclick="openRedirect('Aryanta Seller Page', 'https://aryanta.in/seller/', 'Opening Aryanta Seller Page')">Open Seller Page</button><button class="btn orange" onclick="openRedirect('Seller Login Video', 'https://www.youtube.com/watch?v=ARYANTA_SELLER_LOGIN_001', 'Opening seller login video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-products">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>📦</b><span class="q-label" data-en-text="How to manage products?" data-hi-text="Products कैसे manage करें?">How to manage products?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Visit your Seller Panel and open My Inventory. From there you can see all added products, edit price, stock, images and description, or delete products if needed. Keep product details clear and correct so customers understand what they are buying. For more details contact Aryanta Support or watch the video." data-hi-text="Seller Panel खोलें और My Inventory में जाएँ। यहाँ आप अपने जोड़े गए products देख सकते हैं, price, stock, images और description edit कर सकते हैं, या जरूरत हो तो product delete कर सकते हैं। Product details साफ और सही रखें ताकि customer आसानी से समझ सके। अधिक मदद के लिए Aryanta Support से संपर्क करें या video देखें।">Visit your Seller Panel and open My Inventory. From there you can see all added products, edit price, stock, images and description, or delete products if needed. Keep product details clear and correct so customers understand what they are buying. For more details contact Aryanta Support or watch the video.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Manage Product Video', 'https://www.youtube.com/watch?v=ARYANTA_MANAGE_PRODUCTS_002', 'Opening manage product video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-low-stock">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>📉</b><span class="q-label" data-en-text="How to manage low stock items?" data-hi-text="Low stock items कैसे manage करें?">How to manage low stock items?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open Seller Panel and click Low Stock Items. This section shows products with less stock, generally below 10 quantity. You can edit the quantity directly from there and the stock updates immediately without waiting for QC again. Keep stock updated so customers do not order unavailable items." data-hi-text="Seller Panel खोलें और Low Stock Items पर क्लिक करें। यहाँ कम stock वाले products दिखेंगे, आमतौर पर 10 quantity से कम। आप वहीं से quantity edit कर सकते हैं और stock तुरंत update हो जाएगा, QC का इंतजार नहीं करना पड़ेगा। Stock updated रखें ताकि unavailable items का order न आए।">Open Seller Panel and click Low Stock Items. This section shows products with less stock, generally below 10 quantity. You can edit the quantity directly from there and the stock updates immediately without waiting for QC again. Keep stock updated so customers do not order unavailable items.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Low Stock Video', 'https://www.youtube.com/watch?v=ARYANTA_LOW_STOCK_003', 'Opening low stock video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-new-order">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🧾</b><span class="q-label" data-en-text="How to see new order?" data-hi-text="New order कैसे देखें?">How to see new order?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open Seller Panel and click New Orders. Here you will see new orders assigned to your store. Click Accept to accept the order. If you do not accept within 32 hours, a fine can be generated on your account. Repeating this more than 5 times may lead to seller ID suspension." data-hi-text="Seller Panel खोलें और New Orders पर क्लिक करें। यहाँ आपके store को मिले नए orders दिखेंगे। Order accept करने के लिए Accept दबाएँ। अगर आप 32 घंटे के अंदर accept नहीं करते, तो आपके account पर fine लग सकता है। ऐसा 5 बार से अधिक होने पर seller ID suspend हो सकती है।">Open Seller Panel and click New Orders. Here you will see new orders assigned to your store. Click Accept to accept the order. If you do not accept within 32 hours, a fine can be generated on your account. Repeating this more than 5 times may lead to seller ID suspension.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('New Order Video', 'https://www.youtube.com/watch?v=ARYANTA_NEW_ORDER_004', 'Opening new order video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-accepted-order">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🚚</b><span class="q-label" data-en-text="What to do after accepting order?" data-hi-text="Order accept करने के बाद क्या करें?">What to do after accepting order?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="After accepting an order, open Accepted Orders from the side bar and generate the slip/invoice. Once the slip is generated, the courier team will normally visit your pickup address within 48 hours to collect the item. After the item is delivered and settlement is completed, payment will be added to your given bank account. If you accept the order but do not generate the invoice/slip within 12 hours, a fine may be counted. Repeating this more than 5 times can lead to seller ID suspension." data-hi-text="Order accept करने के बाद side bar से Accepted Orders खोलें और slip/invoice generate करें। Slip generate होने के बाद courier team सामान्य रूप से 48 घंटे के अंदर आपके pickup address पर item लेने आएगी। Item deliver होने और settlement पूरा होने के बाद payment आपके दिए गए bank account में add होगा। अगर order accept करके 12 घंटे के अंदर invoice/slip generate नहीं किया, तो fine count हो सकता है। ऐसा 5 बार से अधिक होने पर ID suspend हो सकती है।">After accepting an order, open Accepted Orders from the side bar and generate the slip/invoice. Once the slip is generated, the courier team will normally visit your pickup address within 48 hours to collect the item. After the item is delivered and settlement is completed, payment will be added to your given bank account. If you accept the order but do not generate the invoice/slip within 12 hours, a fine may be counted. Repeating this more than 5 times can lead to seller ID suspension.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Accepted Order Video', 'https://www.youtube.com/watch?v=ARYANTA_ACCEPTED_ORDER_005', 'Opening accepted order video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-breached">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>⚠️</b><span class="q-label" data-en-text="What is Breached in side bar?" data-hi-text="Side bar में Breached क्या है?">What is Breached in side bar?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Breached shows orders where seller action was missed. For example, the order was not accepted on time, or the slip/invoice was not generated on time, so the order got cancelled or marked for fine. This page helps you see the product, order details and the specific fine reason." data-hi-text="Breached में वे orders दिखते हैं जहाँ seller action समय पर नहीं हुआ। जैसे order समय पर accept नहीं किया गया, या slip/invoice समय पर generate नहीं हुआ, इसलिए order cancel या fine हुआ। यहाँ आपको product-wise fine और breach detail दिख सकती है।">Breached shows orders where seller action was missed. For example, the order was not accepted on time, or the slip/invoice was not generated on time, so the order got cancelled or marked for fine. This page helps you see the product, order details and the specific fine reason.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Breached Video', 'https://www.youtube.com/watch?v=ARYANTA_BREACHED_006', 'Opening breached video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-all-orders">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>📚</b><span class="q-label" data-en-text="How can I see my all orders?" data-hi-text="अपने सभी orders कैसे देखें?">How can I see my all orders?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Visit Seller Panel and click Order History. You can click different options to view order groups: See All Orders shows every order, See Delivered Orders shows completed delivered orders, See Shipped Orders shows orders already shipped or picked up, See Cancelled Orders shows cancelled orders, and See Return Orders shows return or RTO related orders. Click any order to see full details." data-hi-text="Seller Panel में जाएँ और Order History पर क्लिक करें। वहाँ अलग-अलग buttons से order groups देख सकते हैं: See All Orders में सभी orders, See Delivered Orders में delivered orders, See Shipped Orders में shipped orders, See Cancelled Orders में cancelled orders और See Return Orders में return orders दिखते हैं।">Visit Seller Panel and click Order History. You can click different options to view order groups: See All Orders shows every order, See Delivered Orders shows completed delivered orders, See Shipped Orders shows orders already shipped or picked up, See Cancelled Orders shows cancelled orders, and See Return Orders shows return or RTO related orders. Click any order to see full details.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Order History Video', 'https://www.youtube.com/watch?v=ARYANTA_ORDER_HISTORY_008', 'Opening order history video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-payment-ledger">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>💰</b><span class="q-label" data-en-text="How can I track my payments?" data-hi-text="Payments कैसे track करें?">How can I track my payments?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open Seller Panel and go to Payment Ledger. In Progress (7 Days) shows payments still under processing. Upcoming Transfers shows money expected to be transferred. Completed shows payments already settled. Fines History shows fines deducted or generated. All Ledger shows full payment record in one place." data-hi-text="Seller Panel खोलें और Payment Ledger में जाएँ। In Progress (7 Days) में processing payments दिखते हैं। Upcoming Transfers में आने वाले transfer, Completed में भेजे गए payments, Fines History में fines और All Ledger में पूरी payment history दिखती है।">Open Seller Panel and go to Payment Ledger. In Progress (7 Days) shows payments still under processing. Upcoming Transfers shows money expected to be transferred. Completed shows payments already settled. Fines History shows fines deducted or generated. All Ledger shows full payment record in one place.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Payment Ledger Video', 'https://www.youtube.com/watch?v=ARYANTA_PAYMENT_LEDGER_009', 'Opening payment ledger video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-sponsored-ads">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>📢</b><span class="q-label" data-en-text="What is Sponsored Ads?" data-hi-text="Sponsored Ads क्या है?">What is Sponsored Ads?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Sponsored Ads is a seller tool that can give more visibility to selected products. Sponsored products may appear higher in customer search, suggestions and discovery areas. This can help your product reach more customers and may increase orders when product price, stock and images are good." data-hi-text="Sponsored Ads seller tool है जो selected products को ज्यादा visibility दे सकता है। Sponsored products customer search, suggestions और discovery area में ऊपर आ सकते हैं। इससे product को ज्यादा views और orders मिलने में मदद हो सकती है, लेकिन result product quality, price और customer demand पर भी depend करता है।">Sponsored Ads is a seller tool that can give more visibility to selected products. Sponsored products may appear higher in customer search, suggestions and discovery areas. This can help your product reach more customers and may increase orders when product price, stock and images are good.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Sponsored Ads Video', 'https://www.youtube.com/watch?v=ARYANTA_SPONSORED_ADS_010', 'Opening sponsored ads video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-subscription">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>⭐</b><span class="q-label" data-en-text="What is subscription?" data-hi-text="Subscription क्या है?">What is subscription?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Subscription gives more tools and growth features to your store. Basic/Free gives limited features with 1 free sponsored slot and limited branding changes. Growth gives 3 free sponsored ads, fine discount up to 10%, better seller growth tools, store branding access and priority dashboard tools. Pro gives fine reduction up to 20%, higher sponsored support, Pro branding, seller badge, priority support visibility and more campaign allowance. Ultra gives highest sponsored visibility, premium branding tools, best seller badge, trust tools and maximum growth features." data-hi-text="Subscription store को extra tools और growth features देता है। Basic/Free में limited features, 1 free sponsored slot और limited branding changes मिलते हैं। Growth में 3 free sponsored ads, fine discount up to 10%, logo/banner edit limit और better seller tools मिलते हैं। Pro में fine reduction up to 20%, higher sponsored support, pro branding, seller badge, priority visibility और ज्यादा campaign allowance मिलता है। Ultra में highest sponsored visibility, premium branding tools, best seller badge, trust tools, maximum growth features और unlimited type benefits मिलते हैं।">Subscription gives more tools and growth features to your store. Basic/Free gives limited features with 1 free sponsored slot and limited branding changes. Growth gives 3 free sponsored ads, fine discount up to 10%, better seller growth tools, store branding access and priority dashboard tools. Pro gives fine reduction up to 20%, higher sponsored support, Pro branding, seller badge, priority support visibility and more campaign allowance. Ultra gives highest sponsored visibility, premium branding tools, best seller badge, trust tools and maximum growth features.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Subscription Video', 'https://www.youtube.com/watch?v=ARYANTA_SUBSCRIPTION_011', 'Opening subscription video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-subscription-history">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🧾</b><span class="q-label" data-en-text="How can I see my subscription history?" data-hi-text="Subscription history कैसे देखें?">How can I see my subscription history?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open the side bar, click Info, then open My Subscription History. There you can see your active plan, old subscriptions, payment details, start date, end date and plan status. Use this page to manage or check your subscription record." data-hi-text="Side bar खोलें, Info पर क्लिक करें और My Subscription History में जाएँ। वहाँ active plan, old subscriptions, payment details, start date, end date और plan status देख सकते हैं।">Open the side bar, click Info, then open My Subscription History. There you can see your active plan, old subscriptions, payment details, start date, end date and plan status. Use this page to manage or check your subscription record.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Subscription History Video', 'https://www.youtube.com/watch?v=ARYANTA_SUBSCRIPTION_HISTORY_012', 'Opening subscription history video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-customer-qa">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>❓</b><span class="q-label" data-en-text="What is Customer Q&amp;A?" data-hi-text="Customer Q&amp;A क्या है?">What is Customer Q&amp;A?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Customer Q&amp;A shows questions asked by customers about your products. Reply clearly and politely. Good answers can build trust, reduce confusion and improve your store branding because future customers may also read those answers." data-hi-text="Customer Q&amp;A में customers द्वारा products पर पूछे गए questions दिखते हैं। आप उनका साफ और polite जवाब दे सकते हैं। अच्छे जवाब customer trust बढ़ाते हैं, confusion कम करते हैं और store branding में मदद करते हैं।">Customer Q&amp;A shows questions asked by customers about your products. Reply clearly and politely. Good answers can build trust, reduce confusion and improve your store branding because future customers may also read those answers.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Customer Q&amp;A Video', 'https://www.youtube.com/watch?v=ARYANTA_CUSTOMER_QA_013', 'Opening Customer Q&amp;A video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-b2b-supplies">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>📦</b><span class="q-label" data-en-text="What is B2B Supplies?" data-hi-text="B2B Supplies क्या है?">What is B2B Supplies?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="B2B Supplies is a section where sellers can find packing material and business supplies for Aryanta orders. You may order items like packing bags, tape, boxes and other listed materials to pack products properly and maintain a professional delivery experience." data-hi-text="B2B Supplies में sellers Aryanta orders के लिए packing material और business supplies देख सकते हैं। जैसे packing bags, tape, boxes और अन्य सामग्री। इससे seller को सही packing material आसानी से order करने में मदद मिलती है ताकि product safe pack हो सके।">B2B Supplies is a section where sellers can find packing material and business supplies for Aryanta orders. You may order items like packing bags, tape, boxes and other listed materials to pack products properly and maintain a professional delivery experience.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('B2B Supplies Video', 'https://www.youtube.com/watch?v=ARYANTA_B2B_SUPPLIES_014', 'Opening B2B supplies video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-b2b-orders">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🛒</b><span class="q-label" data-en-text="How to see my B2B order and transaction?" data-hi-text="B2B order और transaction कैसे देखें?">How to see my B2B order and transaction?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open Info from the side bar and go to My B2B Orders or B2B order history. You can see ordered item name, quantity, amount, order status, transaction details and expected delivery date. Click any B2B order to view full details." data-hi-text="Side bar से Info खोलें और My B2B Orders या B2B order history में जाएँ। वहाँ item name, quantity, amount, order status, transaction details और delivery update दिख सकते हैं।">Open Info from the side bar and go to My B2B Orders or B2B order history. You can see ordered item name, quantity, amount, order status, transaction details and expected delivery date. Click any B2B order to view full details.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('B2B Orders Video', 'https://www.youtube.com/watch?v=ARYANTA_B2B_ORDERS_015', 'Opening B2B orders video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-admin-support">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🆘</b><span class="q-label" data-en-text="How can I get help?" data-hi-text="Help कैसे लें?">How can I get help?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open Admin Support from the side bar. Select Issue Category, enter your callback number, write your problem clearly, and submit. If needed, you can upload images, PDF or documents by clicking Upload. Aryanta support will review the ticket and try to resolve it within 24 hours." data-hi-text="Side bar से Admin Support खोलें। Issue Category चुनें, callback number डालें, अपनी problem साफ लिखें और submit करें। जरूरत हो तो Upload पर क्लिक करके images, PDF या documents attach करें। Team कोशिश करेगी कि ticket 24 घंटे में resolve हो जाए।">Open Admin Support from the side bar. Select Issue Category, enter your callback number, write your problem clearly, and submit. If needed, you can upload images, PDF or documents by clicking Upload. Aryanta support will review the ticket and try to resolve it within 24 hours.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Admin Support Video', 'https://www.youtube.com/watch?v=ARYANTA_ADMIN_SUPPORT_016', 'Opening admin support video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-support-ticket">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🎫</b><span class="q-label" data-en-text="How can I see my support ticket?" data-hi-text="Support ticket कैसे देखें?">How can I see my support ticket?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open Admin Support and click See My Ticket. Use filters to understand ticket status: All shows every ticket, Open / Review shows tickets under checking, Requires Your Reply means admin needs your response, and Resolved means the issue is closed or completed." data-hi-text="Admin Support खोलें और See My Ticket पर क्लिक करें। Filters से status समझें: All में सभी tickets, Open / Review में checking tickets, Requires Your Reply में वे tickets जहाँ आपका जवाब चाहिए, और Resolved में पूरी हो चुकी tickets दिखती हैं।">Open Admin Support and click See My Ticket. Use filters to understand ticket status: All shows every ticket, Open / Review shows tickets under checking, Requires Your Reply means admin needs your response, and Resolved means the issue is closed or completed.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Support Ticket Video', 'https://www.youtube.com/watch?v=ARYANTA_SUPPORT_TICKET_017', 'Opening support ticket video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-profile">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>👤</b><span class="q-label" data-en-text="How can I see my profile?" data-hi-text="अपनी profile कैसे देखें?">How can I see my profile?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open Info from the side bar and click Profile. You can see your seller name, shop details, contact details, bank details, KYC information and other account information. Check this section regularly to make sure your details are correct." data-hi-text="Side bar से Info खोलें और Profile पर क्लिक करें। यहाँ seller name, shop details, contact details, bank details, KYC information और account की बाकी जानकारी देख सकते हैं।">Open Info from the side bar and click Profile. You can see your seller name, shop details, contact details, bank details, KYC information and other account information. Check this section regularly to make sure your details are correct.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Seller Profile Video', 'https://www.youtube.com/watch?v=ARYANTA_SELLER_PROFILE_018', 'Opening seller profile video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-bank-details">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🏦</b><span class="q-label" data-en-text="How can I change my bank details?" data-hi-text="Bank details कैसे बदलें?">How can I change my bank details?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open Info, go to Profile, and click Edit Bank Details. Enter the new bank account number, IFSC and required details carefully, then submit. Wrong bank details can delay your payouts, so check everything before saving." data-hi-text="Info खोलें, Profile में जाएँ और Edit Bank Details पर क्लिक करें। नया bank account number, IFSC और जरूरी details ध्यान से भरें, फिर submit करें। गलत bank details से payment delay या fail हो सकता है।">Open Info, go to Profile, and click Edit Bank Details. Enter the new bank account number, IFSC and required details carefully, then submit. Wrong bank details can delay your payouts, so check everything before saving.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Bank Details Video', 'https://www.youtube.com/watch?v=ARYANTA_BANK_DETAILS_019', 'Opening bank details video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-files">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>📁</b><span class="q-label" data-en-text="What is File in Info?" data-hi-text="Info में File क्या है?">What is File in Info?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Files in Info shows files, images or documents uploaded by Aryanta admin for sellers. You can open or download the file by clicking Download. Use it for policies, notices, packing instructions or other company documents." data-hi-text="Info में Files section में Aryanta admin द्वारा sellers के लिए upload की गई files, images या documents दिखते हैं। Download पर क्लिक करके file download कर सकते हैं। इसका उपयोग policy, training, invoice format या important notice के लिए हो सकता है।">Files in Info shows files, images or documents uploaded by Aryanta admin for sellers. You can open or download the file by clicking Download. Use it for policies, notices, packing instructions or other company documents.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Info File Video', 'https://www.youtube.com/watch?v=ARYANTA_INFO_FILE_020', 'Opening info file video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-store-brand">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🎨</b><span class="q-label" data-en-text="What is Store Brand in Info?" data-hi-text="Info में Store Brand क्या है?">What is Store Brand in Info?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Store Brand lets you manage your shop logo, banner and store branding. You can view uploaded branding, change logo or banner according to your plan limit, and keep your store looking professional for customers." data-hi-text="Store Brand से आप shop logo, banner और store branding manage कर सकते हैं। Uploaded branding देख सकते हैं, plan limit के अनुसार logo/banner change कर सकते हैं और store को professional दिखा सकते हैं।">Store Brand lets you manage your shop logo, banner and store branding. You can view uploaded branding, change logo or banner according to your plan limit, and keep your store looking professional for customers.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Store Brand Video', 'https://www.youtube.com/watch?v=ARYANTA_STORE_BRAND_021', 'Opening store brand video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-edit-shop-details">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🏪</b><span class="q-label" data-en-text="How can I update my shop details?" data-hi-text="Shop details कैसे update करें?">How can I update my shop details?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open Info or Profile and choose the shop/business details edit option. Update shop name, address, category and contact information carefully. Correct shop details help Aryanta and customers identify your store properly." data-hi-text="Info या Profile खोलें और shop/business details edit option चुनें। Shop name, address, category और contact information सही तरीके से update करें। सही shop details customer trust और pickup process में मदद करती हैं।">Open Info or Profile and choose the shop/business details edit option. Update shop name, address, category and contact information carefully. Correct shop details help Aryanta and customers identify your store properly.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Shop Details Video', 'https://www.youtube.com/watch?v=ARYANTA_SHOP_DETAILS_022', 'Opening shop details video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-product-rejected">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🚫</b><span class="q-label" data-en-text="Why was my product rejected or not approved?" data-hi-text="Product reject या approve क्यों नहीं हुआ?">Why was my product rejected or not approved?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="A product may be rejected if images are unclear, price/details are wrong, required fields are missing, or the item does not follow Aryanta rules. Open My Inventory, check product status or QC reason, fix the issue and submit/update again." data-hi-text="Product reject हो सकता है अगर images clear नहीं हैं, price/details गलत हैं, required fields missing हैं, या item Aryanta rules follow नहीं करता। My Inventory में product status देखें, mistake सुधारें और दोबारा submit करें।">A product may be rejected if images are unclear, price/details are wrong, required fields are missing, or the item does not follow Aryanta rules. Open My Inventory, check product status or QC reason, fix the issue and submit/update again.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Product Rejected Video', 'https://www.youtube.com/watch?v=ARYANTA_PRODUCT_REJECTED_023', 'Opening product rejected video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-cod-online-payment">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>💳</b><span class="q-label" data-en-text="How are COD and online orders handled?" data-hi-text="COD और online orders कैसे handle होते हैं?">How are COD and online orders handled?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="COD means the customer pays at delivery. Online orders are prepaid. You should process both order types carefully from New Orders and Accepted Orders. Payment settlement will follow Aryanta payment rules after delivery and verification." data-hi-text="COD में customer delivery पर payment करता है। Online order prepaid होता है। दोनों orders को New Orders और Accepted Orders से समय पर process करें। Payment settlement delivery, verification और rules के अनुसार होगा।">COD means the customer pays at delivery. Online orders are prepaid. You should process both order types carefully from New Orders and Accepted Orders. Payment settlement will follow Aryanta payment rules after delivery and verification.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('COD Online Payment Video', 'https://www.youtube.com/watch?v=ARYANTA_COD_ONLINE_024', 'Opening COD and online payment video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-cancel-return">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>↩️</b><span class="q-label" data-en-text="What should I do if an order is cancelled or returned?" data-hi-text="Order cancel या return हो जाए तो क्या करें?">What should I do if an order is cancelled or returned?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open Order History or the return/cancel filter and check the order reason. Review product, packing and dispatch timing. If you think the issue is wrong, contact Admin Support with order ID and proof." data-hi-text="Order History या return/cancel filter खोलें और reason check करें। Product, packing और dispatch timing review करें। अगर issue गलत लगता है, तो order ID और proof के साथ support ticket raise करें।">Open Order History or the return/cancel filter and check the order reason. Review product, packing and dispatch timing. If you think the issue is wrong, contact Admin Support with order ID and proof.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Cancel Return Video', 'https://www.youtube.com/watch?v=ARYANTA_CANCEL_RETURN_025', 'Opening cancel and return video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-performance">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>📊</b><span class="q-label" data-en-text="How can I improve my seller performance?" data-hi-text="Seller performance कैसे improve करें?">How can I improve my seller performance?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Accept new orders on time, generate slips quickly, keep stock updated, use clear product photos, answer Customer Q&amp;A, avoid cancellation and returns, and keep support tickets resolved. Good performance can improve trust and growth." data-hi-text="New orders समय पर accept करें, slip जल्दी generate करें, stock updated रखें, clear product photos लगाएँ, Customer Q&amp;A का जवाब दें, cancellation/returns कम रखें और customer support को fast reply दें।">Accept new orders on time, generate slips quickly, keep stock updated, use clear product photos, answer Customer Q&amp;A, avoid cancellation and returns, and keep support tickets resolved. Good performance can improve trust and growth.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Seller Performance Video', 'https://www.youtube.com/watch?v=ARYANTA_SELLER_PERFORMANCE_026', 'Opening seller performance video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-dashboard">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>📊</b><span class="q-label" data-en-text="What is Dashboard?" data-hi-text="Dashboard क्या है?">What is Dashboard?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Dashboard gives a quick business overview. You can see today orders, monthly orders, inventory, upcoming payouts, pending questions, store rating and order trend. Use it daily to understand what needs action first." data-hi-text="Dashboard business overview देता है। यहाँ today orders, monthly orders, inventory, upcoming payouts, pending questions, store rating और order trend जैसी important जानकारी जल्दी दिखती है।">Dashboard gives a quick business overview. You can see today orders, monthly orders, inventory, upcoming payouts, pending questions, store rating and order trend. Use it daily to understand what needs action first.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Dashboard Video', 'https://www.youtube.com/watch?v=ARYANTA_DASHBOARD_026', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-notifications">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🔔</b><span class="q-label" data-en-text="How can I read notifications?" data-hi-text="Notifications कैसे पढ़ें?">How can I read notifications?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open Notifications from the side bar. You can see admin notices, important updates, attached links and time of message. Click the notification to read full details and open any attached link." data-hi-text="Side bar से Notifications खोलें। वहाँ admin notices, important updates, attached links और message time दिखता है। पूरी detail पढ़ने के लिए notification पर क्लिक करें।">Open Notifications from the side bar. You can see admin notices, important updates, attached links and time of message. Click the notification to read full details and open any attached link.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Notifications Video', 'https://www.youtube.com/watch?v=ARYANTA_NOTIFICATIONS_027', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-add-product">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>➕</b><span class="q-label" data-en-text="How can I add a new product?" data-hi-text="New product कैसे add करें?">How can I add a new product?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open My Inventory and use the add product option. Fill product name, price, stock, images, category, description, weight and size correctly. Submit the product and wait for QC/approval if required." data-hi-text="My Inventory खोलें और add product option use करें। Product name, price, stock, images, category, description, weight और size सही भरें। Product approval के लिए साफ images और सही details जरूरी हैं।">Open My Inventory and use the add product option. Fill product name, price, stock, images, category, description, weight and size correctly. Submit the product and wait for QC/approval if required.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Add Product Video', 'https://www.youtube.com/watch?v=ARYANTA_ADD_PRODUCT_028', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-qc-status">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>✅</b><span class="q-label" data-en-text="What is QC Pass, QC Pending and QC Cancelled?" data-hi-text="QC Pass, QC Pending और QC Cancelled क्या है?">What is QC Pass, QC Pending and QC Cancelled?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="QC Pending means product is waiting for checking. QC Pass means product is approved and can be shown according to visibility rules. QC Cancelled or rejected means the product needs correction before it can be sold." data-hi-text="QC Pending का मतलब product checking में है। QC Pass का मतलब product approved है और visibility rules के अनुसार show हो सकता है। QC Cancelled या rejected का मतलब product में issue है और seller को details सुधारनी होंगी।">QC Pending means product is waiting for checking. QC Pass means product is approved and can be shown according to visibility rules. QC Cancelled or rejected means the product needs correction before it can be sold.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('QC Status Video', 'https://www.youtube.com/watch?v=ARYANTA_QC_STATUS_029', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-search-panel">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🔎</b><span class="q-label" data-en-text="How can I search orders and products in seller panel?" data-hi-text="Seller panel में orders/products कैसे search करें?">How can I search orders and products in seller panel?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Use the top search bar in the seller panel. You can search by order ID, order number, buyer name, product name or SKU. Matching orders or products will appear, and you can open the correct result quickly." data-hi-text="Seller panel के top search bar का use करें। आप order ID, order number, buyer name, product name या SKU से search कर सकते हैं। Matching order या product दिखेगा, फिर आप उसे खोल सकते हैं।">Use the top search bar in the seller panel. You can search by order ID, order number, buyer name, product name or SKU. Matching orders or products will appear, and you can open the correct result quickly.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Seller Search Video', 'https://www.youtube.com/watch?v=ARYANTA_PANEL_SEARCH_030', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-export-history">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>📤</b><span class="q-label" data-en-text="How can I download or export order history?" data-hi-text="Order history download/export कैसे करें?">How can I download or export order history?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open Order History and use the available download/export option if shown. Export helps you keep order records, accounts and reports. If the button is not visible, contact Admin Support." data-hi-text="Order History खोलें और अगर download/export option दिखे तो उसे use करें। Export से order records, accounts और reports रखने में मदद मिलती है। अगर button नहीं दिख रहा, तो support से पूछें।">Open Order History and use the available download/export option if shown. Export helps you keep order records, accounts and reports. If the button is not visible, contact Admin Support.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Export History Video', 'https://www.youtube.com/watch?v=ARYANTA_EXPORT_HISTORY_031', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-return-cancel">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>↩️</b><span class="q-label" data-en-text="Where can I see returns and cancellations?" data-hi-text="Returns और cancellations कहाँ देखें?">Where can I see returns and cancellations?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Use Order History filters such as Cancelled Orders and Return Orders. You can review the product, order reference, date and reason to understand why it was cancelled or returned." data-hi-text="Order History filters में Cancelled Orders और Return Orders खोलें। वहाँ product, order reference, date और reason देखकर समझ सकते हैं कि order क्यों cancel या return हुआ।">Use Order History filters such as Cancelled Orders and Return Orders. You can review the product, order reference, date and reason to understand why it was cancelled or returned.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Returns Video', 'https://www.youtube.com/watch?v=ARYANTA_RETURNS_CANCEL_032', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-install-app">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>📱</b><span class="q-label" data-en-text="How can I install the seller app?" data-hi-text="Seller app कैसे install करें?">How can I install the seller app?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open Settings and use Download PWA App or Download the App if available. On mobile Chrome, you can also use browser menu and choose Install app or Add to Home Screen. This helps you open the seller panel quickly." data-hi-text="Settings खोलें और Download PWA App या Download the App option use करें अगर उपलब्ध है। Mobile Chrome में browser menu से Install app या Add to Home Screen भी चुन सकते हैं।">Open Settings and use Download PWA App or Download the App if available. On mobile Chrome, you can also use browser menu and choose Install app or Add to Home Screen. This helps you open the seller panel quickly.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Install App Video', 'https://www.youtube.com/watch?v=ARYANTA_INSTALL_APP_033', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-offline-mode">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🏪</b><span class="q-label" data-en-text="What is Offline Mode?" data-hi-text="Offline Mode क्या है?">What is Offline Mode?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Offline Mode temporarily hides your live products when you are not ready to take orders. Use it only when needed, and turn it off when your shop is ready again. This helps avoid order problems." data-hi-text="Offline Mode आपके live products को temporarily hide करता है जब आप orders लेने के लिए ready नहीं हैं। इसे जरूरत पर ही use करें और shop ready होने पर off कर दें। इससे order problems कम होते हैं।">Offline Mode temporarily hides your live products when you are not ready to take orders. Use it only when needed, and turn it off when your shop is ready again. This helps avoid order problems.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Offline Mode Video', 'https://www.youtube.com/watch?v=ARYANTA_OFFLINE_MODE_034', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-auto-accept">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>⚡</b><span class="q-label" data-en-text="What is Auto Accept Orders?" data-hi-text="Auto Accept Orders क्या है?">What is Auto Accept Orders?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Auto Accept Orders can automatically accept eligible new orders based on system rules. Use it only when you can pack and generate slips on time, because accepted orders still need timely processing." data-hi-text="Auto Accept Orders system rules के अनुसार eligible new orders को automatically accept कर सकता है। इसे तभी use करें जब आप समय पर packing और slip generate कर सकें, क्योंकि accepted order को फिर भी timely process करना होता है।">Auto Accept Orders can automatically accept eligible new orders based on system rules. Use it only when you can pack and generate slips on time, because accepted orders still need timely processing.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Auto Accept Video', 'https://www.youtube.com/watch?v=ARYANTA_AUTO_ACCEPT_035', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-vacation-mode">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🌴</b><span class="q-label" data-en-text="What is Vacation Mode?" data-hi-text="Vacation Mode क्या है?">What is Vacation Mode?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Vacation Mode is for the time when you are temporarily unavailable. It can help adjust selling or delivery handling so customers and Aryanta know you are away for some time." data-hi-text="Vacation Mode उस समय के लिए है जब आप कुछ समय के लिए available नहीं हैं। इससे selling या delivery handling adjust हो सकती है ताकि customers और Aryanta को पता रहे कि आप temporarily away हैं।">Vacation Mode is for the time when you are temporarily unavailable. It can help adjust selling or delivery handling so customers and Aryanta know you are away for some time.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Vacation Mode Video', 'https://www.youtube.com/watch?v=ARYANTA_VACATION_MODE_036', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-2fa-security">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🔐</b><span class="q-label" data-en-text="What is 2FA Security?" data-hi-text="2FA Security क्या है?">What is 2FA Security?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="2FA Security adds OTP verification during login. It protects your seller account from unauthorized access. Keep your email safe and do not share OTP with anyone." data-hi-text="2FA Security login के समय OTP verification add करता है। यह seller account को unauthorized access से बचाता है। अपना email safe रखें और OTP किसी से share न करें।">2FA Security adds OTP verification during login. It protects your seller account from unauthorized access. Keep your email safe and do not share OTP with anyone.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('2FA Video', 'https://www.youtube.com/watch?v=ARYANTA_2FA_SECURITY_037', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-sms-alerts">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>📩</b><span class="q-label" data-en-text="What are SMS Alerts?" data-hi-text="SMS Alerts क्या हैं?">What are SMS Alerts?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="SMS Alerts are important updates sent to your phone, such as order, support or account alerts. Keep your registered phone number correct so you do not miss important information." data-hi-text="SMS Alerts आपके phone पर important updates भेजते हैं, जैसे order, support या account alerts। अपना registered phone number सही रखें ताकि जरूरी information miss न हो।">SMS Alerts are important updates sent to your phone, such as order, support or account alerts. Keep your registered phone number correct so you do not miss important information.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('SMS Alerts Video', 'https://www.youtube.com/watch?v=ARYANTA_SMS_ALERTS_038', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-company-details-policy">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🏢</b><span class="q-label" data-en-text="Where can I see company details and policy?" data-hi-text="Company details और policy कहाँ देखें?">Where can I see company details and policy?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open Info from the side bar. You can check Company Details for Aryanta support/profile information and Policy for seller rules, account rules and important company instructions." data-hi-text="Side bar से Info खोलें। वहाँ Company Details में Aryanta support/profile information और Policy में seller rules, account rules और company instructions देख सकते हैं।">Open Info from the side bar. You can check Company Details for Aryanta support/profile information and Policy for seller rules, account rules and important company instructions.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Company Policy Video', 'https://www.youtube.com/watch?v=ARYANTA_COMPANY_POLICY_039', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-kyc-gst-alert">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🪪</b><span class="q-label" data-en-text="What should I do when KYC or GST alert is showing?" data-hi-text="KYC या GST alert दिखे तो क्या करें?">What should I do when KYC or GST alert is showing?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="If a KYC/GST alert is showing, open Profile or Info and upload the required Aadhaar, PAN, GST or business documents. Check that the images are clear and the details match your seller account. Some features may stay locked until verification is completed." data-hi-text="अगर KYC/GST alert दिख रहा है, तो Profile या Info खोलकर Aadhaar, PAN, GST या business documents upload करें। Images clear रखें और details seller account से match होनी चाहिए। Verification पूरा होने तक कुछ features locked रह सकते हैं।">If a KYC/GST alert is showing, open Profile or Info and upload the required Aadhaar, PAN, GST or business documents. Check that the images are clear and the details match your seller account. Some features may stay locked until verification is completed.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('What should I do when KYC or GST alert is showing? Video', 'https://www.youtube.com/watch?v=ARYANTA_SELLER_KYC_GST_ALERT', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-store-rating-trend">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>⭐</b><span class="q-label" data-en-text="How can I understand store rating and 7-day order trend?" data-hi-text="Store rating और 7-day order trend कैसे समझें?">How can I understand store rating and 7-day order trend?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Dashboard shows Store Rating and 7-Day Order Trend. Store Rating tells how customers are reviewing your store/products. The 7-day trend shows recent order movement, cancellation and return pattern. Use it to improve packing, price, stock and customer replies." data-hi-text="Dashboard में Store Rating और 7-Day Order Trend दिखता है। Store Rating बताता है customers आपके store/products को कैसे review कर रहे हैं। 7-day trend recent orders, cancellation और return pattern दिखाता है। इसे packing, price, stock और customer replies सुधारने के लिए use करें।">Dashboard shows Store Rating and 7-Day Order Trend. Store Rating tells how customers are reviewing your store/products. The 7-day trend shows recent order movement, cancellation and return pattern. Use it to improve packing, price, stock and customer replies.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('How can I understand store rating and 7-day order trend? Video', 'https://www.youtube.com/watch?v=ARYANTA_SELLER_STORE_RATING_TREND', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-upcoming-payouts-card">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>💸</b><span class="q-label" data-en-text="What is Upcoming Payouts on dashboard?" data-hi-text="Dashboard में Upcoming Payouts क्या है?">What is Upcoming Payouts on dashboard?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Upcoming Payouts shows the payment amount that may be transferred after order delivery, verification and settlement. It is a quick summary only. For full breakup, open Payment Ledger and check In Progress, Upcoming Transfers, Completed and Fines History." data-hi-text="Upcoming Payouts वह amount दिखाता है जो order delivery, verification और settlement के बाद transfer हो सकता है। यह quick summary है। Full breakup के लिए Payment Ledger खोलें और In Progress, Upcoming Transfers, Completed और Fines History देखें।">Upcoming Payouts shows the payment amount that may be transferred after order delivery, verification and settlement. It is a quick summary only. For full breakup, open Payment Ledger and check In Progress, Upcoming Transfers, Completed and Fines History.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('What is Upcoming Payouts on dashboard? Video', 'https://www.youtube.com/watch?v=ARYANTA_SELLER_UPCOMING_PAYOUTS_CARD', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-pending-questions-card">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>❔</b><span class="q-label" data-en-text="What is Total Pending Questions on dashboard?" data-hi-text="Dashboard में Total Pending Questions क्या है?">What is Total Pending Questions on dashboard?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Total Pending Questions shows customer questions that still need your reply. Open Customer Q&amp;A and answer them in simple words. Fast replies can improve trust and reduce customer hesitation before purchase." data-hi-text="Total Pending Questions customers के वे questions दिखाता है जिनका जवाब अभी बाकी है। Customer Q&amp;A खोलें और simple words में answer दें। Fast replies trust बढ़ाते हैं और customer hesitation कम करते हैं।">Total Pending Questions shows customer questions that still need your reply. Open Customer Q&amp;A and answer them in simple words. Fast replies can improve trust and reduce customer hesitation before purchase.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('What is Total Pending Questions on dashboard? Video', 'https://www.youtube.com/watch?v=ARYANTA_SELLER_PENDING_QUESTIONS_CARD', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-product-health-tool">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🩺</b><span class="q-label" data-en-text="What is Product Health or Inventory Performance tool?" data-hi-text="Product Health या Inventory Performance tool क्या है?">What is Product Health or Inventory Performance tool?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Product Health or Inventory Performance helps you understand product performance using stock, sold quantity, returns and cancellations. Use it to find strong products, weak products and products that need better price, image or stock planning." data-hi-text="Product Health या Inventory Performance आपको stock, sold quantity, returns और cancellations के आधार पर product performance समझने में मदद करता है। इससे strong products, weak products और जिन products में price, image या stock improvement चाहिए उन्हें पहचान सकते हैं।">Product Health or Inventory Performance helps you understand product performance using stock, sold quantity, returns and cancellations. Use it to find strong products, weak products and products that need better price, image or stock planning.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('What is Product Health or Inventory Performance tool? Video', 'https://www.youtube.com/watch?v=ARYANTA_SELLER_PRODUCT_HEALTH_TOOL', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-ultra-price-boost">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🪄</b><span class="q-label" data-en-text="What is Ultra Price Boost Suggestion?" data-hi-text="Ultra Price Boost Suggestion क्या है?">What is Ultra Price Boost Suggestion?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Ultra Price Boost Suggestion gives pricing ideas using sales speed, return risk and current price. It is only a suggestion. Always check your margin, packing cost and market price before changing product price." data-hi-text="Ultra Price Boost Suggestion sales speed, return risk और current price देखकर pricing ideas देता है। यह केवल suggestion है। Price बदलने से पहले अपना margin, packing cost और market price जरूर check करें।">Ultra Price Boost Suggestion gives pricing ideas using sales speed, return risk and current price. It is only a suggestion. Always check your margin, packing cost and market price before changing product price.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('What is Ultra Price Boost Suggestion? Video', 'https://www.youtube.com/watch?v=ARYANTA_SELLER_ULTRA_PRICE_BOOST', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-search-suggestion-setting">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🔍</b><span class="q-label" data-en-text="What is Search Suggestions setting?" data-hi-text="Search Suggestions setting क्या है?">What is Search Suggestions setting?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Search Suggestions controls whether the seller panel shows quick search results while typing. If enabled, matching orders/products appear faster. If disabled, you may still search manually but suggestions may not show." data-hi-text="Search Suggestions control करता है कि typing करते समय seller panel quick search results दिखाए या नहीं। Enabled होने पर matching orders/products जल्दी दिखते हैं। Disabled होने पर manual search कर सकते हैं लेकिन suggestions नहीं दिख सकते।">Search Suggestions controls whether the seller panel shows quick search results while typing. If enabled, matching orders/products appear faster. If disabled, you may still search manually but suggestions may not show.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('What is Search Suggestions setting? Video', 'https://www.youtube.com/watch?v=ARYANTA_SELLER_SEARCH_SUGGESTION_SETTING', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-support-attachments">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>📎</b><span class="q-label" data-en-text="Can I attach images or documents in Admin Support?" data-hi-text="Admin Support में images/documents attach कर सकते हैं?">Can I attach images or documents in Admin Support?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Yes. While creating an Admin Support ticket, click Upload and attach screenshots, product photos, PDF, invoice or any document related to the issue. Attachments help admin understand the problem faster and resolve it better." data-hi-text="हाँ। Admin Support ticket बनाते समय Upload पर क्लिक करके screenshots, product photos, PDF, invoice या issue से जुड़ा document attach कर सकते हैं। Attachments से admin problem जल्दी और बेहतर समझ सकता है।">Yes. While creating an Admin Support ticket, click Upload and attach screenshots, product photos, PDF, invoice or any document related to the issue. Attachments help admin understand the problem faster and resolve it better.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('Can I attach images or documents in Admin Support? Video', 'https://www.youtube.com/watch?v=ARYANTA_SELLER_SUPPORT_ATTACHMENTS', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-b2b-delivery-eta">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>🚚</b><span class="q-label" data-en-text="How can I check B2B supply delivery date?" data-hi-text="B2B supply delivery date कैसे check करें?">How can I check B2B supply delivery date?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="Open Info and go to My B2B Orders. Click the B2B order to open full details. You can see item, quantity, amount, status and expected delivery date if available." data-hi-text="Info खोलें और My B2B Orders में जाएँ। B2B order पर क्लिक करें। वहाँ item, quantity, amount, status और expected delivery date उपलब्ध होने पर दिख सकती है।">Open Info and go to My B2B Orders. Click the B2B order to open full details. You can see item, quantity, amount, status and expected delivery date if available.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('How can I check B2B supply delivery date? Video', 'https://www.youtube.com/watch?v=ARYANTA_SELLER_B2B_DELIVERY_ETA', 'Opening seller help video')">Watch Video</button></div></div>
+</div>
+<div class="help-item" id="seller-account-restricted">
+<button class="help-q" onclick="toggleHelp(this)">
+<span class="help-q-left"><b>⛔</b><span class="q-label" data-en-text="What should I do if my account is restricted, blocked or suspended?" data-hi-text="Account restricted, blocked या suspended हो तो क्या करें?">What should I do if my account is restricted, blocked or suspended?</span></span>
+<span class="arrow">⌄</span>
+</button>
+<div class="help-a"><div class="answer-text" data-en-text="If your seller panel shows restricted, blocked or suspended status, read the message carefully. Some restrictions may be temporary and some may need admin review. Contact support with your registered email, seller ID, shop name and issue details." data-hi-text="अगर seller panel में restricted, blocked या suspended status दिखता है, तो message ध्यान से पढ़ें। कुछ restrictions temporary हो सकती हैं और कुछ में admin review चाहिए। Registered email, seller ID, shop name और issue details के साथ support से संपर्क करें।">If your seller panel shows restricted, blocked or suspended status, read the message carefully. Some restrictions may be temporary and some may need admin review. Contact support with your registered email, seller ID, shop name and issue details.</div><div class="btn-row help-actions"><button class="btn light speak-btn" onclick="speakHelpAnswer(this)" type="button">🔊 Speak</button><button class="btn orange" onclick="openRedirect('What should I do if my account is restricted, blocked or suspended? Video', 'https://www.youtube.com/watch?v=ARYANTA_SELLER_ACCOUNT_RESTRICTED', 'Opening seller help video')">Watch Video</button></div></div>
+</div></div> </div>
+</div>
+</section>
+<div class="bottom-space"></div>
+</main>
+<div class="modal" id="redirectModal" onclick="modalBackDrop(event)">
+<div class="modal-card">
+<div class="modal-top">
+<img alt="Aryanta" class="redirect-logo" src="https://aryanta.in/vurify/aryanta.jpeg"/>
+<h2 id="redirectTitle">Redirecting you to Aryanta</h2>
+<p id="redirectText">A new tab will open within 3 seconds. You can cancel or open now.</p>
+<div class="count-wrap">
+<svg viewbox="0 0 100 100">
+<circle class="track" cx="50" cy="50" r="40"></circle>
+<circle class="progress" cx="50" cy="50" id="progressCircle" r="40"></circle>
+</svg>
+<div class="count-number" id="countNumber">3</div>
+</div>
+</div>
+<div class="modal-actions">
+<button class="btn light" onclick="cancelRedirect()">Cancel</button>
+<button class="btn blue" onclick="redirectNow()">Redirect Now</button>
+</div>
+</div>
+</div>
+<div class="toast" id="toast">Copied</div>
+<script>
+    let redirectUrl = "";
+    let redirectInterval = null;
+    let redirectTimeout = null;
+    let countLeft = 3;
+
+    function showPage(type) {
+      document.getElementById("homePage").style.display = "none";
+      document.querySelectorAll(".page").forEach(page => page.style.display = "none");
+
+      if (type === "customer") {
+        document.getElementById("customerPage").style.display = "block";
+        location.hash = "customer";
+      }
+
+      if (type === "apply") {
+        document.getElementById("applyPage").style.display = "block";
+        location.hash = "apply";
+      }
+
+      if (type === "seller") {
+        document.getElementById("sellerPage").style.display = "block";
+        location.hash = "seller";
+      }
+
+      document.getElementById("homeTopBtn").style.display = "inline-block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function showHome() {
+      document.querySelectorAll(".page").forEach(page => page.style.display = "none");
+      document.getElementById("homePage").style.display = "block";
+      document.getElementById("homeTopBtn").style.display = "none";
+      history.replaceState(null, "", location.pathname);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function scrollToVideo() {
+      if (document.getElementById("homePage").style.display === "none") {
+        showHome();
+        setTimeout(() => {
+          document.getElementById("videoSection").scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 180);
+        return;
+      }
+
+      document.getElementById("videoSection").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function toggleHelp(button) {
+      const item = button.closest(".help-item");
+      item.classList.toggle("open");
+    }
+
+    function openRedirect(name, url, message) {
+      clearRedirectTimers();
+
+      redirectUrl = url;
+      countLeft = 3;
+
+      const modal = document.getElementById("redirectModal");
+      const progress = document.getElementById("progressCircle");
+
+      document.getElementById("redirectTitle").textContent = message || ("Redirecting you to " + name);
+      document.getElementById("redirectText").textContent = "A new tab will open within 3 seconds. You can cancel or open now.";
+      document.getElementById("countNumber").textContent = "3";
+
+      progress.style.animation = "none";
+      progress.offsetHeight;
+      progress.style.animation = "countdownStroke 3s linear forwards";
+
+      modal.classList.add("show");
+
+      redirectInterval = setInterval(() => {
+        countLeft--;
+        document.getElementById("countNumber").textContent = Math.max(countLeft, 0);
+      }, 1000);
+
+      redirectTimeout = setTimeout(() => {
+        redirectNow();
+      }, 3000);
+    }
+
+    function redirectNow() {
+      if (!redirectUrl) return;
+      const url = redirectUrl;
+      clearRedirectTimers();
+      closeRedirectModal();
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+
+    function cancelRedirect() {
+      clearRedirectTimers();
+      redirectUrl = "";
+      closeRedirectModal();
+      showToast("Redirect cancelled");
+    }
+
+    function clearRedirectTimers() {
+      if (redirectInterval) clearInterval(redirectInterval);
+      if (redirectTimeout) clearTimeout(redirectTimeout);
+      redirectInterval = null;
+      redirectTimeout = null;
+    }
+
+    function closeRedirectModal() {
+      document.getElementById("redirectModal").classList.remove("show");
+    }
+
+    function modalBackDrop(event) {
+      if (event.target.id === "redirectModal") {
+        cancelRedirect();
+      }
+    }
+
+    function shareHelp(key) {
+      const isLocalFile = location.protocol === "file:";
+      const baseUrl = isLocalFile ? location.href.split("#")[0] : (location.origin + location.pathname);
+      const url = baseUrl + "#" + key;
+      const title = "Learn.aryanta Help";
+
+      if (navigator.share && !isLocalFile) {
+        navigator.share({
+          title: title,
+          text: "Open this Aryanta help guide",
+          url: url
+        }).catch(() => {});
+        return;
+      }
+
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => {
+          showToast(isLocalFile ? "Local help link copied" : "Help link copied");
+        }).catch(() => {
+          showToast(isLocalFile ? "Sharing works best after upload to website" : url);
+        });
+        return;
+      }
+
+      showToast(isLocalFile ? "Sharing works best after upload to website" : url);
+    }
+
+    function showToast(text) {
+      const toast = document.getElementById("toast");
+      toast.textContent = text;
+      toast.classList.add("show");
+
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 1800);
+    }
+
+
+
+
+
+    /* Aryanta v7: fixed missing language + speech globals */
+    window.ARYANTA_HELP_TRANSLATIONS = {"cancel-order": {"enQ": "How to cancel the order?", "enA": "Open aryanta.in, login, open the side bar and go to MY ORDERS. Click the order item you want to cancel, scroll down and press Cancel Order if the option is available. If the order is already packed, shipped or delivered, cancellation may not be possible and refund/support rules may apply.", "hiQ": "ऑर्डर कैसे कैंसल करें?", "hiA": "aryanta.in खोलें, लॉगिन करें, साइड बार खोलें और MY ORDERS में जाएँ। जिस ऑर्डर को कैंसल करना है उस पर क्लिक करें, नीचे स्क्रोल करें और Cancel Order दबाएँ। अगर ऑर्डर पैक, शिप या डिलीवर हो चुका है, तो कैंसल का विकल्प नहीं मिल सकता और सपोर्ट/रिफंड नियम लागू होंगे।"}, "track-order": {"enQ": "How to track the order?", "enA": "Open aryanta.in, go to the side bar, open MY ORDERS and click your order item. You will see order status, delivery progress, tracking details and latest update. Keep checking the same page for new delivery updates.", "hiQ": "ऑर्डर कैसे ट्रैक करें?", "hiA": "aryanta.in खोलें, साइड बार में MY ORDERS पर जाएँ और अपना ऑर्डर खोलें। वहाँ आपको ऑर्डर स्टेटस, डिलीवरी प्रोग्रेस, ट्रैकिंग डिटेल और नया अपडेट दिखेगा। नए अपडेट के लिए वही पेज चेक करते रहें।"}, "customer-support": {"enQ": "How to contact Aryanta support?", "enA": "For any help, contact Aryanta Support from the website, email support@aryanta.in, or call 6206318133. When asking for help, keep your registered phone/email and order ID ready so support can check faster.", "hiQ": "Aryanta सपोर्ट से कैसे संपर्क करें?", "hiA": "किसी भी मदद के लिए वेबसाइट से Aryanta Support खोलें, support@aryanta.in पर ईमेल करें, या 6206318133 पर कॉल करें। सपोर्ट से बात करते समय अपना रजिस्टर्ड फोन/ईमेल और ऑर्डर ID तैयार रखें ताकि टीम जल्दी चेक कर सके।"}, "delete-account": {"enQ": "How to delete my account?", "enA": "Open aryanta.in and login to your account. Check the account/settings area for delete account option. If you cannot find it, contact Aryanta Support with your registered email/phone and request account deletion. Support may verify your identity before deleting.", "hiQ": "अपना अकाउंट कैसे डिलीट करें?", "hiA": "aryanta.in खोलकर अपने अकाउंट में लॉगिन करें। अकाउंट या सेटिंग्स में delete account विकल्प देखें। अगर विकल्प नहीं मिलता है, तो Aryanta Support से अपने रजिस्टर्ड ईमेल/फोन के साथ अकाउंट डिलीट करने की रिक्वेस्ट करें। टीम पहले आपकी पहचान वेरीफाई कर सकती है।"}, "return-refund": {"enQ": "How to return an item or request refund?", "enA": "Open MY ORDERS, select the order item and check if return/refund option is available. Submit the reason and required details. If the return window is closed or option is not showing, contact support with order ID, product photo and issue details.", "hiQ": "आइटम return या refund कैसे माँगें?", "hiA": "MY ORDERS खोलें, ऑर्डर आइटम चुनें और देखें return/refund विकल्प उपलब्ध है या नहीं। कारण और जरूरी जानकारी भरकर सबमिट करें। अगर return window बंद है या विकल्प नहीं दिख रहा, तो ऑर्डर ID, प्रोडक्ट फोटो और समस्या के साथ सपोर्ट से संपर्क करें।"}, "change-address": {"enQ": "How to change delivery address after order?", "enA": "Open MY ORDERS and check the order status. If the order is not packed or shipped, contact Aryanta Support immediately with order ID and the new address request. Once shipped, address change may not be possible.", "hiQ": "ऑर्डर के बाद delivery address कैसे बदलें?", "hiA": "MY ORDERS खोलें और ऑर्डर स्टेटस देखें। अगर ऑर्डर पैक या शिप नहीं हुआ है, तो तुरंत Aryanta Support से ऑर्डर ID और नए address की रिक्वेस्ट के साथ संपर्क करें। ऑर्डर शिप होने के बाद address बदलना संभव नहीं हो सकता।"}, "customer-refund-status": {"enQ": "How can I check refund or payment status?", "enA": "Open MY ORDERS and click the related order. If refund is started, the refund/payment status may show there. If you cannot see it, contact support with order ID, payment method and registered phone number.", "hiQ": "Refund या payment status कैसे चेक करें?", "hiA": "MY ORDERS खोलें और संबंधित ऑर्डर पर क्लिक करें। अगर refund शुरू हुआ है, तो refund/payment status वहाँ दिख सकता है। अगर status नहीं दिख रहा, तो ऑर्डर ID, payment method और रजिस्टर्ड फोन नंबर के साथ support से संपर्क करें।"}, "customer-damaged-wrong": {"enQ": "What should I do if I receive damaged or wrong item?", "enA": "Take clear photos or video of the parcel and product immediately. Open MY ORDERS and request return/support if the option is available. Share order ID, photos and issue details with support so the team can check properly.", "hiQ": "गलत या damaged item मिले तो क्या करें?", "hiA": "Parcel और product की साफ फोटो या वीडियो तुरंत लें। MY ORDERS खोलें और return/support विकल्प उपलब्ध हो तो request करें। Support को order ID, फोटो और issue details भेजें ताकि टीम सही तरीके से जांच कर सके।"}, "customer-login-help": {"enQ": "What if I cannot login to my customer account?", "enA": "Check that your phone/email and password or OTP are correct. Try refreshing the page and login again. If you still cannot login, contact support with your registered phone/email and explain the issue.", "hiQ": "Customer account में login न हो तो क्या करें?", "hiA": "पहले phone/email, password या OTP सही है या नहीं चेक करें। पेज refresh करके फिर login करें। अगर फिर भी login नहीं हो रहा, तो अपने registered phone/email के साथ support से संपर्क करें और समस्या बताएं।"}, "seller-login": {"enQ": "How to login as seller?", "enA": "Open the Aryanta Seller Page. Login with the email ID and password sent by the company on your registered mail. If you did not receive the password, open the seller page, click Forgot Pass, enter your details, complete verification, and then try again. If your application is approved, you can login. For more help call 6206318133 or mail support@aryanta.in.", "hiQ": "Seller के रूप में login कैसे करें?", "hiA": "Aryanta Seller Page खोलें। कंपनी द्वारा registered mail पर भेजे गए email ID और password से login करें। अगर password नहीं मिला है, तो seller page पर Forgot Pass खोलें, details डालें, verification पूरा करें और फिर login करें। अगर application approved है, तो आप login कर पाएंगे। अधिक मदद के लिए 6206318133 पर कॉल करें या support@aryanta.in पर mail करें।"}, "seller-products": {"enQ": "How to manage products?", "enA": "Visit your Seller Panel and open My Inventory. From there you can see all added products, edit price, stock, images and description, or delete products if needed. Keep product details clear and correct so customers understand what they are buying. For more details contact Aryanta Support or watch the video.", "hiQ": "Products कैसे manage करें?", "hiA": "Seller Panel खोलें और My Inventory में जाएँ। यहाँ आप अपने जोड़े गए products देख सकते हैं, price, stock, images और description edit कर सकते हैं, या जरूरत हो तो product delete कर सकते हैं। Product details साफ और सही रखें ताकि customer आसानी से समझ सके। अधिक मदद के लिए Aryanta Support से संपर्क करें या video देखें।"}, "seller-low-stock": {"enQ": "How to manage low stock items?", "enA": "Open Seller Panel and click Low Stock Items. This section shows products with less stock, generally below 10 quantity. You can edit the quantity directly from there and the stock updates immediately without waiting for QC again. Keep stock updated so customers do not order unavailable items.", "hiQ": "Low stock items कैसे manage करें?", "hiA": "Seller Panel खोलें और Low Stock Items पर क्लिक करें। यहाँ कम stock वाले products दिखेंगे, आमतौर पर 10 quantity से कम। आप वहीं से quantity edit कर सकते हैं और stock तुरंत update हो जाएगा, QC का इंतजार नहीं करना पड़ेगा। Stock updated रखें ताकि unavailable items का order न आए।"}, "seller-new-order": {"enQ": "How to see new order?", "enA": "Open Seller Panel and click New Orders. Here you will see new orders assigned to your store. Click Accept to accept the order. If you do not accept within 32 hours, a fine can be generated on your account. Repeating this more than 5 times may lead to seller ID suspension.", "hiQ": "New order कैसे देखें?", "hiA": "Seller Panel खोलें और New Orders पर क्लिक करें। यहाँ आपके store को मिले नए orders दिखेंगे। Order accept करने के लिए Accept दबाएँ। अगर आप 32 घंटे के अंदर accept नहीं करते, तो आपके account पर fine लग सकता है। ऐसा 5 बार से अधिक होने पर seller ID suspend हो सकती है।"}, "seller-accepted-order": {"enQ": "What to do after accepting order?", "enA": "After accepting an order, open Accepted Orders from the side bar and generate the slip/invoice. Once the slip is generated, the courier team will normally visit your pickup address within 48 hours to collect the item. After the item is delivered and settlement is completed, payment will be added to your given bank account. If you accept the order but do not generate the invoice/slip within 12 hours, a fine may be counted. Repeating this more than 5 times can lead to seller ID suspension.", "hiQ": "Order accept करने के बाद क्या करें?", "hiA": "Order accept करने के बाद side bar से Accepted Orders खोलें और slip/invoice generate करें। Slip generate होने के बाद courier team सामान्य रूप से 48 घंटे के अंदर आपके pickup address पर item लेने आएगी। Item deliver होने और settlement पूरा होने के बाद payment आपके दिए गए bank account में add होगा। अगर order accept करके 12 घंटे के अंदर invoice/slip generate नहीं किया, तो fine count हो सकता है। ऐसा 5 बार से अधिक होने पर ID suspend हो सकती है।"}, "seller-breached": {"enQ": "What is Breached in side bar?", "enA": "Breached shows orders where seller action was missed. For example, the order was not accepted on time, or the slip/invoice was not generated on time, so the order got cancelled or marked for fine. This page helps you see the product, order details and the specific fine reason.", "hiQ": "Side bar में Breached क्या है?", "hiA": "Breached में वे orders दिखते हैं जहाँ seller action समय पर नहीं हुआ। जैसे order समय पर accept नहीं किया गया, या slip/invoice समय पर generate नहीं हुआ, इसलिए order cancel या fine हुआ। यहाँ आपको product-wise fine और breach detail दिख सकती है।"}, "seller-all-orders": {"enQ": "How can I see my all orders?", "enA": "Visit Seller Panel and click Order History. You can click different options to view order groups: See All Orders shows every order, See Delivered Orders shows completed delivered orders, See Shipped Orders shows orders already shipped or picked up, See Cancelled Orders shows cancelled orders, and See Return Orders shows return or RTO related orders. Click any order to see full details.", "hiQ": "अपने सभी orders कैसे देखें?", "hiA": "Seller Panel में जाएँ और Order History पर क्लिक करें। वहाँ अलग-अलग buttons से order groups देख सकते हैं: See All Orders में सभी orders, See Delivered Orders में delivered orders, See Shipped Orders में shipped orders, See Cancelled Orders में cancelled orders और See Return Orders में return orders दिखते हैं।"}, "seller-payment-ledger": {"enQ": "How can I track my payments?", "enA": "Open Seller Panel and go to Payment Ledger. In Progress (7 Days) shows payments still under processing. Upcoming Transfers shows money expected to be transferred. Completed shows payments already settled. Fines History shows fines deducted or generated. All Ledger shows full payment record in one place.", "hiQ": "Payments कैसे track करें?", "hiA": "Seller Panel खोलें और Payment Ledger में जाएँ। In Progress (7 Days) में processing payments दिखते हैं। Upcoming Transfers में आने वाले transfer, Completed में भेजे गए payments, Fines History में fines और All Ledger में पूरी payment history दिखती है।"}, "seller-sponsored-ads": {"enQ": "What is Sponsored Ads?", "enA": "Sponsored Ads is a seller tool that can give more visibility to selected products. Sponsored products may appear higher in customer search, suggestions and discovery areas. This can help your product reach more customers and may increase orders when product price, stock and images are good.", "hiQ": "Sponsored Ads क्या है?", "hiA": "Sponsored Ads seller tool है जो selected products को ज्यादा visibility दे सकता है। Sponsored products customer search, suggestions और discovery area में ऊपर आ सकते हैं। इससे product को ज्यादा views और orders मिलने में मदद हो सकती है, लेकिन result product quality, price और customer demand पर भी depend करता है।"}, "seller-subscription": {"enQ": "What is subscription?", "enA": "Subscription gives more tools and growth features to your store. Basic/Free gives limited features with 1 free sponsored slot and limited branding changes. Growth gives 3 free sponsored ads, fine discount up to 10%, better seller growth tools, store branding access and priority dashboard tools. Pro gives fine reduction up to 20%, higher sponsored support, Pro branding, seller badge, priority support visibility and more campaign allowance. Ultra gives highest sponsored visibility, premium branding tools, best seller badge, trust tools and maximum growth features.", "hiQ": "Subscription क्या है?", "hiA": "Subscription store को extra tools और growth features देता है। Basic/Free में limited features, 1 free sponsored slot और limited branding changes मिलते हैं। Growth में 3 free sponsored ads, fine discount up to 10%, logo/banner edit limit और better seller tools मिलते हैं। Pro में fine reduction up to 20%, higher sponsored support, pro branding, seller badge, priority visibility और ज्यादा campaign allowance मिलता है। Ultra में highest sponsored visibility, premium branding tools, best seller badge, trust tools, maximum growth features और unlimited type benefits मिलते हैं।"}, "seller-subscription-history": {"enQ": "How can I see my subscription history?", "enA": "Open the side bar, click Info, then open My Subscription History. There you can see your active plan, old subscriptions, payment details, start date, end date and plan status. Use this page to manage or check your subscription record.", "hiQ": "Subscription history कैसे देखें?", "hiA": "Side bar खोलें, Info पर क्लिक करें और My Subscription History में जाएँ। वहाँ active plan, old subscriptions, payment details, start date, end date और plan status देख सकते हैं।"}, "seller-customer-qa": {"enQ": "What is Customer Q&A?", "enA": "Customer Q&A shows questions asked by customers about your products. Reply clearly and politely. Good answers can build trust, reduce confusion and improve your store branding because future customers may also read those answers.", "hiQ": "Customer Q&A क्या है?", "hiA": "Customer Q&A में customers द्वारा products पर पूछे गए questions दिखते हैं। आप उनका साफ और polite जवाब दे सकते हैं। अच्छे जवाब customer trust बढ़ाते हैं, confusion कम करते हैं और store branding में मदद करते हैं।"}, "seller-b2b-supplies": {"enQ": "What is B2B Supplies?", "enA": "B2B Supplies is a section where sellers can find packing material and business supplies for Aryanta orders. You may order items like packing bags, tape, boxes and other listed materials to pack products properly and maintain a professional delivery experience.", "hiQ": "B2B Supplies क्या है?", "hiA": "B2B Supplies में sellers Aryanta orders के लिए packing material और business supplies देख सकते हैं। जैसे packing bags, tape, boxes और अन्य सामग्री। इससे seller को सही packing material आसानी से order करने में मदद मिलती है ताकि product safe pack हो सके।"}, "seller-b2b-orders": {"enQ": "How to see my B2B order and transaction?", "enA": "Open Info from the side bar and go to My B2B Orders or B2B order history. You can see ordered item name, quantity, amount, order status, transaction details and expected delivery date. Click any B2B order to view full details.", "hiQ": "B2B order और transaction कैसे देखें?", "hiA": "Side bar से Info खोलें और My B2B Orders या B2B order history में जाएँ। वहाँ item name, quantity, amount, order status, transaction details और delivery update दिख सकते हैं।"}, "seller-admin-support": {"enQ": "How can I get help?", "enA": "Open Admin Support from the side bar. Select Issue Category, enter your callback number, write your problem clearly, and submit. If needed, you can upload images, PDF or documents by clicking Upload. Aryanta support will review the ticket and try to resolve it within 24 hours.", "hiQ": "Help कैसे लें?", "hiA": "Side bar से Admin Support खोलें। Issue Category चुनें, callback number डालें, अपनी problem साफ लिखें और submit करें। जरूरत हो तो Upload पर क्लिक करके images, PDF या documents attach करें। Team कोशिश करेगी कि ticket 24 घंटे में resolve हो जाए।"}, "seller-support-ticket": {"enQ": "How can I see my support ticket?", "enA": "Open Admin Support and click See My Ticket. Use filters to understand ticket status: All shows every ticket, Open / Review shows tickets under checking, Requires Your Reply means admin needs your response, and Resolved means the issue is closed or completed.", "hiQ": "Support ticket कैसे देखें?", "hiA": "Admin Support खोलें और See My Ticket पर क्लिक करें। Filters से status समझें: All में सभी tickets, Open / Review में checking tickets, Requires Your Reply में वे tickets जहाँ आपका जवाब चाहिए, और Resolved में पूरी हो चुकी tickets दिखती हैं।"}, "seller-profile": {"enQ": "How can I see my profile?", "enA": "Open Info from the side bar and click Profile. You can see your seller name, shop details, contact details, bank details, KYC information and other account information. Check this section regularly to make sure your details are correct.", "hiQ": "अपनी profile कैसे देखें?", "hiA": "Side bar से Info खोलें और Profile पर क्लिक करें। यहाँ seller name, shop details, contact details, bank details, KYC information और account की बाकी जानकारी देख सकते हैं।"}, "seller-bank-details": {"enQ": "How can I change my bank details?", "enA": "Open Info, go to Profile, and click Edit Bank Details. Enter the new bank account number, IFSC and required details carefully, then submit. Wrong bank details can delay your payouts, so check everything before saving.", "hiQ": "Bank details कैसे बदलें?", "hiA": "Info खोलें, Profile में जाएँ और Edit Bank Details पर क्लिक करें। नया bank account number, IFSC और जरूरी details ध्यान से भरें, फिर submit करें। गलत bank details से payment delay या fail हो सकता है।"}, "seller-files": {"enQ": "What is File in Info?", "enA": "Files in Info shows files, images or documents uploaded by Aryanta admin for sellers. You can open or download the file by clicking Download. Use it for policies, notices, packing instructions or other company documents.", "hiQ": "Info में File क्या है?", "hiA": "Info में Files section में Aryanta admin द्वारा sellers के लिए upload की गई files, images या documents दिखते हैं। Download पर क्लिक करके file download कर सकते हैं। इसका उपयोग policy, training, invoice format या important notice के लिए हो सकता है।"}, "seller-store-brand": {"enQ": "What is Store Brand in Info?", "enA": "Store Brand lets you manage your shop logo, banner and store branding. You can view uploaded branding, change logo or banner according to your plan limit, and keep your store looking professional for customers.", "hiQ": "Info में Store Brand क्या है?", "hiA": "Store Brand से आप shop logo, banner और store branding manage कर सकते हैं। Uploaded branding देख सकते हैं, plan limit के अनुसार logo/banner change कर सकते हैं और store को professional दिखा सकते हैं।"}, "seller-edit-shop-details": {"enQ": "How can I update my shop details?", "enA": "Open Info or Profile and choose the shop/business details edit option. Update shop name, address, category and contact information carefully. Correct shop details help Aryanta and customers identify your store properly.", "hiQ": "Shop details कैसे update करें?", "hiA": "Info या Profile खोलें और shop/business details edit option चुनें। Shop name, address, category और contact information सही तरीके से update करें। सही shop details customer trust और pickup process में मदद करती हैं।"}, "seller-product-rejected": {"enQ": "Why was my product rejected or not approved?", "enA": "A product may be rejected if images are unclear, price/details are wrong, required fields are missing, or the item does not follow Aryanta rules. Open My Inventory, check product status or QC reason, fix the issue and submit/update again.", "hiQ": "Product reject या approve क्यों नहीं हुआ?", "hiA": "Product reject हो सकता है अगर images clear नहीं हैं, price/details गलत हैं, required fields missing हैं, या item Aryanta rules follow नहीं करता। My Inventory में product status देखें, mistake सुधारें और दोबारा submit करें।"}, "seller-cod-online-payment": {"enQ": "How are COD and online orders handled?", "enA": "COD means the customer pays at delivery. Online orders are prepaid. You should process both order types carefully from New Orders and Accepted Orders. Payment settlement will follow Aryanta payment rules after delivery and verification.", "hiQ": "COD और online orders कैसे handle होते हैं?", "hiA": "COD में customer delivery पर payment करता है। Online order prepaid होता है। दोनों orders को New Orders और Accepted Orders से समय पर process करें। Payment settlement delivery, verification और rules के अनुसार होगा।"}, "seller-cancel-return": {"enQ": "What should I do if an order is cancelled or returned?", "enA": "Open Order History or the return/cancel filter and check the order reason. Review product, packing and dispatch timing. If you think the issue is wrong, contact Admin Support with order ID and proof.", "hiQ": "Order cancel या return हो जाए तो क्या करें?", "hiA": "Order History या return/cancel filter खोलें और reason check करें। Product, packing और dispatch timing review करें। अगर issue गलत लगता है, तो order ID और proof के साथ support ticket raise करें।"}, "seller-performance": {"enQ": "How can I improve my seller performance?", "enA": "Accept new orders on time, generate slips quickly, keep stock updated, use clear product photos, answer Customer Q&A, avoid cancellation and returns, and keep support tickets resolved. Good performance can improve trust and growth.", "hiQ": "Seller performance कैसे improve करें?", "hiA": "New orders समय पर accept करें, slip जल्दी generate करें, stock updated रखें, clear product photos लगाएँ, Customer Q&A का जवाब दें, cancellation/returns कम रखें और customer support को fast reply दें।"}, "seller-dashboard": {"enQ": "What is Dashboard?", "enA": "Dashboard gives a quick business overview. You can see today orders, monthly orders, inventory, upcoming payouts, pending questions, store rating and order trend. Use it daily to understand what needs action first.", "hiQ": "Dashboard क्या है?", "hiA": "Dashboard business overview देता है। यहाँ today orders, monthly orders, inventory, upcoming payouts, pending questions, store rating और order trend जैसी important जानकारी जल्दी दिखती है।"}, "seller-notifications": {"enQ": "How can I read notifications?", "enA": "Open Notifications from the side bar. You can see admin notices, important updates, attached links and time of message. Click the notification to read full details and open any attached link.", "hiQ": "Notifications कैसे पढ़ें?", "hiA": "Side bar से Notifications खोलें। वहाँ admin notices, important updates, attached links और message time दिखता है। पूरी detail पढ़ने के लिए notification पर क्लिक करें।"}, "seller-add-product": {"enQ": "How can I add a new product?", "enA": "Open My Inventory and use the add product option. Fill product name, price, stock, images, category, description, weight and size correctly. Submit the product and wait for QC/approval if required.", "hiQ": "New product कैसे add करें?", "hiA": "My Inventory खोलें और add product option use करें। Product name, price, stock, images, category, description, weight और size सही भरें। Product approval के लिए साफ images और सही details जरूरी हैं।"}, "seller-qc-status": {"enQ": "What is QC Pass, QC Pending and QC Cancelled?", "enA": "QC Pending means product is waiting for checking. QC Pass means product is approved and can be shown according to visibility rules. QC Cancelled or rejected means the product needs correction before it can be sold.", "hiQ": "QC Pass, QC Pending और QC Cancelled क्या है?", "hiA": "QC Pending का मतलब product checking में है। QC Pass का मतलब product approved है और visibility rules के अनुसार show हो सकता है। QC Cancelled या rejected का मतलब product में issue है और seller को details सुधारनी होंगी।"}, "seller-search-panel": {"enQ": "How can I search orders and products in seller panel?", "enA": "Use the top search bar in the seller panel. You can search by order ID, order number, buyer name, product name or SKU. Matching orders or products will appear, and you can open the correct result quickly.", "hiQ": "Seller panel में orders/products कैसे search करें?", "hiA": "Seller panel के top search bar का use करें। आप order ID, order number, buyer name, product name या SKU से search कर सकते हैं। Matching order या product दिखेगा, फिर आप उसे खोल सकते हैं।"}, "seller-export-history": {"enQ": "How can I download or export order history?", "enA": "Open Order History and use the available download/export option if shown. Export helps you keep order records, accounts and reports. If the button is not visible, contact Admin Support.", "hiQ": "Order history download/export कैसे करें?", "hiA": "Order History खोलें और अगर download/export option दिखे तो उसे use करें। Export से order records, accounts और reports रखने में मदद मिलती है। अगर button नहीं दिख रहा, तो support से पूछें।"}, "seller-return-cancel": {"enQ": "Where can I see returns and cancellations?", "enA": "Use Order History filters such as Cancelled Orders and Return Orders. You can review the product, order reference, date and reason to understand why it was cancelled or returned.", "hiQ": "Returns और cancellations कहाँ देखें?", "hiA": "Order History filters में Cancelled Orders और Return Orders खोलें। वहाँ product, order reference, date और reason देखकर समझ सकते हैं कि order क्यों cancel या return हुआ।"}, "seller-install-app": {"enQ": "How can I install the seller app?", "enA": "Open Settings and use Download PWA App or Download the App if available. On mobile Chrome, you can also use browser menu and choose Install app or Add to Home Screen. This helps you open the seller panel quickly.", "hiQ": "Seller app कैसे install करें?", "hiA": "Settings खोलें और Download PWA App या Download the App option use करें अगर उपलब्ध है। Mobile Chrome में browser menu से Install app या Add to Home Screen भी चुन सकते हैं।"}, "seller-offline-mode": {"enQ": "What is Offline Mode?", "enA": "Offline Mode temporarily hides your live products when you are not ready to take orders. Use it only when needed, and turn it off when your shop is ready again. This helps avoid order problems.", "hiQ": "Offline Mode क्या है?", "hiA": "Offline Mode आपके live products को temporarily hide करता है जब आप orders लेने के लिए ready नहीं हैं। इसे जरूरत पर ही use करें और shop ready होने पर off कर दें। इससे order problems कम होते हैं।"}, "seller-auto-accept": {"enQ": "What is Auto Accept Orders?", "enA": "Auto Accept Orders can automatically accept eligible new orders based on system rules. Use it only when you can pack and generate slips on time, because accepted orders still need timely processing.", "hiQ": "Auto Accept Orders क्या है?", "hiA": "Auto Accept Orders system rules के अनुसार eligible new orders को automatically accept कर सकता है। इसे तभी use करें जब आप समय पर packing और slip generate कर सकें, क्योंकि accepted order को फिर भी timely process करना होता है।"}, "seller-vacation-mode": {"enQ": "What is Vacation Mode?", "enA": "Vacation Mode is for the time when you are temporarily unavailable. It can help adjust selling or delivery handling so customers and Aryanta know you are away for some time.", "hiQ": "Vacation Mode क्या है?", "hiA": "Vacation Mode उस समय के लिए है जब आप कुछ समय के लिए available नहीं हैं। इससे selling या delivery handling adjust हो सकती है ताकि customers और Aryanta को पता रहे कि आप temporarily away हैं।"}, "seller-2fa-security": {"enQ": "What is 2FA Security?", "enA": "2FA Security adds OTP verification during login. It protects your seller account from unauthorized access. Keep your email safe and do not share OTP with anyone.", "hiQ": "2FA Security क्या है?", "hiA": "2FA Security login के समय OTP verification add करता है। यह seller account को unauthorized access से बचाता है। अपना email safe रखें और OTP किसी से share न करें।"}, "seller-sms-alerts": {"enQ": "What are SMS Alerts?", "enA": "SMS Alerts are important updates sent to your phone, such as order, support or account alerts. Keep your registered phone number correct so you do not miss important information.", "hiQ": "SMS Alerts क्या हैं?", "hiA": "SMS Alerts आपके phone पर important updates भेजते हैं, जैसे order, support या account alerts। अपना registered phone number सही रखें ताकि जरूरी information miss न हो।"}, "seller-company-details-policy": {"enQ": "Where can I see company details and policy?", "enA": "Open Info from the side bar. You can check Company Details for Aryanta support/profile information and Policy for seller rules, account rules and important company instructions.", "hiQ": "Company details और policy कहाँ देखें?", "hiA": "Side bar से Info खोलें। वहाँ Company Details में Aryanta support/profile information और Policy में seller rules, account rules और company instructions देख सकते हैं।"}, "seller-kyc-gst-alert": {"enQ": "What should I do when KYC or GST alert is showing?", "enA": "If a KYC/GST alert is showing, open Profile or Info and upload the required Aadhaar, PAN, GST or business documents. Check that the images are clear and the details match your seller account. Some features may stay locked until verification is completed.", "hiQ": "KYC या GST alert दिखे तो क्या करें?", "hiA": "अगर KYC/GST alert दिख रहा है, तो Profile या Info खोलकर Aadhaar, PAN, GST या business documents upload करें। Images clear रखें और details seller account से match होनी चाहिए। Verification पूरा होने तक कुछ features locked रह सकते हैं।"}, "seller-store-rating-trend": {"enQ": "How can I understand store rating and 7-day order trend?", "enA": "Dashboard shows Store Rating and 7-Day Order Trend. Store Rating tells how customers are reviewing your store/products. The 7-day trend shows recent order movement, cancellation and return pattern. Use it to improve packing, price, stock and customer replies.", "hiQ": "Store rating और 7-day order trend कैसे समझें?", "hiA": "Dashboard में Store Rating और 7-Day Order Trend दिखता है। Store Rating बताता है customers आपके store/products को कैसे review कर रहे हैं। 7-day trend recent orders, cancellation और return pattern दिखाता है। इसे packing, price, stock और customer replies सुधारने के लिए use करें।"}, "seller-upcoming-payouts-card": {"enQ": "What is Upcoming Payouts on dashboard?", "enA": "Upcoming Payouts shows the payment amount that may be transferred after order delivery, verification and settlement. It is a quick summary only. For full breakup, open Payment Ledger and check In Progress, Upcoming Transfers, Completed and Fines History.", "hiQ": "Dashboard में Upcoming Payouts क्या है?", "hiA": "Upcoming Payouts वह amount दिखाता है जो order delivery, verification और settlement के बाद transfer हो सकता है। यह quick summary है। Full breakup के लिए Payment Ledger खोलें और In Progress, Upcoming Transfers, Completed और Fines History देखें।"}, "seller-pending-questions-card": {"enQ": "What is Total Pending Questions on dashboard?", "enA": "Total Pending Questions shows customer questions that still need your reply. Open Customer Q&A and answer them in simple words. Fast replies can improve trust and reduce customer hesitation before purchase.", "hiQ": "Dashboard में Total Pending Questions क्या है?", "hiA": "Total Pending Questions customers के वे questions दिखाता है जिनका जवाब अभी बाकी है। Customer Q&A खोलें और simple words में answer दें। Fast replies trust बढ़ाते हैं और customer hesitation कम करते हैं।"}, "seller-product-health-tool": {"enQ": "What is Product Health or Inventory Performance tool?", "enA": "Product Health or Inventory Performance helps you understand product performance using stock, sold quantity, returns and cancellations. Use it to find strong products, weak products and products that need better price, image or stock planning.", "hiQ": "Product Health या Inventory Performance tool क्या है?", "hiA": "Product Health या Inventory Performance आपको stock, sold quantity, returns और cancellations के आधार पर product performance समझने में मदद करता है। इससे strong products, weak products और जिन products में price, image या stock improvement चाहिए उन्हें पहचान सकते हैं।"}, "seller-ultra-price-boost": {"enQ": "What is Ultra Price Boost Suggestion?", "enA": "Ultra Price Boost Suggestion gives pricing ideas using sales speed, return risk and current price. It is only a suggestion. Always check your margin, packing cost and market price before changing product price.", "hiQ": "Ultra Price Boost Suggestion क्या है?", "hiA": "Ultra Price Boost Suggestion sales speed, return risk और current price देखकर pricing ideas देता है। यह केवल suggestion है। Price बदलने से पहले अपना margin, packing cost और market price जरूर check करें।"}, "seller-search-suggestion-setting": {"enQ": "What is Search Suggestions setting?", "enA": "Search Suggestions controls whether the seller panel shows quick search results while typing. If enabled, matching orders/products appear faster. If disabled, you may still search manually but suggestions may not show.", "hiQ": "Search Suggestions setting क्या है?", "hiA": "Search Suggestions control करता है कि typing करते समय seller panel quick search results दिखाए या नहीं। Enabled होने पर matching orders/products जल्दी दिखते हैं। Disabled होने पर manual search कर सकते हैं लेकिन suggestions नहीं दिख सकते।"}, "seller-support-attachments": {"enQ": "Can I attach images or documents in Admin Support?", "enA": "Yes. While creating an Admin Support ticket, click Upload and attach screenshots, product photos, PDF, invoice or any document related to the issue. Attachments help admin understand the problem faster and resolve it better.", "hiQ": "Admin Support में images/documents attach कर सकते हैं?", "hiA": "हाँ। Admin Support ticket बनाते समय Upload पर क्लिक करके screenshots, product photos, PDF, invoice या issue से जुड़ा document attach कर सकते हैं। Attachments से admin problem जल्दी और बेहतर समझ सकता है।"}, "seller-b2b-delivery-eta": {"enQ": "How can I check B2B supply delivery date?", "enA": "Open Info and go to My B2B Orders. Click the B2B order to open full details. You can see item, quantity, amount, status and expected delivery date if available.", "hiQ": "B2B supply delivery date कैसे check करें?", "hiA": "Info खोलें और My B2B Orders में जाएँ। B2B order पर क्लिक करें। वहाँ item, quantity, amount, status और expected delivery date उपलब्ध होने पर दिख सकती है।"}, "seller-account-restricted": {"enQ": "What should I do if my account is restricted, blocked or suspended?", "enA": "If your seller panel shows restricted, blocked or suspended status, read the message carefully. Some restrictions may be temporary and some may need admin review. Contact support with your registered email, seller ID, shop name and issue details.", "hiQ": "Account restricted, blocked या suspended हो तो क्या करें?", "hiA": "अगर seller panel में restricted, blocked या suspended status दिखता है, तो message ध्यान से पढ़ें। कुछ restrictions temporary हो सकती हैं और कुछ में admin review चाहिए। Registered email, seller ID, shop name और issue details के साथ support से संपर्क करें।"}};
+    window.aryantaHelpLang = "en";
+    window.aryantaActiveSpeechButton = null;
+    window.aryantaActiveUtterance = null;
+
+    function arySafeStorageGet(key) {
+      try { return window.localStorage ? localStorage.getItem(key) : null; } catch (e) { return null; }
+    }
+
+    function arySafeStorageSet(key, value) {
+      try { if (window.localStorage) localStorage.setItem(key, value); } catch (e) {}
+    }
+
+    window.openLanguageModal = function() {
+      const modal = document.getElementById("languageModal");
+      if (modal) modal.classList.add("show");
+    };
+
+    window.closeLanguageModal = function() {
+      const modal = document.getElementById("languageModal");
+      if (modal) modal.classList.remove("show");
+    };
+
+    function aryNormalSpeakLabel() {
+      return window.aryantaHelpLang === "hi" ? "🔊 सुनें" : "🔊 Speak";
+    }
+
+    function aryStopSpeakLabel() {
+      return window.aryantaHelpLang === "hi" ? "⏹ आवाज़ बंद करें" : "⏹ Stop Speak";
+    }
+
+    function aryResetSpeakButtons() {
+      document.querySelectorAll(".speak-btn").forEach(btn => {
+        btn.classList.remove("speaking");
+        btn.textContent = aryNormalSpeakLabel();
+      });
+      window.aryantaActiveSpeechButton = null;
+      window.aryantaActiveUtterance = null;
+    }
+
+    window.stopHelpSpeech = function() {
+      try {
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+      } catch (e) {}
+      aryResetSpeakButtons();
+    };
+
+    function aryPickVoice(lang) {
+      if (!window.speechSynthesis) return null;
+      const voices = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
+      if (!voices || !voices.length) return null;
+      const isHindi = lang === "hi";
+      const langCode = isHindi ? "hi-IN" : "en-IN";
+      const preferredNames = isHindi
+        ? [/hi[-_]?IN/i, /Hindi/i, /हिन्दी/i, /Google.*Hindi/i, /female/i, /Kalpana/i, /Heera/i]
+        : [/en[-_]?IN/i, /English.*India/i, /India.*English/i, /Ravi/i, /Karan/i, /male/i, /Google.*English/i];
+      for (const pattern of preferredNames) {
+        const found = voices.find(v => pattern.test(v.lang || "") || pattern.test(v.name || ""));
+        if (found) return found;
+      }
+      return voices.find(v => String(v.lang || "").toLowerCase().startsWith(langCode.toLowerCase().slice(0,2))) || voices[0];
+    }
+
+    function aryGetAnswerTextForButton(button) {
+      const helpAnswer = button ? button.closest(".help-a") : null;
+      const answerText = helpAnswer ? helpAnswer.querySelector(".answer-text") : null;
+      if (!answerText) return "";
+      const item = button.closest(".help-item");
+      const id = item ? item.id : "";
+      const data = window.ARYANTA_HELP_TRANSLATIONS && window.ARYANTA_HELP_TRANSLATIONS[id];
+      if (data) return window.aryantaHelpLang === "hi" ? (data.hiA || answerText.textContent) : (data.enA || answerText.textContent);
+      return answerText.textContent || "";
+    }
+
+    window.speakHelpAnswer = function(button) {
+      if (!button) return;
+      if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === "undefined") {
+        showToast(window.aryantaHelpLang === "hi" ? "इस browser में voice support नहीं है" : "Voice is not supported in this browser");
+        return;
+      }
+
+      if (window.aryantaActiveSpeechButton === button && button.classList.contains("speaking")) {
+        window.stopHelpSpeech();
+        return;
+      }
+
+      window.stopHelpSpeech();
+      const text = aryGetAnswerTextForButton(button).replace(/\s+/g, " ").trim();
+      if (!text) {
+        showToast(window.aryantaHelpLang === "hi" ? "बोलने के लिए text नहीं मिला" : "No answer text found");
+        return;
+      }
+
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = window.aryantaHelpLang === "hi" ? "hi-IN" : "en-IN";
+      utter.rate = window.aryantaHelpLang === "hi" ? 0.9 : 0.95;
+      utter.pitch = window.aryantaHelpLang === "hi" ? 1.08 : 0.95;
+      const voice = aryPickVoice(window.aryantaHelpLang);
+      if (voice) utter.voice = voice;
+
+      button.classList.add("speaking");
+      button.textContent = aryStopSpeakLabel();
+      window.aryantaActiveSpeechButton = button;
+      window.aryantaActiveUtterance = utter;
+
+      utter.onend = function() { aryResetSpeakButtons(); };
+      utter.onerror = function() { aryResetSpeakButtons(); };
+
+      try {
+        window.speechSynthesis.speak(utter);
+        setTimeout(() => {
+          try {
+            if (window.speechSynthesis && window.speechSynthesis.paused) window.speechSynthesis.resume();
+          } catch (e) {}
+        }, 250);
+      } catch (e) {
+        aryResetSpeakButtons();
+        showToast(window.aryantaHelpLang === "hi" ? "Voice चलाने में समस्या हुई" : "Could not start voice");
+      }
+    };
+
+    window.applyHelpLanguage = function() {
+      const lang = window.aryantaHelpLang === "hi" ? "hi" : "en";
+      document.documentElement.lang = lang === "hi" ? "hi" : "en";
+      const label = document.getElementById("activeLangLabel");
+      if (label) label.textContent = lang === "hi" ? "हिंदी" : "English";
+
+      document.querySelectorAll(".help-item").forEach(item => {
+        const data = window.ARYANTA_HELP_TRANSLATIONS ? window.ARYANTA_HELP_TRANSLATIONS[item.id] : null;
+        const q = item.querySelector(".q-label") || item.querySelector(".help-q-left");
+        const a = item.querySelector(".answer-text");
+        if (data && q) q.textContent = lang === "hi" ? (data.hiQ || data.enQ) : data.enQ;
+        if (data && a) a.textContent = lang === "hi" ? (data.hiA || data.enA) : data.enA;
+      });
+
+      document.querySelectorAll(".speak-btn").forEach(btn => {
+        if (!btn.classList.contains("speaking")) btn.textContent = aryNormalSpeakLabel();
+      });
+
+      const customerInput = document.getElementById("customerFaqSearch");
+      const sellerInput = document.getElementById("sellerFaqSearch");
+      if (customerInput) customerInput.placeholder = lang === "hi" ? "Customer help search करें..." : "Search customer help...";
+      if (sellerInput) sellerInput.placeholder = lang === "hi" ? "Seller help search करें..." : "Search seller help...";
+      filterHelpItems("customer");
+      filterHelpItems("seller");
+    };
+
+    window.setHelpLanguage = function(lang) {
+      window.aryantaHelpLang = lang === "hi" ? "hi" : "en";
+      arySafeStorageSet("aryantaHelpLanguage", window.aryantaHelpLang);
+      window.stopHelpSpeech();
+      window.applyHelpLanguage();
+      window.closeLanguageModal();
+      showToast(window.aryantaHelpLang === "hi" ? "भाषा हिंदी कर दी गई" : "Language set to English");
+    };
+
+    window.initLanguageChoice = function() {
+      const saved = arySafeStorageGet("aryantaHelpLanguage");
+      window.aryantaHelpLang = saved === "hi" ? "hi" : "en";
+      window.applyHelpLanguage();
+      if (!saved) {
+        setTimeout(() => window.openLanguageModal(), 120);
+      }
+      if (window.speechSynthesis && window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = function() { window.speechSynthesis.getVoices(); };
+      }
+    };
+
+
+    function getHelpItemsByScope(scope) {
+      const pageId = scope === "customer" ? "customerPage" : "sellerPage";
+      const page = document.getElementById(pageId);
+      return page ? Array.from(page.querySelectorAll(".help-item")) : [];
+    }
+
+    function getHelpQuestion(item) {
+      const q = item.querySelector(".q-label") || item.querySelector(".help-q-left");
+      return q ? q.textContent.replace(/\s+/g, " ").trim() : "Help question";
+    }
+
+    function getHelpSearchText(item) {
+      const id = item ? item.id : "";
+      const data = window.ARYANTA_HELP_TRANSLATIONS && window.ARYANTA_HELP_TRANSLATIONS[id];
+      const dictText = data ? [data.enQ, data.hiQ, data.enA, data.hiA].join(" ") : "";
+      return (item.textContent + " " + dictText).toLowerCase();
+    }
+
+    function renderHelpSuggestions(scope) {
+      const box = document.getElementById(scope + "FaqSuggestions");
+      if (box) {
+        box.classList.remove("show");
+        box.innerHTML = "";
+      }
+    }
+
+    function showHelpSuggestions(scope) {
+      renderHelpSuggestions(scope);
+    }
+
+    function filterHelpItems(scope) {
+      const input = document.getElementById(scope + "FaqSearch");
+      const empty = document.getElementById(scope + "FaqEmpty");
+      const count = document.getElementById(scope + "FaqCount");
+      const panel = input ? input.closest(".faq-search-panel") : null;
+      const val = input ? input.value.toLowerCase().trim() : "";
+      const items = getHelpItemsByScope(scope);
+      let visible = [];
+
+      items.forEach(item => {
+        item.classList.remove("search-jumped");
+        const match = !val || getHelpSearchText(item).includes(val);
+        item.classList.toggle("search-hidden", !match);
+        if (match) visible.push(item);
+      });
+
+      if (panel) panel.classList.toggle("search-active", !!val);
+      if (empty) empty.classList.toggle("show", !!val && visible.length === 0);
+      if (count) {
+        if (!val) {
+          count.classList.remove("show");
+          count.textContent = "";
+        } else if (visible.length) {
+          count.classList.add("show");
+          count.textContent = `${visible.length} matching answer${visible.length > 1 ? "s" : ""} found. Press Enter or Search to open the best answer.`;
+        } else {
+          count.classList.remove("show");
+          count.textContent = "";
+        }
+      }
+      renderHelpSuggestions(scope);
+    }
+
+    function getVisibleHelpMatches(scope) {
+      return getHelpItemsByScope(scope).filter(item => !item.classList.contains("search-hidden"));
+    }
+
+    function openBestSearchMatch(scope) {
+      filterHelpItems(scope);
+      const input = document.getElementById(scope + "FaqSearch");
+      const val = input ? input.value.trim() : "";
+      if (!val) {
+        showToast("Type something to search");
+        return;
+      }
+      const matches = getVisibleHelpMatches(scope);
+      if (!matches.length) {
+        showToast("No matching answer found");
+        return;
+      }
+      openHelpTarget(matches[0].id);
+      matches[0].classList.add("search-jumped");
+      setTimeout(() => matches[0].classList.remove("search-jumped"), 1600);
+    }
+
+    function handleHelpSearchKey(event, scope) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        openBestSearchMatch(scope);
+      }
+    }
+
+    function clearHelpSearch(scope) {
+      const input = document.getElementById(scope + "FaqSearch");
+      const empty = document.getElementById(scope + "FaqEmpty");
+      const suggestions = document.getElementById(scope + "FaqSuggestions");
+      const count = document.getElementById(scope + "FaqCount");
+      const panel = input ? input.closest(".faq-search-panel") : null;
+      if (input) input.value = "";
+      getHelpItemsByScope(scope).forEach(item => {
+        item.classList.remove("search-hidden");
+        item.classList.remove("search-jumped");
+      });
+      if (panel) panel.classList.remove("search-active");
+      if (empty) empty.classList.remove("show");
+      if (count) { count.classList.remove("show"); count.textContent = ""; }
+      if (suggestions) {
+        suggestions.classList.remove("show");
+        suggestions.innerHTML = "";
+      }
+    }
+
+    function openHelpTarget(id) {
+      const target = document.getElementById(id);
+      if (!target) return;
+
+      if (target.closest("#customerPage")) showPage("customer");
+      else if (target.closest("#applyPage")) showPage("apply");
+      else showPage("seller");
+
+      setTimeout(() => {
+        document.querySelectorAll(".help-item").forEach(item => item.classList.remove("open"));
+        target.classList.remove("search-hidden");
+        target.classList.add("open");
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        try { history.replaceState(null, "", "#" + id); } catch(e) { location.hash = id; }
+      }, 230);
+    }
+
+    function openByHash() {
+      const hash = location.hash.replace("#", "");
+      if (!hash) return;
+
+      if (hash === "customer") {
+        showPage("customer");
+        return;
+      }
+
+      if (hash === "apply") {
+        showPage("apply");
+        return;
+      }
+
+      if (hash === "seller") {
+        showPage("seller");
+        return;
+      }
+
+      if (document.getElementById(hash)) {
+        openHelpTarget(hash);
+      }
+    }
+
+    window.addEventListener("load", function(){ if (typeof initLanguageChoice === "function") initLanguageChoice(); if (typeof openByHash === "function") openByHash(); });
+    window.addEventListener("hashchange", openByHash);
+  </script>
+</body>
+</html>
