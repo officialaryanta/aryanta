@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Aryanta Secure Checkout</title>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;font-family:'Inter',sans-serif;margin:0;padding:0}
+body{background:#0f172a;color:#0f172a;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;overflow-x:hidden}
+.checkout-container{width:100%;max-width:480px;background:#ffffff;border-radius:32px;box-shadow:0 24px 64px rgba(0,0,0,0.4);overflow:hidden;position:relative;z-index:10}
+.header{background:#ffffff;padding:40px 32px 24px;text-align:center;position:relative;border-bottom:1px solid #f1f5f9}
+.logo-container{width:80px;height:80px;margin:0 auto 20px;border-radius:24px;overflow:hidden;box-shadow:0 12px 24px rgba(15,23,42,0.12);border:2px solid #f8fafc}
+.logo-container img{width:100%;height:100%;object-fit:cover}
+.header h2{font-size:24px;font-weight:800;color:#0f172a;letter-spacing:-0.5px;margin-bottom:8px}
+.header .badge{position:absolute;top:24px;right:24px;background:#fef08a;color:#854d0e;padding:6px 12px;border-radius:12px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px}
+.amount-box{text-align:center;padding:32px 24px;background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%)}
+.amount-box .label{font-size:13px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:1.5px}
+.amount-box .amount{font-size:56px;font-weight:900;color:#0f172a;margin-top:4px;letter-spacing:-2px;line-height:1}
+.details{padding:0 32px 32px}
+.detail-row{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #f1f5f9;font-size:14px}
+.detail-row:last-child{border-bottom:none}
+.detail-row .d-label{color:#64748b;font-weight:600}
+.detail-row .d-value{font-weight:800;color:#0f172a;text-align:right;max-width:65%;word-break:break-all}
+.actions{padding:24px 32px 32px;background:#ffffff;border-top:1px solid #f1f5f9}
+.actions-title{font-size:12px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:20px;text-align:center}
+.method-btn{width:100%;background:#ffffff;border:2px solid #e2e8f0;border-radius:20px;padding:20px;margin-bottom:16px;cursor:pointer;transition:all 0.3s cubic-bezier(0.4,0,0.2,1);position:relative;overflow:hidden;text-align:left;display:flex;flex-direction:column}
+.method-btn:hover{border-color:#0f172a;box-shadow:0 8px 24px rgba(15,23,42,0.08);transform:translateY(-2px)}
+.method-main{display:flex;align-items:center;gap:16px;font-size:18px;font-weight:800;color:#0f172a}
+.method-icon{width:40px;height:40px;border-radius:12px;background:#f8fafc;display:flex;align-items:center;justify-content:center;color:#0f172a}
+.method-sub-icons{display:flex;gap:8px;margin-top:16px;padding-top:16px;border-top:1px dashed #e2e8f0}
+.sub-icon{height:24px;border-radius:6px;background:#f1f5f9;padding:4px 8px;display:flex;align-items:center;font-size:11px;font-weight:700;color:#64748b;gap:4px}
+.sub-icon svg{width:14px;height:14px}
+.sheet-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity 0.4s ease;z-index:40}
+.sheet-overlay.active{opacity:1;pointer-events:auto}
+.sheet{position:fixed;bottom:0;left:50%;transform:translate(-50%,100%);width:100%;max-width:520px;background:#ffffff;border-radius:32px 32px 0 0;transition:transform 0.5s cubic-bezier(0.32,0.72,0,1);z-index:50;padding:32px;box-shadow:0 -20px 40px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto}
+.sheet.active{transform:translate(-50%,0)}
+.sheet-indicator{width:48px;height:6px;background:#e2e8f0;border-radius:3px;margin:0 auto 24px}
+.sheet-title{font-size:24px;font-weight:900;color:#0f172a;margin-bottom:24px;text-align:center}
+.upi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+.upi-app-btn{display:flex;flex-direction:column;align-items:center;gap:12px;background:#f8fafc;padding:20px 12px;border-radius:20px;border:2px solid transparent;cursor:pointer;transition:all 0.2s}
+.upi-app-btn:hover{border-color:#0f172a;background:#ffffff;transform:translateY(-2px)}
+.upi-app-btn img{width:48px;height:48px;border-radius:12px}
+.upi-app-btn span{font-size:13px;font-weight:700;color:#0f172a}
+.qr-container{text-align:center;padding:32px;background:#f8fafc;border-radius:24px;border:2px dashed #cbd5e1;margin-bottom:24px}
+.qr-placeholder{width:200px;height:200px;background:#ffffff;margin:0 auto 16px;border-radius:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,0.06);position:relative;overflow:hidden}
+.qr-placeholder::after{content:'';position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.8),transparent);animation:scan 2s infinite}
+@keyframes scan{100%{left:200%}}
+.input-group{margin-bottom:20px}
+.input-group label{display:block;font-size:13px;font-weight:800;color:#475569;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+.input-field{width:100%;background:#f8fafc;border:2px solid #e2e8f0;border-radius:16px;padding:16px 20px;font-size:16px;font-weight:600;color:#0f172a;transition:all 0.2s;outline:none}
+.input-field:focus{border-color:#0f172a;background:#ffffff;box-shadow:0 0 0 4px rgba(15,23,42,0.05)}
+.row-inputs{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.pay-submit-btn{width:100%;background:#0f172a;color:#ffffff;border:none;border-radius:16px;padding:20px;font-size:18px;font-weight:900;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:12px;margin-top:16px}
+.pay-submit-btn:hover{background:#1e293b;transform:translateY(-2px);box-shadow:0 12px 24px rgba(15,23,42,0.2)}
+.bank-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.bank-btn{padding:16px;background:#f8fafc;border:2px solid #e2e8f0;border-radius:16px;font-weight:700;font-size:14px;color:#0f172a;cursor:pointer;text-align:center;transition:all 0.2s}
+.bank-btn:hover{border-color:#0f172a;background:#ffffff}
+.status-area{padding:40px;text-align:center;background:#ffffff;border-radius:32px}
+.error{background:#fef2f2;color:#991b1b;border:2px solid #fecaca;padding:20px;border-radius:20px;font-weight:700;font-size:15px;margin-bottom:20px}
+.ok{background:#f0fdf4;color:#166534;border:2px solid #bbf7d0;padding:24px;border-radius:20px;font-weight:800;font-size:16px;margin-bottom:20px}
+.spinner{width:48px;height:48px;border:4px solid #f1f5f9;border-top-color:#0f172a;border-radius:50%;animation:spin 0.8s cubic-bezier(0.4,0,0.2,1) infinite;margin:0 auto 24px}
+@keyframes spin{to{transform:rotate(360deg)}}
+svg.icon{width:24px;height:24px;fill:currentColor}
+</style>
+</head>
+<body>
+<div class="checkout-container" id="main-container">
+  <div class="header">
+    <div class="logo-container">
+      <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta">
+    </div>
+    <h2>Secure Checkout</h2>
+    <div id="mode-badge"></div>
+  </div>
+  <div id="status" class="status-area">
+    <div class="spinner"></div>
+    <p style="color:#64748b;font-weight:700;font-size:15px;">Initializing secure connection...</p>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="overlay" onclick="closeSheets()"></div>
+
+<div class="sheet" id="upi-sheet">
+  <div class="sheet-indicator"></div>
+  <h3 class="sheet-title">Pay with UPI</h3>
+  <div id="upi-dynamic-content"></div>
+</div>
+
+<div class="sheet" id="card-sheet">
+  <div class="sheet-indicator"></div>
+  <h3 class="sheet-title">Enter Card Details</h3>
+  <div class="input-group">
+    <label>Card Number</label>
+    <input type="text" class="input-field" placeholder="0000 0000 0000 0000" maxlength="19" id="card-num" oninput="formatCard(this)">
+  </div>
+  <div class="row-inputs">
+    <div class="input-group">
+      <label>Expiry (MM/YY)</label>
+      <input type="text" class="input-field" placeholder="MM/YY" maxlength="5" id="card-exp" oninput="formatExp(this)">
+    </div>
+    <div class="input-group">
+      <label>CVV</label>
+      <input type="password" class="input-field" placeholder="123" maxlength="4" id="card-cvv">
+    </div>
+  </div>
+  <div class="input-group">
+    <label>Cardholder Name</label>
+    <input type="text" class="input-field" placeholder="Name on card" id="card-name">
+  </div>
+  <button class="pay-submit-btn" onclick="processCustomPay('card')">
+    <svg class="icon" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+    Proceed Securely
+  </button>
+</div>
+
+<div class="sheet" id="nb-sheet">
+  <div class="sheet-indicator"></div>
+  <h3 class="sheet-title">Select Bank</h3>
+  <div class="bank-grid">
+    <div class="bank-btn" onclick="processCustomPay('netbanking')">SBI</div>
+    <div class="bank-btn" onclick="processCustomPay('netbanking')">HDFC Bank</div>
+    <div class="bank-btn" onclick="processCustomPay('netbanking')">ICICI Bank</div>
+    <div class="bank-btn" onclick="processCustomPay('netbanking')">Axis Bank</div>
+    <div class="bank-btn" onclick="processCustomPay('netbanking')">Kotak Bank</div>
+    <div class="bank-btn" onclick="processCustomPay('netbanking')">Other Banks...</div>
+  </div>
+</div>
+
+<script>
+const API_BASE_URL='https://rough-field-c679.official-aryanta.workers.dev';
+let db=null,linkDoc=null,API_KEYS={RAZORPAY:''};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+function idFromPath(){
+  const qs=new URLSearchParams(location.search).get('id');
+  if(qs)return decodeURIComponent(qs);
+  const parts=location.pathname.split('/').filter(Boolean);
+  const last=parts[parts.length-1]||'';
+  return last.toLowerCase().includes('payment')?'':decodeURIComponent(last);
+}
+function show(html){$('status').outerHTML=`<div id="status" class="status-area">${html}</div>`;}
+function expired(d){return!d||!d.expiresAt||new Date(d.expiresAt).getTime()<=Date.now();}
+
+const svgUPI=`<svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-4H7v-2h4v6zm4 0h-2v-6h2v6z"/></svg>`;
+const svgCard=`<svg class="icon" viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>`;
+const svgBank=`<svg class="icon" viewBox="0 0 24 24"><path d="M12 3L1 9h22L12 3zm-9 8h2v8H3v-8zm6 0h2v8H9v-8zm6 0h2v8h-2v-8zm6 0h2v8h-2v-8zM2 21h20v2H2v-2z"/></svg>`;
+
+async function boot(){
+  try{
+    const keys=await fetch(API_BASE_URL+'/get-api-keys').then(r=>r.json());
+    API_KEYS.RAZORPAY=keys.razorpayKey||'';
+    if(keys.firebaseConfig&&!firebase.apps.length)firebase.initializeApp(keys.firebaseConfig);
+    db=firebase.firestore();
+    try{db.settings({experimentalAutoDetectLongPolling:true,useFetchStreams:false,merge:true});}catch(e){}
+    await loadLink();
+  }catch(e){
+    show('<div class="error">Connection failed. Check your internet.</div><button class="pay-submit-btn" onclick="location.reload()">Retry Connection</button>');
+  }
+}
+
+async function loadLink(){
+  const id=idFromPath();
+  if(!id)return show('<div class="error">Payment ID is missing.</div>');
+  const snap=await db.collection('payment_links').doc(id).get();
+  if(!snap.exists)return show('<div class="error">Invalid Payment ID.</div>');
+  linkDoc={id:snap.id,...snap.data()};
+  if(expired(linkDoc)&&!['paid','success','completed'].includes(String(linkDoc.status||'').toLowerCase())){
+    await db.collection('payment_links').doc(id).set({status:'expired',expiredAt:new Date().toISOString()},{merge:true}).catch(()=>{});
+    return show('<div class="error">This payment link has expired.</div>');
+  }
+  const st=String(linkDoc.status||'created').toLowerCase();
+  if(['paid','success','completed'].includes(st))return show('<div class="ok">Payment Successful! ✓<br><br>Return to seller panel and click Reboot.</div>');
+  if(['failed','cancelled','canceled','replaced','expired'].includes(st))return show('<div class="error">This link is inactive or failed.</div>');
+  renderPay();
+}
+
+function renderPay(){
+  const d=linkDoc,p=d.payload||{};
+  let isDemo=String(d.mode).toLowerCase()==='test'||String(d.isDemo)==='true';
+  let finalAmount=isDemo?1:Number(d.amount||0);
+  if(isDemo)$('mode-badge').innerHTML='<span class="badge">TEST MODE</span>';
+  const shopName=p.shopName||d.sellerShopName||'Aryanta Seller';
+  const html=`
+    <div class="amount-box">
+      <div class="label">Amount to Pay</div>
+      <div class="amount">₹${finalAmount.toLocaleString('en-IN')}</div>
+    </div>
+    <div class="details">
+      <div class="detail-row"><span class="d-label">Shop Name</span><span class="d-value">${esc(shopName)}</span></div>
+      <div class="detail-row"><span class="d-label">Email</span><span class="d-value">${esc(d.sellerEmail||'')}</span></div>
+      <div class="detail-row"><span class="d-label">Phone</span><span class="d-value">${esc(d.sellerPhone||'')}</span></div>
+      <div class="detail-row"><span class="d-label">UID</span><span class="d-value" style="font-family:monospace;font-size:11px">${esc(d.id||'')}</span></div>
+    </div>
+    <div class="actions">
+      <div class="actions-title">Select Payment Method</div>
+      <button class="method-btn" onclick="openSheet('upi')">
+        <div class="method-main">
+          <div class="method-icon">${svgUPI}</div>
+          Pay with UPI
+        </div>
+        <div class="method-sub-icons">
+          <div class="sub-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-4H7v-2h4v6zm4 0h-2v-6h2v6z"/></svg> GPay</div>
+          <div class="sub-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-4H7v-2h4v6zm4 0h-2v-6h2v6z"/></svg> PhonePe</div>
+          <div class="sub-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-4H7v-2h4v6zm4 0h-2v-6h2v6z"/></svg> Paytm</div>
+        </div>
+      </button>
+      <button class="method-btn" onclick="openSheet('card')">
+        <div class="method-main">
+          <div class="method-icon">${svgCard}</div>
+          Pay with Card
+        </div>
+      </button>
+      <button class="method-btn" onclick="openSheet('nb')">
+        <div class="method-main">
+          <div class="method-icon">${svgBank}</div>
+          Net Banking
+        </div>
+      </button>
+    </div>
+  `;
+  $('status').outerHTML=`<div id="status">${html}</div>`;
+}
+
+function openSheet(type){
+  $('overlay').classList.add('active');
+  if(type==='upi'){
+    buildUpiSheet();
+    $('upi-sheet').classList.add('active');
+  }else if(type==='card'){
+    $('card-sheet').classList.add('active');
+  }else if(type==='nb'){
+    $('nb-sheet').classList.add('active');
+  }
+}
+
+function closeSheets(){
+  $('overlay').classList.remove('active');
+  document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('active'));
+}
+
+function buildUpiSheet(){
+  const isDesktop=window.innerWidth>768;
+  const content=$('upi-dynamic-content');
+  if(isDesktop){
+    content.innerHTML=`
+      <div class="qr-container">
+        <div class="qr-placeholder"><svg style="width:100px;height:100px;opacity:0.2" viewBox="0 0 24 24"><path d="M4 4h6v6H4zm2 2v2h2V6zm8-2h6v6h-6zm2 2v2h2V6zM4 14h6v6H4zm2 2v2h2v-2zm10-2h2v2h-2zm-2 2h2v2h-2zm2 2h2v2h-2zm2-4h2v6h-2z"/></svg></div>
+        <h4 style="font-size:18px;font-weight:800;color:#0f172a;margin-bottom:8px">Scan QR Code</h4>
+        <p style="font-size:13px;color:#64748b;font-weight:600">Open any UPI app on your phone and scan to pay securely.</p>
+        <button class="pay-submit-btn" style="margin-top:24px" onclick="processCustomPay('upi')">Generate Final QR</button>
+      </div>
+    `;
+  }else{
+    content.innerHTML=`
+      <div class="upi-grid">
+        <div class="upi-app-btn" onclick="processCustomPay('upi')">
+          <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzQyODVGNCI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6Ii8+PC9zdmc+" alt="GPay">
+          <span>GPay</span>
+        </div>
+        <div class="upi-app-btn" onclick="processCustomPay('upi')">
+          <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzVFMzVCMSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6Ii8+PC9zdmc+" alt="PhonePe">
+          <span>PhonePe</span>
+        </div>
+        <div class="upi-app-btn" onclick="processCustomPay('upi')">
+          <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzAwQjlGMSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6Ii8+PC9zdmc+" alt="Paytm">
+          <span>Paytm</span>
+        </div>
+      </div>
+      <button class="pay-submit-btn" onclick="processCustomPay('upi')">Other UPI Apps</button>
+    `;
+  }
+}
+
+function formatCard(e){
+  let v=e.value.replace(/\s+/g,'').replace(/[^0-9]/gi,'');
+  let m=[];for(let i=0;i<v.length;i+=4)m.push(v.substring(i,i+4));
+  e.value=m.join(' ');
+}
+function formatExp(e){
+  let v=e.value.replace(/\s+/g,'').replace(/[^0-9]/gi,'');
+  if(v.length>=2)v=v.substring(0,2)+'/'+v.substring(2,4);
+  e.value=v;
+}
+
+function processCustomPay(method){
+  closeSheets();
+  const btn=document.createElement('div');
+  btn.innerHTML=`<div class="sheet-overlay active" style="z-index:999;display:flex;align-items:center;justify-content:center"><div style="background:#fff;padding:32px;border-radius:24px;text-align:center"><div class="spinner" style="margin-bottom:16px"></div><div style="font-weight:800;font-size:16px;color:#0f172a">Processing securely...</div></div></div>`;
+  document.body.appendChild(btn);
+  setTimeout(()=>{
+    document.body.removeChild(btn);
+    executeRazorpay(method);
+  },800);
+}
+
+function executeRazorpay(method){
+  if(!API_KEYS.RAZORPAY)return show('<div class="error">Payment key missing.</div>');
+  const d=linkDoc;
+  if(expired(d))return show('<div class="error">This ID has been expired.</div>');
+  let isDemo=String(d.mode).toLowerCase()==='test'||String(d.isDemo)==='true';
+  let finalAmount=isDemo?1:Number(d.amount||0);
+  const rz=new Razorpay({
+    key:API_KEYS.RAZORPAY,
+    amount:finalAmount*100,
+    currency:d.currency||'INR',
+    name:'Aryanta',
+    description:(d.payload&&d.payload.description)||'Secure Checkout',
+    handler:r=>afterPaid(r.razorpay_payment_id||''),
+    prefill:{email:d.sellerEmail||'',contact:d.sellerPhone||'',method:method},
+    theme:{color:'#0f172a'},
+    modal:{ondismiss:function(){loadLink().catch(()=>{});}}
+  });
+  rz.on('payment.failed',function(resp){
+    db.collection('payment_links').doc(d.id).set({status:'failed',failedAt:new Date().toISOString(),failureMessage:(resp&&resp.error&&resp.error.description)||'Payment failed'},{merge:true}).catch(()=>{});
+    show(`<div class="error">Payment failed. Please retry.</div><button class="pay-submit-btn" onclick="location.reload()">Reload Payment</button>`);
+  });
+  rz.open();
+}
+
+async function afterPaid(paymentId){
+  const d=linkDoc,p=d.payload||{},now=new Date(),batch=db.batch();
+  batch.set(db.collection('payment_links').doc(d.id),{status:'paid',paidAt:now.toISOString(),razorpayPaymentId:paymentId},{merge:true});
+  if(p.action==='subscription_trial'||p.action==='subscription_online'){
+    const end=new Date(now);end.setMonth(end.getMonth()+Number(p.trialMonths||p.months||1));
+    const sellerRef=db.collection('sellers').doc(d.sellerEmail);
+    batch.set(sellerRef,{subscription:p.plan,subStartDate:now.toISOString(),subEndDate:end.toISOString(),updatedAt:now.toISOString(),...(p.action==='subscription_trial'?{freeTrialLocked:true,freeTrialUsed:true,freeTrialPlan:p.plan,freeTrialActivatedAt:now.toISOString(),freeTrialActivationFee:Number(d.amount||39)}:{})},{merge:true});
+    batch.set(db.collection('seller_payouts').doc(),{sellerEmail:d.sellerEmail,type:p.action,plan:p.plan,amount:Number(d.amount||0),status:'Paid',createdAt:now.toISOString(),razorpayPaymentId:paymentId},{merge:true});
+  }
+  if(p.action==='sponsored_ad'){
+    const until=new Date(now.getTime()+24*60*60*1000).toISOString();
+    batch.set(db.collection('products').doc(String(p.productId)),{isAd:true,isSponsored:true,sponsored:true,adStatus:'Sponsored',sponsoredAt:now.toISOString(),sponsoredUntil:until,sponsoredPaymentLinkId:d.id},{merge:true});
+  }
+  if(p.action==='b2b_order'){
+    const order=p.orderData||{};
+    order.status='Paid Request Sent';order.paymentMethod='online';order.razorpayPaymentId=paymentId;order.paymentLinkId=d.id;order.date=now.toISOString();
+    batch.set(db.collection('b2b_orders').doc(),order,{merge:true});
+  }
+  await batch.commit();
+  show('<div class="ok" style="font-size:18px;text-align:center">Payment Completed Successfully! 🎉<br><br>Return to seller panel to apply changes.</div>');
+}
+
+boot();
+</script>
+</body>
+</html>
