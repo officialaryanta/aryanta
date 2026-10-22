@@ -2,3523 +2,463 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Manifest loads only on production domain to avoid local 404 warnings -->
-    <script>
-      (function(){
-        var h = location.hostname;
-        if (h && h !== '127.0.0.1' && h !== 'localhost') {
-          var m = document.createElement('link');
-          m.rel = 'manifest';
-          m.href = '/manifest.json';
-          document.head.appendChild(m);
-        }
-      })();
-    </script>
-    <meta name="theme-color" content="#f5f5f7">
-    <link rel="apple-touch-icon" href="/android-chrome-192x192.png">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="preconnect" href="https://rough-field-c679.official-aryanta.workers.dev" crossorigin>
-    <link rel="dns-prefetch" href="//rough-field-c679.official-aryanta.workers.dev">
-    <title>Aryanta | Store</title>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=100">
-    <style id="aryanta-mobile-scroll-filter-fix">
-        @media (max-width: 768px) {
-            #categoriesDisplayContainer.spacing-premium,
-            #categoriesDisplayContainer.flex-row-between,
-            #categoriesDisplayContainer {
-                width: 100% !important;
-                max-width: 100% !important;
-                margin: 0 0 26px 0 !important;
-                padding: 0 15px 12px 15px !important;
-                display: flex !important;
-                flex-direction: row !important;
-                align-items: center !important;
-                justify-content: flex-start !important;
-                flex-wrap: nowrap !important;
-                gap: 10px !important;
-                overflow-x: auto !important;
-                overflow-y: hidden !important;
-                -webkit-overflow-scrolling: touch !important;
-                overscroll-behavior-x: contain !important;
-                scrollbar-width: none !important;
-                -ms-overflow-style: none !important;
-                touch-action: pan-x pan-y !important;
-                scroll-snap-type: x proximity;
-                white-space: nowrap !important;
-            }
-        
-            #categoriesDisplayContainer::-webkit-scrollbar {
-                display: none !important;
-                width: 0 !important;
-                height: 0 !important;
-            }
-        
-            #categoriesDisplayContainer .quick-action-buttons {
-                display: flex !important;
-                flex: 0 0 auto !important;
-                width: auto !important;
-                min-width: max-content !important;
-                max-width: none !important;
-                align-items: center !important;
-                flex-direction: row !important;
-                flex-wrap: nowrap !important;
-                gap: 10px !important;
-                overflow: visible !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                white-space: nowrap !important;
-            }
-        
-            #categoriesDisplayContainer .quick-action-buttons button,
-            #categoriesDisplayContainer .global-filter-btn {
-                flex: 0 0 auto !important;
-                width: auto !important;
-                min-width: max-content !important;
-                white-space: nowrap !important;
-                scroll-snap-align: start;
-                touch-action: manipulation !important;
-            }
-        
-            #recentlyViewedContainer {
-                width: 100% !important;
-                max-width: 100% !important;
-                overflow: hidden !important;
-                padding: 0 0 0 15px !important;
-                margin-left: 0 !important;
-                margin-right: 0 !important;
-            }
-        
-            #recentShelfScroll {
-                width: 100% !important;
-                max-width: 100% !important;
-                overflow-x: auto !important;
-                overflow-y: hidden !important;
-                -webkit-overflow-scrolling: touch !important;
-                overscroll-behavior-x: contain !important;
-                scrollbar-width: none !important;
-                -ms-overflow-style: none !important;
-                touch-action: pan-x pan-y !important;
-                padding: 0 0 16px 0 !important;
-                margin: 0 !important;
-                scroll-snap-type: x proximity;
-            }
-        
-            #recentShelfScroll::-webkit-scrollbar {
-                display: none !important;
-                width: 0 !important;
-                height: 0 !important;
-            }
-        
-            #recentShelf {
-                display: flex !important;
-                flex-direction: row !important;
-                flex-wrap: nowrap !important;
-                align-items: stretch !important;
-                gap: 12px !important;
-                width: max-content !important;
-                min-width: max-content !important;
-                max-width: none !important;
-                padding: 0 15px 0 0 !important;
-                margin: 0 !important;
-            }
-        
-            #recentShelf .recent-item-card {
-                flex: 0 0 235px !important;
-                width: 235px !important;
-                min-width: 235px !important;
-                max-width: 235px !important;
-                scroll-snap-align: start;
-                touch-action: pan-x pan-y !important;
-            }
-        
-            .custom-price-inputs {
-                display: grid !important;
-                grid-template-columns: 1fr 1fr auto !important;
-                gap: 8px !important;
-                padding: 0 !important;
-            }
-        
-            .custom-price-inputs input {
-                min-width: 0 !important;
-                width: 100% !important;
-            }
-        
-            .custom-price-inputs .btn-go {
-                min-width: 54px !important;
-                padding-left: 14px !important;
-                padding-right: 14px !important;
-            }
-        }
-    </style>
-
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-<style id="aryanta-home-smart-overrides-inline">
-
-
-/* =========================================================
-   Aryanta Home Patch: special day, bigger search, same buttons,
-   better search result grid, mobile-safe banners, smart UI.
-   Added without removing existing CSS.
-   ========================================================= */
-:root{
-    --aryanta-radius-xl: 26px;
-    --aryanta-btn-radius: 999px;
-    --aryanta-card-border: 1px solid var(--border);
-}
-
-/* Bigger premium search like marketplace header */
-.desktop-search.nav-search{
-    width: min(760px, 56vw) !important;
-    max-width: 760px !important;
-    min-height: 56px !important;
-    padding: 12px 22px !important;
-    border-radius: 24px !important;
-}
-.nav-search input{
-    font-size: 16px !important;
-    font-weight: 800 !important;
-    letter-spacing: -0.1px;
-}
-.cat-trigger{font-size:20px!important;padding-right:10px!important;}
-.search-dropdown{
-    border-radius: 24px !important;
-    padding: 12px !important;
-    max-height: 440px !important;
-    overflow-y: auto !important;
-}
-.search-item{
-    padding: 14px !important;
-    border-radius: 18px !important;
-    min-height: 68px;
-    border:1px solid transparent;
-}
-.search-item:hover{border-color:var(--border);}
-.search-item img{width:52px!important;height:52px!important;border-radius:14px!important;background:var(--bg-color);}
-.search-item-copy{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1;}
-.search-item-title{font-weight:900;line-height:1.25;display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap;}
-.search-item-price{font-weight:900;color:var(--text-main);font-size:13px;}
-.search-meta-line{font-size:11px;color:var(--text-muted);font-weight:800;display:flex;gap:6px;flex-wrap:wrap;}
-.search-sponsored{background:linear-gradient(135deg, rgba(255,59,48,.13), rgba(255,183,3,.11));border-color:rgba(255,59,48,.22)!important;}
-.search-random-tag,.s-top-tag{background:rgba(41,151,255,.13)!important;color:var(--accent)!important;}
-.s-sponsored-tag{white-space:nowrap;}
-
-/* One row = 2 search/list items on PC/tablet, 1 item on mobile */
-.product-list.list-view{
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    max-width: 1180px !important;
-    gap: 20px !important;
-}
-.product-list.list-view .list-item-card{
-    flex-direction: row !important;
-    align-items: stretch !important;
-    gap: 18px !important;
-    min-height: 190px;
-    padding: 18px !important;
-}
-.product-list.list-view .list-image-container{
-    width: 158px !important;
-    height: 158px !important;
-    min-width: 158px !important;
-    border-radius: 18px !important;
-}
-.product-list.list-view .list-info{min-width:0;align-items:flex-start!important;justify-content:flex-start!important;}
-.product-list.list-view .list-info h4{
-    font-size: 18px !important;
-    line-height:1.25!important;
-    padding-right: 34px;
-    word-break: break-word;
-    -webkit-line-clamp: 2;
-}
-.product-list.list-view .list-actions{
-    flex-direction: row !important;
-    width: 100% !important;
-    max-width: none !important;
-    margin-top: auto !important;
-}
-.product-list.list-view .btn-list-buy,
-.product-list.list-view .btn-list-add{min-width:0;}
-
-/* Product card polish and same button design */
-.list-item-card{overflow:hidden;}
-.list-info h4{padding-right:34px;word-break:break-word;}
-.btn-prime,.btn-outline,.global-filter-btn,.btn-list-buy,.btn-list-add,.btn-add,.btn-remove,.btn-go,.cat-pill,.btn-mini,.aryanta-smart-chip{
-    border-radius: var(--aryanta-btn-radius) !important;
-    font-weight: 900 !important;
-    letter-spacing: -0.2px;
-}
-.btn-list-buy,.btn-list-add,.btn-add,.btn-remove{
-    min-height: 46px;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-    border-width:1px!important;
-}
-.btn-list-buy{background:var(--text-main)!important;color:var(--bg-color)!important;border-color:var(--text-main)!important;}
-.btn-list-add,.btn-add{background:var(--surface)!important;color:var(--text-main)!important;border-color:var(--border)!important;}
-.btn-remove{background:rgba(255,59,48,.12)!important;color:var(--danger)!important;border-color:rgba(255,59,48,.20)!important;}
-
-/* Banner: fit image without cutting on phone and long screens */
-.banner-slider-container,#mainBannerSection{
-    max-width: 1320px !important;
-    border-radius: 26px !important;
-}
-.f-slide{
-    background-size: contain !important;
-    background-position: center !important;
-    background-repeat: no-repeat !important;
-    background-color: var(--surface) !important;
-}
-.banner-slider{background:linear-gradient(135deg, rgba(255,255,255,.5), rgba(134,134,139,.10))!important;}
-
-/* Admin special-day design mode */
-body.aryanta-event-mode{
-    --accent: var(--event-accent, #ff3b30);
-}
-body.aryanta-event-mode .top-bar{
-    background: linear-gradient(90deg, rgba(255,59,48,.18), var(--surface), rgba(255,183,3,.14)) !important;
-}
-.special-day-hero{
-    position:relative;
-    overflow:hidden;
-    border-radius:34px;
-    border:1px solid rgba(255,255,255,.18);
-    margin: 14px auto 28px;
-    width:min(1320px, calc(100% - 40px));
-    padding: clamp(26px, 5vw, 56px);
-    background:
-      radial-gradient(circle at top left, color-mix(in srgb, var(--event-accent, #ff3b30) 38%, transparent), transparent 38%),
-      linear-gradient(135deg, rgba(255,59,48,.22), rgba(255,183,3,.14), var(--surface));
-    box-shadow:0 28px 80px rgba(0,0,0,.16);
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:24px;
-}
-.special-day-hero:before{
-    content:"";position:absolute;inset:-40%;background:linear-gradient(120deg, transparent, rgba(255,255,255,.32), transparent);transform:rotate(12deg);animation:aryantaHeroShine 5s ease-in-out infinite;pointer-events:none;
-}
-@keyframes aryantaHeroShine{0%,70%,100%{translate:-40% 0;}85%{translate:40% 0;}}
-.special-day-pill{
-    background:var(--event-accent,#ff3b30)!important;color:#fff!important;border-radius:999px!important;padding:8px 14px!important;font-weight:950!important;display:inline-flex!important;gap:8px!important;align-items:center!important;
-}
-.special-day-hero h1{font-size:clamp(30px,5vw,62px)!important;line-height:1!important;margin:16px 0 12px!important;letter-spacing:-2px!important;}
-.special-day-hero p{font-size:clamp(14px,2vw,18px)!important;max-width:680px!important;font-weight:800!important;color:var(--text-main)!important;opacity:.88;}
-.special-day-btn{background:var(--text-main)!important;color:var(--bg-color)!important;border:none!important;border-radius:999px!important;padding:16px 24px!important;font-weight:950!important;box-shadow:var(--shadow-lg)!important;white-space:nowrap;}
-
-/* Guest/login smart popup */
-.aryanta-login-required-overlay{
-    position:fixed;inset:0;z-index:10080;background:rgba(0,0,0,.42);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:none;align-items:center;justify-content:center;padding:18px;
-}
-.aryanta-login-required-overlay.show{display:flex;}
-.aryanta-login-required-box{
-    width:min(94vw,460px);position:relative;background:var(--surface);color:var(--text-main);border:1px solid var(--border);box-shadow:0 28px 90px rgba(0,0,0,.30);border-radius:32px;padding:34px 26px;text-align:center;animation:aryantaPop .34s cubic-bezier(.2,.9,.2,1.2);
-}
-@keyframes aryantaPop{from{transform:translateY(18px) scale(.96);opacity:0;}to{transform:translateY(0) scale(1);opacity:1;}}
-.aryanta-login-required-close{position:absolute;top:14px;right:14px;width:38px;height:38px;border:1px solid var(--border);border-radius:50%;background:var(--surface);color:var(--text-muted);display:grid;place-items:center;font-size:16px;cursor:pointer;}
-.aryanta-login-required-icon{width:68px;height:68px;border-radius:24px;display:grid;place-items:center;margin:0 auto 18px;background:linear-gradient(135deg, rgba(41,151,255,.18), rgba(52,199,89,.15));font-size:30px;color:var(--accent);}
-.aryanta-login-required-box h3{font-size:24px;font-weight:950;letter-spacing:-.8px;margin-bottom:10px;}
-.aryanta-login-required-box p{font-size:15px;line-height:1.6;color:var(--text-muted);font-weight:750;margin-bottom:22px;}
-.aryanta-login-required-actions{display:flex;gap:12px;}
-.aryanta-login-later-btn,.aryanta-login-now-btn{flex:1;border:1px solid var(--border);border-radius:999px;padding:14px 16px;font-weight:950;cursor:pointer;}
-.aryanta-login-later-btn{background:var(--surface);color:var(--text-main);}
-.aryanta-login-now-btn{background:var(--text-main);color:var(--bg-color);}
-
-/* Smart chips and trust strip */
-.aryanta-smart-strip{width:min(1320px, calc(100% - 40px));margin:0 auto 24px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;}
-.aryanta-smart-strip::-webkit-scrollbar{display:none;}
-.aryanta-smart-chip{flex:0 0 auto;border:1px solid var(--border);background:var(--surface);color:var(--text-main);box-shadow:var(--shadow-sm);padding:11px 16px;font-size:13px;display:inline-flex;align-items:center;gap:8px;}
-.aryanta-smart-chip.active{background:var(--text-main);color:var(--bg-color);}
-
-@media(max-width: 900px){
-    .desktop-search.nav-search{width:min(58vw,620px)!important;}
-    .product-list.list-view{grid-template-columns:1fr!important;max-width:720px!important;}
-}
-@media(max-width: 768px){
-    .desktop-search{display:none!important;}
-    .mobile-only-search{display:block!important;}
-    .search-container .nav-search{min-height:58px!important;border-radius:22px!important;padding:12px 18px!important;}
-    .search-container{padding:10px 12px!important;}
-    .banner-slider-container,#mainBannerSection{width:100%!important;max-width:100%!important;margin:4px 0 18px!important;border-radius:0!important;aspect-ratio:16/9!important;}
-    .banner-slider{border-radius:0!important;border-left:0!important;border-right:0!important;}
-    .product-list{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;padding:0 12px 80px!important;}
-    .product-list.list-view{grid-template-columns:1fr!important;padding:0 12px 80px!important;}
-    .product-list.list-view .list-item-card{min-height:150px!important;gap:12px!important;padding:14px!important;}
-    .product-list.list-view .list-image-container{width:124px!important;height:124px!important;min-width:124px!important;}
-    .list-item-card{padding:12px!important;border-radius:20px!important;}
-    .list-image-container{height:150px!important;border-radius:16px!important;}
-    .list-info h4{font-size:14px!important;line-height:1.25!important;padding-right:28px;}
-    .list-info .price{font-size:19px!important;margin-bottom:10px!important;}
-    .list-actions{gap:8px!important;}
-    .btn-list-buy,.btn-list-add{padding:11px 10px!important;font-size:12px!important;min-height:40px;}
-    .special-day-hero{width:calc(100% - 24px)!important;display:block;text-align:left;border-radius:26px;margin-top:12px;padding:26px 20px;}
-    .special-day-btn{width:100%;margin-top:18px;}
-    .aryanta-login-required-actions{flex-direction:column;}
-}
-@media(max-width: 430px){
-    .product-list:not(.list-view){grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;}
-    .list-image-container{height:132px!important;}
-    .list-actions{flex-direction:column!important;}
-}
-
-</style>
-
-<style id="aryanta-special-day-no-popup-final">
-/* Special day changes design only; no popup. */
-body.aryanta-event-mode{--accent:var(--event-accent,#ff3b30)!important;background:radial-gradient(circle at 8% 0%, color-mix(in srgb,var(--event-accent,#ff3b30) 18%, transparent), transparent 34%),radial-gradient(circle at 96% 8%, color-mix(in srgb,var(--event-accent-2,#ffb703) 18%, transparent), transparent 32%),var(--bg-color)!important;}
-body.aryanta-event-mode .top-bar,body.aryanta-event-mode .search-container{background:linear-gradient(90deg,color-mix(in srgb,var(--event-accent,#ff3b30) 16%, var(--surface)),var(--surface),color-mix(in srgb,var(--event-accent-2,#ffb703) 16%, var(--surface)))!important;border-bottom:1px solid color-mix(in srgb,var(--event-accent,#ff3b30) 28%, var(--border))!important;}
-body.aryanta-event-mode .list-item-card,body.aryanta-event-mode .banner-slider,body.aryanta-event-mode .nav-search{border-color:color-mix(in srgb,var(--event-accent,#ff3b30) 30%, var(--border))!important;box-shadow:0 18px 44px color-mix(in srgb,var(--event-accent,#ff3b30) 10%, transparent),var(--shadow-sm)!important;}
-body.aryanta-event-mode .btn-list-buy,body.aryanta-event-mode .btn-prime,body.aryanta-event-mode .global-filter-btn,body.aryanta-event-mode .special-day-btn{background:linear-gradient(135deg,var(--event-accent,#ff3b30),var(--event-accent-2,#ffb703))!important;color:#fff!important;border-color:transparent!important;}
-</style>
-
-</head>
-<body>
-
-    <div class="loader-overlay" id="pageLoader">
-        <div class="spinner"></div>
-        <h4 style="font-weight: 800; color: var(--text-main); font-size: 20px; letter-spacing: 3px;">ARYANTA</h4>
-        <p style="font-size: 14px; color: var(--text-muted); margin-top: 10px; font-weight: 600;">Loading. .</p>
-    </div>
-    
-    <div id="festiveAnnouncement" class="festive-bar" style="display:none;"></div>
-
-    <header class="top-bar glass-effect">
-        <div class="nav-left">
-            <div class="menu-trigger" onclick="openSidebar()"><i class="fas fa-bars-staggered"></i></div>
-            <div class="brand-logo" onclick="location.href='https://aryanta.in/'">
-                <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta Logo" class="brand-img">
-                <span class="brand-text">ARYANTA<span class="prime-dot">.</span></span>
-            </div>
-        </div>
-        
-        <div class="desktop-search nav-search">
-            <div class="cat-trigger premium-hover" onclick="openCategoryModal()" title="Categories"><i class="fas fa-layer-group"></i></div>
-            <div class="search-divider"></div>
-            <input type="text" id="desktopSearchInput" autocomplete="off" spellcheck="false" placeholder="Search products, categories, brands, IDs...">
-            <i class="fas fa-microphone mic-btn desktop-mic" id="dMicBtn" onclick="handleMicOrSearch('desktopSearchInput', 'dMicBtn')" title="Search by Voice"></i>
-            <i class="fas fa-times search-clear desktop-clear" style="display: none;" title="Clear search"></i>
-            <div class="search-dropdown desktop-dropdown"></div>
-        </div>
-
-        <div class="nav-actions">
-            <button class="user-trigger" id="accountBtn"></button>
-            <div class="cart-icon" onclick="location.href='https://aryanta.in/cart'">
-                <i class="fas fa-shopping-bag"></i>
-                <span class="badge" id="cartBadge">0</span>
-            </div>
-        </div>
-    </header>
-
-    <div class="search-container glass-effect mobile-only-search" id="searchContainer">
-        <div class="nav-search ai-search-bar">
-            <div class="cat-trigger premium-hover" onclick="openCategoryModal()" title="Categories"><i class="fas fa-layer-group"></i></div>
-            <div class="search-divider"></div>
-            <input type="text" id="mobileSearchInput" autocomplete="off" spellcheck="false" placeholder="Search product, category or ID...">
-            <i class="fas fa-microphone mic-btn mobile-mic" id="mMicBtn" onclick="handleMicOrSearch('mobileSearchInput', 'mMicBtn')" title="Search by Voice"></i>
-            <i class="fas fa-times search-clear mobile-clear" style="display: none;" title="Clear search"></i>
-            <div class="search-dropdown mobile-dropdown"></div>
-        </div>
-    </div>
-
-    <aside class="side-panel" id="sidebar">
-        <div class="panel-header">
-            <i class="fas fa-times close-sidebar" onclick="closeAllModals()"></i>
-            <div class="user-profile-card">
-                <div class="avatar-wrapper">
-                    <img id="sidebarAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Guest" alt="avatar" class="avatar-img">
-                    <div id="sidebarPrimeBadge" class="prime-badge" style="display:none;"><i class="fas fa-crown"></i></div>
-                </div>
-                <div class="user-greeting">
-                    <span id="sidebarUser">Welcome Guest</span>
-                    <small id="sidebarRole">Sign in for best deals</small>
-                </div>
-            </div>
-        </div>
-        <nav class="panel-links">
-             <a href="https://aryanta.in/"><i class="fas fa-compass"></i> Discover</a>
-            <a href="javascript:void(0)" id="sidebarAccountLink"><i class="fas fa-user-circle"></i> My Profile</a>
-            <a href="https://aryanta.in/cart/"><i class="fas fa-shopping-cart"></i> My Cart</a>
-            <a href="https://aryanta.in/wishlist/"><i class="fas fa-heart"></i> My Wishlist</a>
-            <a href="https://aryanta.in/track/"><i class="fas fa-box-open"></i> My Orders</a>
-            <a href="https://aryanta.in/warrenty/"><i class="fas fa-shield-alt"></i> Claim Warranty</a>
-            <a href="https://aryanta.in/vurify/"><i class="fas fa-store"></i> Sell on Our Platform</a>
-            <a href="https://aryanta.in/setting/"><i class="fas fa-cog"></i> Setting</a>
-            <a href="https://aryanta.in/support/"><i class="fas fa-headset"></i> Support</a>
-        </nav>
-        <div class="sidebar-footer">
-            <button class="btn-sidebar-logout bounce-hover" id="sidebarLogoutBtn" onclick="logOut()" style="display:none;">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </button>
-        </div>
-    </aside>
-
-    <aside class="side-panel right-panel" id="filterSidebar">
-        <div class="panel-header" style="padding-bottom: 25px;">
-            <i class="fas fa-times close-sidebar" onclick="closeAllModals()"></i>
-            <h3 style="font-size: 26px; font-weight: 800; display: flex; align-items: center; gap: 12px; letter-spacing: -0.5px;"><i class="fas fa-sliders-h" style="color:var(--text-main);"></i> Filters</h3>
-            <p style="font-size: 14px; color: var(--text-muted); margin-top: 6px;">Refine your search scientifically.</p>
-        </div>
-        <div class="panel-links" style="padding: 25px;">
-            <div class="filter-group">
-                <h4><i class="fas fa-tag"></i> Price Bracket</h4>
-                <label class="custom-radio"><input type="radio" name="priceFilter" value="all" checked onchange="applySidebarFilter()"> <span>All Prices</span></label>
-                <label class="custom-radio"><input type="radio" name="priceFilter" value="199" onchange="applySidebarFilter()"> <span>Under ₹199</span></label>
-                <label class="custom-radio"><input type="radio" name="priceFilter" value="399" onchange="applySidebarFilter()"> <span>Under ₹399</span></label>
-                <label class="custom-radio"><input type="radio" name="priceFilter" value="699" onchange="applySidebarFilter()"> <span>Under ₹699</span></label>
-                
-                <div class="custom-price-inputs mt-10">
-                    <input type="number" inputmode="numeric" id="customMinPrice" placeholder="Min ₹">
-                    <input type="number" inputmode="numeric" id="customMaxPrice" placeholder="Max ₹">
-                    <button class="btn-go" onclick="applySidebarFilter()">Go</button>
-                </div>
-            </div>
-            <div class="filter-group">
-                <h4><i class="fas fa-star"></i> Trust & Reviews</h4>
-                <label class="custom-radio"><input type="radio" name="ratingFilter" value="all" checked onchange="applySidebarFilter()"> <span>All Ratings</span></label>
-                <label class="custom-radio"><input type="radio" name="ratingFilter" value="new" onchange="applySidebarFilter()"> <span>New Arrivals ✨</span></label>
-                <label class="custom-radio"><input type="radio" name="ratingFilter" value="4" onchange="applySidebarFilter()"> <span>4 Stars & Up <i class="fas fa-star" style="color:#f59e0b; font-size:12px;"></i></span></label>
-                <label class="custom-radio"><input type="radio" name="ratingFilter" value="3" onchange="applySidebarFilter()"> <span>3 Stars & Up <i class="fas fa-star" style="color:#f59e0b; font-size:12px;"></i></span></label>
-            </div>
-            <button class="btn-prime w-100 mt-10 bounce-hover" style="border-radius: 16px; padding: 18px; font-size: 16px;" onclick="closeAllModals()">Show Results</button>
-        </div>
-    </aside>
-
-    <div class="dimmer" id="overlay" onclick="closeAllModals()"></div>
-
-    <div class="modal" id="categoryModal">
-        <div class="modal-content bottom-sheet">
-            <div class="flex-row-between mb-15" style="border-bottom: 1px solid var(--border); padding-bottom: 20px;">
-                <h3 style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Categories</h3>
-                <button class="btn-mini" style="color:var(--text-main);" onclick="closeAllModals()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="category-grid" id="categoryGrid"></div>
-        </div>
-    </div>
-
-    <!-- Redesigned Apple Style Notifications -->
-    <div class="custom-alert-overlay" id="broadcastModal">
-        <div class="custom-alert-box">
-            <div class="alert-icon-wrapper" style="font-size: 50px; color: #f59e0b; margin-bottom: 25px; filter: drop-shadow(0 10px 20px rgba(245, 158, 11, 0.4)); animation: subtleBounce 3s ease-in-out infinite;">
-                <i class="fas fa-bullhorn"></i>
-            </div>
-            <h3 id="broadcastTitle" style="font-size: 24px; font-weight: 800; color: var(--text-main); margin-bottom: 12px; letter-spacing: -0.5px;">Announcement</h3>
-            <p id="broadcastMessage" style="font-size: 15px; font-weight: 500; color: var(--text-muted); margin-bottom: 30px; line-height: 1.6;"></p>
-            <button class="btn-prime w-100 bounce-hover" style="border-radius: 14px; padding: 16px; font-size: 16px;" onclick="closeAllModals()">Awesome!</button>
-        </div>
-    </div>
-
-    <div class="modal" id="systemPopup">
-        <div class="modal-content">
-            <div style="width: 60px; height: 60px; background: rgba(0, 102, 204, 0.1); color: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 20px;">
-                <i class="fas fa-bell"></i>
-            </div>
-            <h3 id="popupTitle" style="font-size: 22px; font-weight: 800; margin-bottom: 12px; color: var(--text-main); letter-spacing: -0.5px;">Notice</h3>
-            <p id="popupDesc" style="color: var(--text-muted); font-size: 15px; line-height: 1.6; margin-bottom: 25px;"></p>
-            <button class="btn-prime w-100 bounce-hover" style="border-radius: 14px; padding: 16px; font-size: 16px;" onclick="closeAllModals();">Okay, got it!</button>
-        </div>
-    </div>
-
-    <div class="modal" id="voiceSearchModal">
-        <div class="modal-content">
-            <div class="voice-mic-icon listening" style="font-size: 60px; margin-bottom: 25px;"><i class="fas fa-microphone"></i></div>
-            <h3 id="voiceStatusText" style="font-size: 22px; margin-bottom: 12px; font-weight: 800;">Listening...</h3>
-            <p id="voiceLiveText" style="font-size: 16px; color: var(--text-muted); font-style: italic; min-height: 25px;">Speak now</p>
-            <button class="btn-outline bounce-hover" style="margin-top: 35px; width: 100%;" onclick="stopDictation()">Cancel</button>
-        </div>
-    </div>
-
-    <div class="modal" id="quickViewModal">
-        <div class="modal-content qv-premium-container">
-            <span class="exit-modal" onclick="closeAllModals()"><i class="fas fa-times"></i></span>
-            <div class="qv-left-img">
-                <div style="position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;" onclick="event.stopPropagation();">
-                    <img id="qvImage" src="" onclick="openFullScreenFromQv()">
-                    <div id="qvImgNav" style="display:none; position: absolute; width: 100%; top: 50%; transform: translateY(-50%); pointer-events: none;">
-                        <button class="b-img-nav b-prev" style="left: -20px; background:rgba(255,255,255,0.25); pointer-events: auto;" onclick="event.stopPropagation(); slideQvImg(-1)"><i class="fas fa-chevron-left"></i></button>
-                        <button class="b-img-nav b-next" style="right: -20px; background:rgba(255,255,255,0.25); pointer-events: auto;" onclick="event.stopPropagation(); slideQvImg(1)"><i class="fas fa-chevron-right"></i></button>
-                    </div>
-                </div>
-                <div style="position: absolute; bottom: 25px; right: 25px; background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); padding: 8px 16px; border-radius: 10px; font-size: 13px; color: #fff; font-weight: 600; cursor: pointer; transition: var(--transition);" onclick="openFullScreenFromQv()"><i class="fas fa-expand"></i> Expand</div>
-            </div>
-            <div class="qv-right-details">
-                <div class="flex-row-between" style="align-items: flex-start; margin-bottom: 12px;">
-                    <h4 id="qvTitle" style="font-size: 28px; font-weight: 800; line-height: 1.2; flex: 1; padding-right: 20px; color: white; letter-spacing: -0.5px;"></h4>
-                    <button id="qvShareBtn" class="btn-mini bounce-hover" style="font-size: 18px; padding: 10px 14px; background: rgba(255,255,255,0.15); color: white; border:none; border-radius: 12px;" title="Share"><i class="fas fa-share-alt"></i></button>
-                </div>
-                <div style="font-size: 14px; color: #94a3b8; margin-bottom: 18px; font-family: var(--font-mono); font-weight: 600;" id="qvId"></div>
-                <div class="stars" id="qvStars" style="color: #f59e0b; font-size: 15px; margin-bottom: 20px; font-weight: 600;"></div>
-                <div id="qvDesc"></div>
-                <div id="qvStockNotice"></div>
-                <div class="qv-price-box">
-                    <span style="font-size: 13px; color: #94a3b8; display:block; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Exclusive Offer</span>
-                    <div id="qvPrice" style="font-size: 36px; font-weight: 800; color: white; letter-spacing: -1px;"></div>
-                </div>
-                <div style="display: flex; gap: 18px; width: 100%;">
-                    <button id="qvAddBtn" class="btn-list-add" style="flex: 1; border-color: rgba(255,255,255,0.3); color: white; background: rgba(255,255,255,0.05); transition: var(--transition); padding: 18px; font-size: 16px; border-radius: 16px;">Add to Cart</button>
-                    <button id="qvBuyBtn" class="btn-list-buy bounce-hover" style="flex: 1; background: #fff; border-color: #fff; color: #000; padding: 18px; font-size: 16px; border-radius: 16px; box-shadow: 0 15px 30px rgba(255, 255, 255, 0.2);">Buy Now</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="fullScreenImgModal">
-        <div class="fs-top-bar">
-            <button id="fsDownload" class="btn-mini" style="background:rgba(255,255,255,0.2); backdrop-filter: blur(10px); color:white; border:none; padding:12px 18px; border-radius: 12px; font-size: 16px;" title="Download"><i class="fas fa-download"></i></button>
-            <button class="btn-mini" style="background:rgba(255,255,255,0.2); backdrop-filter: blur(10px); color:white; border:none; padding:12px 18px; border-radius: 12px; font-size: 16px;" onclick="closeAllModals()"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="fs-main-view">
-            <img id="fsMainImg" src="" style="max-width:100%; max-height:100%; object-fit:contain;">
-        </div>
-        <div id="fsUid" class="fs-uid-tag">UID: -</div>
-        <div id="fsThumbnails" class="fs-thumbnails"></div>
-    </div>
-
-    <div id="toastNotification" class="toast-notification"><i class="fas fa-info-circle"></i> <span id="toastMessage">Action successful</span></div>
-
-    <!-- Floating Theme Button strictly for PC/Large Screens -->
-    <button id="themeToggleBtn" class="floating-theme-btn" onclick="toggleThemeCycle()" title="Toggle Theme">
-        <i class="fas fa-desktop"></i>
-    </button>
-
-    <main class="main-content">
-        <!-- Fixed PC Banner Size Container -->
-        <section class="banner-slider-container mt-10" id="mainBannerSection">
-            <div class="banner-slider" id="fMainSlider">
-                <button class="f-nav-btn prev-btn" onclick="slideMainBanner(-1)"><i class="fas fa-chevron-left"></i></button>
-                <button class="f-nav-btn next-btn" onclick="slideMainBanner(1)"><i class="fas fa-chevron-right"></i></button>
-                <div class="f-track" id="mainBannerTrack"></div>
-            </div>
-        </section>
-
-        <!-- Premium Spacing Between Top Actions and Shelf -->
-        <div class="spacing-premium flex-row-between" id="categoriesDisplayContainer" style="max-width: 1400px; margin-left: auto; margin-right: auto; padding: 0 5%; gap: 15px;">
-            <div class="quick-action-buttons">
-                <button class="btn-outline" onclick="filterCategory('All')">All</button>
-                <button class="btn-outline" onclick="filterQuickArrivals()">New Arrival</button>
-                <button class="btn-prime" onclick="openCategoryModal()">Categories <i class="fas fa-layer-group"></i></button>
-            </div>
-            <button class="global-filter-btn" onclick="openSidebar('filterSidebar')"><i class="fas fa-sliders-h"></i> Filters</button>
-        </div>
-
-        <div id="activeFilterNotice" style="display:none; max-width: 1400px; margin: -20px auto 30px; padding: 0 5%;">
-            <div style="background: var(--surface); border: 1px solid var(--border); padding: 12px 24px; border-radius: 16px; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 12px; box-shadow: var(--shadow-sm);">
-                <i class="fas fa-filter" style="color:var(--primary);"></i> Filters Applied 
-                <span style="color: var(--danger); cursor: pointer; text-decoration: underline;" onclick="clearSidebarFilters()">Clear</span>
-            </div>
-        </div>
-
-        <!-- Rebuilt Recently Viewed Apple Widgets -->
-        <div class="spacing-premium" id="recentlyViewedContainer" style="display:none; max-width: 1400px; margin-left: auto; margin-right: auto; padding: 0 5%;">
-            <h3 class="section-title"><i class="fas fa-history" style="font-size:18px;"></i> Recently Viewed</h3>
-            <div class="category-scroll-wrapper" id="recentShelfScroll" style="padding: 0;">
-                <div class="category-filters" id="recentShelf" style="padding-bottom: 15px;"></div>
-            </div>
-        </div>
-
-        <div class="product-list" id="productShelf"></div>
-        
-        <div id="infiniteScrollLoader" style="width: 100%; display: flex; justify-content: center; padding: 30px 0 80px; visibility: hidden;">
-            <div class="spinner" style="width: 40px; height: 40px; border-width: 4px; border-top-color: var(--primary);"></div>
-        </div>
-    </main>
-
-    <footer class="premium-footer">
-        <div style="max-width: 800px; margin: 0 auto;">
-            <div class="social-links" style="display: flex; justify-content: center; gap: 30px; margin-bottom: 30px;">
-                <button type="button" class="social-btn" onclick="window.open('https://instagram.com/official.aryanta', '_blank')"><i class="fab fa-instagram"></i></button>
-                <button type="button" class="social-btn" onclick="window.open('https://x.com/officialaryanta', '_blank')"><i class="fab fa-twitter"></i></button>
-                <button type="button" class="social-btn" onclick="window.open('https://www.facebook.com/share/1E8hFiNnmw/', '_blank')"><i class="fab fa-facebook-f"></i></button>
-            </div>
-            <p style="font-size: 16px; line-height: 1.8; font-weight: 500; margin-bottom: 30px; color: #000000; max-width: 600px; margin-left: auto; margin-right: auto;">
-                Experience shopping at its finest. We offer carefully selected high-quality products for our valued customers.
-            </p>
-            <div class="contact-footer-links" style="display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap; margin-bottom: 15px;">
-                <a href="mailto:support@aryanta.in" style="font-size: 15px; color: #010101; font-weight: 600; text-decoration: none; transition: 0.3s;"><i class="fas fa-envelope" style="margin-right: 8px;"></i>support@aryanta.in</a>
-                <span style="color: #000000;">|</span>
-                <a href="tel:+916414054676" style="font-size: 15px; color: #000000; font-weight: 600; text-decoration: none; transition: 0.3s;"><i class="fas fa-phone-alt" style="margin-right: 8px;"></i>641 405 4676</a>
-            </div>
-            <p style="font-size: 14px; color: #000000; font-weight: 600; margin-top: 20px;">© Aryanta 2026. All rights reserved.</p>
-        </div>
-    </footer>
-
-    <script>
-        const API_BASE_URL = "https://rough-field-c679.official-aryanta.workers.dev";
-        const PROJECT_ID = "aryanta-mart-a8893"; 
-        
-        let allProducts = [];
-        let baseCategoryProducts = []; 
-        let currentlyDisplayed = 0;
-        
-        const INITIAL_BATCH = 10;
-const SCROLL_BATCH = 10;
-const HOME_FULL_CATALOG_LIMIT = 1000;
-let HOME_CATALOG_READY = false;
-let siteConfig = { isSpecialDay: false, specialDayName: "", specialEvent: null };
-let currentSpecialEvent = null;
-const PUBLIC_BROADCAST_PATHS = ["/get-broadcasts", "/broadcasts"];
-const PUBLIC_CONFIG_PATHS = ["/config", "/site-config"];
-        let appSettings = { theme: 'system', notifications: true, searchSuggestions: true };
-        
-        let wishlist = []; 
-        let cart = []; 
-        
-        let recentlyViewed = []; 
-        
-        let imageCarousels = {}; 
-        let allBannersData = [];
-        let mainBannerIndex = 0;
-        let bannerTimer;
-        let isFetchingMore = false;
-        
-        let modalsOpen = 0;
-        
-        let HOME_RAM_CACHE = null;
-let HOME_LOADING_PROMISE = null;
-
-function hideMainLoaderFast() {
-    const loader = document.getElementById("pageLoader");
-    if (!loader) return;
-
-    requestAnimationFrame(() => {
-        loader.classList.add("hidden");
-    });
-}
-
-async function fetchJsonWithTimeout(path, timeout = 3500) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeout);
-
-    try {
-        const res = await fetch(`${API_BASE_URL}${path}`, {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            },
-            cache: "default",
-            signal: controller.signal
-        });
-
-        if (!res.ok) {
-            throw new Error(`${path} failed: ${res.status}`);
-        }
-
-        return await res.json();
-    } finally {
-        clearTimeout(timer);
-    }
-}
-
-function normalizeBannerList(data) {
-    if (!Array.isArray(data)) return [];
-
-    return data
-        .filter(b => b && (b.imageUrl || b.image || b.img))
-        .slice(0, 6)
-        .map(b => ({
-            imageUrl: b.imageUrl || b.image || b.img,
-            link: b.link || b.url || ""
-        }));
-}
-
-function renderOrHideBanners(data) {
-    const bannerSection = document.getElementById("mainBannerSection");
-    const banners = normalizeBannerList(data);
-
-    allBannersData = banners;
-
-    if (banners.length > 0) {
-        if (bannerSection) bannerSection.style.display = "";
-        renderGridBanners(banners);
-    } else {
-        if (bannerSection) bannerSection.style.display = "none";
-    }
-}
-
-
-function unwrapFirestoreValue(value) {
-    if (!value || typeof value !== "object") return value;
-
-    if (Object.prototype.hasOwnProperty.call(value, "stringValue")) return value.stringValue;
-    if (Object.prototype.hasOwnProperty.call(value, "integerValue")) return Number(value.integerValue || 0);
-    if (Object.prototype.hasOwnProperty.call(value, "doubleValue")) return Number(value.doubleValue || 0);
-    if (Object.prototype.hasOwnProperty.call(value, "booleanValue")) return value.booleanValue === true;
-    if (Object.prototype.hasOwnProperty.call(value, "timestampValue")) return value.timestampValue;
-    if (Object.prototype.hasOwnProperty.call(value, "nullValue")) return null;
-    if (Object.prototype.hasOwnProperty.call(value, "arrayValue")) {
-        return (value.arrayValue.values || []).map(unwrapFirestoreValue);
-    }
-    if (Object.prototype.hasOwnProperty.call(value, "mapValue")) {
-        return unwrapFirestoreFields(value.mapValue.fields || {});
-    }
-    return value;
-}
-
-function unwrapFirestoreFields(fields) {
-    const out = {};
-    if (!fields || typeof fields !== "object") return out;
-    Object.keys(fields).forEach(key => {
-        out[key] = unwrapFirestoreValue(fields[key]);
-    });
-    return out;
-}
-
-function normalizeRawProductObject(item, fallbackId = "") {
-    if (!item || typeof item !== "object") return item;
-
-    let p = item;
-    if (item.fields && typeof item.fields === "object") {
-        p = unwrapFirestoreFields(item.fields);
-        if (item.name && !p.id) p.id = String(item.name).split("/").pop();
-    }
-
-    if (fallbackId && !p.id) p.id = fallbackId;
-    if (item.id && !p.id) p.id = item.id;
-    if (item.docId && !p.docId) p.docId = item.docId;
-
-    return p;
-}
-
-function aryantaArrayFromResponse(data, keys = ["products", "items", "data", "results"]) {
-    if (!data) return [];
-    if (Array.isArray(data)) return data.map((item, index) => normalizeRawProductObject(item, String(index)));
-
-    if (data && typeof data === "object") {
-        if (Array.isArray(data.documents)) {
-            return data.documents.map(doc => normalizeRawProductObject(doc));
-        }
-
-        for (const key of keys) {
-            if (Array.isArray(data[key])) return data[key].map((item, index) => normalizeRawProductObject(item, String(index)));
-        }
-
-        if (data.data && typeof data.data === "object") {
-            if (Array.isArray(data.data.documents)) {
-                return data.data.documents.map(doc => normalizeRawProductObject(doc));
-            }
-            for (const key of keys) {
-                if (Array.isArray(data.data[key])) return data.data[key].map((item, index) => normalizeRawProductObject(item, String(index)));
-            }
-        }
-
-        const values = Object.entries(data)
-            .filter(([key, value]) => !["success", "ok", "message", "count", "total", "timestamp", "banners", "banner", "slides"].includes(key) && value && typeof value === "object")
-            .map(([key, value]) => normalizeRawProductObject(value, key));
-
-        if (values.length && values.some(v => v && (v.name || v.title || v.productName || v.price || v.image || v.images || v.approvalStatus || v.status))) {
-            return values;
-        }
-    }
-
-    return [];
-}
-
-
-function getStatusText(value) {
-    return String(value ?? "").trim().toLowerCase();
-}
-
-function isActiveDateWindow(start, end) {
-    const now = Date.now();
-    const startMs = start ? new Date(start).getTime() : 0;
-    const endMs = end ? new Date(end).getTime() : 0;
-    if (Number.isFinite(startMs) && startMs > 0 && now < startMs) return false;
-    if (Number.isFinite(endMs) && endMs > 0 && now > endMs) return false;
-    return true;
-}
-
-function isSponsoredProduct(p = {}) {
-    const status = getStatusText([p.sponsorStatus, p.sponsoredStatus, p.adStatus, p.boostStatus, p.promotionStatus].filter(Boolean).join(" "));
-    return boolIsTrue(p.sponsored) ||
-        boolIsTrue(p.isSponsored) ||
-        boolIsTrue(p.ad) ||
-        boolIsTrue(p.isAd) ||
-        boolIsTrue(p.promoted) ||
-        boolIsTrue(p.isPromoted) ||
-        boolIsTrue(p.boosted) ||
-        boolIsTrue(p.isBoosted) ||
-        boolIsTrue(p.sponcep) ||
-        boolIsTrue(p.sponce) ||
-        boolIsTrue(p.sponsor) ||
-        status.includes("active") ||
-        status.includes("sponsor") ||
-        status.includes("boost") ||
-        status.includes("promot");
-}
-
-function isRandomTopProduct(p = {}) {
-    const flagText = getStatusText([p.rank, p.homeRank, p.homeSlot, p.displayMode, p.mark, p.tag].filter(Boolean).join(" "));
-    return boolIsTrue(p.random) ||
-        boolIsTrue(p.isRandom) ||
-        boolIsTrue(p.rand) ||
-        boolIsTrue(p.markRand) ||
-        boolIsTrue(p.randomTop) ||
-        boolIsTrue(p.showOnTop) ||
-        boolIsTrue(p.featured) ||
-        boolIsTrue(p.isFeatured) ||
-        flagText.includes("random") ||
-        flagText.includes("top") ||
-        flagText.includes("featured");
-}
-
-function isProductInSpecialEvent(p = {}) {
-    return boolIsTrue(p.specialDay) ||
-        boolIsTrue(p.isSpecialDay) ||
-        !!p.activeEventId ||
-        (p.offerPercent && Number(p.offerPercent) > 0) ||
-        isActiveDateWindow(p.saleStart, p.saleEnd);
-}
-
-function rankedRandomProducts(products = []) {
-    const unique = new Map();
-    (products || []).forEach(p => {
-        const item = toHomeCardProduct(p);
-        if (item && item.id && !item.isDummy) unique.set(String(item.id), item);
-    });
-    const items = Array.from(unique.values());
-    const sponsored = shuffleArray(items.filter(isSponsoredProduct));
-    const randomTop = shuffleArray(items.filter(p => !isSponsoredProduct(p) && isRandomTopProduct(p)));
-    const eventItems = shuffleArray(items.filter(p => !isSponsoredProduct(p) && !isRandomTopProduct(p) && isProductInSpecialEvent(p)));
-    const normal = shuffleArray(items.filter(p => !isSponsoredProduct(p) && !isRandomTopProduct(p) && !isProductInSpecialEvent(p)));
-    return [...sponsored, ...randomTop, ...eventItems, ...normal];
-}
-
-function pickRandomSuggestions(matches = [], limit = 3) {
-    const clean = (matches || []).filter(p => p && !p.isDummy);
-    const sponsored = shuffleArray(clean.filter(isSponsoredProduct));
-    const rest = shuffleArray(clean.filter(p => !isSponsoredProduct(p)));
-    return [...sponsored, ...rest].slice(0, limit);
-}
-
-function normalizePublicConfig(data = {}) {
-    const d = data && data.config ? data.config : data;
-    const special = d.special_day || d.specialDay || d.special_event || d.specialEvent || d.siteSpecialDay || d;
-    return {
-        raw: d,
-        specialDay: special && typeof special === "object" ? special : null,
-        popup: d.popup || d.systemPopup || d.notice || null
-    };
-}
-
-function normalizeBroadcastList(data) {
-    const list = aryantaArrayFromResponse(data, ["broadcasts", "items", "data", "results", "documents", "messages"]);
-    return list
-        .map((b, index) => ({
-            ...b,
-            id: b.id || b.docId || b.broadcastId || b.timestamp || `broadcast-${index}`,
-            title: b.title || b.heading || b.name || "Aryanta Update",
-            message: b.message || b.text || b.body || b.desc || "New update from Aryanta.",
-            timestamp: b.timestamp || b.time || b.createdAt || b.updatedAt || new Date().toISOString(),
-            isActive: b.isActive !== false && b.active !== false && b.deleted !== true
-        }))
-        .filter(b => b.isActive && b.message)
-        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-}
-
-function applySpecialDayTheme(eventData) {
-    const eventName = eventData.eventName || eventData.name || eventData.title || "Special Day";
-    currentSpecialEvent = eventData;
-    siteConfig.isSpecialDay = true;
-    siteConfig.specialDayName = eventName;
-    siteConfig.specialEvent = eventData;
-
-    document.body.classList.add("theme-special-day", "aryanta-event-mode");
-    document.body.classList.remove("aryanta-event-dark", "aryanta-event-light", "aryanta-event-festival");
-    const specialTone = String(eventData.theme || eventData.design || eventData.mode || "festival").toLowerCase();
-    if (specialTone.includes("dark") || specialTone.includes("black")) document.body.classList.add("aryanta-event-dark");
-    else if (specialTone.includes("light") || specialTone.includes("white")) document.body.classList.add("aryanta-event-light");
-    else document.body.classList.add("aryanta-event-festival");
-    document.documentElement.style.setProperty("--event-accent", eventData.accentColor || eventData.color || eventData.primaryColor || "#ff3b30");
-    document.documentElement.style.setProperty("--event-accent-2", eventData.secondaryColor || eventData.secondColor || "#ffb703");
-    document.documentElement.style.setProperty("--event-soft", eventData.softColor || "rgba(255, 183, 3, .14)");
-
-    const festiveBar = document.getElementById("festiveAnnouncement");
-    if (festiveBar) {
-        festiveBar.style.display = "block";
-        festiveBar.innerHTML = `🎉 ${escapeHtml(eventName)} is LIVE! ${escapeHtml(eventData.subtitle || eventData.message || "Exclusive offers are active now.")} 🎉`;
-    }
-
-    const main = document.querySelector(".main-content") || document.body;
-    if (main && !document.getElementById("specialDayHero")) {
-        const hero = document.createElement("section");
-        hero.id = "specialDayHero";
-        hero.className = "special-day-hero";
-        hero.innerHTML = `
-            <div class="special-day-copy">
-                <span class="special-day-pill"><i class="fas fa-bolt"></i> Live event</span>
-                <h1>${escapeHtml(eventName)}</h1>
-                <p>${escapeHtml(eventData.description || eventData.message || "Fresh live deals from approved Aryanta sellers.")}</p>
-            </div>
-            <button class="special-day-btn" onclick="document.getElementById('productShelf')?.scrollIntoView({behavior:'smooth', block:'start'})">
-                Shop live offers <i class="fas fa-arrow-right"></i>
-            </button>
-        `;
-        const banner = document.getElementById("mainBannerSection");
-        if (banner && banner.parentNode) banner.parentNode.insertBefore(hero, banner);
-        else main.prepend(hero);
-    }
-}
-
-function clearSpecialDayTheme() {
-    siteConfig.isSpecialDay = false;
-    siteConfig.specialDayName = "";
-    siteConfig.specialEvent = null;
-    currentSpecialEvent = null;
-    document.body.classList.remove("theme-special-day", "aryanta-event-mode", "aryanta-event-dark", "aryanta-event-light", "aryanta-event-festival");
-    const bar = document.getElementById("festiveAnnouncement");
-    if (bar) bar.style.display = "none";
-    const hero = document.getElementById("specialDayHero");
-    if (hero) hero.remove();
-}
-
-function normalizeHomeFastResponse(data) {
-    const productSource = data && data.products ? data.products : data;
-    const bannerSource = data && (data.banners || data.banner || data.slides) ? (data.banners || data.banner || data.slides) : data;
-    return {
-        products: aryantaArrayFromResponse(productSource, ["products", "items", "data", "results", "documents"]),
-        banners: aryantaArrayFromResponse(bannerSource, ["banners", "banner", "slides", "images", "data", "items"])
-    };
-}
-
-function boolIsFalse(value) {
-    return value === false || value === "false" || value === 0 || value === "0" || String(value).toLowerCase() === "no";
-}
-
-function boolIsTrue(value) {
-    return value === true || value === "true" || value === 1 || value === "1" || String(value).toLowerCase() === "yes";
-}
-
-function isProductVisibleForHome(raw) {
-    if (!raw || typeof raw !== "object") return false;
-
-    const p = normalizeRawProductObject(raw);
-    const statusWords = String([
-        p.status,
-        p.approvalStatus,
-        p.qcStatus,
-        p.productStatus,
-        p.visibility,
-        p.publishStatus,
-        p.liveStatus
-    ].filter(Boolean).join(" ")).trim().toLowerCase();
-
-    const hardHidden =
-        boolIsTrue(p.hidden) ||
-        boolIsTrue(p.deleted) ||
-        boolIsTrue(p.isDeleted) ||
-        boolIsFalse(p.isVisible) ||
-        boolIsFalse(p.visible) ||
-        boolIsFalse(p.publicVisible) ||
-        boolIsFalse(p.isPublicVisible);
-
-    if (hardHidden) return false;
-
-    const sellerOffline =
-        boolIsTrue(p.sellerOffline) ||
-        boolIsTrue(p.storeOffline) ||
-        boolIsTrue(p.offline) ||
-        (p.settings && boolIsTrue(p.settings.offline));
-
-    if (sellerOffline) return false;
-
-    const blockedWords = ["deleted", "disabled", "rejected", "reject", "blocked", "suspended", "suspend", "inactive", "cancelled", "canceled", "private"];
-    if (blockedWords.some(word => statusWords.includes(word))) return false;
-
-    const pendingOnly = ["pending", "review", "draft", "hold", "unapproved"].some(word => statusWords.includes(word));
-    const approvedLive =
-        ["approved", "approve", "qc pass", "passed", "active", "live", "published", "public", "visible"].some(word => statusWords.includes(word)) ||
-        boolIsTrue(p.isVisible) ||
-        boolIsTrue(p.visible) ||
-        boolIsTrue(p.approved) ||
-        boolIsTrue(p.isApproved) ||
-        boolIsTrue(p.live);
-
-    if (pendingOnly && !approvedLive) return false;
-
-    return true;
-}
-
-function makeProductId(p) {
-    const direct = String(
-        p?.id ||
-        p?.productId ||
-        p?.productID ||
-        p?.uid ||
-        p?.sku ||
-        p?.docId ||
-        p?.itemId ||
-        p?.slug ||
-        ""
-    ).trim();
-
-    if (direct) return direct;
-
-    const name = String(p?.name || p?.title || p?.productName || "product").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-    return `${name || "product"}-${Math.abs(JSON.stringify(p || {}).split("").reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0))}`;
-}
-
-function normalizeProductsForHome(data) {
-    return aryantaArrayFromResponse(data, ["products", "items", "data", "results"])
-        .filter(isProductVisibleForHome)
-        .map(toHomeCardProduct)
-        .filter(p => p && p.id);
-}
-
-function renderNoProductsState(message = "No products found right now.") {
-    const shelf = document.getElementById("productShelf");
-    const loader = document.getElementById("infiniteScrollLoader");
-    if (loader) loader.style.visibility = "hidden";
-    if (!shelf) return;
-
-    shelf.innerHTML = `
-        <div style="grid-column:1/-1; width:100%; min-height:220px; display:flex; align-items:center; justify-content:center; padding:30px;">
-            <div style="max-width:420px; width:100%; background:var(--surface, #fff); border:1px solid var(--border, #e5e7eb); border-radius:24px; padding:28px; text-align:center; box-shadow:var(--shadow-sm, 0 10px 30px rgba(0,0,0,.08));">
-                <div style="width:64px;height:64px;border-radius:22px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;background:rgba(0,128,128,.1);color:#008080;font-size:26px;">
-                    <i class="fas fa-box-open"></i>
-                </div>
-                <h3 style="font-size:20px;font-weight:800;margin-bottom:8px;color:var(--text-main,#111827);">Products not loaded</h3>
-                <p style="font-size:14px;line-height:1.6;color:var(--text-muted,#6b7280);font-weight:600;">${escapeHtml(message)}</p>
-                <button onclick="bootHomeUltraFast(true)" style="margin-top:18px;border:0;border-radius:14px;padding:13px 18px;background:#008080;color:#fff;font-weight:800;cursor:pointer;">Retry Loading</button>
-            </div>
-        </div>
-    `;
-}
-
-
-document.addEventListener('DOMContentLoaded', () => {
-    loadAppSettings();
-    checkSessionFast();
-
-    bootHomeUltraFast();
-
-    initMathematicalScroll();
-
-    setupInstantFilterControls();
-    setupSearch("desktopSearchInput", ".desktop-clear", ".desktop-dropdown", "dMicBtn");
-    setupSearch("mobileSearchInput", ".mobile-clear", ".mobile-dropdown", "mMicBtn");
-
-    window.addEventListener('popstate', () => {
-        if (modalsOpen > 0) closeAllModals(true);
-        document.querySelectorAll('.search-dropdown').forEach(d => d.style.display = 'none');
-    });
-
-    document.addEventListener('touchstart', hideDropdowns, { passive: true });
-    document.addEventListener('click', hideDropdowns);
-
-    setTimeout(() => {
-        checkSessionDB();
-    }, 1500);
-
-    setTimeout(() => {
-        fetchAppConfig();
-        listenForBroadcasts();
-    }, 3500);
-});
-        function hideDropdowns(e) {
-            if(!e.target.closest('.nav-search') && !e.target.closest('.search-dropdown')) {
-                document.querySelectorAll('.search-dropdown').forEach(d => d.style.display = 'none');
-            }
-        }
-
-        function loadAppSettings() {
-            try {
-                const stored = localStorage.getItem('aryanta_settings');
-                if(stored) {
-                    appSettings = JSON.parse(stored);
-                    if(appSettings.darkMode === true) appSettings.theme = 'dark';
-                    if(appSettings.darkMode === false) appSettings.theme = 'light';
-                }
-                if(!appSettings.theme) appSettings.theme = 'system';
-            } catch(e) {}
-            applyTheme();
-        }
-
-        function applyTheme() {
-            const btnIcon = document.querySelector('#themeToggleBtn i');
-            document.body.classList.remove('dark-theme', 'light-theme');
-            
-            if (appSettings.theme === 'dark') {
-                document.body.classList.add('dark-theme');
-                if(btnIcon) btnIcon.className = 'fas fa-moon';
-            } else if (appSettings.theme === 'light') {
-                document.body.classList.add('light-theme');
-                if(btnIcon) btnIcon.className = 'fas fa-sun';
-            } else {
-                if(btnIcon) btnIcon.className = 'fas fa-desktop';
-            }
-            localStorage.setItem('aryanta_settings', JSON.stringify(appSettings));
-        }
-
-        window.toggleThemeCycle = function() {
-            if(appSettings.theme === 'system') appSettings.theme = 'light';
-            else if(appSettings.theme === 'light') appSettings.theme = 'dark';
-            else appSettings.theme = 'system';
-            applyTheme();
-            showToast(`Theme set to: ${appSettings.theme}`);
-        }
-
-       function checkSessionFast() {
-    const session = JSON.parse(localStorage.getItem('active_session'));
-    const accBtn = document.getElementById('accountBtn');
-    const hr = new Date().getHours();
-    let greeting = hr < 12 ? "Good Morning" : (hr < 18 ? "Good Afternoon" : "Good Evening");
-
-    if (session && session.email) {
-        document.getElementById('sidebarUser').innerText = session.name || "Aryanta User";
-        document.getElementById('sidebarRole').innerHTML = `${greeting}, Welcome back!`;
-        document.getElementById('sidebarLogoutBtn').style.display = "flex";
-
-        let avatar = session.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(session.email)}`;
-
-        document.getElementById('sidebarAvatar').src = avatar;
-        document.getElementById('sidebarPrimeBadge').style.display = session.isPrime ? 'flex' : 'none';
-
-        accBtn.innerHTML = `<img src="${avatar}" class="nav-avatar" title="My Profile"> <span class="desktop-only" style="margin-left:8px; font-weight:700;">${(session.name || "User").split(' ')[0]}</span>`;
-        accBtn.onclick = () => location.href = 'https://aryanta.in/profile';
-        document.getElementById('sidebarAccountLink').onclick = () => location.href = 'https://aryanta.in/profile';
-    } else {
-        document.getElementById('sidebarUser').innerText = 'Welcome Guest';
-        document.getElementById('sidebarRole').innerText = `${greeting}, Sign in for best deals`;
-        document.getElementById('sidebarLogoutBtn').style.display = "none";
-        document.getElementById('sidebarPrimeBadge').style.display = 'none';
-
-        accBtn.innerHTML = `<i class="fas fa-user-circle" style="font-size:24px;"></i> <span class="desktop-only" style="margin-left:8px; font-weight:700;">Sign In</span>`;
-        accBtn.onclick = () => showLoginRequiredPopup('Login to view your Aryanta profile, wishlist and orders.');
-        document.getElementById('sidebarAccountLink').onclick = () => showLoginRequiredPopup('Login to view your Aryanta profile, wishlist and orders.');
-    }
-}
-
-async function checkSessionDB() {
-    const session = JSON.parse(localStorage.getItem('active_session'));
-    if (!session || !session.email) return;
-
-    try {
-        const res = await fetch(`${API_BASE_URL}/get-user?email=${encodeURIComponent(session.email)}`, {
-            method: "GET",
-            headers: { "Accept": "application/json" },
-            cache: "no-store"
-        });
-
-        if (!res.ok) return;
-
-        const payload = await res.json();
-        const userData = payload && payload.user ? payload.user : payload;
-
-        cart = Array.isArray(userData?.cart) ? userData.cart : [];
-        wishlist = Array.isArray(userData?.wishlist) ? userData.wishlist : [];
-
-        updateCartBadge();
-        refreshVisibleCartWishlistButtons();
-
-    } catch (e) {
-        console.warn("User cart/wishlist sync skipped.", e);
-    }
-}
-
-function refreshVisibleCartWishlistButtons() {
-    document.querySelectorAll('[id^="cartBtn-"]').forEach(btn => {
-        const id = btn.id.replace('cartBtn-', '');
-        const inCart = cart.some(i => String(i.id) === String(id));
-        btn.innerText = inCart ? "Remove Cart" : "Add to Cart";
-        btn.className = `btn-list-add ${inCart ? 'btn-remove' : 'btn-add'}`;
-    });
-
-    document.querySelectorAll('[id^="wish-"]').forEach(icon => {
-        const id = icon.id.replace('wish-', '');
-        const wished = wishlist.some(w => String(w) === String(id));
-        icon.className = wished
-            ? "fas fa-heart premium-hover wishlist-icon active-heart"
-            : "far fa-heart premium-hover wishlist-icon";
-        icon.style.color = wished ? "var(--danger)" : "var(--text-muted)";
-    });
-}
-
-        function updateCartBadge() {
-            let count = cart.reduce((total, item) => total + (item.qty || 1), 0);
-            const badge = document.getElementById('cartBadge');
-            badge.innerText = count;
-            count > 0 ? badge.classList.add('show') : badge.classList.remove('show');
-        }
-
-        function logOut() { localStorage.removeItem('active_session'); location.reload(); }
-
-        let toastTimer;
-        function showToast(message) {
-            const toast = document.getElementById('toastNotification');
-            document.getElementById('toastMessage').innerText = message;
-            toast.classList.add('show');
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
-        }
-
-        async function saveCartToDB() {
-            const session = JSON.parse(localStorage.getItem('active_session'));
-            if(session && session.email) {
-                try { await fetch(`${API_BASE_URL}/update-user`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ email: session.email, updates: { cart: cart }, projectId: PROJECT_ID }) }); } catch(e) {}
-            }
-        }
-
-        async function saveWishlistToDB() {
-            const session = JSON.parse(localStorage.getItem('active_session'));
-            if(session && session.email) {
-                try { await fetch(`${API_BASE_URL}/update-user`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ email: session.email, updates: { wishlist: wishlist }, projectId: PROJECT_ID }) }); } catch(e) {}
-            }
-        }
-
-        async function fetchAppConfig() {
-            try {
-                let data = null;
-                for (const path of PUBLIC_CONFIG_PATHS) {
-                    data = await fetchJsonWithTimeout(path, 5000).catch(() => null);
-                    if (data) break;
-                }
-                if (!data) return;
-
-                const normalized = normalizePublicConfig(data);
-                const special = normalized.specialDay;
-                const isActive = special && (special.isActive === true || special.active === true || special.enabled === true || String(special.status || '').toLowerCase() === 'active');
-
-                if (isActive && isActiveDateWindow(special.startTime || special.start || special.startsAt, special.endTime || special.end || special.endsAt)) {
-                    applySpecialDayTheme(special);
-                } else {
-                    clearSpecialDayTheme();
-                }
-
-                const popup = normalized.popup || normalized.raw;
-                if (appSettings.notifications && popup && (popup.showPopup || popup.popupEnabled) && !sessionStorage.getItem('popupShown')) {
-                    document.getElementById('popupTitle').innerText = popup.popupTitle || popup.title || "Notice";
-                    document.getElementById('popupDesc').innerText = popup.popupDesc || popup.message || popup.desc || "Welcome to Aryanta Store.";
-                    openModalId('systemPopup');
-                    sessionStorage.setItem('popupShown', 'true');
-                }
-            } catch (e) {
-                console.warn("Config loading skipped:", e);
-            }
-        }
-
-        async function listenForBroadcasts() {
-            if (!appSettings.notifications) return;
-            try {
-                let broadcasts = [];
-                for (const path of PUBLIC_BROADCAST_PATHS) {
-                    const data = await fetchJsonWithTimeout(path, 5500).catch(() => null);
-                    const list = normalizeBroadcastList(data);
-                    if (list.length) {
-                        broadcasts = list;
-                        break;
-                    }
-                }
-
-                if (broadcasts.length > 0) {
-                    const b = broadcasts[0];
-                    const broadcastKey = String(b.id || b.timestamp || b.title);
-                    const lastSeen = sessionStorage.getItem('last_seen_broadcast');
-                    if (lastSeen !== broadcastKey) {
-                        document.getElementById('broadcastTitle').innerText = b.title;
-                        document.getElementById('broadcastMessage').innerText = b.message;
-                        openModalId('broadcastModal');
-                        sessionStorage.setItem('last_seen_broadcast', broadcastKey);
-                    }
-                }
-            } catch(e) {
-                console.warn("Broadcast loading skipped:", e);
-            }
-        }
-
-       async function fetchBannersFast() {
-    try {
-        if (HOME_RAM_CACHE && Array.isArray(HOME_RAM_CACHE.banners)) {
-            renderOrHideBanners(HOME_RAM_CACHE.banners);
-            return;
-        }
-
-        const data = await fetchJsonWithTimeout("/banners", 3000);
-        renderOrHideBanners(data);
-
-    } catch (e) {
-        console.warn("Banner loading skipped:", e);
-        const bannerSection = document.getElementById("mainBannerSection");
-        if (bannerSection) bannerSection.style.display = "none";
-    }
-}
-
-
-
-        function renderGridBanners(banners) {
-            const mainTrack = document.getElementById('mainBannerTrack');
-            if(!mainTrack || banners.length === 0) return;
-            
-            mainTrack.innerHTML = banners.map((b, i) => {
-                let clk = b.link ? `onclick="window.location.href='${b.link}'"` : '';
-                return `<div class="f-slide ${i === 0 ? 'active' : ''}" id="mBannerSlide-${i}" style="background-image: url('${b.imageUrl}');" ${clk}></div>`;
-            }).join('');
-
-            mainBannerIndex = 0;
-            clearInterval(bannerTimer);
-            if(banners.length > 1) bannerTimer = setInterval(() => slideMainBanner(1), 3500);
-        }
-
-        window.slideMainBanner = function(step) {
-            const track = document.getElementById('mainBannerTrack');
-            if(!track || !track.children.length) return;
-            const total = track.children.length;
-            
-            let oldActive = document.getElementById(`mBannerSlide-${mainBannerIndex}`);
-            if(oldActive) oldActive.classList.remove('active');
-            
-            mainBannerIndex = (mainBannerIndex + step + total) % total;
-            
-            let newActive = document.getElementById(`mBannerSlide-${mainBannerIndex}`);
-            if(newActive) newActive.classList.add('active');
-            
-            clearInterval(bannerTimer);
-            if(total > 1) bannerTimer = setInterval(() => slideMainBanner(1), 4000);
-        }
-
-        function shuffleArray(array) {
-            let arr = [...array];
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-            return arr;
-        }
-
-        function buildHomeLayout(products) {
-            return rankedRandomProducts(products);
-        }
-
-function mergeProductCatalog(rawProducts, options = {}) {
-    const replace = options.replace === true;
-    const normalized = (rawProducts || [])
-        .map(normalizeRawProductObject)
-        .filter(isProductVisibleForHome)
-        .map(toHomeCardProduct)
-        .filter(p => p && p.id && !p.isDummy);
-
-    const currentMap = replace ? new Map() : new Map(allProducts.map(p => [String(p.id), p]));
-    normalized.forEach(p => currentMap.set(String(p.id), { ...(currentMap.get(String(p.id)) || {}), ...p }));
-
-    allProducts = Array.from(currentMap.values());
-
-    if (replace) {
-        baseCategoryProducts = buildHomeLayout(allProducts);
-    } else {
-        const used = new Set(baseCategoryProducts.map(p => String(p.id)));
-        const incoming = buildHomeLayout(allProducts.filter(p => !used.has(String(p.id))));
-        baseCategoryProducts = [...baseCategoryProducts, ...incoming];
-    }
-
-    renderCategoryPills();
-    return normalized.length;
-}
-
-async function fetchFirstWorkingProductList(paths, timeout = 4500) {
-    for (const path of paths) {
-        const data = await fetchJsonWithTimeout(path, timeout).catch(() => null);
-        if (!data) continue;
-        const normalized = normalizeHomeFastResponse(data);
-        const products = normalized.products && normalized.products.length ? normalized.products : aryantaArrayFromResponse(data, ["products", "items", "data", "results", "documents"]);
-        if (products.length) return { products, banners: normalized.banners || [] };
-    }
-    return { products: [], banners: [] };
-}
-
-async function loadFullCatalogInBackground(seedProducts = []) {
-    try {
-        const paths = [
-            `/products?limit=${HOME_FULL_CATALOG_LIMIT}&approved=true&live=true`,
-            `/products?limit=${HOME_FULL_CATALOG_LIMIT}`,
-            `/home-fast?limit=${HOME_FULL_CATALOG_LIMIT}`,
-            `/products`
-        ];
-
-        const allRaw = [...seedProducts];
-        await Promise.all(paths.map(async path => {
-            const data = await fetchJsonWithTimeout(path, 12000).catch(() => null);
-            if (!data) return;
-            const normalized = normalizeHomeFastResponse(data);
-            const products = normalized.products && normalized.products.length ? normalized.products : aryantaArrayFromResponse(data, ["products", "items", "data", "results", "documents"]);
-            allRaw.push(...products);
-        }));
-
-        const before = allProducts.length;
-        mergeProductCatalog(allRaw, { replace: false });
-        HOME_CATALOG_READY = true;
-
-        if (allProducts.length > before && currentlyDisplayed >= baseCategoryProducts.length - SCROLL_BATCH - 1) {
-            setTimeout(() => loadMoreProducts(SCROLL_BATCH), 60);
-        }
-
-        setTimeout(() => injectGoogleMerchantData(allProducts.slice(0, 60)), 1000);
-    } catch (err) {
-        console.warn("Full catalog background load failed:", err);
-        HOME_CATALOG_READY = true;
-    }
-}
-
- async function fetchProducts() {
-    return bootHomeUltraFast();
-}
-
-async function bootHomeUltraFast(force = false) {
-    if (HOME_LOADING_PROMISE && !force) return HOME_LOADING_PROMISE;
-
-    HOME_LOADING_PROMISE = (async () => {
-        const safetyTimer = setTimeout(hideMainLoaderFast, 6500);
-
-        try {
-            const shelf = document.getElementById("productShelf");
-            if (force && shelf) shelf.innerHTML = "";
-            currentlyDisplayed = 0;
-            HOME_CATALOG_READY = false;
-
-            const bannerPromise = fetchJsonWithTimeout("/banners", 5500).catch(() => null);
-
-            const first = await fetchFirstWorkingProductList([
-                "/home-fast?limit=10&random=1&approved=true&live=true",
-                "/products?limit=10&random=1&approved=true&live=true",
-                "/home-fast?limit=20",
-                "/products?limit=20",
-                "/products"
-            ], 5200);
-
-            const initialProducts = first.products || [];
-            mergeProductCatalog(initialProducts, { replace: true });
-
-            if (shelf) shelf.innerHTML = "";
-
-            if (baseCategoryProducts.length) {
-                loadMoreProducts(INITIAL_BATCH);
-                loadRecentlyViewedFromStorage();
-            } else {
-                renderNoProductsState("No approved/live products came from Worker yet. Background catalog fetch is still trying /products.");
-            }
-
-            hideMainLoaderFast();
-
-            const bannerData = await bannerPromise;
-            const rawBanners = (first.banners && first.banners.length)
-                ? first.banners
-                : aryantaArrayFromResponse(bannerData, ["banners", "banner", "slides", "data", "items", "images"]);
-            renderOrHideBanners(rawBanners);
-
-            loadFullCatalogInBackground(initialProducts);
-
-        } catch (err) {
-            console.error("Home loading failed:", err);
-            hideMainLoaderFast();
-            renderNoProductsState("Products could not be loaded from the Worker. Please check the Cloudflare Worker /products and /home-fast routes.");
-            if (typeof showToast === "function") showToast("Products loading failed. Please check Worker routes.");
-        } finally {
-            clearTimeout(safetyTimer);
-            HOME_LOADING_PROMISE = null;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f8f9fc">
+  <meta name="description" content="Aryanta is building something new. Our website will be live soon. Stay tuned.">
+  <title>Aryanta — Coming Soon</title>
+
+  <script>
+    (() => {
+      const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
     })();
+  </script>
 
-    return HOME_LOADING_PROMISE;
-}
-        
-
-        function injectGoogleMerchantData(products) {
-            const existing = document.getElementById('merchant-ld');
-            if(existing) existing.remove();
-            
-            const script = document.createElement('script');
-            script.type = 'application/ld+json';
-            script.id = 'merchant-ld';
-            
-            const itemList = {
-                "@context": "https://schema.org",
-                "@type": "ItemList",
-                "itemListElement": products.filter(p=>!p.isDummy).slice(0, 100).map((p, index) => {
-                    let schema = {
-                        "@type": "ListItem",
-                        "position": index + 1,
-                        "item": {
-                            "@type": "Product",
-                            "url": `https://aryanta.in/product?id=${p.id}`,
-                            "name": p.name,
-                            "image": p.images && p.images.length > 0 ? p.images : [p.image],
-                            "description": p.desc || `Buy premium ${p.name} at Aryanta Store. Quality guaranteed.`,
-                            "sku": p.id,
-                            "brand": { "@type": "Brand", "name": p.brand || "Aryanta" },
-                            "offers": {
-                                "@type": "Offer",
-                                "url": `https://aryanta.in/product?id=${p.id}`,
-                                "priceCurrency": "INR",
-                                "price": p.price,
-                                "priceValidUntil": new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
-                                "itemCondition": "https://schema.org/NewCondition",
-                                "availability": p.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
-                            }
-                        }
-                    };
-                    if(p.reviewCount && p.reviewCount > 0 && p.avgRating && p.avgRating !== "New") {
-                        schema.item.aggregateRating = {
-                            "@type": "AggregateRating",
-                            "ratingValue": p.avgRating,
-                            "reviewCount": p.reviewCount
-                        };
-                    }
-                    return schema;
-                })
-            };
-            script.text = JSON.stringify(itemList);
-            document.head.appendChild(script);
-        }
-
-        let aryantaActiveCategory = "All";
-let aryantaQuickArrivalMode = false;
-
-function toHomeCardProduct(raw) {
-    if (!raw || typeof raw !== "object") return null;
-
-    const p = normalizeRawProductObject(raw);
-    const id = makeProductId(p);
-
-    const image =
-        p.image ||
-        p.imageUrl ||
-        p.img ||
-        p.thumbnail ||
-        p.photo ||
-        p.coverImage ||
-        p.mainImage ||
-        p.productImage ||
-        (Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : "") ||
-        (Array.isArray(p.imageUrls) && p.imageUrls.length > 0 ? p.imageUrls[0] : "") ||
-        "https://aryanta.in/vurify/aryanta.jpeg";
-
-    const images = Array.isArray(p.images) && p.images.length > 0
-        ? p.images
-        : (Array.isArray(p.imageUrls) && p.imageUrls.length > 0 ? p.imageUrls : [image]);
-
-    const price = Number(p.price ?? p.listedPrice ?? p.sellingPrice ?? p.finalPrice ?? p.salePrice ?? p.offerPrice ?? p.mrp ?? 0);
-    const reviewCount = Number(p.reviewCount ?? p.reviewsCount ?? p.totalReviews ?? 0);
-    const avgRating = p.avgRating || p.rating || p.averageRating || (reviewCount ? "4.5" : "New");
-    const name = p.name || p.title || p.productName || p.itemName || p.productTitle || "Aryanta Product";
-
-    return {
-        ...p,
-        id,
-        productId: p.productId || p.productID || p.product_id || id,
-        name,
-        price: Number.isFinite(price) ? price : 0,
-        image,
-        imageUrl: p.imageUrl || image,
-        images: images.filter(Boolean),
-        brand: p.brand || p.brandName || p.company || p.sellerName || "",
-        category: p.category || p.cat || p.section || p.productCategory || "Other",
-        stock: Number(p.stock ?? p.quantity ?? p.qty ?? p.availableStock ?? 0),
-        avgRating,
-        reviewCount: Number.isFinite(reviewCount) ? reviewCount : 0,
-        sponsored: isSponsoredProduct(p),
-        randomTop: isRandomTopProduct(p),
-        specialDeal: isProductInSpecialEvent(p),
-        offerPercent: Number(p.offerPercent || p.discountPercent || p.discount || 0),
-        isDummy: p.isDummy === true,
-        sku: p.sku || p.SKU || "",
-        sellerName: p.sellerName || p.companyName || p.storeName || "",
-        desc: p.desc || p.description || p.shortDescription || p.highlights || ""
-    };
-}
-
-function getLightProducts() {
-    return allProducts
-        .filter(p => p && !p.isDummy && isProductVisibleForHome(p))
-        .map(toHomeCardProduct)
-        .filter(Boolean);
-}
-
-function renderProductSet(products) {
-    baseCategoryProducts = products;
-    currentlyDisplayed = 0;
-
-    const shelf = document.getElementById('productShelf');
-    if (shelf) shelf.innerHTML = "";
-
-    loadMoreProducts(INITIAL_BATCH);
-}
-
-function renderCategoryPills() {
-    const grid = document.getElementById('categoryGrid');
-    if (!grid) return;
-
-    const cats = Array.from(
-        new Set(
-            allProducts
-                .filter(p => !p.isDummy)
-                .map(p => p.category || 'Other')
-        )
-    ).sort((a, b) => a.localeCompare(b));
-
-    grid.innerHTML = "";
-
-    const allBtn = document.createElement('button');
-    allBtn.className = 'cat-pill';
-    allBtn.style.justifyContent = 'center';
-    allBtn.style.padding = '15px';
-    allBtn.innerText = 'All Categories';
-    allBtn.onclick = () => filterCategory('All');
-    grid.appendChild(allBtn);
-
-    cats.forEach(c => {
-        const gBtn = document.createElement('button');
-        gBtn.className = 'cat-pill';
-        gBtn.style.justifyContent = 'center';
-        gBtn.style.padding = '15px';
-        gBtn.innerText = c;
-        gBtn.onclick = () => filterCategory(c);
-        grid.appendChild(gBtn);
-    });
-}
-
-window.openCategoryModal = function() {
-    openModalId('categoryModal');
-};
-
-window.filterCategory = function(cat) {
-    aryantaActiveCategory = cat;
-    aryantaQuickArrivalMode = false;
-
-    let products = getLightProducts();
-
-    if (cat !== 'All') {
-        products = products.filter(p => (p.category || 'Other') === cat);
-    } else {
-        products = buildHomeLayout(products);
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fc;
+      --surface: rgba(255,255,255,.76);
+      --text: #171923;
+      --muted: #73798a;
+      --line: rgba(30,40,70,.10);
+      --accent: #635bff;
+      --accent2: #00b9c7;
+      --glow: rgba(99,91,255,.18);
+      --grid: rgba(90,100,140,.065);
     }
 
-    renderProductSet(rankedRandomProducts(products));
-    closeAllModals();
-};
-
-window.filterQuickArrivals = function() {
-    aryantaActiveCategory = "All";
-    aryantaQuickArrivalMode = true;
-
-    const products = getLightProducts().filter(p => {
-        return p.avgRating === 'New' || !p.reviewCount;
-    });
-
-    renderProductSet(rankedRandomProducts(products));
-};
-
-window.loadMoreProducts = function(batchCount = SCROLL_BATCH) {
-    if (isFetchingMore) return;
-    isFetchingMore = true;
-
-    const container = document.getElementById('productShelf');
-    const loader = document.getElementById('infiniteScrollLoader');
-
-    if (!container) {
-        isFetchingMore = false;
-        return;
-    }
-
-    if (loader) loader.style.visibility = 'visible';
-
-    const nextBatch = baseCategoryProducts.slice(
-        currentlyDisplayed,
-        currentlyDisplayed + batchCount
-    );
-
-    if (nextBatch.length === 0) {
-        if (loader) loader.style.visibility = 'hidden';
-        isFetchingMore = false;
-        return;
-    }
-
-    const fragment = document.createDocumentFragment();
-
-    nextBatch.forEach((p, index) => {
-        if (!p || p.isDummy) return;
-
-        const productId = String(p.id);
-        const productName = escapeHtml(p.name || 'Aryanta Product');
-        const productPrice = Number(p.price || 0).toLocaleString('en-IN');
-        const firstImage = getFirstProductImage(p);
-
-        const inCart = cart.some(i => String(i.id) === productId);
-        const isWished = wishlist.some(w => String(w) === productId);
-
-        const wishClass = isWished
-            ? 'fas fa-heart active-heart'
-            : 'far fa-heart';
-
-        const wishColor = isWished
-            ? 'var(--danger)'
-            : 'var(--text-muted)';
-
-        const rCount = p.reviewCount ? p.reviewCount : 0;
-
-        const starUI = p.avgRating && p.avgRating !== "New" && rCount > 0
-            ? `${p.avgRating} <i class="fas fa-star" style="font-size:10px;"></i> <span style="color:var(--text-muted); font-size:11px; margin-left:4px;">(${rCount} reviews)</span>`
-            : `<i class="fas fa-star" style="font-size:10px; color:#cbd5e1;"></i> <span style="color:var(--text-muted); font-size:11px; margin-left:4px;">New Arrival</span>`;
-
-        const stockStatus = (p.stock && p.stock < 10 && p.stock > 0)
-            ? `<div style="color:var(--danger); font-size:12px; font-weight:700; margin-top:-5px; margin-bottom:10px;">Only ${p.stock} left in stock</div>`
-            : '';
-
-        const imgPriority = currentlyDisplayed + index < 4 ? 'high' : 'low';
-
-        const promoBadges = `
-            ${p.sponsored ? '<span class="p-badge p-sponsored"><i class="fas fa-bullhorn"></i> Sponsored</span>' : ''}
-            ${p.randomTop && !p.sponsored ? '<span class="p-badge p-random"><i class="fas fa-fire"></i> Top Pick</span>' : ''}
-            ${p.specialDeal ? `<span class="p-badge p-special"><i class="fas fa-bolt"></i> ${p.offerPercent ? `${p.offerPercent}% OFF` : 'Live Deal'}</span>` : ''}
-        `;
-
-        const imgNodes = `
-            <img 
-                class="p-img-layer active"
-                id="p-img-${productId}-0"
-                src="${firstImage}"
-                alt="${productName}"
-                loading="lazy"
-                decoding="async"
-                fetchpriority="${imgPriority}"
-            >
-        `;
-
-        const div = document.createElement('div');
-        div.className = 'list-item-card';
-
-        bindLongPress(div, p);
-
-        div.innerHTML = `
-            <i id="wish-${productId}" class="${wishClass} premium-hover wishlist-icon"
-                style="position:absolute; top:20px; right:20px; font-size:22px; z-index:20; color:${wishColor}; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.1));"
-                onclick="event.stopPropagation(); toggleWishlist('${productId}')"></i>
-
-            <div class="list-image-container" id="img-cont-${productId}">
-                <div class="product-badge-stack">${promoBadges}</div>
-                ${imgNodes}
-            </div>
-
-            <div class="list-info">
-                <h4>${productName}</h4>
-                <div class="stars">${starUI}</div>
-                ${stockStatus}
-                <div class="price">₹${productPrice}</div>
-
-                <div class="list-actions">
-                    <button id="cartBtn-${productId}"
-                        class="btn-list-add ${inCart ? 'btn-remove' : 'btn-add'}"
-                        onclick="event.stopPropagation(); toggleCart('${productId}')">
-                        ${inCart ? 'Remove Cart' : 'Add to Cart'}
-                    </button>
-
-                    <button class="btn-list-buy"
-                        onclick="event.stopPropagation(); directBuyNow('${productId}')">
-                        Buy Now
-                    </button>
-                </div>
-            </div>
-        `;
-
-        fragment.appendChild(div);
-    });
-
-    requestAnimationFrame(() => {
-        container.appendChild(fragment);
-        currentlyDisplayed += nextBatch.length;
-
-        if (loader) loader.style.visibility = 'hidden';
-        isFetchingMore = false;
-    });
-};
-
-        window.slideImg = function(id, step) {
-            let d = imageCarousels[id];
-            if(!d) return;
-            let oldIndex = d.index;
-            d.index = (d.index + step + d.arr.length) % d.arr.length;
-            
-            let oldImg = document.getElementById(`p-img-${id}-${oldIndex}`);
-            let newImg = document.getElementById(`p-img-${id}-${d.index}`);
-            
-            if(oldImg) oldImg.classList.remove('active');
-            if(newImg) newImg.classList.add('active');
-        }
-
-        window.applySidebarFilter = function() {
-            applySidebarFilterLogic();
-        }
-        
-        function readCustomPriceRange() {
-            const minInput = document.getElementById('customMinPrice');
-            const maxInput = document.getElementById('customMaxPrice');
-            const rawMin = minInput ? minInput.value.trim() : "";
-            const rawMax = maxInput ? maxInput.value.trim() : "";
-            let min = rawMin === "" ? NaN : Number(rawMin);
-            let max = rawMax === "" ? NaN : Number(rawMax);
-
-            if (Number.isFinite(min) && min < 0) min = 0;
-            if (Number.isFinite(max) && max < 0) max = 0;
-
-            const hasMin = Number.isFinite(min);
-            const hasMax = Number.isFinite(max);
-
-            if (hasMin && hasMax && max < min) {
-                const oldMin = min;
-                min = max;
-                max = oldMin;
-                if (minInput) minInput.value = min;
-                if (maxInput) maxInput.value = max;
-            }
-
-            return {
-                hasCustom: hasMin || hasMax,
-                min: hasMin ? min : 0,
-                max: hasMax ? max : Infinity
-            };
-        }
-
-        function setupInstantFilterControls() {
-            const minInput = document.getElementById('customMinPrice');
-            const maxInput = document.getElementById('customMaxPrice');
-            const priceRadios = document.querySelectorAll('input[name="priceFilter"]');
-            const ratingRadios = document.querySelectorAll('input[name="ratingFilter"]');
-            let customFilterTimer = null;
-
-            const runFilterNow = () => {
-                clearTimeout(customFilterTimer);
-                applySidebarFilterLogic();
-            };
-
-            const runFilterSoon = () => {
-                clearTimeout(customFilterTimer);
-                customFilterTimer = setTimeout(() => applySidebarFilterLogic(), 120);
-            };
-
-            [minInput, maxInput].forEach(input => {
-                if (!input || input.dataset.instantFilterReady === "true") return;
-                input.dataset.instantFilterReady = "true";
-
-                input.addEventListener('input', () => {
-                    const allPriceRadio = document.querySelector('input[name="priceFilter"][value="all"]');
-                    if (allPriceRadio) allPriceRadio.checked = true;
-                    runFilterSoon();
-                });
-
-                input.addEventListener('change', runFilterNow);
-
-                input.addEventListener('keydown', (event) => {
-                    if (event.key === 'Enter') {
-                        event.preventDefault();
-                        runFilterNow();
-                        input.blur();
-                    }
-                });
-            });
-
-            document.querySelectorAll('.btn-go').forEach(btn => {
-                if (btn.dataset.instantFilterReady === "true") return;
-                btn.dataset.instantFilterReady = "true";
-                btn.addEventListener('click', (event) => {
-                    event.preventDefault();
-                    runFilterNow();
-                });
-            });
-
-            priceRadios.forEach(radio => {
-                if (radio.dataset.instantFilterReady === "true") return;
-                radio.dataset.instantFilterReady = "true";
-                radio.addEventListener('change', () => {
-                    if (radio.checked && radio.value !== 'all') {
-                        if (minInput) minInput.value = "";
-                        if (maxInput) maxInput.value = "";
-                    }
-                    runFilterNow();
-                });
-            });
-
-            ratingRadios.forEach(radio => {
-                if (radio.dataset.instantFilterReady === "true") return;
-                radio.dataset.instantFilterReady = "true";
-                radio.addEventListener('change', runFilterNow);
-            });
-        }
-
-        function applySidebarFilterLogic() {
-            const checkedPrice = document.querySelector('input[name="priceFilter"]:checked');
-            const checkedRating = document.querySelector('input[name="ratingFilter"]:checked');
-            const priceVal = checkedPrice ? checkedPrice.value : 'all';
-            const rateVal = checkedRating ? checkedRating.value : 'all';
-            const customRange = readCustomPriceRange();
-            
-            let filtered = getLightProducts();
-            
-            const dInput = (document.getElementById("desktopSearchInput")?.value || "").toLowerCase().trim();
-            const mInput = (document.getElementById("mobileSearchInput")?.value || "").toLowerCase().trim();
-            const query = dInput || mInput;
-            
-            if (query !== "") {
-                const terms = query.split(' ').filter(t => t.length > 0);
-                filtered = filtered.filter(p => terms.every(t => {
-                    const searchStr = `${p.name} ${p.brand || ''} ${p.category || ''} ${p.id || ''} ${p.sku || ''} ${p.sellerName || ''} ${p.desc || ''}`.toLowerCase();
-                    return searchStr.includes(t) || mathScientificFuzzyMatch(searchStr, t);
-                }));
-                
-                document.getElementById('mainBannerSection').classList.add('hidden-by-search');
-                document.getElementById('productShelf').classList.add('list-view');
-                document.getElementById('recentlyViewedContainer').style.display = 'none';
-            } else {
-                document.getElementById('mainBannerSection').classList.remove('hidden-by-search');
-                document.getElementById('productShelf').classList.remove('list-view');
-                if(recentlyViewed.length > 0) document.getElementById('recentlyViewedContainer').style.display = 'block';
-            }
-
-            if(customRange.hasCustom) {
-                filtered = filtered.filter(p => {
-                    const price = Number(p.price || 0);
-                    return Number.isFinite(price) && price >= customRange.min && price <= customRange.max;
-                });
-                const allPriceRadio = document.querySelector('input[name="priceFilter"][value="all"]');
-                if (allPriceRadio) allPriceRadio.checked = true;
-            } else if(priceVal !== 'all') {
-                filtered = filtered.filter(p => Number(p.price || 0) <= Number(priceVal));
-            }
-            
-            if(rateVal === 'new') {
-                filtered = filtered.filter(p => p.avgRating === 'New' || !p.reviewCount);
-            } else if (rateVal !== 'all') {
-                filtered = filtered.filter(p => Number(p.avgRating) >= Number(rateVal));
-            }
-
-            if(priceVal !== 'all' || rateVal !== 'all' || customRange.hasCustom) {
-                document.getElementById('activeFilterNotice').style.display = 'block';
-            } else {
-                document.getElementById('activeFilterNotice').style.display = 'none';
-            }
-
-            baseCategoryProducts = rankedRandomProducts(filtered);
-            currentlyDisplayed = 0;
-            document.getElementById('productShelf').innerHTML = "";
-            loadMoreProducts(INITIAL_BATCH);
-        }
-        function getFirstProductImage(p) {
-    if (p?.image) return p.image;
-    if (p?.imageUrl) return p.imageUrl;
-    if (p?.img) return p.img;
-    if (p?.thumbnail) return p.thumbnail;
-    if (Array.isArray(p?.images) && p.images.length > 0) return p.images[0];
-    if (Array.isArray(p?.imageUrls) && p.imageUrls.length > 0) return p.imageUrls[0];
-    return "https://aryanta.in/vurify/aryanta.jpeg";
-}
-
-function escapeHtml(str = "") {
-    return String(str)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
-
-        // Specifically designed to ONLY clear the filter, preserving the search query.
-        window.clearSidebarFilters = function() {
-            document.querySelector('input[name="priceFilter"][value="all"]').checked = true;
-            document.querySelector('input[name="ratingFilter"][value="all"]').checked = true;
-            document.getElementById('customMinPrice').value = "";
-            document.getElementById('customMaxPrice').value = "";
-            
-            document.querySelectorAll('.cat-pill').forEach(el => el.classList.remove('active'));
-            applySidebarFilterLogic();
-        }
-
-        function bindLongPress(element, product) {
-            let isLongPress = false;
-            let pressTimer;
-
-            const startPress = (e) => {
-                if (e.type === 'click' && e.detail !== 0) return;
-                isLongPress = false;
-                pressTimer = setTimeout(() => {
-                    isLongPress = true;
-                    showQuickView(product);
-                }, 550); 
-            };
-
-            const cancelPress = () => { clearTimeout(pressTimer); };
-
-            element.addEventListener('touchstart', startPress, {passive: true});
-            element.addEventListener('touchend', cancelPress);
-            element.addEventListener('touchmove', cancelPress);
-            element.addEventListener('mousedown', startPress);
-            element.addEventListener('mouseup', cancelPress);
-            element.addEventListener('mouseleave', cancelPress);
-
-            element.addEventListener('click', (e) => {
-                if (isLongPress) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                }
-                if (!e.target.closest('button') && !e.target.closest('.b-img-nav') && !e.target.closest('i.fa-heart')) {
-                    trackRecentlyViewed(product); 
-                    window.location.href = `https://aryanta.in/product?id=${product.id}`;
-                }
-            });
-        }
-
-        async function showQuickView(product) {
-    qvCurrentProduct = product;
-    qvImageIndex = 0;
-
-    const firstImage = getFirstProductImage(product);
-
-    // Popup opens instantly with light data
-    document.getElementById('qvImage').src = firstImage;
-    document.getElementById('qvImgNav').style.display = 'none';
-
-    document.getElementById('qvTitle').innerText = product.name || "Aryanta Product";
-    document.getElementById('qvId').innerText = `ID: ${product.id || '-'} ${product.brand ? ' | Brand: ' + product.brand : ''}`;
-    document.getElementById('qvDesc').innerText = "Loading full product details...";
-    document.getElementById('qvPrice').innerText = `₹${Number(product.price || 0).toLocaleString('en-IN')}`;
-
-    let stockHtml = (product.stock && product.stock < 10 && product.stock > 0)
-        ? `<div style="color:var(--danger); font-size:13px; font-weight:800; margin-bottom:15px;"><i class="fas fa-fire"></i> Low Stock: Only ${product.stock} left!</div>`
-        : '';
-    document.getElementById('qvStockNotice').innerHTML = stockHtml;
-
-    let rCount = product.reviewCount ? product.reviewCount : 0;
-    let starUI = product.avgRating && product.avgRating !== "New" && rCount > 0
-        ? `${product.avgRating} <i class="fas fa-star" style="font-size:11px;"></i> (${rCount} Ratings)`
-        : `New Release`;
-    document.getElementById('qvStars').innerHTML = starUI;
-
-    let inCart = cart.some(i => String(i.id) === String(product.id));
-    const qvAdd = document.getElementById('qvAddBtn');
-
-    qvAdd.innerText = inCart ? 'Remove from Cart' : 'Add to Cart';
-    qvAdd.className = inCart ? 'btn-list-add btn-remove' : 'btn-list-add btn-add';
-    qvAdd.style.color = inCart ? "var(--danger)" : "white";
-
-    qvAdd.onclick = () => {
-        toggleCart(product.id);
-        showQuickView(product);
-    };
-
-    document.getElementById('qvBuyBtn').onclick = () => {
-        directBuyNow(product.id);
-    };
-
-    const shareBtn = document.getElementById('qvShareBtn');
-    shareBtn.innerHTML = '<i class="fas fa-share-alt"></i>';
-    shareBtn.onclick = () => copyShareLink(product.id);
-
-    openModalId('quickViewModal');
-
-    // Full data loads after popup opens
-    try {
-        const res = await fetch(`${API_BASE_URL}/product?id=${encodeURIComponent(product.id)}`, {
-            method: "GET",
-            headers: { "Accept": "application/json" },
-            cache: "default"
-        });
-
-        if (!res.ok) throw new Error("Full product fetch failed");
-
-        const fullProduct = await res.json();
-
-        qvCurrentProduct = { ...product, ...fullProduct };
-
-        const fullImgs = Array.isArray(qvCurrentProduct.images) && qvCurrentProduct.images.length > 0
-            ? qvCurrentProduct.images
-            : [getFirstProductImage(qvCurrentProduct)];
-
-        document.getElementById('qvImage').src = fullImgs[0];
-        document.getElementById('qvImgNav').style.display = fullImgs.length > 1 ? 'block' : 'none';
-
-        document.getElementById('qvDesc').innerText =
-            qvCurrentProduct.desc ||
-            "Aryanta Premium Quality Product. Carefully selected for you. 100% Genuine product ensuring you get the best value.";
-
-    } catch (e) {
-        document.getElementById('qvDesc').innerText =
-            product.desc || "Aryanta Premium Quality Product. Carefully selected for you.";
-    }
-}
-        
-
-        window.slideQvImg = function(step) {
-            
-            if(!qvCurrentProduct) return;
-            let imgArr = qvCurrentProduct.images && qvCurrentProduct.images.length > 0 ? qvCurrentProduct.images : [qvCurrentProduct.image];
-            qvImageIndex = (qvImageIndex + step + imgArr.length) % imgArr.length;
-            document.getElementById('qvImage').src = imgArr[qvImageIndex];
-        }
-
-        window.openFullScreenFromQv = function() {
-            if(qvCurrentProduct) openFullScreen(qvCurrentProduct);
-        }
-
-        function openFullScreen(product) {
-            let imgArr = product.images && product.images.length > 0 ? product.images : [product.image];
-            
-            document.getElementById('fsMainImg').src = imgArr[qvImageIndex];
-            document.getElementById('fsUid').innerText = `UID: ${product.id}`;
-            
-            const dlBtn = document.getElementById('fsDownload');
-            dlBtn.onclick = () => {
-                const a = document.createElement('a');
-                a.href = imgArr[qvImageIndex];
-                a.download = `Aryanta_${product.id}.jpg`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            };
-
-            const thumbsContainer = document.getElementById('fsThumbnails');
-            if(imgArr.length > 1) {
-                thumbsContainer.style.display = 'flex';
-                thumbsContainer.innerHTML = imgArr.map((src, i) => `
-                    <img class="fs-thumb ${i === qvImageIndex ? 'active' : ''}" src="${src}" onclick="changeFsImage(${i}, '${src}')">
-                `).join('');
-            } else {
-                thumbsContainer.style.display = 'none';
-            }
-
-            openModalId('fullScreenImgModal');
-        }
-
-        window.changeFsImage = function(index, src) {
-            document.getElementById('fsMainImg').src = src;
-            qvImageIndex = index; 
-            document.getElementById('qvImage').src = src; 
-            
-            document.querySelectorAll('.fs-thumb').forEach((el, i) => {
-                if(i === index) el.classList.add('active');
-                else el.classList.remove('active');
-            });
-            
-            const dlBtn = document.getElementById('fsDownload');
-            dlBtn.onclick = () => {
-                const a = document.createElement('a');
-                a.href = src;
-                a.download = `Aryanta_Img_${index}.jpg`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            };
-        }
-
-        window.copyShareLink = function(id) {
-            const url = `https://aryanta.in/product?id=${id}`;
-            const btn = document.getElementById('qvShareBtn');
-            const oldHtml = btn.innerHTML;
-            
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(url).then(() => {
-                    btn.innerHTML = '<i class="fas fa-check" style="color:var(--success);"></i>';
-                    showToast('Link copied!');
-                    setTimeout(() => btn.innerHTML = oldHtml, 2000);
-                });
-            } else {
-                let textArea = document.createElement("textarea");
-                textArea.value = url;
-                textArea.style.position = "fixed";
-                textArea.style.left = "-999999px";
-                document.body.appendChild(textArea);
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    btn.innerHTML = '<i class="fas fa-check" style="color:var(--success);"></i>';
-                    showToast('Link copied!');
-                    setTimeout(() => btn.innerHTML = oldHtml, 2000);
-                } catch (error) {
-                    showToast('Failed to copy');
-                }
-                textArea.remove();
-            }
-        }
-
-        window.toggleCart = function(id) {
-            const session = JSON.parse(localStorage.getItem('active_session'));
-            if (!session || !session.email) {
-                showLoginRequiredPopup('Please login to add this item to your cart.');
-                return;
-            }
-
-            const product = findProductByAnyId(id);
-            if(!product) return;
-            
-            const idx = cart.findIndex(i => String(i.id) === String(id));
-            const btn = document.getElementById(`cartBtn-${id}`);
-            
-            if (idx > -1) {
-                cart.splice(idx, 1);
-                if(btn) { btn.innerText = "Add to Cart"; btn.className = "btn-list-add btn-add"; }
-                showToast("Item removed from Cart");
-            } else {
-              cart.push({ ...product, qty: 1, selected: true });
-                if(btn) { btn.innerText = "Remove Cart"; btn.className = "btn-list-add btn-remove"; }
-                showToast("Item added to Cart");
-            }
-            
-            updateCartBadge();
-            saveCartToDB();
-        }
-
-        // --- DATABASE SYNC BUY NOW SECURE CHECK ---
-        window.directBuyNow = async function(id) {
-            const session = JSON.parse(localStorage.getItem('active_session'));
-            if (!session || !session.email) {
-                showLoginRequiredPopup('Please login to buy this product securely.');
-                return;
-            }
-
-            // Mocks tracking in case it doesn't trigger gracefully 
-            const product = findProductByAnyId(id);
-            if(!product) return;
-            
-            trackRecentlyViewed(product);
-            
-            cart.forEach(i => i.selected = false);
-            
-            const idx = cart.findIndex(i => String(i.id) === String(id));
-            if (idx === -1) { 
-                cart.push({ ...product, qty: 1, selected: true });
-            } else {
-                cart[idx].qty += 1;
-                cart[idx].selected = true; 
-            }
-            
-            updateCartBadge();
-            showToast("Securing your item...");
-            
-            try {
-                await saveCartToDB();
-                window.location.href = 'https://aryanta.in/cart';
-            } catch(e) {
-                window.location.href = 'https://aryanta.in/cart';
-            }
-        }
-
-        window.toggleWishlist = function(id) {
-            const session = JSON.parse(localStorage.getItem('active_session'));
-            if (!session || !session.email) {
-                showLoginRequiredPopup('Please login to save this product to your wishlist.');
-                return;
-            }
-
-            let idx = wishlist.indexOf(id);
-            let icon = document.getElementById(`wish-${id}`);
-            if (idx > -1) {
-                wishlist.splice(idx, 1);
-                if(icon) { icon.className = "far fa-heart premium-hover wishlist-icon"; icon.style.color = "var(--text-muted)"; }
-                showToast("Removed from Wishlist");
-            } else {
-                wishlist.push(id);
-                if(icon) { icon.className = "fas fa-heart premium-hover wishlist-icon active-heart"; icon.style.color = "var(--danger)"; }
-                showToast("Added to Wishlist");
-            }
-            saveWishlistToDB();
-        }
-
-       function getProductKey(p) {
-    return makeProductId(p);
-}
-
-function findProductByAnyId(id) {
-    const sid = String(id || "").trim();
-    if (!sid) return null;
-
-    return allProducts.find(p => {
-        return [
-            p.id,
-            p.productId,
-            p.productID,
-            p.uid,
-            p.sku,
-            p.docId,
-            p.itemId,
-            p.slug
-        ].some(v => String(v || "").trim() === sid);
-    }) || null;
-}
-
-function normalizeRecentProduct(p) {
-    const id = getProductKey(p);
-    const name = p?.name || p?.title || p?.productName || "Aryanta Product";
-    const price = Number(p?.price || p?.sellingPrice || p?.finalPrice || 0);
-    const image =
-        p?.image ||
-        p?.imageUrl ||
-        p?.img ||
-        p?.thumbnail ||
-        (Array.isArray(p?.images) && p.images.length ? p.images[0] : "") ||
-        "https://aryanta.in/vurify/aryanta.jpeg";
-
-    return {
-        id,
-        productId: p?.productId || id,
-        name,
-        price,
-        image
-    };
-}
-
-function trackRecentlyViewed(p) {
-    if (!p) return;
-
-    const item = normalizeRecentProduct(p);
-    if (!item.id) return;
-
-    recentlyViewed = recentlyViewed.filter(x => getProductKey(x) !== item.id);
-    recentlyViewed.unshift(item);
-    recentlyViewed = recentlyViewed.slice(0, 7);
-
-    localStorage.setItem("aryanta_recent_views", JSON.stringify(recentlyViewed));
-    renderRecentlyViewed();
-}
-
-function loadRecentlyViewedFromStorage() {
-    try {
-        const saved = localStorage.getItem("aryanta_recent_views");
-        if (!saved) {
-            recentlyViewed = [];
-            renderRecentlyViewed();
-            return;
-        }
-
-        const raw = JSON.parse(saved);
-
-        const items = Array.isArray(raw)
-            ? raw.map(item => {
-                if (typeof item === "string" || typeof item === "number") {
-                    const found = findProductByAnyId(item);
-                    return found ? normalizeRecentProduct(found) : null;
-                }
-
-                const id = getProductKey(item);
-                const fresh = findProductByAnyId(id);
-                return normalizeRecentProduct(fresh || item);
-            }).filter(Boolean)
-            : [];
-
-        const unique = new Map();
-
-        items.forEach(item => {
-            if (item.id) unique.set(item.id, item);
-        });
-
-        recentlyViewed = Array.from(unique.values()).slice(0, 7);
-        localStorage.setItem("aryanta_recent_views", JSON.stringify(recentlyViewed));
-        renderRecentlyViewed();
-
-    } catch (e) {
-        console.warn("Recent view load failed:", e);
-        recentlyViewed = [];
-        localStorage.removeItem("aryanta_recent_views");
-        renderRecentlyViewed();
-    }
-}
-
-function renderRecentlyViewed() {
-    const container = document.getElementById("recentShelf");
-    const wrapper = document.getElementById("recentlyViewedContainer");
-
-    if (!container || !wrapper) return;
-
-    if (!Array.isArray(recentlyViewed) || recentlyViewed.length === 0) {
-        wrapper.style.display = "none";
-        container.innerHTML = "";
-        return;
-    }
-
-    wrapper.style.display = "block";
-
-    container.innerHTML = recentlyViewed.map(p => {
-        const item = normalizeRecentProduct(p);
-        const safeName = escapeHtml(item.name);
-        const shortName = escapeHtml(item.name.split(" ").slice(0, 4).join(" "));
-        const safeImg = escapeHtml(item.image);
-        const price = Number(item.price || 0).toLocaleString("en-IN");
-
-        return `
-            <div class="recent-item-card" onclick="window.location.href='https://aryanta.in/product?id=${encodeURIComponent(item.id)}'">
-                <div class="recent-img-wrap">
-                    <img src="${safeImg}" alt="${safeName}" loading="lazy" decoding="async">
-                </div>
-                <div style="display:flex; flex-direction:column; overflow:hidden;">
-                    <strong style="font-size:14px; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${shortName}</strong>
-                    <span style="font-size:15px; color:var(--primary); font-weight:800; margin-top:2px;">₹${price}</span>
-                </div>
-            </div>
-        `;
-       }).join("");
-
-    enableRecentViewedScroll();
-}
-function enableRecentViewedScroll() {
-    const scroller = document.getElementById("recentShelfScroll");
-    if (!scroller || scroller.dataset.scrollReady === "true") return;
-
-    scroller.dataset.scrollReady = "true";
-
-    scroller.addEventListener("wheel", (e) => {
-        if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-            e.preventDefault();
-            scroller.scrollLeft += e.deltaY;
-        }
-    }, { passive: false });
-
-    let isDown = false;
-    let startX = 0;
-    let scrollLeft = 0;
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let draggedByTouch = false;
-
-    scroller.addEventListener("mousedown", (e) => {
-        isDown = true;
-        startX = e.pageX - scroller.offsetLeft;
-        scrollLeft = scroller.scrollLeft;
-        scroller.classList.add("dragging");
-    });
-
-    scroller.addEventListener("mouseleave", () => {
-        isDown = false;
-        scroller.classList.remove("dragging");
-    });
-
-    scroller.addEventListener("mouseup", () => {
-        isDown = false;
-        scroller.classList.remove("dragging");
-    });
-
-    scroller.addEventListener("mousemove", (e) => {
-        if (!isDown) return;
-        e.preventDefault();
-        const x = e.pageX - scroller.offsetLeft;
-        const walk = (x - startX) * 1.4;
-        if (Math.abs(walk) > 4) scroller.dataset.draggingClick = "true";
-        scroller.scrollLeft = scrollLeft - walk;
-    });
-
-    scroller.addEventListener("touchstart", (e) => {
-        const t = e.touches && e.touches[0];
-        if (!t) return;
-        touchStartX = t.clientX;
-        touchStartY = t.clientY;
-        draggedByTouch = false;
-    }, { passive: true });
-
-    scroller.addEventListener("touchmove", (e) => {
-        const t = e.touches && e.touches[0];
-        if (!t) return;
-        const dx = Math.abs(t.clientX - touchStartX);
-        const dy = Math.abs(t.clientY - touchStartY);
-        if (dx > 8 && dx > dy) draggedByTouch = true;
-    }, { passive: true });
-
-    scroller.addEventListener("click", (e) => {
-        if (draggedByTouch || scroller.dataset.draggingClick === "true") {
-            e.preventDefault();
-            e.stopPropagation();
-            scroller.dataset.draggingClick = "false";
-            draggedByTouch = false;
-        }
-    }, true);
-}
-
-        function openSidebar(id = 'sidebar') { 
-            document.getElementById(id).classList.add('open'); 
-            document.getElementById('overlay').classList.add('show');
-            pushModalState();
-        }
-        function openModalId(id) {
-            document.getElementById(id).classList.add('show');
-            document.getElementById('overlay').classList.add('show');
-            pushModalState();
-        }
-        
-        function pushModalState() {
-            if (modalsOpen === 0) history.pushState({modal: true}, '');
-            modalsOpen++;
-        }
-
-        window.closeAllModals = function(fromPopstate = false) {
-            document.getElementById('sidebar').classList.remove('open');
-            document.getElementById('filterSidebar').classList.remove('open');
-            document.getElementById('overlay').classList.remove('show');
-            document.getElementById('categoryModal').classList.remove('show');
-            document.getElementById('broadcastModal').classList.remove('show');
-            document.getElementById('quickViewModal').classList.remove('show');
-            document.getElementById('systemPopup').classList.remove('show');
-            document.getElementById('fullScreenImgModal').classList.remove('show');
-            document.getElementById('voiceSearchModal').classList.remove('show');
-            
-            if(speechRecognitionRef) speechRecognitionRef.stop();
-            if (modalsOpen > 0 && !fromPopstate) history.back(); 
-            modalsOpen = 0;
-        }
-
-        function attachHorizontalScroll(id) {
-            const el = document.getElementById(id);
-            if(el) {
-                el.addEventListener('wheel', (e) => {
-                    if (e.deltaY !== 0) {
-                        e.preventDefault();
-                        el.scrollBy({ left: e.deltaY > 0 ? 300 : -300, behavior: 'smooth' });
-                    }
-                }, { passive: false });
-            }
-        }
-
-        function initMathematicalScroll() {
-            let lastScroll = 0;
-            const searchContainer = document.getElementById('searchContainer');
-            
-            window.addEventListener("scroll", () => {
-                let st = window.pageYOffset;
-                if (window.innerWidth <= 768) {
-                    st > lastScroll && st > 50 ? searchContainer.classList.add('hide-search') : searchContainer.classList.remove('hide-search');
-                }
-                lastScroll = st <= 0 ? 0 : st; 
-                document.querySelectorAll('.search-dropdown').forEach(d => d.style.display = 'none');
-            }, { passive: true });
-
-            const loaderTarget = document.getElementById('infiniteScrollLoader');
-            const observerConfig = { root: null, rootMargin: '300px 0px', threshold: 0.1 };
-
-            const infiniteScrollObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        if (currentlyDisplayed < baseCategoryProducts.length && !isFetchingMore) {
-                            loadMoreProducts(SCROLL_BATCH); 
-                        }
-                    }
-                });
-            }, observerConfig);
-
-            if(loaderTarget) infiniteScrollObserver.observe(loaderTarget);
-
-            attachHorizontalScroll('recentShelfScroll');
-            attachHorizontalScroll('categoriesDisplayContainer');
-        }
-
-        function mathScientificFuzzyMatch(str, pattern) {
-            pattern = pattern.trim().toLowerCase();
-            str = str.trim().toLowerCase();
-            
-            if(pattern.length === 0) return true;
-            if(str.includes(pattern)) return true;
-            
-            let mismatches = 0;
-            let pIdx = 0;
-            let strIdx = 0;
-            const errorThreshold = Math.floor(pattern.length * 0.3);
-
-            while(pIdx < pattern.length && strIdx < str.length) {
-                if(pattern[pIdx] === str[strIdx]) pIdx++;
-                else {
-                    mismatches++;
-                    if(mismatches > errorThreshold) return false;
-                }
-                strIdx++;
-            }
-            return (pattern.length - pIdx) <= errorThreshold;
-        }
-
-        // --- SMART SEARCH & ICON SWAP ---
-        window.handleMicOrSearch = function(inputId, micBtnId) {
-            const input = document.getElementById(inputId);
-            const btn = document.getElementById(micBtnId);
-            if (btn.classList.contains("fa-search") || btn.classList.contains("fa-arrow-right")) {
-                executeSearch();
-                document.querySelectorAll('.search-dropdown').forEach(d => d.style.display = 'none');
-            } else {
-                startDictation(inputId);
-            }
-        }
-
-        let speechRecognitionRef = null;
-        window.startDictation = function(inputId) {
-            if (window.hasOwnProperty('webkitSpeechRecognition') || window.hasOwnProperty('SpeechRecognition')) {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                speechRecognitionRef = new SpeechRecognition();
-                speechRecognitionRef.continuous = true; 
-                speechRecognitionRef.interimResults = true;
-                speechRecognitionRef.lang = "en-US";
-                
-                const inputElement = document.getElementById(inputId);
-                
-                document.getElementById('voiceLiveText').innerText = "Speak now...";
-                document.getElementById('voiceStatusText').innerText = "Listening...";
-                openModalId('voiceSearchModal');
-                
-                speechRecognitionRef.start();
-
-                speechRecognitionRef.onresult = function(e) {
-                    let transcript = '';
-                    for (let i = e.resultIndex; i < e.results.length; i++) {
-                        transcript += e.results[i][0].transcript;
-                    }
-                    document.getElementById('voiceLiveText').innerText = `"${transcript}"`;
-                    
-                    if (e.results[e.results.length - 1].isFinal) {
-                        inputElement.value = transcript;
-                        inputElement.dispatchEvent(new Event('input'));
-                        setTimeout(() => {
-                            stopDictation();
-                            executeSearch();
-                        }, 600);
-                    }
-                };
-
-                speechRecognitionRef.onerror = function(e) {
-                    document.getElementById('voiceStatusText').innerText = "Error";
-                    document.getElementById('voiceLiveText').innerText = "Didn't catch that. Please try again.";
-                    setTimeout(() => stopDictation(), 2000);
-                };
-                
-                speechRecognitionRef.onend = function() {
-                    if(document.getElementById('voiceSearchModal').classList.contains('show')) stopDictation();
-                };
-            } else {
-                showToast("Voice search not supported in this browser.");
-            }
-        }
-
-        window.stopDictation = function() {
-            if(speechRecognitionRef) speechRecognitionRef.stop();
-            closeAllModals();
-        }
-
-        function executeSearch() {
-            applySidebarFilterLogic(); 
-        }
-
-        function setupSearch(inputId, clearSelector, dropSelector, micBtnId) {
-            const input = document.getElementById(inputId);
-            const clearBtn = document.querySelector(clearSelector);
-            const dropdown = document.querySelector(dropSelector);
-            const micBtn = document.getElementById(micBtnId);
-            let searchTimeout;
-            if(!input) return;
-
-            input.addEventListener("input", function () {
-                clearTimeout(searchTimeout);
-                const query = this.value.toLowerCase().trim();
-                
-                if (query !== "") {
-                    clearBtn.style.display = "block";
-                    micBtn.classList.remove("fa-microphone");
-                    micBtn.classList.add("fa-arrow-right"); 
-                } else {
-                    clearBtn.style.display = "none";
-                    micBtn.classList.remove("fa-arrow-right", "fa-search");
-                    micBtn.classList.add("fa-microphone");
-                }
-
-                if (query === "") {
-                    dropdown.style.display = "none";
-                    executeSearch();
-                    return;
-                }
-
-                if (!appSettings.searchSuggestions) {
-                    dropdown.style.display = "none";
-                    return;
-                }
-
-                searchTimeout = setTimeout(() => {
-                    const terms = query.split(' ').filter(t => t.length > 0);
-                    let filtered = allProducts.filter(p => !p.isDummy && terms.every(t => {
-                        const searchStr = `${p.name} ${p.brand || ''} ${p.category || ''} ${p.id || ''} ${p.sku || ''} ${p.sellerName || ''} ${p.desc || ''}`.toLowerCase();
-                        return searchStr.includes(t) || mathScientificFuzzyMatch(searchStr, t);
-                    }));
-
-                    if (!filtered.length && query.length <= 2) {
-                        filtered = allProducts.filter(p => !p.isDummy);
-                    }
-                    
-                    const suggestions = pickRandomSuggestions(filtered, 3);
-                    
-                    dropdown.innerHTML = `${HOME_CATALOG_READY ? '' : '<div class="search-item"><i class="fas fa-spinner fa-spin"></i><span>Loading full catalog...</span></div>'}` + suggestions.map(p => `
-                        <div class="search-item ${p.sponsored ? 'search-sponsored' : ''}" onclick="window.location.href='https://aryanta.in/product?id=${encodeURIComponent(p.id)}'">
-                            <img src="${p.images && p.images.length > 0 ? p.images[0] : p.image}" loading="lazy" decoding="async" style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px;">
-                            <div class="search-item-copy">
-                                <span class="search-item-title">
-                                    ${escapeHtml(p.name)} ${p.sponsored ? '<span class="s-sponsored-tag">Sponsored</span>' : ''}${p.randomTop && !p.sponsored ? '<span class="s-sponsored-tag s-top-tag">Top</span>' : ''}
-                                </span>
-                                <span class="search-item-price">₹${Number(p.price).toLocaleString('en-IN')}</span>
-                            </div>
-                        </div>`).join("");
-                    dropdown.style.display = suggestions.length > 0 ? "block" : "none";
-                }, 80); 
-            });
-
-            input.addEventListener("keypress", function(e) {
-                if(e.key === "Enter") {
-                    e.preventDefault();
-                    dropdown.style.display = "none";
-                    executeSearch();
-                    this.blur(); 
-                }
-            });
-
-            clearBtn.addEventListener("click", function() {
-                input.value = ""; 
-                clearBtn.style.display = "none"; 
-                dropdown.style.display = "none";
-                micBtn.classList.remove("fa-arrow-right", "fa-search");
-                micBtn.classList.add("fa-microphone");
-                executeSearch();
-            });
-        }
-    </script>
-
-<script id="aryanta-common-login-url-patch">
-(function(){
-  if (window.__aryantaCommonLoginUrlPatch) return;
-  window.__aryantaCommonLoginUrlPatch = true;
-  window.aryantaProductUrl = function(id){ return 'https://aryanta.in/product?id=' + encodeURIComponent(String(id || '').trim()); };
-  window.aryantaSearchUrl = function(q){ return 'https://aryanta.in/?search=' + encodeURIComponent(String(q || '').trim()); };
-  window.aryantaHasSession = function(){
-    try {
-      const raw = localStorage.getItem('active_session') || sessionStorage.getItem('active_session');
-      const s = raw ? JSON.parse(raw) : null;
-      return !!(s && s.email);
-    } catch(e){ return false; }
-  };
-  window.showLoginRequiredPopup = function(message){
-    let overlay = document.getElementById('aryantaLoginRequiredOverlay');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'aryantaLoginRequiredOverlay';
-      overlay.className = 'aryanta-login-required-overlay';
-      overlay.innerHTML = `
-        <div class="aryanta-login-required-box" role="dialog" aria-modal="true" aria-labelledby="aryantaLoginTitle">
-          <button type="button" class="aryanta-login-required-close" id="aryantaLoginCloseBtn" aria-label="Close"><i class="fas fa-times"></i></button>
-          <div class="aryanta-login-required-icon"><i class="fas fa-user-lock"></i></div>
-          <h3 id="aryantaLoginTitle">Login required</h3>
-          <p id="aryantaLoginMessage">Please login to continue securely on Aryanta.</p>
-          <div class="aryanta-login-required-actions">
-            <button type="button" class="aryanta-login-later-btn" id="aryantaLoginLaterBtn">Not now</button>
-            <button type="button" class="aryanta-login-now-btn" id="aryantaLoginNowBtn">Login</button>
-          </div>
-        </div>`;
-      document.body.appendChild(overlay);
-      overlay.addEventListener('click', function(e){ if(e.target === overlay) overlay.classList.remove('show'); });
-      const closeBtn = overlay.querySelector('#aryantaLoginCloseBtn');
-      if (closeBtn) closeBtn.onclick = function(){ overlay.classList.remove('show'); };
-      overlay.querySelector('#aryantaLoginLaterBtn').onclick = function(){ overlay.classList.remove('show'); };
-      overlay.querySelector('#aryantaLoginNowBtn').onclick = function(){ window.location.href = 'https://aryanta.in/login/'; };
-    }
-    const msg = overlay.querySelector('#aryantaLoginMessage');
-    if (msg) msg.textContent = message || 'Please login to continue securely on Aryanta.';
-    overlay.classList.add('show');
-  };
-})();
-</script>
-
-<script id="aryanta-main-search-login-patch">
-(function(){
-  function runIncomingSearch(){
-    try {
-      const params = new URLSearchParams(window.location.search || '');
-      const q = params.get('search') || params.get('q') || params.get('s') || '';
-      if (!q.trim()) return;
-      ['desktopSearchInput','mobileSearchInput'].forEach(function(id){
-        const input = document.getElementById(id);
-        if (input) {
-          input.value = q.trim();
-          input.dispatchEvent(new Event('input', { bubbles:true }));
-        }
-      });
-      setTimeout(function(){
-        if (typeof applySidebarFilterLogic === 'function') applySidebarFilterLogic();
-        const banner = document.getElementById('mainBannerSection');
-        const shelf = document.getElementById('productShelf');
-        if (banner) banner.classList.add('hidden-by-search');
-        if (shelf) shelf.classList.add('list-view');
-      }, 250);
-    } catch(e) {}
-  }
-  document.addEventListener('DOMContentLoaded', function(){ setTimeout(runIncomingSearch, 800); });
-
-  const wrapLogin = function(name, message){
-    const oldFn = window[name];
-    if (typeof oldFn !== 'function') return;
-    window[name] = function(){
-      if (!window.aryantaHasSession || !window.aryantaHasSession()) {
-        if (typeof window.showLoginRequiredPopup === 'function') window.showLoginRequiredPopup(message);
-        else if (typeof showToast === 'function') showToast(message);
-        return;
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: #080a10;
+        --surface: rgba(20,23,34,.78);
+        --text: #f5f6ff;
+        --muted: #9da4b8;
+        --line: rgba(255,255,255,.10);
+        --accent: #918aff;
+        --accent2: #38d9e8;
+        --glow: rgba(112,99,255,.20);
+        --grid: rgba(190,200,255,.045);
       }
-      return oldFn.apply(this, arguments);
-    };
-  };
-  wrapLogin('toggleCart', 'Please login to add this item to your cart.');
-  wrapLogin('directBuyNow', 'Please login to buy this product securely.');
-  wrapLogin('toggleWishlist', 'Please login to save this product to your wishlist.');
-
-  const oldHandle = window.handleMicOrSearch;
-  if (typeof oldHandle === 'function') {
-    window.handleMicOrSearch = function(inputId, micBtnId){
-      const input = document.getElementById(inputId);
-      const btn = document.getElementById(micBtnId);
-      if (btn && (btn.classList.contains('fa-search') || btn.classList.contains('fa-arrow-right'))) {
-        if (typeof applySidebarFilterLogic === 'function') applySidebarFilterLogic();
-        document.querySelectorAll('.search-dropdown').forEach(d => d.style.display = 'none');
-        return;
-      }
-      return oldHandle.apply(this, arguments);
-    };
-  }
-})();
-</script>
-
-
-
-<script id="aryanta-home-groq-cookie-smart-patch">
-(function(){
-  if (window.__aryantaHomeGroqCookieSmartPatch) return;
-  window.__aryantaHomeGroqCookieSmartPatch = true;
-
-  const AI_COOKIE = 'aryanta_ai_cookie_v2';
-  const AI_CACHE = new Map();
-  let groqCooldownUntil = 0;
-
-  function setCookie(name, value, days){
-    try{
-      const d = new Date();
-      d.setTime(d.getTime() + (days * 86400000));
-      document.cookie = name + '=' + encodeURIComponent(value || '') + '; expires=' + d.toUTCString() + '; path=/; SameSite=Lax';
-    }catch(e){}
-  }
-  function getCookie(name){
-    try{
-      const k = name + '=';
-      return (document.cookie || '').split(';').map(v => v.trim()).filter(v => v.indexOf(k) === 0).map(v => decodeURIComponent(v.slice(k.length)))[0] || '';
-    }catch(e){ return ''; }
-  }
-  function readProfile(){
-    try{
-      const raw = getCookie(AI_COOKIE);
-      const p = raw ? JSON.parse(raw) : {};
-      return {
-        terms: Array.isArray(p.terms) ? p.terms.slice(0, 20) : [],
-        categories: Array.isArray(p.categories) ? p.categories.slice(0, 12) : [],
-        productClicks: Array.isArray(p.productClicks) ? p.productClicks.slice(0, 20) : [],
-        locationHint: p.locationHint || '',
-        updatedAt: p.updatedAt || ''
-      };
-    }catch(e){ return { terms: [], categories: [], productClicks: [], locationHint: '', updatedAt: '' }; }
-  }
-  function writeProfile(profile){
-    try{
-      profile.updatedAt = new Date().toISOString();
-      setCookie(AI_COOKIE, JSON.stringify(profile).slice(0, 3500), 60);
-    }catch(e){}
-  }
-  function pushUnique(arr, value, max){
-    value = String(value || '').trim().toLowerCase();
-    if (!value || value.length < 2) return arr || [];
-    const out = [value].concat((arr || []).filter(x => String(x).toLowerCase() !== value));
-    return out.slice(0, max || 12);
-  }
-  function trackInterest(type, value){
-    const p = readProfile();
-    if (type === 'term') p.terms = pushUnique(p.terms, value, 20);
-    if (type === 'category') p.categories = pushUnique(p.categories, value, 12);
-    if (type === 'product') p.productClicks = pushUnique(p.productClicks, value, 20);
-    writeProfile(p);
-  }
-  window.aryantaTrackInterest = trackInterest;
-
-  function getSession(){
-    try{return JSON.parse(localStorage.getItem('active_session') || sessionStorage.getItem('active_session') || 'null') || null;}catch(e){return null;}
-  }
-  function sessionLocationHint(){
-    const s = getSession() || {};
-    return [s.city, s.state, s.pincode, s.location, s.address].filter(Boolean).join(' ').trim();
-  }
-  function allTextFromObject(obj, depth){
-    if (!obj || depth > 2) return '';
-    if (typeof obj !== 'object') return String(obj || '');
-    if (Array.isArray(obj)) return obj.slice(0, 12).map(v => allTextFromObject(v, depth + 1)).join(' ');
-    return Object.keys(obj).slice(0, 30).map(k => `${k} ${allTextFromObject(obj[k], depth + 1)}`).join(' ');
-  }
-  window.aryantaProductSearchText = function(p){
-    return [
-      p && (p.name || p.title || p.productName || p.itemName),
-      p && (p.id || p.productId || p.productID || p.product_id || p.sku || p.uid || p.docId || p.barcode || p.modelNo),
-      p && (p.brand || p.brandName || p.company),
-      p && (p.category || p.cat || p.section || p.subCategory || p.type),
-      p && (p.sellerName || p.shopName || p.storeName),
-      p && (p.desc || p.description || p.shortDescription || p.highlights),
-      p && allTextFromObject(p.tags || p.keywords || p.attributes || p.specs || p.variants || {}, 0)
-    ].filter(Boolean).join(' ').toLowerCase();
-  };
-  function fuzzyProductMatch(p, term){
-    const text = window.aryantaProductSearchText(p);
-    term = String(term || '').trim().toLowerCase();
-    if (!term) return true;
-    if (text.includes(term)) return true;
-    try { return typeof mathScientificFuzzyMatch === 'function' && mathScientificFuzzyMatch(text, term); } catch(e) { return false; }
-  }
-  window.aryantaProductMatchesQuery = function(p, query){
-    const terms = String(query || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
-    return !terms.length || terms.every(t => fuzzyProductMatch(p, t));
-  };
-  function sponsored(p){
-    try{return typeof isSponsoredProduct === 'function' && isSponsoredProduct(p);}catch(e){return !!(p && (p.sponsored || p.isSponsored));}
-  }
-  function randomTop(p){
-    try{return typeof isRandomTopProduct === 'function' && isRandomTopProduct(p);}catch(e){return !!(p && (p.randomTop || p.featured));}
-  }
-  function smartScore(p, query){
-    const profile = readProfile();
-    const text = window.aryantaProductSearchText(p);
-    const q = String(query || '').trim().toLowerCase();
-    let score = 0;
-    if (q && text.includes(q)) score += 120;
-    if (sponsored(p)) score += 75 + Math.random() * 12;
-    if (randomTop(p)) score += 35 + Math.random() * 8;
-    if (p && p.specialDeal) score += 45;
-    (profile.terms || []).forEach(t => { if (t && text.includes(t)) score += 12; });
-    (profile.categories || []).forEach(c => { if (c && String(p.category || '').toLowerCase().includes(c)) score += 18; });
-    (profile.productClicks || []).forEach(v => { if (v && text.includes(v)) score += 8; });
-    const loc = (profile.locationHint || sessionLocationHint() || '').toLowerCase();
-    if (loc && text.includes(loc)) score += 10;
-    const stock = Number(p && p.stock || 0);
-    if (stock > 0) score += 5;
-    if (stock > 0 && stock < 7) score += 8;
-    return score;
-  }
-  window.aryantaSmartRankProducts = function(list, query){
-    return (list || []).slice().sort((a,b) => smartScore(b, query) - smartScore(a, query));
-  };
-
-  async function callGroqSmart(payload){
-    if (Date.now() < groqCooldownUntil) return null;
-    const key = JSON.stringify(payload).slice(0, 700);
-    if (AI_CACHE.has(key)) return AI_CACHE.get(key);
-    try{
-      const res = await fetch((window.API_BASE_URL || 'https://rough-field-c679.official-aryanta.workers.dev') + '/ai/groq', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(payload)
-      });
-      if (res.status === 429) {
-        const retry = Number(res.headers.get('retry-after') || 60);
-        groqCooldownUntil = Date.now() + Math.min(Math.max(retry, 30), 180) * 1000;
-        return null;
-      }
-      if (!res.ok) return null;
-      const data = await res.json();
-      AI_CACHE.set(key, data);
-      return data;
-    }catch(e){ return null; }
-  }
-  window.aryantaCallGroqSmart = callGroqSmart;
-
-  function showSmartStrip(){
-    const main = document.querySelector('.main-content');
-    if (!main || document.getElementById('aryantaSmartStrip')) return;
-    const strip = document.createElement('div');
-    strip.id = 'aryantaSmartStrip';
-    strip.className = 'aryanta-smart-strip';
-    strip.innerHTML = `
-    `;
-    const cat = document.getElementById('categoriesDisplayContainer');
-    if (cat && cat.parentNode) cat.parentNode.insertBefore(strip, cat.nextSibling); else main.prepend(strip);
-    strip.addEventListener('click', function(e){
-      const btn = e.target.closest('.aryanta-smart-chip');
-      if (!btn) return;
-      strip.querySelectorAll('.aryanta-smart-chip').forEach(x => x.classList.remove('active'));
-      btn.classList.add('active');
-      const term = btn.getAttribute('data-term') || '';
-      const input = document.getElementById(window.innerWidth <= 768 ? 'mobileSearchInput' : 'desktopSearchInput');
-      if (input) { input.value = term; input.dispatchEvent(new Event('input', {bubbles:true})); }
-      if (typeof applySidebarFilterLogic === 'function') applySidebarFilterLogic();
-      if (term) trackInterest('term', term);
-    });
-  }
-
-  function enhancedFilter(){
-    const checkedPrice = document.querySelector('input[name="priceFilter"]:checked');
-    const checkedRating = document.querySelector('input[name="ratingFilter"]:checked');
-    const priceVal = checkedPrice ? checkedPrice.value : 'all';
-    const rateVal = checkedRating ? checkedRating.value : 'all';
-    let customRange = {hasCustom:false, min:0, max:Infinity};
-    try { if (typeof readCustomPriceRange === 'function') customRange = readCustomPriceRange(); } catch(e) {}
-    let filtered = [];
-    try { filtered = typeof getLightProducts === 'function' ? getLightProducts() : (window.allProducts || []); } catch(e) { filtered = window.allProducts || []; }
-    const dInput = (document.getElementById('desktopSearchInput')?.value || '').trim();
-    const mInput = (document.getElementById('mobileSearchInput')?.value || '').trim();
-    const query = dInput || mInput;
-    if (query) {
-      query.split(/\s+/).filter(Boolean).forEach(t => trackInterest('term', t));
-      filtered = filtered.filter(p => window.aryantaProductMatchesQuery(p, query));
-      document.getElementById('mainBannerSection')?.classList.add('hidden-by-search');
-      document.getElementById('productShelf')?.classList.add('list-view');
-      const rv = document.getElementById('recentlyViewedContainer'); if (rv) rv.style.display = 'none';
-    } else {
-      document.getElementById('mainBannerSection')?.classList.remove('hidden-by-search');
-      document.getElementById('productShelf')?.classList.remove('list-view');
-      const rv = document.getElementById('recentlyViewedContainer');
-      try { if (rv && window.recentlyViewed && recentlyViewed.length > 0) rv.style.display = 'block'; } catch(e) {}
     }
-    if (customRange && customRange.hasCustom) {
-      filtered = filtered.filter(p => Number(p.price || 0) >= customRange.min && Number(p.price || 0) <= customRange.max);
-      const allPriceRadio = document.querySelector('input[name="priceFilter"][value="all"]'); if (allPriceRadio) allPriceRadio.checked = true;
-    } else if (priceVal !== 'all') filtered = filtered.filter(p => Number(p.price || 0) <= Number(priceVal));
-    if (rateVal === 'new') filtered = filtered.filter(p => String(p.avgRating).toLowerCase() === 'new' || !p.reviewCount);
-    else if (rateVal !== 'all') filtered = filtered.filter(p => Number(p.avgRating) >= Number(rateVal));
-    const notice = document.getElementById('activeFilterNotice');
-    if (notice) notice.style.display = (priceVal !== 'all' || rateVal !== 'all' || (customRange && customRange.hasCustom)) ? 'block' : 'none';
-    const ranked = window.aryantaSmartRankProducts(filtered, query);
-    if (typeof renderProductSet === 'function') renderProductSet(ranked);
-  }
 
-  function installEnhancedSearch(){
-    ['desktopSearchInput','mobileSearchInput'].forEach(function(id){
-      const input = document.getElementById(id); if (!input || input.dataset.smartSearchInstalled === '1') return;
-      input.dataset.smartSearchInstalled = '1';
-      input.addEventListener('input', function(){
-        const query = input.value.trim();
-        const dropdown = input.closest('.nav-search')?.querySelector('.search-dropdown');
-        const clear = input.closest('.nav-search')?.querySelector('.search-clear');
-        if (clear) clear.style.display = query ? 'block' : 'none';
-        if (!dropdown) return;
-        if (!query) { dropdown.style.display = 'none'; return; }
-        setTimeout(function(){
-          let list = [];
-          try { list = typeof getLightProducts === 'function' ? getLightProducts() : (window.allProducts || []); } catch(e) { list = window.allProducts || []; }
-          let matches = list.filter(p => window.aryantaProductMatchesQuery(p, query));
-          if (!matches.length && query.length <= 2) matches = list.slice();
-          const exactSponsored = window.aryantaSmartRankProducts(matches.filter(p => sponsored(p)), query).slice(0, 1);
-          const used = new Set(exactSponsored.map(p => String(p.id)));
-          const randomPool = window.aryantaSmartRankProducts(matches.filter(p => !used.has(String(p.id))), query);
-          const suggestions = exactSponsored.concat(randomPool.sort(() => Math.random() - .5).slice(0, 2));
-          dropdown.innerHTML = (typeof HOME_CATALOG_READY !== 'undefined' && HOME_CATALOG_READY ? '' : '<div class="search-item"><i class="fas fa-spinner fa-spin"></i><span>Loading full catalog...</span></div>') + suggestions.map(function(p, i){
-            const img = (p.images && p.images.length ? p.images[0] : (p.image || p.imageUrl || 'https://aryanta.in/vurify/aryanta.jpeg'));
-            const tag = sponsored(p) ? '<span class="s-sponsored-tag">Sponsored</span>' : (i > 0 ? '<span class="s-sponsored-tag search-random-tag">Suggested</span>' : '<span class="s-sponsored-tag s-top-tag">Best Match</span>');
-            const meta = [p.category, p.id || p.productId || p.sku].filter(Boolean).slice(0,2).map(escapeHtml).join(' • ');
-            return `<div class="search-item ${sponsored(p) ? 'search-sponsored' : ''}" data-pid="${escapeHtml(p.id)}" onclick="window.aryantaTrackInterest && window.aryantaTrackInterest('product','${escapeHtml(p.name || p.id)}'); window.location.href='https://aryanta.in/product?id=${encodeURIComponent(p.id)}'">
-              <img src="${escapeHtml(img)}" loading="lazy" decoding="async" alt="">
-              <div class="search-item-copy"><span class="search-item-title">${escapeHtml(p.name || 'Aryanta Product')} ${tag}</span><span class="search-item-price">₹${Number(p.price || 0).toLocaleString('en-IN')}</span><span class="search-meta-line">${meta}</span></div>
-            </div>`;
-          }).join('');
-          dropdown.style.display = suggestions.length ? 'block' : 'none';
-        }, 120);
-      }, {passive:true});
-    });
-  }
+    * { box-sizing: border-box; }
 
-  function enhanceLoginPopup(){
-    const old = window.showLoginRequiredPopup;
-    window.showLoginRequiredPopup = function(message){
-      let overlay = document.getElementById('aryantaLoginRequiredOverlay');
-      if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = 'aryantaLoginRequiredOverlay';
-        overlay.className = 'aryanta-login-required-overlay';
-        overlay.innerHTML = `<div class="aryanta-login-required-box" role="dialog" aria-modal="true">
-          <button type="button" class="aryanta-login-required-close" aria-label="Close"><i class="fas fa-times"></i></button>
-          <div class="aryanta-login-required-icon"><i class="fas fa-location-dot"></i></div>
-          <h3>Login for smarter shopping</h3>
-          <p id="aryantaLoginMessage">For better deals, location-based delivery, cart sync and smart recommendations, please login to Aryanta.</p>
-          <div class="aryanta-login-required-actions"><button type="button" class="aryanta-login-later-btn">Close</button><button type="button" class="aryanta-login-now-btn">Login</button></div>
-        </div>`;
-        document.body.appendChild(overlay);
-        overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.classList.remove('show'); });
-        overlay.querySelector('.aryanta-login-required-close').onclick = function(){ overlay.classList.remove('show'); };
-        overlay.querySelector('.aryanta-login-later-btn').onclick = function(){ overlay.classList.remove('show'); };
-        overlay.querySelector('.aryanta-login-now-btn').onclick = function(){ window.location.href = 'https://aryanta.in/login/'; };
-      }
-      const msg = overlay.querySelector('#aryantaLoginMessage');
-      if (msg) msg.textContent = message || 'For better deals, location-based delivery, cart sync and smart recommendations, please login to Aryanta.';
-      overlay.classList.add('show');
-    };
-    window.__oldLoginPopup = old;
-  }
+    html { scroll-behavior: smooth; }
 
-  function showGuestDesignerPopupOnce(){
-    try{
-      const has = (window.aryantaHasSession && window.aryantaHasSession()) || !!(getSession() && getSession().email);
-      if (has || sessionStorage.getItem('aryanta_guest_smart_popup_seen') === '1') return;
-      sessionStorage.setItem('aryanta_guest_smart_popup_seen', '1');
-      setTimeout(function(){
-        if (typeof window.showLoginRequiredPopup === 'function') window.showLoginRequiredPopup('For greater Aryanta experience, login to use location-based delivery, faster checkout, wishlist/cart sync and smart suggestions.');
-      }, 1400);
-    }catch(e){}
-  }
-
-  function wrapSpecialDay(){
-    // Disabled by request: special day should NOT open a popup.
-    // The existing applySpecialDayTheme() still changes the full page design/CSS.
-    return false;
-  }
-
-  function installClickTracking(){
-    document.addEventListener('click', function(e){
-      const cat = e.target.closest('.cat-pill, .quick-action-buttons button, .aryanta-smart-chip');
-      if (cat) trackInterest('category', cat.textContent || cat.getAttribute('data-term') || '');
-      const card = e.target.closest('.list-item-card');
-      if (card) {
-        const title = card.querySelector('h4')?.textContent || '';
-        if (title) trackInterest('product', title);
-      }
-    }, true);
-  }
-
-  document.addEventListener('DOMContentLoaded', function(){
-    enhanceLoginPopup();
-    showSmartStrip();
-    installClickTracking();
-    setTimeout(installEnhancedSearch, 260);
-    setTimeout(showGuestDesignerPopupOnce, 900);
-    // Special day popup disabled: admin special day changes CSS/design only.
-    // setTimeout(wrapSpecialDay, 350);
-    const loc = sessionLocationHint();
-    if (loc) { const p = readProfile(); p.locationHint = loc; writeProfile(p); }
-    try{
-      if (typeof applySidebarFilterLogic === 'function' && !applySidebarFilterLogic.__smartEnhanced) {
-        applySidebarFilterLogic = enhancedFilter;
-        window.applySidebarFilterLogic = enhancedFilter;
-        applySidebarFilterLogic.__smartEnhanced = true;
-      }
-      if (typeof rankedRandomProducts === 'function' && !rankedRandomProducts.__smartEnhanced) {
-        const oldRank = rankedRandomProducts;
-        rankedRandomProducts = function(products){ return window.aryantaSmartRankProducts(oldRank(products), ''); };
-        rankedRandomProducts.__smartEnhanced = true;
-        window.rankedRandomProducts = rankedRandomProducts;
-      }
-    }catch(e){}
-  });
-})();
-</script>
-
-
-<script id="aryanta-special-day-ultra-ai-search-final">
-(function(){
-  if (window.__aryantaUltraSpecialAISearchFinal) return;
-  window.__aryantaUltraSpecialAISearchFinal = true;
-
-  function esc(v){
-    try {
-      if (typeof escapeHtml === 'function') return escapeHtml(v);
-      if (typeof escapeHtmlText === 'function') return escapeHtmlText(v);
-    } catch(e) {}
-    return String(v == null ? '' : v).replace(/[&<>'"]/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c];});
-  }
-  function bTrue(v){ return v === true || v === 1 || v === '1' || String(v || '').toLowerCase() === 'true' || String(v || '').toLowerCase() === 'yes' || String(v || '').toLowerCase() === 'live' || String(v || '').toLowerCase() === 'active'; }
-  function bFalse(v){ return v === false || v === 0 || v === '0' || String(v || '').toLowerCase() === 'false' || String(v || '').toLowerCase() === 'no' || String(v || '').toLowerCase() === 'off' || String(v || '').toLowerCase() === 'inactive'; }
-  function activeWindow(row){
-    if (!row || typeof row !== 'object') return false;
-    const start = row.startAt || row.startTime || row.startDate || row.startsAt || row.saleStart || row.from || row.liveFrom;
-    const end = row.endAt || row.endTime || row.endDate || row.endsAt || row.saleEnd || row.to || row.liveTill || row.liveUntil;
-    const now = Date.now();
-    const s = start ? new Date(start).getTime() : 0;
-    const e = end ? new Date(end).getTime() : 0;
-    if (Number.isFinite(s) && s > 0 && now < s) return false;
-    if (Number.isFinite(e) && e > 0 && now > e) return false;
-    return true;
-  }
-  function unwrapResponse(data){
-    let d = data || {};
-    for (let i = 0; i < 5; i++) {
-      if (!d || typeof d !== 'object' || Array.isArray(d)) break;
-      if (d.config && typeof d.config === 'object') { d = d.config; continue; }
-      if (d.settings && typeof d.settings === 'object' && !d.specialDay && !d.special_day) { d = d.settings; continue; }
-      if (d.data && typeof d.data === 'object' && !Array.isArray(d.data) && !d.specialDay && !d.special_day) { d = d.data; continue; }
-      break;
+    body {
+      margin: 0;
+      min-height: 100svh;
+      font-family: Inter, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      transition: background .4s, color .4s;
     }
-    return d;
-  }
-  function pickSpecialObject(data){
-    const d = unwrapResponse(data);
-    const candidates = [];
-    function add(x){ if (!x) return; if (Array.isArray(x)) x.forEach(add); else if (typeof x === 'object') candidates.push(x); }
-    add(d.special_day); add(d.specialDay); add(d.special_event); add(d.specialEvent); add(d.activeSpecialDay); add(d.active_special_day);
-    add(d.siteSpecialDay); add(d.adminSpecialDay); add(d.specialDayConfig); add(d.festival); add(d.event); add(d.liveEvent); add(d.saleEvent);
-    add(d.themeSpecialDay); add(d.storeEvent); add(d.dealDay); add(d.occasion); add(d.campaign);
-    const directLooksSpecial = d && typeof d === 'object' && (
-      d.specialDayActive !== undefined || d.isSpecialDay !== undefined || d.specialActive !== undefined ||
-      d.showSpecialDay !== undefined || d.special_day_active !== undefined || d.eventName || d.bannerText ||
-      d.specialTitle || d.specialMessage || d.specialDayName || d.theme || d.design || d.accentColor || d.primaryColor
-    );
-    if (directLooksSpecial) candidates.push(d);
 
-    const active = candidates.find(function(x){ return isSpecialActive(x); });
-    return active || candidates.find(function(x){ return x && (x.title || x.name || x.eventName || x.specialTitle || x.message || x.bannerText); }) || null;
-  }
-  function isSpecialActive(s){
-    if (!s || typeof s !== 'object') return false;
-    const status = String(s.status || s.state || s.mode || '').toLowerCase();
-    if (status.includes('draft') || status.includes('hidden') || status.includes('off') || status.includes('inactive') || status.includes('expired')) return false;
-    const explicitOff = [s.active, s.enabled, s.isActive, s.live, s.specialDayActive, s.isSpecialDay, s.showSpecialDay, s.specialActive, s.special_day_active].some(bFalse);
-    if (explicitOff) return false;
-    const explicitOn = [s.active, s.enabled, s.isActive, s.live, s.specialDayActive, s.isSpecialDay, s.showSpecialDay, s.specialActive, s.special_day_active].some(bTrue) || status.includes('active') || status.includes('live');
-    const hasContent = !!(s.eventName || s.name || s.title || s.specialTitle || s.specialDayName || s.message || s.bannerText || s.description || s.theme || s.design || s.accentColor || s.color);
-    return activeWindow(s) && (explicitOn || hasContent);
-  }
-  function specialName(event){ return String(event.eventName || event.specialDayName || event.specialTitle || event.name || event.title || 'Aryanta Special Day').trim(); }
-  function specialMessage(event){ return String(event.popupMessage || event.message || event.bannerText || event.subtitle || event.description || 'Special day is live now. Premium live deals are active for Aryanta customers.').trim(); }
-  function showSpecialLivePopup(event){
-    const name = specialName(event);
-    const id = 'special-live-' + name + '-' + (event.updatedAt || event.startAt || event.startTime || event.createdAt || 'v1');
-    const key = 'aryanta_seen_' + id.replace(/\W+/g, '_').slice(0, 90);
-    if (sessionStorage.getItem(key) === '1') return;
-    sessionStorage.setItem(key, '1');
-    let overlay = document.getElementById('aryantaSpecialLiveOverlay');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'aryantaSpecialLiveOverlay';
-      overlay.className = 'aryanta-special-live-overlay';
-      overlay.innerHTML = `
-        <div class="aryanta-special-live-box" role="dialog" aria-modal="true">
-          <button type="button" class="aryanta-special-live-close" aria-label="Close"><i class="fas fa-times"></i></button>
-          <div class="aryanta-special-live-icon"><i class="fas fa-bolt"></i></div>
-          <span class="aryanta-special-live-kicker">Special Day Live</span>
-          <h3 id="aryantaSpecialLiveTitle">Special day is live now</h3>
-          <p id="aryantaSpecialLiveMessage"></p>
-          <div class="aryanta-special-live-actions">
-            <button type="button" class="aryanta-special-live-later">Close</button>
-            <button type="button" class="aryanta-special-live-shop">Shop live deals</button>
-          </div>
-        </div>`;
-      document.body.appendChild(overlay);
-      const close = function(){ overlay.classList.remove('show'); };
-      overlay.addEventListener('click', function(e){ if (e.target === overlay) close(); });
-      overlay.querySelector('.aryanta-special-live-close').onclick = close;
-      overlay.querySelector('.aryanta-special-live-later').onclick = close;
-      overlay.querySelector('.aryanta-special-live-shop').onclick = function(){
-        close();
-        document.getElementById('productShelf')?.scrollIntoView({behavior:'smooth', block:'start'});
-      };
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, black, transparent 90%);
     }
-    overlay.querySelector('#aryantaSpecialLiveTitle').textContent = name + ' is live now';
-    overlay.querySelector('#aryantaSpecialLiveMessage').textContent = specialMessage(event);
-    setTimeout(function(){ overlay.classList.add('show'); }, 550);
-  }
 
-  window.normalizePublicConfig = function(data){
-    const d = unwrapResponse(data);
-    return { raw: d, specialDay: pickSpecialObject(data), popup: d.popup || d.systemPopup || d.notice || d.announcement || null };
-  };
-
-  window.applySpecialDayTheme = function(eventData){
-    eventData = eventData || {};
-    const name = specialName(eventData);
-    const msg = specialMessage(eventData);
-    try { currentSpecialEvent = eventData; } catch(e) {}
-    try { siteConfig.isSpecialDay = true; siteConfig.specialDayName = name; siteConfig.specialEvent = eventData; } catch(e) {}
-
-    document.body.classList.add('theme-special-day','aryanta-event-mode','aryanta-ultra-luxury','aryanta-event-festival');
-    document.body.classList.remove('aryanta-event-dark','aryanta-event-light');
-    const tone = String(eventData.theme || eventData.design || eventData.mode || 'luxury').toLowerCase();
-    if (tone.includes('light') || tone.includes('white')) document.body.classList.add('aryanta-event-light');
-    else document.body.classList.add('aryanta-event-dark');
-
-    const accent = eventData.accentColor || eventData.primaryColor || eventData.color || eventData.accent || '#d6a84f';
-    const accent2 = eventData.secondaryColor || eventData.secondColor || eventData.bg2 || '#8b5cf6';
-    const accent3 = eventData.thirdColor || eventData.highlightColor || '#00d4ff';
-    document.documentElement.style.setProperty('--event-accent', accent);
-    document.documentElement.style.setProperty('--event-accent-2', accent2);
-    document.documentElement.style.setProperty('--event-accent-3', accent3);
-    document.documentElement.style.setProperty('--event-soft', eventData.softColor || 'rgba(214, 168, 79, .14)');
-
-    let bar = document.getElementById('festiveAnnouncement');
-    if (!bar) { bar = document.createElement('div'); bar.id = 'festiveAnnouncement'; bar.className = 'festive-bar'; document.body.prepend(bar); }
-    bar.style.display = 'block';
-    bar.innerHTML = `<span class="lux-dot"></span><strong>${esc(name)} LIVE NOW</strong><span>${esc(eventData.bannerText || msg)}</span>`;
-
-    const main = document.querySelector('.main-content') || document.body;
-    let hero = document.getElementById('specialDayHero');
-    if (!hero) {
-      hero = document.createElement('section');
-      hero.id = 'specialDayHero';
-      const banner = document.getElementById('mainBannerSection');
-      if (banner && banner.parentNode) banner.parentNode.insertBefore(hero, banner);
-      else main.prepend(hero);
+    .orb {
+      position: fixed;
+      z-index: -1;
+      width: 340px;
+      height: 340px;
+      border-radius: 50%;
+      filter: blur(95px);
+      opacity: .55;
+      pointer-events: none;
+      animation: drift 12s ease-in-out infinite alternate;
     }
-    hero.className = 'special-day-hero ultra-luxury-hero';
-    hero.innerHTML = `
-      <div class="special-day-copy">
-        <span class="special-day-pill"><i class="fas fa-crown"></i> Ultra luxury live event</span>
-        <h1>${esc(name)}</h1>
-        <p>${esc(msg)}</p>
-        <div class="special-luxury-points">
-          <span><i class="fas fa-shield-heart"></i> Verified deals</span>
-          <span><i class="fas fa-location-dot"></i> Location-smart shopping</span>
-          <span><i class="fas fa-bolt"></i> Fast checkout</span>
-        </div>
+
+    .orb.one {
+      top: -170px;
+      left: -100px;
+      background: var(--glow);
+    }
+
+    .orb.two {
+      bottom: -180px;
+      right: -100px;
+      background: rgba(0,185,199,.12);
+      animation-delay: -5s;
+    }
+
+    header {
+      width: min(1120px, 100%);
+      margin: auto;
+      padding: 25px 25px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      animation: fadeDown .8s both;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: -.8px;
+    }
+
+    .brand img {
+      width: 42px;
+      height: 42px;
+      object-fit: cover;
+      border-radius: 13px;
+      box-shadow: 0 4px 20px var(--glow);
+    }
+
+    .brand span { color: var(--accent); }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 13px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      border-radius: 50px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      backdrop-filter: blur(15px);
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #22c987;
+      box-shadow: 0 0 12px #22c987;
+      animation: blink 1.8s infinite;
+    }
+
+    main {
+      min-height: calc(100svh - 145px);
+      width: min(900px, 100%);
+      margin: auto;
+      padding: 40px 24px 55px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .hero-image {
+      position: relative;
+      width: 126px;
+      height: 126px;
+      margin-bottom: 32px;
+      animation: fadeUp .9s .1s both;
+    }
+
+    .hero-image::before,
+    .hero-image::after {
+      content: "";
+      position: absolute;
+      inset: -12px;
+      border: 1px solid var(--line);
+      border-radius: 34px;
+      animation: rotate 16s linear infinite;
+    }
+
+    .hero-image::after {
+      inset: -22px;
+      border-style: dashed;
+      opacity: .65;
+      animation-direction: reverse;
+      animation-duration: 28s;
+    }
+
+    .hero-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 27px;
+      position: relative;
+      z-index: 1;
+      box-shadow: 0 15px 65px var(--glow);
+      animation: float 4s ease-in-out infinite;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 15px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--accent);
+      border-radius: 50px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      animation: fadeUp .8s .2s both;
+    }
+
+    h1 {
+      margin: 26px 0 17px;
+      font-size: clamp(43px, 8.5vw, 82px);
+      line-height: 1.02;
+      letter-spacing: -4px;
+      font-weight: 850;
+      animation: fadeUp .9s .3s both;
+    }
+
+    h1 .gradient {
+      display: block;
+      padding-bottom: 8px;
+      background: linear-gradient(
+        100deg, var(--accent), #9b72ff 48%, var(--accent2)
+      );
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: shine 5s linear infinite;
+    }
+
+    .description {
+      max-width: 510px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: clamp(14px, 2.5vw, 17px);
+      line-height: 1.85;
+      animation: fadeUp .9s .4s both;
+    }
+
+    .progress-card {
+      width: min(380px, 100%);
+      margin-top: 34px;
+      padding: 18px 20px;
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      background: var(--surface);
+      backdrop-filter: blur(18px);
+      animation: fadeUp .9s .5s both;
+    }
+
+    .progress-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 13px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .progress-top span:last-child {
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .track {
+      height: 5px;
+      border-radius: 20px;
+      overflow: hidden;
+      background: var(--line);
+    }
+
+    .bar {
+      width: 38%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      animation: loading 2.4s ease-in-out infinite alternate;
+      box-shadow: 0 0 16px var(--glow);
+    }
+
+    .note {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: .2px;
+    }
+
+    .bottom-message {
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: 12px;
+      animation: fadeUp 1s .6s both;
+    }
+
+    .bottom-message strong {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    footer {
+      width: min(1120px, 100%);
+      margin: auto;
+      padding: 20px 25px 26px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    footer .domain {
+      color: var(--text);
+      font-weight: 700;
+      letter-spacing: .5px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-9px); }
+    }
+
+    @keyframes rotate {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes shine {
+      to { background-position: 200% center; }
+    }
+
+    @keyframes blink {
+      50% { opacity: .35; }
+    }
+
+    @keyframes loading {
+      from { width: 24%; }
+      to { width: 76%; }
+    }
+
+    @keyframes drift {
+      to { transform: translate(50px, 35px) scale(1.15); }
+    }
+
+    @media (max-width: 480px) {
+      header { padding: 19px 17px; }
+      .brand { font-size: 19px; }
+      .brand img { width: 36px; height: 36px; }
+      .status { padding: 8px 10px; font-size: 9px; }
+      main { padding: 35px 20px 48px; }
+      .hero-image { width: 105px; height: 105px; margin-bottom: 29px; }
+      h1 { letter-spacing: -2.5px; }
+      footer { padding: 18px 17px; font-size: 10px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="orb one"></div>
+  <div class="orb two"></div>
+
+  <header>
+    <div class="brand">
+      <img src="image_1778688021380.jpg" alt="Aryanta logo">
+      ARYANTA<span>.</span>
+    </div>
+
+    <div class="status">
+      <span class="dot"></span>
+      COMING SOON
+    </div>
+  </header>
+
+  <main>
+    <div class="hero-image">
+      <img src="image_1778688021380.jpg" alt="Aryanta">
+    </div>
+
+    <div class="eyebrow">
+      <span>✦</span> Something new is coming
+    </div>
+
+    <h1>
+      We're building
+      <span class="gradient">the future.</span>
+    </h1>
+
+    <p class="description">
+      Great things take time. We're working behind the scenes
+      to bring you something amazing. Aryanta is getting ready
+      for its next big chapter.
+    </p>
+
+    <section class="progress-card" aria-label="Website preparation status">
+      <div class="progress-top">
+        <span>Website status</span>
+        <span>Under construction</span>
       </div>
-      <button class="special-day-btn" type="button" onclick="document.getElementById('productShelf')?.scrollIntoView({behavior:'smooth', block:'start'})">Shop live offers <i class="fas fa-arrow-right"></i></button>`;
 
-    showSpecialLivePopup(eventData);
-  };
+      <div class="track">
+        <div class="bar"></div>
+      </div>
 
-  window.clearSpecialDayTheme = function(){
-    try { siteConfig.isSpecialDay = false; siteConfig.specialDayName = ''; siteConfig.specialEvent = null; currentSpecialEvent = null; } catch(e) {}
-    document.body.classList.remove('theme-special-day','aryanta-event-mode','aryanta-ultra-luxury','aryanta-event-dark','aryanta-event-light','aryanta-event-festival');
-    const bar = document.getElementById('festiveAnnouncement'); if (bar) { bar.style.display = 'none'; bar.innerHTML = ''; }
-    const hero = document.getElementById('specialDayHero'); if (hero) hero.remove();
-  };
+      <div class="note">
+        Building something special for you. Stay tuned.
+      </div>
+    </section>
 
-  window.fetchAppConfig = async function(){
-    try {
-      const paths = ['/config?key=special_day','/config?key=specialDay','/config?key=activeSpecialDay','/config','/site-config'];
-      let data = null;
-      for (const path of paths) {
-        try { data = await fetchJsonWithTimeout(path, 5000); } catch(e) { data = null; }
-        if (data && pickSpecialObject(data)) break;
-        if (data && !data.__weak) break;
-      }
-      if (!data) return;
-      const normalized = window.normalizePublicConfig(data);
-      const special = normalized.specialDay;
-      if (special && isSpecialActive(special)) window.applySpecialDayTheme(special);
-      else window.clearSpecialDayTheme();
+    <div class="bottom-message">
+      A new experience is on the way. <strong>See you soon!</strong>
+    </div>
+  </main>
 
-      const popup = normalized.popup || normalized.raw;
-      if (window.appSettings?.notifications !== false && popup && (popup.showPopup || popup.popupEnabled) && !sessionStorage.getItem('popupShown')) {
-        const title = document.getElementById('popupTitle');
-        const desc = document.getElementById('popupDesc');
-        if (title) title.innerText = popup.popupTitle || popup.title || 'Notice';
-        if (desc) desc.innerText = popup.popupDesc || popup.message || popup.desc || 'Welcome to Aryanta Store.';
-        if (typeof openModalId === 'function') openModalId('systemPopup');
-        sessionStorage.setItem('popupShown','true');
-      }
-    } catch(e) { console.warn('Config loading skipped:', e); }
-  };
+  <footer>
+    <span>© <span id="year"></span> <span class="domain">ARYANTA</span></span>
+    <span>Made for what's next ✦</span>
+  </footer>
 
-  // ---------- Smart typo/intent search: local AI-style resolver + optional Groq hint ----------
-  const synonymMap = {
-    'fone':'phone','phne':'phone','moble':'mobile','mobl':'mobile','mobil':'mobile','cel':'phone','cell':'phone',
-    'lapop':'laptop','lapy':'laptop','leptop':'laptop','wach':'watch','wacth':'watch','watc':'watch','wath':'watch',
-    'hedphone':'headphone','headfone':'headphone','earbud':'earbuds','airpod':'earbuds','tshrt':'tshirt','t-shrt':'tshirt',
-    'shoo':'shoe','shoos':'shoes','choco':'chocolate','choclate':'chocolate','choc':'chocolate','grean':'green',
-    'primum':'premium','primeum':'premium','premum':'premium','vintge':'vintage','fastrak':'fastrack','fasttrak':'fastrack'
-  };
-  const stop = new Set('a an the for to of in on with and or best good cheap low high price buy show find search item product products near me please'.split(' '));
-  function norm(s){ return String(s || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
-  function lev(a,b){
-    a = norm(a); b = norm(b); if (a === b) return 0; if (!a || !b) return 99;
-    if (Math.abs(a.length-b.length) > 3) return 99;
-    const dp = Array.from({length:a.length+1}, (_,i)=>[i]);
-    for (let j=1;j<=b.length;j++) dp[0][j] = j;
-    for (let i=1;i<=a.length;i++) for (let j=1;j<=b.length;j++) dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
-    return dp[a.length][b.length];
-  }
-  function tokensFromProduct(p){
-    const text = (window.aryantaProductSearchText ? window.aryantaProductSearchText(p) : JSON.stringify(p || {}));
-    return norm(text).split(/\s+/).filter(t => t && t.length > 1);
-  }
-  function catalogTokens(list){
-    const counts = new Map();
-    (list || []).slice(0, 1200).forEach(p => tokensFromProduct(p).forEach(t => counts.set(t, (counts.get(t)||0)+1)));
-    return Array.from(counts.entries()).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).slice(0, 2500);
-  }
-  function correctTerm(term, tokenIndex){
-    term = synonymMap[norm(term)] || norm(term);
-    if (!term || stop.has(term)) return '';
-    if (/^[a-z]*\d+[a-z0-9-]*$/i.test(term)) return term;
-    if (tokenIndex.includes(term)) return term;
-    let best = term, bestScore = 99;
-    for (const tok of tokenIndex) {
-      if (Math.abs(tok.length - term.length) > 3) continue;
-      if (tok[0] !== term[0] && tok.slice(0,2) !== term.slice(0,2)) continue;
-      const d = lev(term, tok);
-      if (d < bestScore) { best = tok; bestScore = d; if (d === 1) break; }
+  <script>
+    // Automatically update the copyright year.
+    document.getElementById("year").textContent =
+      new Date().getFullYear();
+
+    // Update the browser address bar's theme color with system theme.
+    const themeQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+    function updateThemeColor() {
+      document.querySelector('meta[name="theme-color"]').content =
+        themeQuery.matches ? "#080a10" : "#f7f8fc";
     }
-    const allowed = term.length <= 4 ? 1 : term.length <= 7 ? 2 : 3;
-    return bestScore <= allowed ? best : term;
-  }
-  window.aryantaGetSearchIntent = function(query, list){
-    list = list || (typeof getLightProducts === 'function' ? getLightProducts() : (window.allProducts || []));
-    const tokenIndex = catalogTokens(list);
-    const rawTerms = norm(query).split(/\s+/).filter(Boolean);
-    const correctedTerms = rawTerms.map(t => correctTerm(t, tokenIndex)).filter(Boolean);
-    const expandedTerms = Array.from(new Set(correctedTerms.concat(rawTerms.map(t => synonymMap[norm(t)] || norm(t))).filter(t => t && !stop.has(t))));
-    return { original: String(query || ''), corrected: correctedTerms.join(' '), terms: expandedTerms };
-  };
-  function termMatchesProduct(term, p){
-    if (!term) return true;
-    const text = window.aryantaProductSearchText ? window.aryantaProductSearchText(p) : JSON.stringify(p || {}).toLowerCase();
-    const normalizedText = norm(text);
-    if (normalizedText.includes(term)) return true;
-    const toks = tokensFromProduct(p);
-    const allowed = term.length <= 4 ? 1 : term.length <= 7 ? 2 : 3;
-    return toks.some(tok => tok.includes(term) || term.includes(tok) || lev(term, tok) <= allowed);
-  }
-  window.aryantaProductMatchesQuery = function(p, query){
-    const intent = window.aryantaGetSearchIntent(query);
-    const terms = intent.terms && intent.terms.length ? intent.terms : norm(query).split(/\s+/).filter(Boolean);
-    if (!terms.length) return true;
-    const strongTerms = terms.filter(t => !stop.has(t));
-    if (!strongTerms.length) return true;
-    // Every important term should match, but one miss is allowed for long natural-language searches.
-    const matched = strongTerms.filter(t => termMatchesProduct(t, p)).length;
-    return matched === strongTerms.length || (strongTerms.length >= 3 && matched >= strongTerms.length - 1);
-  };
-  const oldSmartRank = window.aryantaSmartRankProducts;
-  window.aryantaSmartRankProducts = function(list, query){
-    const intent = window.aryantaGetSearchIntent(query, list);
-    const q = (intent.corrected || query || '').trim();
-    const ranked = oldSmartRank ? oldSmartRank(list, q) : (list || []).slice();
-    return ranked.sort(function(a,b){
-      const aExact = termMatchesProduct(q, a) ? 1 : 0;
-      const bExact = termMatchesProduct(q, b) ? 1 : 0;
-      return bExact - aExact;
-    });
-  };
-  let groqIntentTimer = null;
-  window.aryantaMaybeGroqSearchIntent = function(query){
-    clearTimeout(groqIntentTimer);
-    if (!query || query.trim().length < 3 || typeof window.aryantaCallGroqSmart !== 'function') return;
-    groqIntentTimer = setTimeout(async function(){
-      try {
-        const list = (typeof getLightProducts === 'function' ? getLightProducts() : (window.allProducts || [])).slice(0, 80).map(p => ({id:p.id, name:p.name, category:p.category, brand:p.brand}));
-        const res = await window.aryantaCallGroqSmart({
-          wantJson: true,
-          prompt: 'You are Aryanta search AI. Correct spelling and detect shopping intent. Return JSON only with keys correctedQuery, category, productType, keywords. User typed: ' + JSON.stringify(query) + '. Catalog sample: ' + JSON.stringify(list).slice(0, 2500)
-        });
-        const text = JSON.stringify(res || {});
-        const m = text.match(/"correctedQuery"\s*:\s*"([^"]{2,80})"/i);
-        if (m && m[1] && norm(m[1]) !== norm(query)) {
-          window.__aryantaLastGroqSearchHint = { original: query, corrected: m[1], at: Date.now() };
-          const input = document.activeElement && document.activeElement.matches && document.activeElement.matches('#desktopSearchInput,#mobileSearchInput') ? document.activeElement : null;
-          const dd = input && input.closest('.nav-search')?.querySelector('.search-dropdown');
-          if (dd && dd.style.display !== 'none') {
-            const hint = document.createElement('div');
-            hint.className = 'search-item aryanta-ai-correct-hint';
-            hint.innerHTML = `<i class="fas fa-wand-magic-sparkles"></i><div class="search-item-copy"><span class="search-item-title">AI understood: ${esc(m[1])}</span><span class="search-meta-line">Press Enter to search corrected result</span></div>`;
-            hint.onclick = function(){ input.value = m[1]; input.dispatchEvent(new Event('input', {bubbles:true})); if (typeof applySidebarFilterLogic === 'function') applySidebarFilterLogic(); };
-            dd.prepend(hint);
-          }
-        }
-      } catch(e) {}
-    }, 850);
-  };
-  document.addEventListener('input', function(e){
-    if (e.target && e.target.matches && e.target.matches('#desktopSearchInput,#mobileSearchInput')) window.aryantaMaybeGroqSearchIntent(e.target.value || '');
-  }, true);
-  const oldHandle = window.handleMicOrSearch;
-  window.handleMicOrSearch = function(inputId, micBtnId){
-    const input = document.getElementById(inputId);
-    if (input && window.__aryantaLastGroqSearchHint && window.__aryantaLastGroqSearchHint.original === input.value.trim()) {
-      input.value = window.__aryantaLastGroqSearchHint.corrected;
-    }
-    return oldHandle ? oldHandle.apply(this, arguments) : (typeof applySidebarFilterLogic === 'function' ? applySidebarFilterLogic() : null);
-  };
 
-  document.addEventListener('DOMContentLoaded', function(){
-    setTimeout(function(){ if (typeof window.fetchAppConfig === 'function') window.fetchAppConfig(); }, 900);
-  });
-})();
-</script>
-
+    updateThemeColor();
+    themeQuery.addEventListener?.("change", updateThemeColor);
+  </script>
 </body>
 </html>
