@@ -307,7 +307,7 @@
       font-weight: 700;
     }
 
-    /* Support and social buttons */
+    /* Support button */
     .footer-actions {
       display: flex;
       justify-content: center;
@@ -383,6 +383,7 @@
       color: var(--text);
       background: var(--surface);
       text-decoration: none;
+      cursor: pointer;
       transition: transform .2s, color .2s, border-color .2s;
     }
 
@@ -416,7 +417,7 @@
       letter-spacing: .5px;
     }
 
-    /* Custom support popup */
+    /* Custom support/social popup */
     .support-overlay {
       position: fixed;
       inset: 0;
@@ -657,7 +658,6 @@
       A new experience is on the way. <strong>See you soon!</strong>
     </div>
 
-    <!-- Get Support button -->
     <div class="footer-actions">
       <button class="action-button primary" id="supportOpen" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -669,12 +669,11 @@
       </button>
     </div>
 
-    <!-- Follow us -->
     <div class="follow-label">Follow us on</div>
 
     <div class="social-links">
-      <a class="social-link" href="https://www.instagram.com/"
-         target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+      <a class="social-link social-item" data-social="instagram"
+         href="#" aria-label="Instagram">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
              stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="5"></rect>
@@ -683,15 +682,15 @@
         </svg>
       </a>
 
-      <a class="social-link" href="https://www.facebook.com/"
-         target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+      <a class="social-link social-item" data-social="facebook"
+         href="#" aria-label="Facebook">
         <svg viewBox="0 0 24 24" fill="currentColor">
           <path d="M13.4 21v-8.2h2.8l.4-3.2h-3.2v-2c0-.9.3-1.5 1.6-1.5h1.7V3.2c-.3 0-1.3-.2-2.5-.2-2.5 0-4.2 1.5-4.2 4.3v2.3H7.2v3.2H10V21z"></path>
         </svg>
       </a>
 
-      <a class="social-link" href="https://x.com/"
-         target="_blank" rel="noopener noreferrer" aria-label="X">
+      <a class="social-link social-item" data-social="x"
+         href="#" aria-label="X">
         <svg viewBox="0 0 24 24" fill="currentColor">
           <path d="M18.9 2H22l-6.8 7.8L23.2 22h-6.3L12 14.6 5.6 22H2.4l7.3-8.4L1.8 2h6.5l4.5 6.8zm-1.1 17.8h1.7L7.3 4.1H5.5z"></path>
         </svg>
@@ -710,11 +709,13 @@
        aria-labelledby="supportTitle" aria-hidden="true">
     <div class="support-popup">
       <button class="support-close" id="supportClose"
-              type="button" aria-label="Close support popup">&times;</button>
+              type="button" aria-label="Close popup">&times;</button>
 
       <div class="support-symbol">✦</div>
       <h2 id="supportTitle">We're here to help.</h2>
-      <p>Contact the Aryanta team using the details below. We'll do our best to assist you.</p>
+      <p id="supportDescription">
+        Contact the Aryanta team using the details below. We'll do our best to assist you.
+      </p>
 
       <div class="support-detail">
         <div class="support-detail-icon">
@@ -739,8 +740,7 @@
         </div>
         <div>
           <small>Phone support</small>
-          <!-- Replace this placeholder with your official support number -->
-          <a href="tel:+910000000000">Add your phone number</a>
+          <a href="tel:+918603467878">+91 86034 67878</a>
         </div>
       </div>
 
@@ -749,7 +749,7 @@
   </div>
 
   <script>
-    // Current year in footer
+    // Copyright year
     document.getElementById("year").textContent =
       new Date().getFullYear();
 
@@ -764,37 +764,101 @@
     updateThemeColor();
     themeQuery.addEventListener?.("change", updateThemeColor);
 
-    // Support popup interactions
+    // Replace the empty strings with Aryanta's real social profile URLs.
+    const SOCIAL_LINKS = {
+      instagram: "",
+      facebook: "",
+      x: ""
+    };
+
     (() => {
       const overlay = document.getElementById("supportOverlay");
       const openButton = document.getElementById("supportOpen");
       const closeButton = document.getElementById("supportClose");
+      const title = document.getElementById("supportTitle");
+      const description = document.getElementById("supportDescription");
 
-      function openSupport() {
+      function openPopup(mode = "support", platform = "") {
+        if (mode === "social") {
+          title.textContent = "We're coming soon!";
+          description.textContent =
+            "Aryanta's " + platform +
+            " profile link isn't available yet. Please contact our support team.";
+        } else {
+          title.textContent = "We're here to help.";
+          description.textContent =
+            "Contact the Aryanta team using the details below. We'll do our best to assist you.";
+        }
+
         overlay.classList.add("open");
         overlay.setAttribute("aria-hidden", "false");
         document.body.style.overflow = "hidden";
         closeButton.focus();
       }
 
-      function closeSupport() {
+      function closePopup() {
         overlay.classList.remove("open");
         overlay.setAttribute("aria-hidden", "true");
         document.body.style.overflow = "";
+        title.textContent = "We're here to help.";
+        description.textContent =
+          "Contact the Aryanta team using the details below. We'll do our best to assist you.";
         openButton.focus();
       }
 
-      openButton.addEventListener("click", openSupport);
-      closeButton.addEventListener("click", closeSupport);
+      openButton.addEventListener("click", () => openPopup());
+
+      closeButton.addEventListener("click", closePopup);
 
       overlay.addEventListener("click", event => {
-        if (event.target === overlay) closeSupport();
+        if (event.target === overlay) closePopup();
       });
 
       document.addEventListener("keydown", event => {
         if (event.key === "Escape" && overlay.classList.contains("open")) {
-          closeSupport();
+          closePopup();
         }
+      });
+
+      document.querySelectorAll(".social-item").forEach(link => {
+        link.addEventListener("click", event => {
+          event.preventDefault();
+
+          const platform = link.dataset.social;
+          const url = (SOCIAL_LINKS[platform] || "").trim();
+
+          // Only open recognized HTTPS social profile URLs.
+          const validHosts = {
+            instagram: ["instagram.com", "www.instagram.com"],
+            facebook: ["facebook.com", "www.facebook.com", "m.facebook.com"],
+            x: ["x.com", "www.x.com", "twitter.com", "www.twitter.com"]
+          };
+
+          let safeUrl = "";
+
+          try {
+            const parsed = new URL(url);
+            if (
+              parsed.protocol === "https:" &&
+              validHosts[platform]?.includes(parsed.hostname)
+            ) {
+              safeUrl = parsed.href;
+            }
+          } catch (_) {
+            // Missing or invalid profile URL: show the custom popup.
+          }
+
+          if (safeUrl) {
+            window.open(safeUrl, "_blank", "noopener,noreferrer");
+          } else {
+            const names = {
+              instagram: "Instagram",
+              facebook: "Facebook",
+              x: "X"
+            };
+            openPopup("social", names[platform] || platform);
+          }
+        });
       });
     })();
   </script>
