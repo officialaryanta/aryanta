@@ -5,8 +5,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#f7f8fc">
-  <meta name="description" content="This Aryanta page is not available. Return to the Aryanta homepage.">
-  <title>404 — Page Not Available | Aryanta</title>
+  <meta name="description" content="404 Page Not Found — Aryanta">
+  <title>404 — Page Not Found | Aryanta</title>
+
+  <!-- Automatically match the device's light/dark theme -->
+  <script>
+    (() => {
+      const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = dark ? "dark" : "light";
+    })();
+  </script>
 
   <style>
     :root {
@@ -14,344 +22,358 @@
       --bg: #f7f8fc;
       --surface: rgba(255,255,255,.78);
       --text: #171923;
-      --muted: #72788a;
-      --border: rgba(25,32,55,.1);
-      --accent: #6558ef;
-      --accent2: #9288ff;
-      --shadow: 0 24px 80px rgba(35,40,80,.1);
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) {
-        color-scheme: dark;
-        --bg: #0b0c12;
-        --surface: rgba(24,26,38,.82);
-        --text: #f4f4fb;
-        --muted: #a0a4b8;
-        --border: rgba(255,255,255,.1);
-        --accent: #a49aff;
-        --accent2: #6d60ed;
-        --shadow: 0 24px 80px rgba(0,0,0,.35);
-      }
+      --muted: #73798a;
+      --line: rgba(30,40,70,.10);
+      --accent: #635bff;
+      --accent2: #00b9c7;
+      --glow: rgba(99,91,255,.17);
+      --grid: rgba(90,100,140,.065);
     }
 
     :root[data-theme="dark"] {
       color-scheme: dark;
-      --bg: #0b0c12;
-      --surface: rgba(24,26,38,.82);
-      --text: #f4f4fb;
-      --muted: #a0a4b8;
-      --border: rgba(255,255,255,.1);
-      --accent: #a49aff;
-      --accent2: #6d60ed;
-      --shadow: 0 24px 80px rgba(0,0,0,.35);
+      --bg: #080a10;
+      --surface: rgba(20,23,34,.78);
+      --text: #f5f6ff;
+      --muted: #9da4b8;
+      --line: rgba(255,255,255,.10);
+      --accent: #918aff;
+      --accent2: #38d9e8;
+      --glow: rgba(112,99,255,.20);
+      --grid: rgba(190,200,255,.045);
     }
 
-    :root[data-theme="light"] {
-      color-scheme: light;
-      --bg: #f7f8fc;
-      --surface: rgba(255,255,255,.78);
-      --text: #171923;
-      --muted: #72788a;
-      --border: rgba(25,32,55,.1);
-      --accent: #6558ef;
-      --accent2: #9288ff;
-      --shadow: 0 24px 80px rgba(35,40,80,.1);
+    * {
+      box-sizing: border-box;
     }
 
-    * { box-sizing: border-box; }
-
-    html { min-height: 100%; }
+    html {
+      min-height: 100%;
+      scroll-behavior: smooth;
+    }
 
     body {
       margin: 0;
       min-height: 100vh;
-      min-height: 100dvh;
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
       overflow-x: hidden;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      background: var(--bg);
+      font-family: Inter, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
       color: var(--text);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system,
-                   BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
       transition: background .35s ease, color .35s ease;
     }
 
-    button, a { font: inherit; }
-
-    .ambient {
+    body::before {
+      content: "";
       position: fixed;
       inset: 0;
-      overflow: hidden;
+      z-index: -2;
       pointer-events: none;
-      z-index: -1;
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, black, transparent 90%);
     }
 
     .orb {
-      position: absolute;
+      position: fixed;
+      z-index: -1;
       width: 340px;
       height: 340px;
       border-radius: 50%;
-      filter: blur(85px);
-      opacity: .22;
-      background: var(--accent);
-      animation: float 12s ease-in-out infinite alternate;
+      filter: blur(95px);
+      opacity: .55;
+      pointer-events: none;
+      animation: drift 12s ease-in-out infinite alternate;
     }
 
-    .orb.one { top: -130px; left: -100px; }
+    .orb.one {
+      top: -170px;
+      left: -100px;
+      background: var(--glow);
+    }
+
     .orb.two {
-      right: -140px;
-      bottom: -130px;
-      width: 420px;
-      height: 420px;
-      background: var(--accent2);
+      right: -100px;
+      bottom: -180px;
+      background: rgba(0,185,199,.12);
       animation-delay: -5s;
     }
 
-    .topbar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
+    header {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      padding: 25px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
-      padding: 22px clamp(18px, 5vw, 64px);
+      animation: fadeDown .8s both;
     }
 
     .brand {
-      display: inline-flex;
+      display: flex;
       align-items: center;
       gap: 11px;
-      color: var(--text);
-      text-decoration: none;
       font-size: 21px;
       font-weight: 800;
       letter-spacing: -.8px;
     }
 
     .brand img {
-      width: 39px;
-      height: 39px;
-      object-fit: contain;
-      border-radius: 12px;
+      width: 42px;
+      height: 42px;
+      object-fit: cover;
+      border-radius: 13px;
+      box-shadow: 0 4px 20px var(--glow);
     }
 
-    .theme-button {
-      display: inline-flex;
+    .brand span {
+      color: var(--accent);
+    }
+
+    .error-status {
+      display: flex;
       align-items: center;
-      justify-content: center;
       gap: 9px;
-      min-height: 43px;
-      padding: 0 15px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
+      padding: 9px 13px;
+      border: 1px solid var(--line);
+      border-radius: 50px;
       background: var(--surface);
-      color: var(--text);
-      cursor: pointer;
-      backdrop-filter: blur(16px);
-      transition: transform .2s, border-color .2s;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      backdrop-filter: blur(15px);
     }
 
-    .theme-button:hover { transform: translateY(-2px); }
-    .theme-button:focus-visible, a:focus-visible {
-      outline: 3px solid var(--accent);
-      outline-offset: 4px;
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ff7777;
+      box-shadow: 0 0 12px rgba(255,100,100,.5);
     }
 
     main {
       width: 100%;
-      max-width: 660px;
-      padding: 100px 0 45px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       text-align: center;
-      animation: reveal .8s cubic-bezier(.2,.75,.25,1) both;
+      padding: 50px 22px 70px;
     }
 
-    .illustration {
+    .error-content {
+      width: min(620px, 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .logo-wrap {
       position: relative;
-      width: min(100%, 360px);
-      margin: 0 auto 8px;
-      aspect-ratio: 1.25;
-      display: grid;
-      place-items: center;
+      width: 112px;
+      height: 112px;
+      margin-bottom: 32px;
+      animation: fadeUp .8s .1s both;
     }
 
-    .orbit {
-      position: absolute;
-      width: 220px;
-      height: 220px;
-      border: 1px solid var(--border);
-      border-radius: 50%;
-      animation: spin 28s linear infinite;
-    }
-
-    .orbit::before, .orbit::after {
+    .logo-wrap::before,
+    .logo-wrap::after {
       content: "";
       position: absolute;
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 22px var(--accent);
+      inset: -12px;
+      border: 1px solid var(--line);
+      border-radius: 32px;
+      animation: rotate 18s linear infinite;
     }
 
-    .orbit::before { top: 27px; left: 29px; }
-    .orbit::after { right: 13px; bottom: 65px; width: 6px; height: 6px; }
+    .logo-wrap::after {
+      inset: -22px;
+      border-style: dashed;
+      opacity: .65;
+      animation-direction: reverse;
+      animation-duration: 28s;
+    }
 
-    .number {
-      font-size: clamp(105px, 24vw, 178px);
-      line-height: .95;
-      font-weight: 900;
-      letter-spacing: -12px;
-      color: var(--accent);
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 15px 25px rgba(105,90,230,.15));
-      animation: bob 4s ease-in-out infinite;
+    .logo-wrap img {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 26px;
+      box-shadow: 0 15px 55px var(--glow);
+      animation: float 4s ease-in-out infinite;
     }
 
     .eyebrow {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 8px 13px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
+      padding: 9px 15px;
+      border: 1px solid var(--line);
+      border-radius: 50px;
       background: var(--surface);
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 750;
-      letter-spacing: 1.5px;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 2px;
       text-transform: uppercase;
+      animation: fadeUp .8s .2s both;
     }
 
-    .status-dot {
-      width: 7px;
-      height: 7px;
-      background: #f59e0b;
-      border-radius: 50%;
-      box-shadow: 0 0 12px rgba(245,158,11,.45);
+    .error-number {
+      margin: 19px 0 0;
+      font-size: clamp(100px, 23vw, 190px);
+      line-height: .95;
+      font-weight: 900;
+      letter-spacing: -9px;
+      background: linear-gradient(
+        115deg, var(--accent), #9b72ff 48%, var(--accent2)
+      );
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: fadeUp .8s .3s both, shine 6s linear infinite;
     }
 
     h1 {
-      margin: 22px 0 12px;
-      font-size: clamp(29px, 6vw, 43px);
-      line-height: 1.12;
-      letter-spacing: -1.6px;
+      margin: 18px 0 12px;
+      font-size: clamp(25px, 5vw, 37px);
+      font-weight: 800;
+      letter-spacing: -1.2px;
+      animation: fadeUp .8s .4s both;
     }
 
     .description {
-      max-width: 445px;
+      max-width: 420px;
       margin: 0 auto;
-      padding: 0 10px;
       color: var(--muted);
-      font-size: 16px;
-      line-height: 1.8;
+      font-size: 15px;
+      line-height: 1.85;
+      animation: fadeUp .8s .5s both;
     }
 
     .actions {
       display: flex;
+      align-items: center;
       justify-content: center;
       flex-wrap: wrap;
       gap: 12px;
-      margin-top: 30px;
+      margin-top: 29px;
+      animation: fadeUp .8s .6s both;
     }
 
     .button {
+      min-height: 47px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      min-height: 51px;
-      padding: 0 21px;
-      border: 1px solid var(--border);
-      border-radius: 15px;
-      background: var(--surface);
+      gap: 9px;
+      padding: 0 19px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
       color: var(--text);
-      text-decoration: none;
-      font-size: 14px;
+      background: var(--surface);
+      font-family: inherit;
+      font-size: 12px;
       font-weight: 750;
+      text-decoration: none;
       cursor: pointer;
-      transition: transform .2s ease, box-shadow .2s ease,
-                  border-color .2s ease;
+      backdrop-filter: blur(15px);
+      transition: transform .2s, box-shadow .2s, border-color .2s;
     }
 
     .button:hover {
       transform: translateY(-3px);
-      box-shadow: var(--shadow);
+      border-color: var(--accent);
+      box-shadow: 0 9px 28px var(--glow);
     }
 
     .button.primary {
-      border-color: transparent;
       color: #fff;
-      background: linear-gradient(135deg, #6558ef, #8577ff);
-      box-shadow: 0 9px 28px rgba(101,88,239,.25);
+      border-color: transparent;
+      background: linear-gradient(110deg, #635bff, #8974ff);
+      box-shadow: 0 8px 24px rgba(99,91,255,.2);
     }
 
-    .button.primary:hover {
-      box-shadow: 0 14px 34px rgba(101,88,239,.35);
+    .button svg {
+      width: 17px;
+      height: 17px;
     }
 
-    .button svg, .theme-button svg {
-      width: 18px;
-      height: 18px;
-      flex: 0 0 auto;
-    }
-
-    .hint {
+    .help-text {
       margin-top: 27px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
+      animation: fadeUp .8s .7s both;
     }
 
     footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding: 17px;
-      text-align: center;
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      padding: 20px 25px 25px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
     }
 
-    footer strong { color: var(--text); }
+    .footer-brand {
+      color: var(--text);
+      font-weight: 800;
+      letter-spacing: .5px;
+    }
 
-    @keyframes reveal {
-      from { opacity: 0; transform: translateY(18px); }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(22px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-15px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
     @keyframes float {
-      from { transform: translate(0, 0) scale(1); }
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    @keyframes rotate {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes shine {
+      to { background-position: 200% center; }
+    }
+
+    @keyframes drift {
       to { transform: translate(45px, 35px) scale(1.12); }
     }
 
-    @keyframes bob {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-9px); }
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
     @media (max-width: 480px) {
-      body { padding: 18px; }
-      .topbar { padding: 17px 18px; }
-      .brand { font-size: 18px; }
-      .brand img { width: 34px; height: 34px; }
-      .theme-button { min-height: 40px; padding: 0 12px; }
-      main { padding-top: 90px; padding-bottom: 58px; }
-      .illustration { width: 290px; max-width: 100%; }
-      .orbit { width: 185px; height: 185px; }
-      .number { letter-spacing: -8px; }
+      header { padding: 19px 17px; }
+      .brand { font-size: 19px; }
+      .brand img { width: 36px; height: 36px; }
+      .error-status { padding: 8px 10px; font-size: 9px; }
+      main { padding: 42px 20px 55px; }
+      .logo-wrap { width: 95px; height: 95px; margin-bottom: 29px; }
+      .error-number { letter-spacing: -5px; }
+      h1 { letter-spacing: -.7px; }
       .description { font-size: 14px; }
-      .actions { flex-direction: column; align-items: stretch; }
-      .button { width: 100%; }
-      footer { position: absolute; }
+      footer { padding: 18px 17px; font-size: 10px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -366,140 +388,89 @@
 </head>
 
 <body>
-  <div class="ambient" aria-hidden="true">
-    <div class="orb one"></div>
-    <div class="orb two"></div>
-  </div>
+  <div class="orb one" aria-hidden="true"></div>
+  <div class="orb two" aria-hidden="true"></div>
 
-  <header class="topbar">
-    <a class="brand" href="/" aria-label="Aryanta homepage">
-      <img src="image_1778688021380.jpg" alt="Aryanta"
-           onerror="this.style.display='none'">
-      <span>Aryanta</span>
-    </a>
+  <header>
+    <div class="brand">
+      <img src="image_1778688021380.jpg" alt="Aryanta logo">
+      ARYANTA<span>.</span>
+    </div>
 
-    <button class="theme-button" id="themeToggle"
-            type="button" aria-label="Change color theme">
-      <svg id="themeIcon" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="1.8"
-           stroke-linecap="round" stroke-linejoin="round"
-           aria-hidden="true">
-        <circle cx="12" cy="12" r="4"></circle>
-        <path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path>
-      </svg>
-      <span id="themeLabel">Theme</span>
-    </button>
+    <div class="error-status">
+      <span class="status-dot"></span>
+      ERROR 404
+    </div>
   </header>
 
   <main>
-    <div class="illustration" aria-hidden="true">
-      <div class="orbit"></div>
-      <div class="number">404</div>
-    </div>
+    <section class="error-content" aria-labelledby="error-title">
+      <div class="logo-wrap">
+        <img src="image_1778688021380.jpg" alt="Aryanta">
+      </div>
 
-    <div class="eyebrow">
-      <span class="status-dot"></span>
-      Page not found
-    </div>
+      <div class="eyebrow">
+        <span>✦</span> Lost in space?
+      </div>
 
-    <h1>This page isn't available.</h1>
+      <div class="error-number" aria-label="404">404</div>
 
-    <p class="description">
-      Looks like this link has taken a wrong turn.
-      The page may have been moved, deleted, or the address
-      may be incorrect. Let's get you back to Aryanta.
-    </p>
+      <h1 id="error-title">Page Not Found</h1>
 
-    <div class="actions">
-      <a class="button primary" href="/" id="homeButton">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2" stroke-linecap="round"
-             stroke-linejoin="round" aria-hidden="true">
-          <path d="m3 10 9-7 9 7"></path>
-          <path d="M5 9v12h14V9M9 21v-7h6v7"></path>
-        </svg>
-        Go to main page
-      </a>
+      <p class="description">
+        Oops! The page you're looking for doesn't exist, may have
+        been moved, or the link might be incorrect.
+        Let's get you back on track.
+      </p>
 
-      <button class="button" type="button" id="backButton">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2" stroke-linecap="round"
-             stroke-linejoin="round" aria-hidden="true">
-          <path d="m15 18-6-6 6-6"></path>
-        </svg>
-        Go back
-      </button>
-    </div>
+      <div class="actions">
+        <a class="button primary" href="/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.8" stroke-linecap="round"
+               stroke-linejoin="round" aria-hidden="true">
+            <path d="m3 10 9-7 9 7"></path>
+            <path d="M5 9v12h14V9"></path>
+            <path d="M9 21v-7h6v7"></path>
+          </svg>
+          Back to Home
+        </a>
 
-    <p class="hint">Error code: 404 · The page could not be found.</p>
+        <button class="button" type="button" onclick="history.back()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.8" stroke-linecap="round"
+               stroke-linejoin="round" aria-hidden="true">
+            <path d="M19 12H5"></path>
+            <path d="m12 19-7-7 7-7"></path>
+          </svg>
+          Go Back
+        </button>
+      </div>
+
+      <div class="help-text">
+        If you think something is broken, please try again later.
+      </div>
+    </section>
   </main>
 
   <footer>
-    Made with care by <strong>Aryanta</strong>
+    <span>© <span id="year"></span> <span class="footer-brand">ARYANTA</span></span>
+    <span>Made for what's next ✦</span>
   </footer>
 
   <script>
-    (() => {
-      const root = document.documentElement;
-      const toggle = document.getElementById("themeToggle");
-      const label = document.getElementById("themeLabel");
-      const icon = document.getElementById("themeIcon");
-      const back = document.getElementById("backButton");
+    document.getElementById("year").textContent =
+      new Date().getFullYear();
 
-      // Follow the device theme unless the visitor chooses a theme.
-      let chosenTheme = null;
+    // Keep browser toolbar theme color in sync with the device theme.
+    const themeQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
-      function systemTheme() {
-        return window.matchMedia &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark" : "light";
-      }
+    function updateThemeColor() {
+      document.querySelector('meta[name="theme-color"]').content =
+        themeQuery.matches ? "#080a10" : "#f7f8fc";
+    }
 
-      function applyTheme(theme) {
-        root.dataset.theme = theme;
-        label.textContent = theme === "dark" ? "Dark mode" : "Light mode";
-        toggle.setAttribute(
-          "aria-label",
-          "Current theme: " + theme + ". Click to switch theme."
-        );
-
-        icon.innerHTML = theme === "dark"
-          ? '<path d="M20.5 15.5A8.5 8.5 0 0 1 8.5 3.5 8.5 8.5 0 1 0 20.5 15.5Z"></path>'
-          : '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path>';
-      }
-
-      // Initial theme is automatic.
-      applyTheme(systemTheme());
-      delete root.dataset.theme;
-
-      toggle.addEventListener("click", () => {
-        const current = chosenTheme || systemTheme();
-        chosenTheme = current === "dark" ? "light" : "dark";
-        applyTheme(chosenTheme);
-      });
-
-      if (window.matchMedia) {
-        window.matchMedia("(prefers-color-scheme: dark)")
-          .addEventListener?.("change", () => {
-            if (!chosenTheme) {
-              delete root.dataset.theme;
-              applyTheme(systemTheme());
-              delete root.dataset.theme;
-            }
-          });
-      }
-
-      back.addEventListener("click", () => {
-        if (window.history.length > 1) {
-          window.history.back();
-        } else {
-          window.location.href = "/";
-        }
-      });
-
-      // Change this if your homepage lives at another path.
-      document.getElementById("homeButton").href = "/";
-    })();
+    updateThemeColor();
+    themeQuery.addEventListener?.("change", updateThemeColor);
   </script>
 </body>
 </html>
