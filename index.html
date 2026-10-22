@@ -10,8 +10,8 @@
 
   <script>
     (() => {
-      const dark = matchMedia('(prefers-color-scheme: dark)').matches;
-      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = dark ? "dark" : "light";
     })();
   </script>
 
@@ -29,19 +29,17 @@
       --grid: rgba(90,100,140,.065);
     }
 
-    @media (prefers-color-scheme: dark) {
-      :root {
-        color-scheme: dark;
-        --bg: #080a10;
-        --surface: rgba(20,23,34,.78);
-        --text: #f5f6ff;
-        --muted: #9da4b8;
-        --line: rgba(255,255,255,.10);
-        --accent: #918aff;
-        --accent2: #38d9e8;
-        --glow: rgba(112,99,255,.20);
-        --grid: rgba(190,200,255,.045);
-      }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #080a10;
+      --surface: rgba(20,23,34,.78);
+      --text: #f5f6ff;
+      --muted: #9da4b8;
+      --line: rgba(255,255,255,.10);
+      --accent: #918aff;
+      --accent2: #38d9e8;
+      --glow: rgba(112,99,255,.20);
+      --grid: rgba(190,200,255,.045);
     }
 
     * { box-sizing: border-box; }
@@ -50,6 +48,7 @@
 
     body {
       margin: 0;
+      min-height: 100vh;
       min-height: 100svh;
       font-family: Inter, -apple-system, BlinkMacSystemFont,
         "Segoe UI", sans-serif;
@@ -100,10 +99,11 @@
     header {
       width: min(1120px, 100%);
       margin: auto;
-      padding: 25px 25px;
+      padding: 25px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 12px;
       animation: fadeDown .8s both;
     }
 
@@ -307,6 +307,96 @@
       font-weight: 700;
     }
 
+    /* Support and social buttons */
+    .footer-actions {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+      animation: fadeUp 1s .65s both;
+    }
+
+    .action-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 46px;
+      padding: 0 18px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      color: var(--text);
+      background: var(--surface);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 750;
+      text-decoration: none;
+      cursor: pointer;
+      backdrop-filter: blur(15px);
+      transition: transform .2s, border-color .2s, box-shadow .2s;
+    }
+
+    .action-button:hover {
+      transform: translateY(-3px);
+      border-color: var(--accent);
+      box-shadow: 0 9px 28px var(--glow);
+    }
+
+    .action-button.primary {
+      color: #fff;
+      border-color: transparent;
+      background: linear-gradient(110deg, #635bff, #8974ff);
+      box-shadow: 0 8px 24px rgba(99,91,255,.2);
+    }
+
+    .action-button svg {
+      width: 17px;
+      height: 17px;
+      flex-shrink: 0;
+    }
+
+    .follow-label {
+      margin-top: 25px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .social-links {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 13px;
+    }
+
+    .social-link {
+      display: grid;
+      width: 43px;
+      height: 43px;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      color: var(--text);
+      background: var(--surface);
+      text-decoration: none;
+      transition: transform .2s, color .2s, border-color .2s;
+    }
+
+    .social-link:hover {
+      transform: translateY(-4px);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .social-link svg {
+      width: 19px;
+      height: 19px;
+    }
+
     footer {
       width: min(1120px, 100%);
       margin: auto;
@@ -326,6 +416,139 @@
       letter-spacing: .5px;
     }
 
+    /* Custom support popup */
+    .support-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: rgba(5,8,20,.56);
+      backdrop-filter: blur(9px);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity .25s, visibility .25s;
+    }
+
+    .support-overlay.open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .support-popup {
+      position: relative;
+      width: min(420px, 100%);
+      padding: 30px 24px 24px;
+      border: 1px solid var(--line);
+      border-radius: 25px;
+      color: var(--text);
+      background: var(--bg);
+      box-shadow: 0 25px 90px rgba(0,0,0,.25);
+      transform: translateY(15px) scale(.97);
+      transition: transform .25s ease;
+      text-align: left;
+    }
+
+    .support-overlay.open .support-popup {
+      transform: translateY(0) scale(1);
+    }
+
+    .support-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 23px;
+    }
+
+    .support-symbol {
+      display: grid;
+      place-items: center;
+      width: 55px;
+      height: 55px;
+      margin-bottom: 18px;
+      border-radius: 17px;
+      color: var(--accent);
+      background: var(--glow);
+      font-size: 25px;
+    }
+
+    .support-popup h2 {
+      margin: 0 0 9px;
+      font-size: 25px;
+      letter-spacing: -.7px;
+    }
+
+    .support-popup > p {
+      margin: 0 0 22px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .support-detail {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      padding: 15px;
+      margin-top: 11px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--surface);
+      overflow-wrap: anywhere;
+    }
+
+    .support-detail-icon {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+      border-radius: 12px;
+      background: var(--glow);
+      color: var(--accent);
+    }
+
+    .support-detail-icon svg {
+      width: 19px;
+      height: 19px;
+    }
+
+    .support-detail small {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .support-detail a {
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 750;
+      text-decoration: none;
+      overflow-wrap: anywhere;
+    }
+
+    .support-detail a:hover { color: var(--accent); }
+
+    .support-popup .support-note {
+      margin-top: 18px;
+      margin-bottom: 0;
+      text-align: center;
+      font-size: 11px;
+    }
+
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(24px); }
       to { opacity: 1; transform: translateY(0); }
@@ -341,17 +564,9 @@
       50% { transform: translateY(-9px); }
     }
 
-    @keyframes rotate {
-      to { transform: rotate(360deg); }
-    }
-
-    @keyframes shine {
-      to { background-position: 200% center; }
-    }
-
-    @keyframes blink {
-      50% { opacity: .35; }
-    }
+    @keyframes rotate { to { transform: rotate(360deg); } }
+    @keyframes shine { to { background-position: 200% center; } }
+    @keyframes blink { 50% { opacity: .35; } }
 
     @keyframes loading {
       from { width: 24%; }
@@ -371,6 +586,9 @@
       .hero-image { width: 105px; height: 105px; margin-bottom: 29px; }
       h1 { letter-spacing: -2.5px; }
       footer { padding: 18px 17px; font-size: 10px; }
+      .footer-actions { gap: 9px; }
+      .action-button { padding: 0 14px; }
+      .support-popup { padding: 27px 18px 20px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -378,14 +596,15 @@
         animation-duration: .01ms !important;
         animation-iteration-count: 1 !important;
         scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
       }
     }
   </style>
 </head>
 
 <body>
-  <div class="orb one"></div>
-  <div class="orb two"></div>
+  <div class="orb one" aria-hidden="true"></div>
+  <div class="orb two" aria-hidden="true"></div>
 
   <header>
     <div class="brand">
@@ -437,6 +656,47 @@
     <div class="bottom-message">
       A new experience is on the way. <strong>See you soon!</strong>
     </div>
+
+    <!-- Get Support button -->
+    <div class="footer-actions">
+      <button class="action-button primary" id="supportOpen" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true">
+          <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"></path>
+        </svg>
+        Get Support
+      </button>
+    </div>
+
+    <!-- Follow us -->
+    <div class="follow-label">Follow us on</div>
+
+    <div class="social-links">
+      <a class="social-link" href="https://www.instagram.com/"
+         target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="5"></rect>
+          <circle cx="12" cy="12" r="4"></circle>
+          <circle cx="17.5" cy="6.5" r="1" fill="currentColor"></circle>
+        </svg>
+      </a>
+
+      <a class="social-link" href="https://www.facebook.com/"
+         target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13.4 21v-8.2h2.8l.4-3.2h-3.2v-2c0-.9.3-1.5 1.6-1.5h1.7V3.2c-.3 0-1.3-.2-2.5-.2-2.5 0-4.2 1.5-4.2 4.3v2.3H7.2v3.2H10V21z"></path>
+        </svg>
+      </a>
+
+      <a class="social-link" href="https://x.com/"
+         target="_blank" rel="noopener noreferrer" aria-label="X">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.9 2H22l-6.8 7.8L23.2 22h-6.3L12 14.6 5.6 22H2.4l7.3-8.4L1.8 2h6.5l4.5 6.8zm-1.1 17.8h1.7L7.3 4.1H5.5z"></path>
+        </svg>
+      </a>
+    </div>
   </main>
 
   <footer>
@@ -444,12 +704,56 @@
     <span>Made for what's next ✦</span>
   </footer>
 
+  <!-- Custom support popup -->
+  <div class="support-overlay" id="supportOverlay"
+       role="dialog" aria-modal="true"
+       aria-labelledby="supportTitle" aria-hidden="true">
+    <div class="support-popup">
+      <button class="support-close" id="supportClose"
+              type="button" aria-label="Close support popup">&times;</button>
+
+      <div class="support-symbol">✦</div>
+      <h2 id="supportTitle">We're here to help.</h2>
+      <p>Contact the Aryanta team using the details below. We'll do our best to assist you.</p>
+
+      <div class="support-detail">
+        <div class="support-detail-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+            <path d="m3 7 9 6 9-6"></path>
+          </svg>
+        </div>
+        <div>
+          <small>Email support</small>
+          <a href="mailto:official.aryanta@gmail.com">official.aryanta@gmail.com</a>
+        </div>
+      </div>
+
+      <div class="support-detail">
+        <div class="support-detail-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 11.2 19a19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.7 2z"></path>
+          </svg>
+        </div>
+        <div>
+          <small>Phone support</small>
+          <!-- Replace this placeholder with your official support number -->
+          <a href="tel:+910000000000">Add your phone number</a>
+        </div>
+      </div>
+
+      <p class="support-note">Aryanta Support · We're happy to help.</p>
+    </div>
+  </div>
+
   <script>
-    // Automatically update the copyright year.
+    // Current year in footer
     document.getElementById("year").textContent =
       new Date().getFullYear();
 
-    // Update the browser address bar's theme color with system theme.
+    // Browser theme color
     const themeQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
     function updateThemeColor() {
@@ -459,6 +763,40 @@
 
     updateThemeColor();
     themeQuery.addEventListener?.("change", updateThemeColor);
+
+    // Support popup interactions
+    (() => {
+      const overlay = document.getElementById("supportOverlay");
+      const openButton = document.getElementById("supportOpen");
+      const closeButton = document.getElementById("supportClose");
+
+      function openSupport() {
+        overlay.classList.add("open");
+        overlay.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+        closeButton.focus();
+      }
+
+      function closeSupport() {
+        overlay.classList.remove("open");
+        overlay.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+        openButton.focus();
+      }
+
+      openButton.addEventListener("click", openSupport);
+      closeButton.addEventListener("click", closeSupport);
+
+      overlay.addEventListener("click", event => {
+        if (event.target === overlay) closeSupport();
+      });
+
+      document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && overlay.classList.contains("open")) {
+          closeSupport();
+        }
+      });
+    })();
   </script>
 </body>
 </html>
