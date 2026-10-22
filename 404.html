@@ -1,197 +1,505 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aryanta|Page Not Found </title>
-    <style>
-        :root {
-            --primary-bg: #ffffff;
-            --text-main: #202124;
-            --text-secondary: #5f6368;
-            --accent-blue: #1a73e8;
-            --prime-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --search-border: #dfe1e5;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f7f8fc">
+  <meta name="description" content="This Aryanta page is not available. Return to the Aryanta homepage.">
+  <title>404 — Page Not Available | Aryanta</title>
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-font-smoothing: antialiased;
-        }
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fc;
+      --surface: rgba(255,255,255,.78);
+      --text: #171923;
+      --muted: #72788a;
+      --border: rgba(25,32,55,.1);
+      --accent: #6558ef;
+      --accent2: #9288ff;
+      --shadow: 0 24px 80px rgba(35,40,80,.1);
+    }
 
-        body {
-            font-family: 'Google Sans', Roboto, Arial, sans-serif;
-            background-color: var(--primary-bg);
-            color: var(--text-main);
-            height: 100vh;
-            width: 100vw;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden; /* Strict no-scroll */
-            padding: 20px;
-        }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        color-scheme: dark;
+        --bg: #0b0c12;
+        --surface: rgba(24,26,38,.82);
+        --text: #f4f4fb;
+        --muted: #a0a4b8;
+        --border: rgba(255,255,255,.1);
+        --accent: #a49aff;
+        --accent2: #6d60ed;
+        --shadow: 0 24px 80px rgba(0,0,0,.35);
+      }
+    }
 
-        /* Branding Section */
-        .brand-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 40px;
-        }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #0b0c12;
+      --surface: rgba(24,26,38,.82);
+      --text: #f4f4fb;
+      --muted: #a0a4b8;
+      --border: rgba(255,255,255,.1);
+      --accent: #a49aff;
+      --accent2: #6d60ed;
+      --shadow: 0 24px 80px rgba(0,0,0,.35);
+    }
 
-        .aryanta-logo {
-            width: 100px;
-            height: 100px;
-            object-fit: cover;
-            border-radius: 24px; /* Curved Prime Look */
-            box-shadow: var(--prime-shadow);
-            margin-bottom: 15px;
-            border: 2px solid #f8f9fa;
-        }
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --bg: #f7f8fc;
+      --surface: rgba(255,255,255,.78);
+      --text: #171923;
+      --muted: #72788a;
+      --border: rgba(25,32,55,.1);
+      --accent: #6558ef;
+      --accent2: #9288ff;
+      --shadow: 0 24px 80px rgba(35,40,80,.1);
+    }
 
-        .brand-name {
-            font-size: 36px;
-            font-weight: 700;
-            letter-spacing: -1px;
-            color: #000;
-        }
+    * { box-sizing: border-box; }
 
-        .brand-name span {
-            color: var(--accent-blue);
-        }
+    html { min-height: 100%; }
 
-        /* Search Bar UI */
-        .search-prime {
-            width: 100%;
-            max-width: 584px;
-            height: 54px;
-            border: 1px solid var(--search-border);
-            border-radius: 27px;
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-            margin-bottom: 30px;
-            background: #fff;
-            transition: box-shadow 0.2s ease;
-        }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+                   BlinkMacSystemFont, "Segoe UI", sans-serif;
+      transition: background .35s ease, color .35s ease;
+    }
 
-        .search-prime:hover {
-            box-shadow: 0 1px 6px rgba(32,33,36,.28);
-            border-color: rgba(223,225,229,0);
-        }
+    button, a { font: inherit; }
 
-        .search-icon {
-            width: 20px;
-            height: 20px;
-            fill: #9aa0a6;
-            margin-right: 15px;
-            flex-shrink: 0;
-        }
+    .ambient {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: -1;
+    }
 
-        .search-text {
-            flex-grow: 1;
-            font-size: 16px;
-            color: var(--text-main);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+    .orb {
+      position: absolute;
+      width: 340px;
+      height: 340px;
+      border-radius: 50%;
+      filter: blur(85px);
+      opacity: .22;
+      background: var(--accent);
+      animation: float 12s ease-in-out infinite alternate;
+    }
 
-        .search-text b {
-            color: var(--accent-blue);
-        }
+    .orb.one { top: -130px; left: -100px; }
+    .orb.two {
+      right: -140px;
+      bottom: -130px;
+      width: 420px;
+      height: 420px;
+      background: var(--accent2);
+      animation-delay: -5s;
+    }
 
-        /* Error Messaging */
-        .error-message {
-            text-align: center;
-            max-width: 400px;
-        }
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 22px clamp(18px, 5vw, 64px);
+    }
 
-        h1 {
-            font-size: 24px;
-            font-weight: 400;
-            margin-bottom: 12px;
-        }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 11px;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: -.8px;
+    }
 
-        p {
-            font-size: 15px;
-            color: var(--text-secondary);
-            line-height: 1.6;
-            margin-bottom: 30px;
-        }
+    .brand img {
+      width: 39px;
+      height: 39px;
+      object-fit: contain;
+      border-radius: 12px;
+    }
 
-        /* Prime Button */
-        .cta-button {
-            display: inline-block;
-            text-decoration: none;
-            background-color: #000;
-            color: #fff;
-            padding: 14px 40px;
-            border-radius: 100px;
-            font-weight: 600;
-            font-size: 14px;
-            letter-spacing: 0.5px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.25);
-        }
+    .theme-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 43px;
+      padding: 0 15px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      backdrop-filter: blur(16px);
+      transition: transform .2s, border-color .2s;
+    }
 
-        .cta-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-            background-color: #222;
-        }
+    .theme-button:hover { transform: translateY(-2px); }
+    .theme-button:focus-visible, a:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 4px;
+    }
 
-        .cta-button:active {
-            transform: translateY(0);
-        }
+    main {
+      width: 100%;
+      max-width: 660px;
+      padding: 100px 0 45px;
+      text-align: center;
+      animation: reveal .8s cubic-bezier(.2,.75,.25,1) both;
+    }
 
-        /* Mobile Adjustments */
-        @media (max-width: 480px) {
-            .brand-name { font-size: 28px; }
-            .aryanta-logo { width: 80px; height: 80px; }
-            h1 { font-size: 20px; }
-            .search-prime { height: 48px; }
-        }
-    </style>
+    .illustration {
+      position: relative;
+      width: min(100%, 360px);
+      margin: 0 auto 8px;
+      aspect-ratio: 1.25;
+      display: grid;
+      place-items: center;
+    }
+
+    .orbit {
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      animation: spin 28s linear infinite;
+    }
+
+    .orbit::before, .orbit::after {
+      content: "";
+      position: absolute;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 22px var(--accent);
+    }
+
+    .orbit::before { top: 27px; left: 29px; }
+    .orbit::after { right: 13px; bottom: 65px; width: 6px; height: 6px; }
+
+    .number {
+      font-size: clamp(105px, 24vw, 178px);
+      line-height: .95;
+      font-weight: 900;
+      letter-spacing: -12px;
+      color: var(--accent);
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 15px 25px rgba(105,90,230,.15));
+      animation: bob 4s ease-in-out infinite;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 13px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      background: #f59e0b;
+      border-radius: 50%;
+      box-shadow: 0 0 12px rgba(245,158,11,.45);
+    }
+
+    h1 {
+      margin: 22px 0 12px;
+      font-size: clamp(29px, 6vw, 43px);
+      line-height: 1.12;
+      letter-spacing: -1.6px;
+    }
+
+    .description {
+      max-width: 445px;
+      margin: 0 auto;
+      padding: 0 10px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.8;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 30px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 51px;
+      padding: 0 21px;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      background: var(--surface);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 750;
+      cursor: pointer;
+      transition: transform .2s ease, box-shadow .2s ease,
+                  border-color .2s ease;
+    }
+
+    .button:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow);
+    }
+
+    .button.primary {
+      border-color: transparent;
+      color: #fff;
+      background: linear-gradient(135deg, #6558ef, #8577ff);
+      box-shadow: 0 9px 28px rgba(101,88,239,.25);
+    }
+
+    .button.primary:hover {
+      box-shadow: 0 14px 34px rgba(101,88,239,.35);
+    }
+
+    .button svg, .theme-button svg {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+    }
+
+    .hint {
+      margin-top: 27px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 17px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    footer strong { color: var(--text); }
+
+    @keyframes reveal {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes float {
+      from { transform: translate(0, 0) scale(1); }
+      to { transform: translate(45px, 35px) scale(1.12); }
+    }
+
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-9px); }
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 480px) {
+      body { padding: 18px; }
+      .topbar { padding: 17px 18px; }
+      .brand { font-size: 18px; }
+      .brand img { width: 34px; height: 34px; }
+      .theme-button { min-height: 40px; padding: 0 12px; }
+      main { padding-top: 90px; padding-bottom: 58px; }
+      .illustration { width: 290px; max-width: 100%; }
+      .orbit { width: 185px; height: 185px; }
+      .number { letter-spacing: -8px; }
+      .description { font-size: 14px; }
+      .actions { flex-direction: column; align-items: stretch; }
+      .button { width: 100%; }
+      footer { position: absolute; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
 </head>
+
 <body>
+  <div class="ambient" aria-hidden="true">
+    <div class="orb one"></div>
+    <div class="orb two"></div>
+  </div>
 
-    <!-- Header Branding -->
-    <div class="brand-container">
-        <img src="https://aryanta.in/vurify/aryanta.jpeg" alt="Aryanta" class="aryanta-logo">
-        <div class="brand-name">Aryanta</div>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Aryanta homepage">
+      <img src="image_1778688021380.jpg" alt="Aryanta"
+           onerror="this.style.display='none'">
+      <span>Aryanta</span>
+    </a>
+
+    <button class="theme-button" id="themeToggle"
+            type="button" aria-label="Change color theme">
+      <svg id="themeIcon" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round"
+           aria-hidden="true">
+        <circle cx="12" cy="12" r="4"></circle>
+        <path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path>
+      </svg>
+      <span id="themeLabel">Theme</span>
+    </button>
+  </header>
+
+  <main>
+    <div class="illustration" aria-hidden="true">
+      <div class="orbit"></div>
+      <div class="number">404</div>
     </div>
 
-    <!-- Prime Search UI -->
-    <div class="search-prime">
-        <svg class="search-icon" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-            <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
+    <div class="eyebrow">
+      <span class="status-dot"></span>
+      Page not found
+    </div>
+
+    <h1>This page isn't available.</h1>
+
+    <p class="description">
+      Looks like this link has taken a wrong turn.
+      The page may have been moved, deleted, or the address
+      may be incorrect. Let's get you back to Aryanta.
+    </p>
+
+    <div class="actions">
+      <a class="button primary" href="/" id="homeButton">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round" aria-hidden="true">
+          <path d="m3 10 9-7 9 7"></path>
+          <path d="M5 9v12h14V9M9 21v-7h6v7"></path>
         </svg>
-        <div class="search-text" id="url-display">Error <b>404</b>: Page not found</div>
+        Go to main page
+      </a>
+
+      <button class="button" type="button" id="backButton">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round" aria-hidden="true">
+          <path d="m15 18-6-6 6-6"></path>
+        </svg>
+        Go back
+      </button>
     </div>
 
-    <!-- Error Description -->
-    <div class="error-message">
-        <h1>That’s an error.</h1>
-        <p>The requested URL was not found on our servers.</p>
-        
-        <!-- Action Button -->
-        <a href="https://aryanta.in" class="cta-button">RETURN TO HOME</a>
-    </div>
+    <p class="hint">Error code: 404 · The page could not be found.</p>
+  </main>
 
-    <script>
-        // Dynamically get the requested URL path
-        window.onload = function() {
-            const path = window.location.pathname;
-            const displayElement = document.getElementById('url-display');
-            if (path && path !== '/' && path !== '/404.html') {
-                displayElement.innerHTML = `Error <b>404</b>: <u>${path}</u> not found`;
+  <footer>
+    Made with care by <strong>Aryanta</strong>
+  </footer>
+
+  <script>
+    (() => {
+      const root = document.documentElement;
+      const toggle = document.getElementById("themeToggle");
+      const label = document.getElementById("themeLabel");
+      const icon = document.getElementById("themeIcon");
+      const back = document.getElementById("backButton");
+
+      // Follow the device theme unless the visitor chooses a theme.
+      let chosenTheme = null;
+
+      function systemTheme() {
+        return window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark" : "light";
+      }
+
+      function applyTheme(theme) {
+        root.dataset.theme = theme;
+        label.textContent = theme === "dark" ? "Dark mode" : "Light mode";
+        toggle.setAttribute(
+          "aria-label",
+          "Current theme: " + theme + ". Click to switch theme."
+        );
+
+        icon.innerHTML = theme === "dark"
+          ? '<path d="M20.5 15.5A8.5 8.5 0 0 1 8.5 3.5 8.5 8.5 0 1 0 20.5 15.5Z"></path>'
+          : '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path>';
+      }
+
+      // Initial theme is automatic.
+      applyTheme(systemTheme());
+      delete root.dataset.theme;
+
+      toggle.addEventListener("click", () => {
+        const current = chosenTheme || systemTheme();
+        chosenTheme = current === "dark" ? "light" : "dark";
+        applyTheme(chosenTheme);
+      });
+
+      if (window.matchMedia) {
+        window.matchMedia("(prefers-color-scheme: dark)")
+          .addEventListener?.("change", () => {
+            if (!chosenTheme) {
+              delete root.dataset.theme;
+              applyTheme(systemTheme());
+              delete root.dataset.theme;
             }
-        };
-    </script>
+          });
+      }
+
+      back.addEventListener("click", () => {
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          window.location.href = "/";
+        }
+      });
+
+      // Change this if your homepage lives at another path.
+      document.getElementById("homeButton").href = "/";
+    })();
+  </script>
 </body>
 </html>
